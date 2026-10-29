@@ -159,7 +159,6 @@ export class IRMasterRenderer implements Disposable {
   // Lookahead asset lifespan tracking for sliding hybrid sequence eviction
   private assetLastEndFrame: Map<string, number> = new Map();
   private sequencesByAssetKey: Map<string, ResolvedSequence[]> = new Map();
-  private preflightedSequenceIds: Set<string> = new Set();
   private evictedAssetKeys: Set<string> = new Set();
 
   constructor(
@@ -219,72 +218,6 @@ export class IRMasterRenderer implements Disposable {
   }
 
   /**
-   * Executes Just-In-Time Phase 1 preflight for sequences becoming active at globalFrame.
-   * If an earlier sequence sharing the same asset key already baked textures, propagates them
-   * to avoid redundant re-decoding or re-allocation.
-   */
-  private async ensureActiveSequencesPreflighted(
-    globalFrame: number,
-    width: number,
-    height: number,
-    fps: number
-  ): Promise<void> {
-    for (const track of this.timeline.tracks.values()) {
-      if ((track as any).muted === true || (track.style as any)?.visible === false) {
-        continue;
-      }
-      for (const seq of track.sequences) {
-        if ((seq as any).enabled === false) continue;
-        if (globalFrame >= seq.startFrame && globalFrame < seq.endFrame) {
-          if (this.preflightedSequenceIds.has(seq.id)) continue;
-          this.preflightedSequenceIds.add(seq.id);
-
-          // Check if another sequence with the same asset key already has prebaked data
-          const assetKey = this.getSequenceAssetKey(seq);
-          const siblings = this.sequencesByAssetKey.get(assetKey) || [];
-          for (const sibling of siblings) {
-            if (sibling.id !== seq.id) {
-              if ((sibling as any)._prebakedCutout && !(seq as any)._prebakedCutout) {
-                (seq as any)._prebakedCutout = (sibling as any)._prebakedCutout;
-              }
-              if ((sibling as any)._prebakedDepthData && !(seq as any)._prebakedDepthData) {
-                (seq as any)._prebakedDepthData = (sibling as any)._prebakedDepthData;
-              }
-              if ((sibling as any)._prebakedBgCanvas && !(seq as any)._prebakedBgCanvas) {
-                (seq as any)._prebakedBgCanvas = (sibling as any)._prebakedBgCanvas;
-              }
-              if ((sibling as any)._prebakedWiggleBase && !(seq as any)._prebakedWiggleBase) {
-                (seq as any)._prebakedWiggleBase = (sibling as any)._prebakedWiggleBase;
-              }
-              if ((sibling as any)._prebakedCamera3D && !(seq as any)._prebakedCamera3D) {
-                (seq as any)._prebakedCamera3D = (sibling as any)._prebakedCamera3D;
-              }
-            }
-          }
-
-          if (seq.modifiers) {
-            for (const mod of seq.modifiers) {
-              const plugin = this.pluginRegistry.get(mod.type);
-              if (plugin && plugin.execute) {
-                await plugin.execute(
-                  {
-                    targetType: 'sequence',
-                    targetEntity: seq,
-                    timeline: new Map(),
-                    fps,
-                    canvas: { width, height },
-                  },
-                  mod.params
-                );
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  /**
    * Sliding Hybrid Sequence Scope Eviction:
    * Immediately disposes a sequence's SequenceResourceScope when its out-point passes,
    * unless a subsequent sequence on the timeline shares the exact same asset key.
@@ -310,11 +243,6 @@ export class IRMasterRenderer implements Disposable {
               if (this.resourceManager !== NativeResourceManager.getInstance()) {
                 NativeResourceManager.getInstance().disposeSequenceScope(s.id);
               }
-              delete (s as any)._prebakedCutout;
-              delete (s as any)._prebakedDepthData;
-              delete (s as any)._prebakedBgCanvas;
-              delete (s as any)._prebakedWiggleBase;
-              delete (s as any)._prebakedCamera3D;
             }
 
             if (seq.assetId && this.imageCache.has(seq.assetId)) {
@@ -436,15 +364,19 @@ export class IRMasterRenderer implements Disposable {
 
     // Recompute lookahead lifespans for current timeline state
     this.computeAssetLifespans();
-    this.preflightedSequenceIds.clear();
     this.evictedAssetKeys.clear();
+
+    // Calculate frame loop bounds
+    const startFrame = options.chunkStart !== undefined ? Math.max(0, options.chunkStart) : 0;
+    const endFrame = options.chunkEnd !== undefined ? Math.min(totalFrames, options.chunkEnd) : totalFrames;
+    const framesToRender = Math.max(0, endFrame - startFrame);
 
     // Preload assets if baseDir provided or assets exist
     if (this.timeline.assets && this.imageCache.size === 0) {
       await this.preloadAssets(options.baseDir || '.');
     }
 
-    // Pre-flight execution for track-level modifiers; sequence-level modifiers run JIT when entering active window
+    // Pre-flight execution for track-level and sequence-level modifiers
     for (const track of this.timeline.tracks.values()) {
       if (track.modifiers) {
         for (const mod of track.modifiers) {
@@ -457,9 +389,31 @@ export class IRMasterRenderer implements Disposable {
                 timeline: new Map(),
                 fps,
                 canvas: { width, height },
+                assets: this.timeline.assets,
               },
               mod.params
             );
+          }
+        }
+      }
+      for (const seq of track.sequences) {
+        if (seq.endFrame <= startFrame || seq.startFrame >= endFrame) continue;
+        if (seq.modifiers) {
+          for (const mod of seq.modifiers) {
+            const plugin = this.pluginRegistry.get(mod.type);
+            if (plugin && plugin.execute) {
+              await plugin.execute(
+                {
+                  targetType: 'sequence',
+                  targetEntity: seq,
+                  timeline: new Map(),
+                  fps,
+                  canvas: { width, height },
+                  assets: this.timeline.assets,
+                },
+                mod.params
+              );
+            }
           }
         }
       }
@@ -531,19 +485,11 @@ export class IRMasterRenderer implements Disposable {
       canvasCtx = canvas.getContext('2d');
     }
 
-    // Calculate frame loop bounds
-    const startFrame = options.chunkStart !== undefined ? Math.max(0, options.chunkStart) : 0;
-    const endFrame = options.chunkEnd !== undefined ? Math.min(totalFrames, options.chunkEnd) : totalFrames;
-    const framesToRender = Math.max(0, endFrame - startFrame);
-
     for (let f = 0; f < framesToRender; f++) {
       const globalFrame = startFrame + f;
 
       // Synchronous backpressure acquire
       await this.lock.acquire(f);
-
-      // JIT preflight for sequences active at globalFrame
-      await this.ensureActiveSequencesPreflighted(globalFrame, width, height, fps);
 
       // Evaluate active sequences and procedural/visual rasterization for frame t
       if (canvas && canvasCtx) {

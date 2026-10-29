@@ -169,9 +169,7 @@ export class Camera3DPlugin implements ModifierPlugin<Camera3DPluginParams> {
       width,
       height
     );
-    if (context.targetEntity) {
-      (context.targetEntity as any)._camera3dTrajectory = trajectory;
-    }
+    seqScope.setMetadata('camera3d_traj', trajectory);
     try {
       const blob = new Blob([trajectory.buffer], { type: 'application/octet-stream' });
       await ContentCacheRegistry.get().set(cacheKey, blob, {
@@ -211,9 +209,7 @@ export class Camera3DPlugin implements ModifierPlugin<Camera3DPluginParams> {
             nearBlurCanvas,
             farBlurCanvas,
           };
-          if (context.targetEntity) {
-            (context.targetEntity as any)._focalZones = focalZones;
-          }
+          seqScope.setMetadata('focal_zones', focalZones);
 
           // Persist raw pixel buffers to ContentCacheRegistry as Blobs for cross-worker sharing
           try {
@@ -241,7 +237,7 @@ export class Camera3DPlugin implements ModifierPlugin<Camera3DPluginParams> {
     const cacheKey = `camera3d_traj_${seqId}_${totalFrames}`;
 
     let trajectory: Float32Array | undefined =
-      (sequence as any)?._camera3dTrajectory || seqScope.get('camera3d_traj')?.getRaw();
+      seqScope.getMetadata<Float32Array>('camera3d_traj') || seqScope.get('camera3d_traj')?.getRaw();
     if (!trajectory) {
       try {
         if (await ContentCacheRegistry.get().has(cacheKey)) {
@@ -249,7 +245,7 @@ export class Camera3DPlugin implements ModifierPlugin<Camera3DPluginParams> {
           if (blob) {
             const ab = await blob.arrayBuffer();
             trajectory = new Float32Array(ab);
-            (sequence as any)._camera3dTrajectory = trajectory;
+            seqScope.setMetadata('camera3d_traj', trajectory);
           }
         }
       } catch {}
@@ -267,9 +263,7 @@ export class Camera3DPlugin implements ModifierPlugin<Camera3DPluginParams> {
         width,
         height
       );
-      if (sequence) {
-        (sequence as any)._camera3dTrajectory = trajectory;
-      }
+      seqScope.setMetadata('camera3d_traj', trajectory);
     }
 
     if (!trajectory) return;
@@ -299,7 +293,7 @@ export class Camera3DPlugin implements ModifierPlugin<Camera3DPluginParams> {
     canvasCtx.translate(-centerX, -centerY);
 
     // Render Dynamic Rack Focus crossfade if focal zones exist
-    let focalZones = (sequence as any)?._focalZones as FocalZoneCanvases | undefined;
+    let focalZones = seqScope.getMetadata<FocalZoneCanvases>('focal_zones');
     if (!focalZones && focalAperture > 0.01) {
       const nearCanvas = seqScope.get('focal_near')?.getRaw();
       const farCanvas = seqScope.get('focal_far')?.getRaw();
@@ -309,7 +303,7 @@ export class Camera3DPlugin implements ModifierPlugin<Camera3DPluginParams> {
           nearBlurCanvas: nearCanvas,
           farBlurCanvas: farCanvas,
         };
-        (sequence as any)._focalZones = focalZones;
+        seqScope.setMetadata('focal_zones', focalZones);
       } else {
         try {
           const nearBlob = await ContentCacheRegistry.get().get(`camera3d_focal_near_${cacheKey}`);
@@ -342,9 +336,7 @@ export class Camera3DPlugin implements ModifierPlugin<Camera3DPluginParams> {
               nearBlurCanvas: rawNear,
               farBlurCanvas: rawFar,
             };
-            if (sequence) {
-              (sequence as any)._focalZones = focalZones;
-            }
+            seqScope.setMetadata('focal_zones', focalZones);
           }
         } catch {}
       }

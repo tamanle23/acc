@@ -195,8 +195,8 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
 
       try {
         const cutout = await resolveSubjectCutout(effectiveImagePath, params as any);
-        if (cutout && seq) {
-          seq._prebakedCutout = cutout;
+        if (cutout) {
+          seqScope.setMetadata('cutout_data', cutout);
           if (cutout.subjectImg) {
             NativeResourceManager.getInstance().register('cutout', cutout.subjectImg, { scope: seqScope });
           }
@@ -228,8 +228,8 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
             params as any
           );
 
-          if (depthData && seq) {
-            seq._prebakedDepthData = depthData;
+          if (depthData) {
+            seqScope.setMetadata('depth_data', depthData);
             if (depthData.srcCanvas) {
               NativeResourceManager.getInstance().register('depth_src', depthData.srcCanvas, { scope: seqScope });
             }
@@ -246,9 +246,7 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
               4,
               params.relighting.normalStrength ?? 2.0
             );
-            if (seq) {
-              seq._prebakedNormalMap = normalMap;
-            }
+            seqScope.setMetadata('normal_map', normalMap);
             const normalBlob = new Blob([normalMap.normals.buffer], { type: 'application/octet-stream' });
             for (const k of cacheKeys) {
               await ContentCacheRegistry.get().set(`normal_${k}`, normalBlob, {
@@ -288,21 +286,20 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
       (sequence as any).src,
     ].filter(Boolean) as string[];
 
-    // Retrieve cached cutout via prebaked sequence cache or SequenceResourceScope
-    let cutout: { subjectImg: any | null; subjectBBox: any | null } | undefined =
-      (sequence as any)._prebakedCutout;
+    // Retrieve cached cutout via SequenceResourceScope
+    let cutout = seqScope.getMetadata<{ subjectImg: any | null; subjectBBox: any | null }>('cutout_data');
     if (!cutout) {
       const scopedSubject = seqScope.get('cutout')?.getRaw();
       if (scopedSubject) {
         cutout = { subjectImg: scopedSubject, subjectBBox: null };
-        (sequence as any)._prebakedCutout = cutout;
+        seqScope.setMetadata('cutout_data', cutout);
       }
     }
     if (!cutout && candidateKeys[0]) {
       try {
         cutout = await resolveSubjectCutout(candidateKeys[0], params as any);
         if (cutout) {
-          (sequence as any)._prebakedCutout = cutout;
+          seqScope.setMetadata('cutout_data', cutout);
           if (cutout.subjectImg) {
             NativeResourceManager.getInstance().register('cutout', cutout.subjectImg, { scope: seqScope });
           }
@@ -316,7 +313,7 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
     // Build or reuse scoped scratch background plate for frame_breaker
     let bgCanvas: any | undefined;
     if (mode === 'frame_breaker') {
-      bgCanvas = (sequence as any)._prebakedBgCanvas || seqScope.get('frame_breaker_bg')?.getRaw();
+      bgCanvas = seqScope.get('frame_breaker_bg')?.getRaw();
       if (!bgCanvas) {
         try {
           const uBgCanvas = UniversalCanvasProvider.createCanvas(width, height);
@@ -346,7 +343,6 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
           bgCtx.fillStyle = 'rgba(10, 10, 18, 0.65)';
           bgCtx.fillRect(bgX, bgY, bgW, bgH);
 
-          (sequence as any)._prebakedBgCanvas = bgCanvas;
           NativeResourceManager.getInstance().register('frame_breaker_bg', bgCanvas, { scope: seqScope });
         } catch {}
       }
@@ -378,13 +374,12 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
       params.autoDepth !== false ||
       Boolean(params.relighting?.enabled);
 
-    let depthLayersData: { srcCanvas: any; depthLayers: any } | undefined =
-      (sequence as any)._prebakedDepthData;
+    let depthLayersData = seqScope.getMetadata<{ srcCanvas: any; depthLayers: any }>('depth_data');
     if (!depthLayersData && needsDepth && candidateKeys[0]) {
       try {
         depthLayersData = await resolveDepthMapData(candidateKeys[0], width, height, params as any);
         if (depthLayersData) {
-          (sequence as any)._prebakedDepthData = depthLayersData;
+          seqScope.setMetadata('depth_data', depthLayersData);
           if (depthLayersData.srcCanvas) {
             NativeResourceManager.getInstance().register('depth_src', depthLayersData.srcCanvas, { scope: seqScope });
           }
@@ -424,14 +419,13 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
 
     let baseCanvas: any | undefined;
     if (mode === 'wigglegram') {
-      baseCanvas = (sequence as any)._prebakedWiggleBase || seqScope.get('wiggle_base')?.getRaw();
+      baseCanvas = seqScope.get('wiggle_base')?.getRaw();
       if (!baseCanvas) {
         try {
           const uBaseCanvas = UniversalCanvasProvider.createCanvas(width, height);
           baseCanvas = uBaseCanvas.getRawCanvas ? uBaseCanvas.getRawCanvas() : uBaseCanvas;
           const bCtx = baseCanvas.getContext('2d');
           bCtx.drawImage(baseAsset, 0, 0, baseAsset.width, baseAsset.height, 0, 0, width, height);
-          (sequence as any)._prebakedWiggleBase = baseCanvas;
           NativeResourceManager.getInstance().register('wiggle_base', baseCanvas, { scope: seqScope });
         } catch {}
       }
@@ -477,7 +471,7 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
 
       // Dynamic Relighting Pass (Phase 1)
       if (params.relighting?.enabled) {
-        let normalMap: SurfaceNormalMap | undefined = (sequence as any)._prebakedNormalMap;
+        let normalMap = seqScope.getMetadata<SurfaceNormalMap>('normal_map');
         if (!normalMap) {
           for (const k of candidateKeys) {
             const normalKey = `normal_${k}`;
@@ -491,7 +485,7 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
                   width: (meta?.metadata?.width as number) || width,
                   height: (meta?.metadata?.height as number) || height,
                 };
-                (sequence as any)._prebakedNormalMap = normalMap;
+                seqScope.setMetadata('normal_map', normalMap);
                 break;
               }
             }
@@ -565,7 +559,7 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
           }
         }
       } else if (ctx.debugMode === 'normals') {
-        let normalMap: SurfaceNormalMap | undefined = (sequence as any)._prebakedNormalMap;
+        let normalMap = seqScope.getMetadata<SurfaceNormalMap>('normal_map');
         if (!normalMap) {
           for (const k of candidateKeys) {
             const normalKey = `normal_${k}`;
@@ -579,7 +573,7 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
                   width: (meta?.metadata?.width as number) || width,
                   height: (meta?.metadata?.height as number) || height,
                 };
-                (sequence as any)._prebakedNormalMap = normalMap;
+                seqScope.setMetadata('normal_map', normalMap);
                 break;
               }
             }

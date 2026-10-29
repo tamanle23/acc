@@ -78,7 +78,7 @@ describe('Iteration 46: Headless Scoped Resource Engine & Deterministic Zero-Lea
         modifiers: [
           {
             id: `mod-cam-${i}`,
-            type: 'vfx/camera3d',
+            type: 'camera3d',
             params: { fov: 55, pitch: 2, yaw: -1 },
           },
         ],
@@ -95,20 +95,21 @@ describe('Iteration 46: Headless Scoped Resource Engine & Deterministic Zero-Lea
     const isolatedMgr = NativeResourceManager.createIsolated(64 * 1024 * 1024);
     const renderer = new IRMasterRenderer(timeline, 42, undefined, isolatedMgr);
 
-    // Pre-register a simulated 1MB baked sequence texture on each sequence scope when its clip starts
+    // Register a simulated 1MB baked sequence texture on each sequence scope when rendered
     const registry = createIsolatedCoreModifierPlugins();
-    const origCam = registry.get('vfx/camera3d')!;
     registry.register({
-      ...origCam,
-      type: 'vfx/camera3d',
-      execute: async (ctx) => {
-        const seq = ctx.targetEntity as ResolvedSequence;
-        const scope = isolatedMgr.getOrCreateSequenceScope(seq.id);
-        isolatedMgr.register(
-          'baked-texture',
-          { width: 512, height: 512, close: () => {} },
-          { byteSize: 1024 * 1024, scope }
-        );
+      type: 'camera3d',
+      validate: (p): p is any => Boolean(p),
+      execute: async () => {},
+      renderClipSpace: (ctx) => {
+        const scope = isolatedMgr.getOrCreateSequenceScope(ctx.sequence.id);
+        if (!scope.get('baked-texture')) {
+          isolatedMgr.register(
+            'baked-texture',
+            { width: 512, height: 512, close: () => {} },
+            { byteSize: 1024 * 1024, scope }
+          );
+        }
       },
     });
 

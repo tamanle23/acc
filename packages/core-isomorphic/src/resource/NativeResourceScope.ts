@@ -201,6 +201,7 @@ export class FrameResourceScope implements INativeResourceScope {
 export class SequenceResourceScope implements INativeResourceScope {
   public readonly id: string;
   private resources = new Map<string, INativeResource>();
+  private metadata = new Map<string, any>();
   private disposed = false;
   private onScopeDispose?: (scope: SequenceResourceScope) => void;
 
@@ -211,6 +212,15 @@ export class SequenceResourceScope implements INativeResourceScope {
 
   public get isDisposed(): boolean {
     return this.disposed;
+  }
+
+  public setMetadata<T = any>(key: string, value: T): void {
+    if (this.disposed) return;
+    this.metadata.set(key, value);
+  }
+
+  public getMetadata<T = any>(key: string): T | undefined {
+    return this.metadata.get(key) as T | undefined;
   }
 
   public register<T extends INativeResource>(resource: T): T {
@@ -251,6 +261,7 @@ export class SequenceResourceScope implements INativeResourceScope {
       res.close();
     }
     this.resources.clear();
+    this.metadata.clear();
 
     if (this.onScopeDispose) {
       try {
