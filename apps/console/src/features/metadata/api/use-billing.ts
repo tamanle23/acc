@@ -1,65 +1,25 @@
 import { springApiClient } from '@/features/spring-auth/api-client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useMetadataUiStore } from '../store/use-metadata-ui-store';
+import type {
+  SubscriptionTier,
+  QuotaUsage,
+  VatInvoiceInfo,
+  BillingTransaction,
+  TenantBillingSummary,
+  CreatePaymentLinkPayload,
+  CheckoutResponse,
+} from '@acc/client';
 
-export type SubscriptionTier = 'BASIC' | 'PRO' | 'PRO_MAX' | 'ENTERPRISE';
-
-export interface QuotaUsage {
-  workspacesUsed: number;
-  maxWorkspaces: number; // -1 for unlimited
-  schemasUsed: number;
-  maxSchemas: number; // -1 for unlimited
-  recordsUsed: number;
-  maxRecords: number; // -1 for unlimited
-}
-
-export interface VatInvoiceInfo {
-  companyName: string;
-  taxCode: string;
-  address: string;
-  email: string;
-  isAutoInvoice: boolean;
-}
-
-export interface BillingTransaction {
-  orderCode: number;
-  amount: number;
-  planTier: SubscriptionTier;
-  billingCadence: 'MONTHLY' | 'YEARLY';
-  status: string;
-  description: string;
-  createdAt: string;
-  paidAt?: string | null;
-}
-
-export interface TenantBillingSummary {
-  tenantId: string;
-  planTier: SubscriptionTier;
-  billingCadence: 'MONTHLY' | 'YEARLY';
-  status: 'ACTIVE' | 'EXPIRED' | 'PENDING';
-  amountPaid: number;
-  expiresAt: string | null;
-  entitledFeatures: string[];
-  quotas?: QuotaUsage;
-  vatInvoice?: VatInvoiceInfo;
-  history?: BillingTransaction[];
-}
-
-export interface CreatePaymentLinkPayload {
-  planTier: 'PRO' | 'PRO_MAX';
-  cadence: 'MONTHLY' | 'YEARLY';
-  returnUrl?: string;
-  cancelUrl?: string;
-}
-
-export interface CheckoutResponse {
-  orderCode: number;
-  amount: number;
-  description: string;
-  checkoutUrl: string;
-  qrCode: string;
-  status: string;
-}
+export type {
+  SubscriptionTier,
+  QuotaUsage,
+  VatInvoiceInfo,
+  BillingTransaction,
+  TenantBillingSummary,
+  CreatePaymentLinkPayload,
+  CheckoutResponse,
+};
 
 export interface ContactSalesPayload {
   companyName: string;

@@ -2,18 +2,20 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { springApiClient } from '@/features/spring-auth';
 import { type WorkflowExecution } from '../schema';
 import { toast } from 'sonner';
+import { type AxiosError } from 'axios';
+import { getErrorMessage, type ApiErrorResponse } from '@/core/utils/error-extractor';
 
 export const WORKFLOW_EXECUTIONS_QUERY_KEY = ['workflow-executions'] as const;
 
 export function useWorkflowExecutionsQuery() {
-  return useQuery({
+  return useQuery<WorkflowExecution[], AxiosError<ApiErrorResponse>>({
     queryKey: WORKFLOW_EXECUTIONS_QUERY_KEY,
     queryFn: async (): Promise<WorkflowExecution[]> => {
       try {
-        const response = await springApiClient.get<any>('/v1/workflow/executions');
+        const response = await springApiClient.get<WorkflowExecution[]>('/v1/workflow/executions');
         const raw = response.data;
         if (Array.isArray(raw)) return raw;
-        if (raw && Array.isArray(raw.content)) return raw.content;
+        if (raw && Array.isArray((raw as any).content)) return (raw as any).content;
         return [];
       } catch (err) {
         console.warn('Failed to fetch workflow executions:', err);
@@ -26,7 +28,11 @@ export function useWorkflowExecutionsQuery() {
 export function useCreateWorkflowExecutionMutation() {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutation<
+    WorkflowExecution,
+    AxiosError<ApiErrorResponse>,
+    Partial<WorkflowExecution> & { title: string; status: WorkflowExecution['status']; label?: string; priority?: string }
+  >({
     mutationFn: async (
       newWorkflowExecution: Partial<WorkflowExecution> & { title: string; status: WorkflowExecution['status']; label?: string; priority?: string }
     ): Promise<WorkflowExecution> => {
@@ -55,8 +61,8 @@ export function useCreateWorkflowExecutionMutation() {
       queryClient.invalidateQueries({ queryKey: WORKFLOW_EXECUTIONS_QUERY_KEY });
       toast.success('Workflow execution created successfully');
     },
-    onError: (err: any) => {
-      toast.error(err.response?.data?.message || err.message || 'Failed to create workflow execution');
+    onError: (err: AxiosError<ApiErrorResponse> | Error) => {
+      toast.error(getErrorMessage(err, 'Failed to create workflow execution'));
     },
   });
 }
@@ -64,7 +70,7 @@ export function useCreateWorkflowExecutionMutation() {
 export function useUpdateWorkflowExecutionMutation() {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutation<WorkflowExecution, AxiosError<ApiErrorResponse>, { id: string } & Partial<WorkflowExecution>>({
     mutationFn: async ({ id, ...patch }: { id: string } & Partial<WorkflowExecution>): Promise<WorkflowExecution> => {
       const response = await springApiClient.patch<WorkflowExecution>(`/v1/workflow/executions/${id}`, patch);
       return response.data;
@@ -73,8 +79,8 @@ export function useUpdateWorkflowExecutionMutation() {
       queryClient.invalidateQueries({ queryKey: WORKFLOW_EXECUTIONS_QUERY_KEY });
       toast.success('Workflow execution updated successfully');
     },
-    onError: (err: any) => {
-      toast.error(err.response?.data?.message || err.message || 'Failed to update workflow execution');
+    onError: (err: AxiosError<ApiErrorResponse> | Error) => {
+      toast.error(getErrorMessage(err, 'Failed to update workflow execution'));
     },
   });
 }
@@ -82,7 +88,7 @@ export function useUpdateWorkflowExecutionMutation() {
 export function useDeleteWorkflowExecutionMutation() {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutation<boolean, AxiosError<ApiErrorResponse>, string>({
     mutationFn: async (id: string): Promise<boolean> => {
       const response = await springApiClient.delete<{ success: boolean }>(`/v1/workflow/executions/${id}`);
       return response.data?.success ?? true;
@@ -91,8 +97,8 @@ export function useDeleteWorkflowExecutionMutation() {
       queryClient.invalidateQueries({ queryKey: WORKFLOW_EXECUTIONS_QUERY_KEY });
       toast.success('Workflow execution deleted successfully');
     },
-    onError: (err: any) => {
-      toast.error(err.response?.data?.message || err.message || 'Failed to delete workflow execution');
+    onError: (err: AxiosError<ApiErrorResponse> | Error) => {
+      toast.error(getErrorMessage(err, 'Failed to delete workflow execution'));
     },
   });
 }
@@ -100,7 +106,7 @@ export function useDeleteWorkflowExecutionMutation() {
 export function useBulkDeleteWorkflowExecutionsMutation() {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutation<void, AxiosError<ApiErrorResponse>, string[]>({
     mutationFn: async (ids: string[]): Promise<void> => {
       await Promise.all(ids.map((id) => springApiClient.delete(`/v1/workflow/executions/${id}`)));
     },
@@ -108,8 +114,8 @@ export function useBulkDeleteWorkflowExecutionsMutation() {
       queryClient.invalidateQueries({ queryKey: WORKFLOW_EXECUTIONS_QUERY_KEY });
       toast.success(`Deleted ${ids.length} workflow execution${ids.length > 1 ? 's' : ''}`);
     },
-    onError: (err: any) => {
-      toast.error(err.response?.data?.message || err.message || 'Failed to bulk delete workflow executions');
+    onError: (err: AxiosError<ApiErrorResponse> | Error) => {
+      toast.error(getErrorMessage(err, 'Failed to bulk delete workflow executions'));
     },
   });
 }
@@ -117,7 +123,7 @@ export function useBulkDeleteWorkflowExecutionsMutation() {
 export function useBulkUpdateWorkflowExecutionsStatusMutation() {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutation<void, AxiosError<ApiErrorResponse>, { ids: string[]; status: string }>({
     mutationFn: async ({ ids, status }: { ids: string[]; status: string }): Promise<void> => {
       await Promise.all(ids.map((id) => springApiClient.patch(`/v1/workflow/executions/${id}`, { status })));
     },
@@ -125,8 +131,8 @@ export function useBulkUpdateWorkflowExecutionsStatusMutation() {
       queryClient.invalidateQueries({ queryKey: WORKFLOW_EXECUTIONS_QUERY_KEY });
       toast.success(`Updated status to "${status}" for ${ids.length} workflow execution${ids.length > 1 ? 's' : ''}`);
     },
-    onError: (err: any) => {
-      toast.error(err.response?.data?.message || err.message || 'Failed to bulk update workflow execution status');
+    onError: (err: AxiosError<ApiErrorResponse> | Error) => {
+      toast.error(getErrorMessage(err, 'Failed to bulk update workflow execution status'));
     },
   });
 }
@@ -134,7 +140,7 @@ export function useBulkUpdateWorkflowExecutionsStatusMutation() {
 export function useBulkUpdateWorkflowExecutionsPriorityMutation() {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutation<void, AxiosError<ApiErrorResponse>, { ids: string[]; priority: string }>({
     mutationFn: async ({ ids, priority }: { ids: string[]; priority: string }): Promise<void> => {
       await Promise.all(ids.map((id) => springApiClient.patch(`/v1/workflow/executions/${id}`, { priority })));
     },
@@ -142,8 +148,8 @@ export function useBulkUpdateWorkflowExecutionsPriorityMutation() {
       queryClient.invalidateQueries({ queryKey: WORKFLOW_EXECUTIONS_QUERY_KEY });
       toast.success(`Updated priority to "${priority}" for ${ids.length} workflow execution${ids.length > 1 ? 's' : ''}`);
     },
-    onError: (err: any) => {
-      toast.error(err.response?.data?.message || err.message || 'Failed to bulk update workflowExecutions priority');
+    onError: (err: AxiosError<ApiErrorResponse> | Error) => {
+      toast.error(getErrorMessage(err, 'Failed to bulk update workflowExecutions priority'));
     },
   });
 }

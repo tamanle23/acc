@@ -19,9 +19,9 @@ Following the baseline execution of Master Plan Iteration 51, a deep `/adaptive-
 ---
 
 ## 2. Architecture & Design Plan
-1. **Live Ephemeral Canvas Blitting Loop**:
-   - Add `transformOverrides?: Map<string, any>` to `CanvasCompositorOptions` and `renderTrackSequences` in `IRCanvasCompositor.ts`.
-   - Dynamically inject active sequence transform overrides into modifier params during both visual sequence compositing and timed-text post-processing.
+1. **Live Ephemeral Viewport Projection via Effective Timeline View**:
+   - Keep `IRCanvasCompositor.renderFrame` purely isomorphic, deterministic, and free of NLE GUI interaction concerns (zero `transformOverrides` parameters).
+   - Implement `getEffectiveTimeline()` inside `IRPreviewEngine.ts`: when an ephemeral gizmo drag is active, shallow-clone only the affected track and sequence to project ephemeral transform parameters into `mod.params`, returning `this.timeline` with zero allocations during normal playback.
    - Connect `onRenderFrame` callback in `useGizmoTransform.ts` to `renderStrategy.renderFrame(currentFrame)` for smooth 60 FPS viewport re-blitting during dragging.
 2. **Hit-Testing Subtitle Alignment**:
    - Update `CanvasHitTester.resolveSequenceRegion` for text and subtitle sequences to incorporate `transMod.params.x / 1920`, `transMod.params.y / 1080`, and `transMod.params.scale`.
@@ -41,8 +41,8 @@ Following the baseline execution of Master Plan Iteration 51, a deep `/adaptive-
 - `apps/studio/src/lib/library/stagingPresets.ts`: Added `type` and `assetId` to `StagingPreset` interface.
 - `apps/studio/src/lib/library/footageBank.ts`: Changed `type: 'image'` to `'video'` in `footage_cyber_city` and `footage_deep_space`; added `type` and `assetId` attributes; exported `FOOTAGE_PRESETS`.
 - `apps/studio/src/lib/library/audioFootageBank.ts`: Added `type` and `assetId` attributes to audio presets; exported `AUDIO_PRESETS`.
-- `packages/ir/src/renderer/shared/IRCanvasCompositor.ts`: Added `transformOverrides` to `CanvasCompositorOptions`; dynamically merged overrides into visual and timed-text modifiers.
-- `apps/studio/src/renderer/IRPreviewEngine.ts`: Forwarded `this.ephemeralTransformOverrides` to `IRCanvasCompositor.renderFrame`.
+- `packages/ir/src/renderer/shared/IRCanvasCompositor.ts`: Preserved pure isomorphic signature for `renderFrame` without NLE-specific options.
+- `apps/studio/src/renderer/IRPreviewEngine.ts`: Implemented `getEffectiveTimeline()` to project ephemeral transform overrides into sequence modifiers during drag with zero allocations when idle.
 - `apps/studio/src/components/preview/useGizmoTransform.ts`: Added `onRenderFrame` option; invoked on drag move and end.
 - `apps/studio/src/components/Preview.tsx`: Connected `showVfxAmbiance` state; passed `onRenderFrame` to `useGizmoTransform`.
 - `apps/studio/src/lib/hit-test/CanvasHitTester.ts`: Accounted for subtitle transform offsets and scaling.

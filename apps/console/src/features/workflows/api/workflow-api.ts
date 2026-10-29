@@ -4,6 +4,8 @@ import type { WorkflowIR } from '../components/studio';
 import type { WorkflowDefinitionSummary, WorkflowExecutionSnapshot } from '@acc/client';
 import type { ApprovalTask } from '@/core/sandbox/handlers/approvals-sandbox-handler';
 import { toast } from 'sonner';
+import { type AxiosError } from 'axios';
+import { getErrorMessage, type ApiErrorResponse } from '@/core/utils/error-extractor';
 
 export type { WorkflowDefinitionSummary, WorkflowExecutionSnapshot, ApprovalTask };
 
@@ -65,9 +67,8 @@ export const useSaveWorkflowDefinition = () => {
         queryClient.invalidateQueries({ queryKey: ['workflows', 'definition', data.workflowKey] });
       }
     },
-    onError: (err: any) => {
-      const msg = err.response?.data?.error || err.message || 'Failed to save workflow definition';
-      toast.error(msg);
+    onError: (err: AxiosError<ApiErrorResponse> | Error) => {
+      toast.error(getErrorMessage(err, 'Failed to save workflow definition'));
     },
   });
 };
@@ -85,8 +86,8 @@ export const useToggleWorkflowStatus = () => {
       toast.success('Workflow status updated');
       queryClient.invalidateQueries({ queryKey: ['workflows', 'definitions'] });
     },
-    onError: (err: any) => {
-      toast.error(err.response?.data?.error || 'Failed to toggle status');
+    onError: (err: AxiosError<ApiErrorResponse> | Error) => {
+      toast.error(getErrorMessage(err, 'Failed to toggle status'));
     },
   });
 };
@@ -104,8 +105,8 @@ export const useDeleteWorkflowDefinition = () => {
       toast.success('Workflow definition deleted');
       queryClient.invalidateQueries({ queryKey: ['workflows', 'definitions'] });
     },
-    onError: (err: any) => {
-      toast.error(err.response?.data?.error || 'Failed to delete definition');
+    onError: (err: AxiosError<ApiErrorResponse> | Error) => {
+      toast.error(getErrorMessage(err, 'Failed to delete definition'));
     },
   });
 };
@@ -126,8 +127,8 @@ export const useStartWorkflowExecution = () => {
       toast.success(`Workflow execution started (${data.workflowId})`);
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
-    onError: (err: any) => {
-      toast.error(err.response?.data?.error || 'Failed to start execution');
+    onError: (err: AxiosError<ApiErrorResponse> | Error) => {
+      toast.error(getErrorMessage(err, 'Failed to start execution'));
     },
   });
 };
@@ -225,8 +226,8 @@ export const useMigrateExecution = () => {
       queryClient.invalidateQueries({ queryKey: ['workflows', 'execution', vars.executionId] });
       queryClient.invalidateQueries({ queryKey: ['workflows', 'audit', vars.executionId] });
     },
-    onError: (err: any) => {
-      toast.error(err.response?.data?.error || 'Hot migration failed');
+    onError: (err: AxiosError<ApiErrorResponse> | Error) => {
+      toast.error(getErrorMessage(err, 'Hot migration failed'));
     },
   });
 };
@@ -361,8 +362,8 @@ export const useFleetBatchMigrate = () => {
       queryClient.invalidateQueries({ queryKey: ['workflow-executions'] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
-    onError: (err: any) => {
-      toast.error(err.response?.data?.error || 'Batch migration failed');
+    onError: (err: AxiosError<ApiErrorResponse> | Error) => {
+      toast.error(getErrorMessage(err, 'Batch migration failed'));
     },
   });
 };
