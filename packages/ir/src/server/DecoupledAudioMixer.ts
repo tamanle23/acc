@@ -1,10 +1,10 @@
-import type { ResolvedTimeline } from '../../types/VideoIR';
+import type { ResolvedTimeline } from '../types/VideoIR';
 import {
   UniversalAudioMixer,
   type DecoupledAudioMixResult,
   type DecoupledAudioMixOptions,
   type DecodedAudioPCM,
-} from './UniversalAudioMixer';
+} from '../renderer/audio/UniversalAudioMixer';
 
 export type { DecoupledAudioMixResult, DecoupledAudioMixOptions };
 
