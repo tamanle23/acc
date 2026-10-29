@@ -119,39 +119,8 @@ export class UniversalAudioMixer {
         const startSec = (seq.startFrame ?? 0) / Math.max(1, fps);
         const durationSec = (seq.durationFrames || 30) / Math.max(1, fps);
 
-        let clipType: AudioTrackType = 'bgm';
-        const nameLower = (seq.name || '').toLowerCase();
-        const kindLower = ((seq as any).kind || '').toLowerCase();
-        const trackIdLower = (track.id || '').toLowerCase();
-
-        if (
-          nameLower.includes('pilot') ||
-          nameLower.includes('voice') ||
-          kindLower.includes('voice') ||
-          trackIdLower.includes('voice') ||
-          trackIdLower.includes('a1')
-        ) {
-          clipType = 'voice';
-        } else if (
-          nameLower.includes('bgm') ||
-          nameLower.includes('music') ||
-          kindLower.includes('bgm') ||
-          trackIdLower.includes('bgm') ||
-          trackIdLower.includes('a2')
-        ) {
-          clipType = 'bgm';
-        } else if (
-          nameLower.includes('laser') ||
-          nameLower.includes('sfx') ||
-          kindLower.includes('sfx') ||
-          trackIdLower.includes('sfx') ||
-          trackIdLower.includes('a3')
-        ) {
-          clipType = 'sfx';
-        }
-
         let clipVolume = 0.8;
-        let clipPan = clipType === 'sfx' ? -0.3 : 0.0;
+        let clipPan = 0.0;
 
         if (seq.modifiers) {
           for (const mod of seq.modifiers) {
@@ -166,6 +135,11 @@ export class UniversalAudioMixer {
               const p = mod.params as any;
               if (typeof p.volume === 'number') clipVolume = p.volume;
             }
+            if (mod.type === 'audio/pan' && mod.params) {
+              const p = mod.params as any;
+              if (typeof p.stereoPan === 'number') clipPan = p.stereoPan;
+              else if (typeof p.pan === 'number') clipPan = p.pan;
+            }
           }
         }
 
@@ -177,7 +151,7 @@ export class UniversalAudioMixer {
 
         clips.push({
           id: seq.id,
-          type: clipType,
+          type: 'bgm',
           startTimeSec: startSec,
           durationSec,
           volume: clipVolume,
@@ -418,36 +392,44 @@ export class UniversalAudioMixer {
       timeline.meta.globalFps
     );
     const channels = 2;
+    const baseDir = options.baseDir || '.';
 
     // Master bus (Float32 interleaved stereo)
     const masterBuffer = new Float32Array(totalSamples * channels);
     // Dedicated voiceover bus for sidechain ducking analysis
     const voiceBuffer = new Float32Array(totalSamples * channels);
 
-    // Collect tracks by type
-    const voiceTracks: ResolvedTrack[] = [];
-    const bgmTracks: ResolvedTrack[] = [];
-    const sfxTracks: ResolvedTrack[] = [];
-
-    for (const track of timeline.tracks.values()) {
-      if (track.type === 'audio') {
-        const idLower = (track.id || '').toLowerCase();
-        const nameLower = ((track as any).name || '').toLowerCase();
-        if (idLower.includes('voice') || idLower.includes('a1') || nameLower.includes('voice') || nameLower.includes('dialogue')) {
-          voiceTracks.push(track);
-        } else if (idLower.includes('bgm') || idLower.includes('a4') || idLower.includes('music') || nameLower.includes('bgm') || nameLower.includes('score') || nameLower.includes('music')) {
-          bgmTracks.push(track);
-        } else {
-          sfxTracks.push(track);
-        }
-      }
+    // Collect all audio sequences across all tracks
+    interface ResolvedAudioClip {
+      track: ResolvedTrack;
+      seq: ResolvedSequence;
+      startSample: number;
+      durationSamples: number;
+      endSample: number;
+      volume: number;
+      pan: number;
+      duckingModifier?: ModifierNode;
+      isDuckable: boolean;
     }
 
-    const baseDir = options.baseDir || '.';
+    const allClips: ResolvedAudioClip[] = [];
+    const targetBuses = new Set<string>();
 
-    // --- PHASE 1: Render Voiceover Dialogue Track ---
-    for (const track of voiceTracks) {
+    // 1. First pass: Identify all ducking targets and gather all audio clips
+    for (const track of timeline.tracks.values()) {
+      if (track.type !== 'audio') continue;
+
+      const trackDucking = track.modifiers?.find((m) => m.type === 'sfx/dynamic_ducking');
+      if (trackDucking && (trackDucking.params as any)?.targetBus) {
+        targetBuses.add((trackDucking.params as any).targetBus);
+      }
+
       for (const seq of track.sequences) {
+        const seqDucking = seq.modifiers?.find((m) => m.type === 'sfx/dynamic_ducking');
+        if (seqDucking && (seqDucking.params as any)?.targetBus) {
+          targetBuses.add((seqDucking.params as any).targetBus);
+        }
+
         const startSample = Math.round(
           (seq.startFrame * this.sampleRate) / timeline.meta.globalFps
         );
@@ -456,153 +438,166 @@ export class UniversalAudioMixer {
         );
         const endSample = Math.min(totalSamples, startSample + durationSamples);
 
-        let decoded: DecodedAudioPCM | null = null;
-        if (seq.assetId && timeline.assets && timeline.assets[seq.assetId]) {
-          const assetSrc = timeline.assets[seq.assetId].src;
-          const resolvedPath = resolveAssetPath(baseDir, assetSrc);
-          decoded = await this.decodeAsset(resolvedPath);
+        let clipVolume = (seq as any).volume ?? 1.0;
+        let clipPan = (seq as any).spatialPan ?? 0.0;
+
+        if (seq.modifiers) {
+          for (const mod of seq.modifiers) {
+            if (mod.type === 'audio/volume' && mod.params) {
+              const p = mod.params as any;
+              if (typeof p.volume === 'number') clipVolume = p.volume;
+            }
+            if (mod.type === 'audio/pan' && mod.params) {
+              const p = mod.params as any;
+              if (typeof p.stereoPan === 'number') clipPan = p.stereoPan;
+              else if (typeof p.pan === 'number') clipPan = p.pan;
+            }
+          }
         }
 
-        if (decoded) {
-          const srcData = decoded.data;
-          const totalSrcSamples = decoded.totalSamplesPerChannel;
+        allClips.push({
+          track,
+          seq,
+          startSample,
+          durationSamples,
+          endSample,
+          volume: clipVolume,
+          pan: clipPan,
+          duckingModifier: seqDucking || trackDucking,
+          isDuckable: false, // determined below
+        });
+      }
+    }
 
-          for (let s = startSample; s < endSample; s++) {
-            const srcIdx = s - startSample;
-            if (srcIdx >= totalSrcSamples) break;
+    // Mark clips belonging to targetBuses as duckable
+    for (const clip of allClips) {
+      if (targetBuses.has(clip.track.id)) {
+        clip.isDuckable = true;
+      }
+    }
 
-            const outIdx = s * channels;
-            const inIdx = srcIdx * channels;
-            const left = srcData[inIdx];
-            const right = srcData[inIdx + 1];
+    // 2. Separate into Control/Direct clips vs Duckable clips
+    const controlClips: ResolvedAudioClip[] = [];
+    const duckableClips: ResolvedAudioClip[] = [];
 
+    for (const clip of allClips) {
+      if (clip.isDuckable) {
+        duckableClips.push(clip);
+      } else {
+        controlClips.push(clip);
+      }
+    }
+
+    // --- PHASE 1: Render Control & Non-Ducked Audio to Master Bus and Voice Buffer ---
+    for (const clip of controlClips) {
+      const { seq, startSample, endSample, volume, pan, duckingModifier } = clip;
+      const clampedPan = Math.max(-1.0, Math.min(1.0, pan));
+      const panAngle = ((clampedPan + 1.0) * Math.PI) / 4.0;
+      const panLeftGain = Math.cos(panAngle) * volume;
+      const panRightGain = Math.sin(panAngle) * volume;
+
+      let decoded: DecodedAudioPCM | null = null;
+      if (seq.assetId && timeline.assets && timeline.assets[seq.assetId]) {
+        const assetSrc = timeline.assets[seq.assetId].src;
+        const resolvedPath = resolveAssetPath(baseDir, assetSrc);
+        decoded = await this.decodeAsset(resolvedPath);
+      }
+
+      if (decoded) {
+        const srcData = decoded.data;
+        const totalSrcSamples = decoded.totalSamplesPerChannel;
+
+        for (let s = startSample; s < endSample; s++) {
+          const srcIdx = s - startSample;
+          if (srcIdx >= totalSrcSamples) break;
+
+          const outIdx = s * channels;
+          const inIdx = srcIdx * channels;
+          const left = srcData[inIdx] * panLeftGain;
+          const right = srcData[inIdx + 1] * panRightGain;
+
+          // If this clip is a control source (has duckingModifier), feed voiceBuffer detector
+          if (duckingModifier) {
             voiceBuffer[outIdx] += left;
             voiceBuffer[outIdx + 1] += right;
-
-            masterBuffer[outIdx] += left;
-            masterBuffer[outIdx + 1] += right;
           }
+
+          masterBuffer[outIdx] += left;
+          masterBuffer[outIdx + 1] += right;
         }
       }
     }
 
     // --- PHASE 2: Dynamic Sidechain Envelope Calculation ---
     let duckingEnvelope: Float32Array | null = null;
-    const hasDucking = bgmTracks.some((t) => t.modifiers?.some((m) => m.type === 'sfx/dynamic_ducking'));
-    if (hasDucking) {
+    if (targetBuses.size > 0) {
+      // Find ducking params from any active ducking modifier
+      const activeDuckingMod = allClips.find((c) => c.duckingModifier)?.duckingModifier;
+      const dParams = (activeDuckingMod?.params as any) || {};
+
       duckingEnvelope = DynamicAudioDuckingEngine.generateEnvelope(voiceBuffer, totalSamples, {
         sampleRate: this.sampleRate,
         channels,
-        attenuationDb: -18.0,
-        thresholdDb: -36.0,
-        attackMs: 15,
-        holdMs: 100,
-        releaseMs: 300,
+        attenuationDb: typeof dParams.attenuationDb === 'number'
+          ? dParams.attenuationDb
+          : (typeof dParams.duckVolume === 'number' ? 20 * Math.log10(dParams.duckVolume) : -18.0),
+        thresholdDb: typeof dParams.threshold === 'number' ? dParams.threshold : -36.0,
+        attackMs: dParams.attackMs ?? 15,
+        holdMs: dParams.holdMs ?? 100,
+        releaseMs: dParams.releaseMs ?? 300,
       });
     }
 
-    // --- PHASE 3: Render Background Music (BGM) with Loop, Fade & Ducking ---
-    for (const track of bgmTracks) {
-      for (const seq of track.sequences) {
-        const startSample = Math.round(
-          (seq.startFrame * this.sampleRate) / timeline.meta.globalFps
-        );
-        const durationSamples = Math.round(
-          (seq.durationFrames * this.sampleRate) / timeline.meta.globalFps
-        );
-        const endSample = Math.min(totalSamples, startSample + durationSamples);
-        const baseGain = 0.25; // Default BGM volume multiplier
+    // --- PHASE 3: Render Duckable Clips with Envelope Modulation to Master Bus ---
+    for (const clip of duckableClips) {
+      const { seq, startSample, endSample, volume, pan } = clip;
+      const clampedPan = Math.max(-1.0, Math.min(1.0, pan));
+      const panAngle = ((clampedPan + 1.0) * Math.PI) / 4.0;
+      const panLeftGain = Math.cos(panAngle) * volume;
+      const panRightGain = Math.sin(panAngle) * volume;
 
-        let decoded: DecodedAudioPCM | null = null;
-        if (seq.assetId && timeline.assets && timeline.assets[seq.assetId]) {
-          const assetSrc = timeline.assets[seq.assetId].src;
-          const resolvedPath = resolveAssetPath(baseDir, assetSrc);
-          decoded = await this.decodeAsset(resolvedPath);
-        }
+      const fadeInSamples = Math.round(1.5 * this.sampleRate);
+      const fadeOutSamples = Math.round(2.0 * this.sampleRate);
 
-        const fadeInSamples = Math.round(1.5 * this.sampleRate);
-        const fadeOutSamples = Math.round(2.0 * this.sampleRate);
-
-        if (decoded) {
-          const srcData = decoded.data;
-          const totalSrcSamples = decoded.totalSamplesPerChannel;
-
-          for (let s = startSample; s < endSample; s++) {
-            const loopSampleIdx = (s - startSample) % totalSrcSamples;
-            const inIdx = loopSampleIdx * channels;
-
-            let fadeGain = 1.0;
-            const tFromStart = s - startSample;
-            const tFromEnd = endSample - s;
-            if (tFromStart < fadeInSamples) {
-              fadeGain = Math.sin((Math.PI * tFromStart) / (2 * fadeInSamples));
-            } else if (tFromEnd < fadeOutSamples) {
-              fadeGain = Math.sin((Math.PI * tFromEnd) / (2 * fadeOutSamples));
-            }
-
-            let duckMultiplier = 1.0;
-            if (duckingEnvelope) {
-              duckMultiplier = duckingEnvelope[s];
-            }
-
-            const currentBgmGain = baseGain * fadeGain * duckMultiplier;
-            const outIdx = s * channels;
-
-            masterBuffer[outIdx] += srcData[inIdx] * currentBgmGain;
-            masterBuffer[outIdx + 1] += srcData[inIdx + 1] * currentBgmGain;
-          }
-        } else {
-          for (let s = startSample; s < endSample; s++) {
-            const outIdx = s * channels;
-            const duckMultiplier = duckingEnvelope ? duckingEnvelope[s] : 1.0;
-            const gain = 0.04 * duckMultiplier;
-            masterBuffer[outIdx] += gain;
-            masterBuffer[outIdx + 1] += gain;
-          }
-        }
+      let decoded: DecodedAudioPCM | null = null;
+      if (seq.assetId && timeline.assets && timeline.assets[seq.assetId]) {
+        const assetSrc = timeline.assets[seq.assetId].src;
+        const resolvedPath = resolveAssetPath(baseDir, assetSrc);
+        decoded = await this.decodeAsset(resolvedPath);
       }
-    }
 
-    // --- PHASE 4: Render Sound Effects (SFX) with Stereo Panning ---
-    for (const track of sfxTracks) {
-      for (const seq of track.sequences) {
-        const startSample = Math.round(
-          (seq.startFrame * this.sampleRate) / timeline.meta.globalFps
-        );
-        const durationSamples = Math.round(
-          (seq.durationFrames * this.sampleRate) / timeline.meta.globalFps
-        );
-        const endSample = Math.min(totalSamples, startSample + durationSamples);
+      if (decoded) {
+        const srcData = decoded.data;
+        const totalSrcSamples = decoded.totalSamplesPerChannel;
 
-        let decoded: DecodedAudioPCM | null = null;
-        if (seq.assetId && timeline.assets && timeline.assets[seq.assetId]) {
-          const assetSrc = timeline.assets[seq.assetId].src;
-          const resolvedPath = resolveAssetPath(baseDir, assetSrc);
-          decoded = await this.decodeAsset(resolvedPath);
-        }
+        for (let s = startSample; s < endSample; s++) {
+          const loopSampleIdx = (s - startSample) % totalSrcSamples;
+          const inIdx = loopSampleIdx * channels;
 
-        const pan = (seq as any).spatialPan ?? 0.0;
-        const clampedPan = Math.max(-1.0, Math.min(1.0, pan));
-        const panAngle = ((clampedPan + 1.0) * Math.PI) / 4.0;
-        const panLeftGain = Math.cos(panAngle);
-        const panRightGain = Math.sin(panAngle);
-        const sfxVolume = (seq as any).volume ?? 0.8;
-
-        if (decoded) {
-          const srcData = decoded.data;
-          const totalSrcSamples = decoded.totalSamplesPerChannel;
-
-          for (let s = startSample; s < endSample; s++) {
-            const srcIdx = s - startSample;
-            if (srcIdx >= totalSrcSamples) break;
-
-            const inIdx = srcIdx * channels;
-            const outIdx = s * channels;
-
-            const monoEnergy = (srcData[inIdx] + srcData[inIdx + 1]) * 0.5;
-            masterBuffer[outIdx] += monoEnergy * panLeftGain * sfxVolume;
-            masterBuffer[outIdx + 1] += monoEnergy * panRightGain * sfxVolume;
+          let fadeGain = 1.0;
+          const tFromStart = s - startSample;
+          const tFromEnd = endSample - s;
+          if (tFromStart < fadeInSamples) {
+            fadeGain = Math.sin((Math.PI * tFromStart) / (2 * fadeInSamples));
+          } else if (tFromEnd < fadeOutSamples) {
+            fadeGain = Math.sin((Math.PI * tFromEnd) / (2 * fadeOutSamples));
           }
+
+          const duckMultiplier = duckingEnvelope ? duckingEnvelope[s] : 1.0;
+          const currentGain = fadeGain * duckMultiplier;
+          const outIdx = s * channels;
+
+          masterBuffer[outIdx] += srcData[inIdx] * panLeftGain * currentGain;
+          masterBuffer[outIdx + 1] += srcData[inIdx + 1] * panRightGain * currentGain;
+        }
+      } else {
+        // Fallback procedural bed if asset is unresolved
+        for (let s = startSample; s < endSample; s++) {
+          const outIdx = s * channels;
+          const duckMultiplier = duckingEnvelope ? duckingEnvelope[s] : 1.0;
+          const gain = 0.04 * duckMultiplier * volume;
+          masterBuffer[outIdx] += gain * panLeftGain;
+          masterBuffer[outIdx + 1] += gain * panRightGain;
         }
       }
     }
