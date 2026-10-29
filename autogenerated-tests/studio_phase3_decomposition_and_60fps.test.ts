@@ -1,6 +1,7 @@
-import { describe, it, expect } from 'bun:test';
+import { describe, it, expect, beforeAll } from 'bun:test';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { bootstrapCoreWeb } from '@acc/core-web';
 import {
   ClientExportOrchestrator,
   yieldToMainThread,
@@ -30,6 +31,10 @@ import {
 const STUDIO_SRC = path.resolve(__dirname, '../apps/studio/src');
 
 describe('Studio Phase 3: Component Decomposition & 60 FPS Timeline Virtualization', () => {
+  beforeAll(async () => {
+    bootstrapCoreWeb();
+    await IRStateManager.getInstance().recompile();
+  });
   describe('1. Non-Blocking ClientExportOrchestrator & AbortSignal Cancellation', () => {
     it('yieldToMainThread resolves asynchronously without blocking the event loop', async () => {
       let resolved = false;

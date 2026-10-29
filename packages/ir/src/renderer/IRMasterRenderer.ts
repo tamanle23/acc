@@ -291,13 +291,7 @@ export class IRMasterRenderer implements Disposable {
       strategy = undefined;
     }
 
-    let cache: any;
-    try {
-      cache = ContentCacheRegistry.namespace(CacheNamespace.Assets);
-    } catch {
-      // ContentCacheRegistry has no default strategy registered
-      cache = null;
-    }
+    const cache = ContentCacheRegistry.namespace(CacheNamespace.Assets);
     const protocolRegistry = AssetProtocolRegistry.getInstance();
 
     for (const [assetId, assetDef] of Object.entries(this.timeline.assets)) {
@@ -306,10 +300,10 @@ export class IRMasterRenderer implements Disposable {
         const resolvedPath = resolveAssetPath(baseDir, rawSrc);
         const ext = getFileExtension(resolvedPath);
 
-        let assetExists = cache ? (await cache.has(resolvedPath) || await cache.has(assetId)) : false;
+        let assetExists = (await cache.has(resolvedPath)) || (await cache.has(assetId));
         let cachedBytes: Uint8Array | null = null;
 
-        if (assetExists && cache) {
+        if (assetExists) {
           const cachedVal = (await cache.get(resolvedPath)) || (await cache.get(assetId));
           if (cachedVal instanceof Blob) {
             cachedBytes = new Uint8Array(await cachedVal.arrayBuffer());
@@ -324,9 +318,7 @@ export class IRMasterRenderer implements Disposable {
             if (blobData && blobData.size > 0) {
               cachedBytes = new Uint8Array(await blobData.arrayBuffer());
               assetExists = true;
-              if (cache) {
-                await cache.set(resolvedPath, blobData);
-              }
+              await cache.set(resolvedPath, blobData);
             }
           } catch {
             if (typeof process !== 'undefined' && process.versions?.node) {
