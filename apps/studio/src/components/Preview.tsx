@@ -123,6 +123,7 @@ export function Preview({
     timeline: irState.timeline,
     doc: irState.doc,
     previewEngine: renderStrategy.previewEngine,
+    onRenderFrame: () => renderStrategy.renderFrame(currentFrame),
   });
 
   // Domain Hook 3: Global Keyboard Hotkeys
@@ -228,7 +229,9 @@ export function Preview({
           : 'hover:border-[var(--glass-border-highlight)]'
       }`}
     >
-      <div className="absolute inset-0 pointer-events-none opacity-40 liquid-ambient-mesh" />
+      {showVfxAmbiance && (
+        <div className="absolute inset-0 pointer-events-none opacity-40 liquid-ambient-mesh transition-opacity duration-300" />
+      )}
 
       {/* Top Monitor Status Bar */}
       <ViewportControlBar

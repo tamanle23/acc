@@ -4,6 +4,8 @@ export const VIDEO_FOOTAGE_PRESETS: StagingPreset[] = [
   {
     id: 'footage_cyber_city',
     category: 'video',
+    type: 'video',
+    assetId: 'asset-cyber-city',
     name: 'Cyberpunk Metropolis Highway',
     badge: '4K Ultra HD',
     description: 'Neon-lit futuristic metropolis with high-density volumetric atmospheric fog and traffic stream',
@@ -15,7 +17,7 @@ export const VIDEO_FOOTAGE_PRESETS: StagingPreset[] = [
     durationSec: 10.0,
     createSequence: ({ startFrame, durationFrames = 300, normX = 0.5, normY = 0.5 }) => ({
       id: `seq-footage-cyber-${Date.now()}`,
-      type: 'image',
+      type: 'video',
       assetId: 'asset-cyber-city',
       time: { start: startFrame, duration: durationFrames },
       modifiers: [
@@ -35,6 +37,8 @@ export const VIDEO_FOOTAGE_PRESETS: StagingPreset[] = [
   {
     id: 'footage_matrix_rain',
     category: 'video',
+    type: 'video',
+    assetId: 'asset-matrix-core',
     name: 'Matrix Digital Stream Core',
     badge: '1080p Stream',
     description: 'Vertical falling green binary code matrix particle stream looping seamlessly',
@@ -61,6 +65,8 @@ export const VIDEO_FOOTAGE_PRESETS: StagingPreset[] = [
   {
     id: 'footage_deep_space',
     category: 'video',
+    type: 'video',
+    assetId: 'asset-neon-warrior',
     name: 'Cosmic Nebula Space Void',
     badge: '4K Space',
     description: 'Deep cosmic starry nebula with slow galactic volumetric drift and luminous starlight',
@@ -72,7 +78,7 @@ export const VIDEO_FOOTAGE_PRESETS: StagingPreset[] = [
     durationSec: 12.0,
     createSequence: ({ startFrame, durationFrames = 360, normX = 0.5, normY = 0.5 }) => ({
       id: `seq-footage-space-${Date.now()}`,
-      type: 'image',
+      type: 'video',
       assetId: 'asset-neon-warrior',
       time: { start: startFrame, duration: durationFrames },
       modifiers: [
@@ -87,6 +93,8 @@ export const VIDEO_FOOTAGE_PRESETS: StagingPreset[] = [
   {
     id: 'footage_hologram_globe',
     category: 'video',
+    type: 'video',
+    assetId: 'asset-holo-globe',
     name: '3D Wireframe Telemetry Globe',
     badge: 'Holo Plate',
     description: 'Rotating wireframe planetary sphere with orbital telemetry data coordinates',
@@ -113,6 +121,8 @@ export const VIDEO_FOOTAGE_PRESETS: StagingPreset[] = [
   {
     id: 'footage_vintage_film_burn',
     category: 'video',
+    type: 'video',
+    assetId: 'asset-film-burn',
     name: 'Vintage 35mm Analog Film Burn',
     badge: 'Analog Plate',
     description: 'Authentic 35mm projector light burn transition flash with celluloid sprockets',
@@ -139,6 +149,8 @@ export const VIDEO_FOOTAGE_PRESETS: StagingPreset[] = [
   {
     id: 'footage_synthwave_grid',
     category: 'video',
+    type: 'video',
+    assetId: 'asset-synth-grid',
     name: 'Synthwave 80s Sunset Grid',
     badge: 'Outrun 4K',
     description: 'Endless wireframe perspective grid speeding into a glowing neon retrowave sun',
@@ -165,6 +177,8 @@ export const VIDEO_FOOTAGE_PRESETS: StagingPreset[] = [
   {
     id: 'footage_thunderstorm_lightning',
     category: 'video',
+    type: 'video',
+    assetId: 'asset-lightning',
     name: 'Dramatic Lightning Thunderstorm',
     badge: 'Weather 4K',
     description: 'High-contrast nocturnal storm clouds illuminated by violent branching lightning strikes',
@@ -191,6 +205,8 @@ export const VIDEO_FOOTAGE_PRESETS: StagingPreset[] = [
   {
     id: 'footage_underwater_caustics',
     category: 'video',
+    type: 'video',
+    assetId: 'asset-ocean-caustics',
     name: 'Underwater Sun Ray Caustics',
     badge: 'Oceanic 4K',
     description: 'Deep azure ocean water shimmering with dancing volumetric solar caustics',
@@ -215,3 +231,5 @@ export const VIDEO_FOOTAGE_PRESETS: StagingPreset[] = [
     }),
   },
 ];
+
+export const FOOTAGE_PRESETS = VIDEO_FOOTAGE_PRESETS;

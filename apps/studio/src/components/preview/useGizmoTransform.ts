@@ -39,6 +39,7 @@ export interface UseGizmoTransformOptions {
   previewEngine?: {
     setEphemeralTransformOverride?: (sequenceId: string, override: any) => void;
   } | null;
+  onRenderFrame?: () => void;
 }
 
 export function useGizmoTransform({
@@ -49,6 +50,7 @@ export function useGizmoTransform({
   timeline,
   doc,
   previewEngine,
+  onRenderFrame,
 }: UseGizmoTransformOptions) {
   const overlayRef = useRef<Gizmo2DTransformation>(new Gizmo2DTransformation());
   const [transform, setTransform] = useState<TransformState>({
@@ -202,9 +204,10 @@ export function useGizmoTransform({
           scaleY: newTransform.scale,
           rotation: newTransform.rotation,
         });
+        onRenderFrame?.();
       }
     },
-    [isDragging, activeHandle, selectedSeqId, isLocked, startTransform, width, height, previewEngine]
+    [isDragging, activeHandle, selectedSeqId, isLocked, startTransform, width, height, previewEngine, onRenderFrame]
   );
 
   const handleTransformDragEnd = useCallback(
@@ -214,13 +217,14 @@ export function useGizmoTransform({
       }
       if (previewEngine?.setEphemeralTransformOverride && selectedSeqId) {
         previewEngine.setEphemeralTransformOverride(selectedSeqId, null);
+        onRenderFrame?.();
       }
       setIsDragging(false);
       setActiveHandle(null);
       setActiveGuides([]);
       overlayRef.current.setActiveInteraction(null, null);
     },
-    [selectedSeqId, isLocked, transform, previewEngine]
+    [selectedSeqId, isLocked, transform, previewEngine, onRenderFrame]
   );
 
   return {

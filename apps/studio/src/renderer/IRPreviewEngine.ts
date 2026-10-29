@@ -276,6 +276,7 @@ export class IRPreviewEngine {
       clearColor: options.clearColor || '#000000',
       debugMode: options.debugMode,
       executionProfile: 'preview',
+      transformOverrides: this.ephemeralTransformOverrides,
       frameScope,
       resourceManager,
     }).finally(() => {

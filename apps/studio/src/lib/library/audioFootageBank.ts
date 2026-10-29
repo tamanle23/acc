@@ -4,6 +4,8 @@ export const AUDIO_FOOTAGE_PRESETS: StagingPreset[] = [
   {
     id: 'audio_synthwave_2099',
     category: 'audio',
+    type: 'audio',
+    assetId: 'asset-bgm-synthwave',
     name: 'Synthwave 2099',
     badge: '124 BPM · BGM',
     description: 'Analog sawtooth bassline with lush 80s polyphonic pads and punchy electronic drums',
@@ -30,6 +32,8 @@ export const AUDIO_FOOTAGE_PRESETS: StagingPreset[] = [
   {
     id: 'audio_cinematic_tension_braam',
     category: 'audio',
+    type: 'audio',
+    assetId: 'asset-bgm-tension',
     name: 'Cinematic Tension Braam',
     badge: '90 BPM · Cinematic',
     description: 'Deep orchestral sub-bass hit crescendo with menacing hybrid brass and metallic risers',
@@ -56,6 +60,8 @@ export const AUDIO_FOOTAGE_PRESETS: StagingPreset[] = [
   {
     id: 'audio_lofi_tape_sunset',
     category: 'audio',
+    type: 'audio',
+    assetId: 'asset-bgm-sunset',
     name: 'Lo-Fi Tape Sunset',
     badge: '82 BPM · Chill',
     description: 'Warm vinyl crackle, mellow Rhodes electric piano chords, and lazy boom-bap rhythm',
@@ -82,6 +88,8 @@ export const AUDIO_FOOTAGE_PRESETS: StagingPreset[] = [
   {
     id: 'audio_deep_space_ambient',
     category: 'audio',
+    type: 'audio',
+    assetId: 'asset-bgm-ambient',
     name: 'Deep Space Ambient Drone',
     badge: '60 BPM · Ambient',
     description: 'Hypnotic evolving dark cosmic drone texture with shimmering spectral granular harmonics',
@@ -108,6 +116,8 @@ export const AUDIO_FOOTAGE_PRESETS: StagingPreset[] = [
   {
     id: 'audio_cyberpunk_club_action',
     category: 'audio',
+    type: 'audio',
+    assetId: 'asset-bgm-action',
     name: 'Cyberpunk Dark Club',
     badge: '130 BPM · Midtempo',
     description: 'Aggressive industrial EBM bassline with distorted 909 kicks and laser stabs',
@@ -134,6 +144,8 @@ export const AUDIO_FOOTAGE_PRESETS: StagingPreset[] = [
   {
     id: 'audio_warm_acoustic_guitar',
     category: 'audio',
+    type: 'audio',
+    assetId: 'asset-bgm-acoustic',
     name: 'Morning Acoustic Sunlight',
     badge: '105 BPM · Folk',
     description: 'Delicate fingerpicked steel-string acoustic guitar melody with gentle wooden body thumps',
@@ -160,6 +172,8 @@ export const AUDIO_FOOTAGE_PRESETS: StagingPreset[] = [
   {
     id: 'audio_tech_corporate_uplift',
     category: 'audio',
+    type: 'audio',
+    assetId: 'asset-bgm-retro',
     name: 'Silicon Valley Momentum',
     badge: '118 BPM · Tech',
     description: 'Clean bright plucks, driving modern tech pulse, uplifting piano chords, and crisp hats',
@@ -186,6 +200,8 @@ export const AUDIO_FOOTAGE_PRESETS: StagingPreset[] = [
   {
     id: 'audio_dark_sub_drone_braam',
     category: 'audio',
+    type: 'audio',
+    assetId: 'asset-bgm-tension',
     name: 'Abyssal Void Drone',
     badge: '55 BPM · Dark Sub',
     description: 'Sub-audible 32Hz infrasound rumble with ominous resonant low-pass filter sweeps',
@@ -210,3 +226,5 @@ export const AUDIO_FOOTAGE_PRESETS: StagingPreset[] = [
     }),
   },
 ];
+
+export const AUDIO_PRESETS = AUDIO_FOOTAGE_PRESETS;

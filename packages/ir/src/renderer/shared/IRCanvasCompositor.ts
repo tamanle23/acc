@@ -36,6 +36,7 @@ export interface CanvasCompositorOptions {
   generatePixelBuffer?: Uint8Array;
   executionProfile?: 'preview' | 'master';
   debugMode?: 'none' | 'depth_heatmap' | 'normals' | 'alpha';
+  transformOverrides?: Map<string, any>;
   frameScope?: FrameResourceScope;
   resourceManager?: NativeResourceManager;
 }
@@ -212,10 +213,14 @@ export class IRCanvasCompositor {
 
               // Evaluate spatial/motion modifiers on timed_text sequence (e.g. transform, motion/gsap)
               if (seq.modifiers) {
+                const override = options.transformOverrides?.get(seq.id);
                 for (const mod of seq.modifiers) {
                   if (mod.type === 'transform' || mod.type === 'motion/gsap') {
                     const plugin = registry.get(mod.type);
                     if (plugin && plugin.renderClipSpace) {
+                      const effectiveParams = override && mod.type === 'transform'
+                        ? { ...mod.params, ...override }
+                        : mod.params;
                       try {
                         plugin.renderClipSpace(
                           {
@@ -231,7 +236,7 @@ export class IRCanvasCompositor {
                           },
                           {
                             ...(popOutIntensity !== undefined ? { popOutIntensity } : {}),
-                            ...mod.params,
+                            ...effectiveParams,
                           }
                         );
                       } catch (err) {
@@ -407,7 +412,9 @@ export class IRCanvasCompositor {
             fps,
             popOutIntensity,
             registry,
-            assets
+            assets,
+            options.debugMode,
+            options.transformOverrides
           );
           if (seqRes instanceof Promise) {
             return seqRes.then(() => processTracksFrom(tIdx + 1));
@@ -431,7 +438,8 @@ export class IRCanvasCompositor {
             popOutIntensity,
             registry,
             assets,
-            options.debugMode
+            options.debugMode,
+            options.transformOverrides
           );
           if (seqRes instanceof Promise) {
             return seqRes.then(() => {
@@ -483,7 +491,8 @@ export class IRCanvasCompositor {
     popOutIntensity: number | undefined,
     registry: ModifierPluginRegistry,
     assets?: IAssetSourceResolver,
-    debugMode?: 'none' | 'depth_heatmap' | 'normals' | 'alpha'
+    debugMode?: 'none' | 'depth_heatmap' | 'normals' | 'alpha',
+    transformOverrides?: Map<string, any>
   ): void | Promise<void> {
     const drawBaseAssetAndRestore = (seq: ResolvedSequence): void => {
       try {
@@ -588,6 +597,10 @@ export class IRCanvasCompositor {
               const plugin = registry.get(mod.type);
               if (plugin && plugin.renderClipSpace) {
                 let res: void | Promise<void>;
+                const override = transformOverrides?.get(seq.id);
+                const effectiveParams = override && mod.type === 'transform'
+                  ? { ...mod.params, ...override }
+                  : mod.params;
                 try {
                   res = plugin.renderClipSpace(
                     {
@@ -603,7 +616,7 @@ export class IRCanvasCompositor {
                     },
                     {
                       ...(popOutIntensity !== undefined ? { popOutIntensity } : {}),
-                      ...mod.params,
+                      ...effectiveParams,
                     }
                   );
                 } catch (err) {

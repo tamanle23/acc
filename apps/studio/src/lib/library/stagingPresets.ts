@@ -32,6 +32,8 @@ export interface StagingPreset {
   targetTrackId: string;
   targetTrackType: 'timed_text' | 'video' | 'audio';
   targetTrackName: string;
+  type?: SequenceType;
+  assetId?: string;
   thumbnailUrl?: string;
   durationSec?: number;
   bpm?: number;

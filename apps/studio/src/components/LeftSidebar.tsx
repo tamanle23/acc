@@ -483,7 +483,7 @@ export function LeftSidebar({
                           ref={assetVirtualizer.measureElement}
                           style={{ position: 'absolute', top: 0, left: 0, width: '100%', transform: `translateY(${virtualItem.start}px)`, paddingBottom: '8px' }}
                         >
-                          <DraggableAssetCard assetId={asset.id} asset={asset} />
+                          <DraggableAssetCard assetId={asset.id} asset={asset} onInsert={handleInsertAsset} />
                         </div>
                       );
                     })}

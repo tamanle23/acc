@@ -136,4 +136,35 @@ describe('Caption Transform Compositor & Timed Text Stacking Suite', () => {
 
     expect(textRendered).toBe(false);
   });
+
+  it('CanvasHitTester evaluates transformed subtitle bounding boxes accurately', () => {
+    const { CanvasHitTester } = require('../apps/studio/src/lib/hit-test/CanvasHitTester');
+
+    const mockSeq = {
+      id: 'seq-caption-test',
+      trackId: 'track-t1',
+      type: 'timed_text',
+      startFrame: 0,
+      durationFrames: 60,
+      endFrame: 60,
+      cues: [{ text: 'Dynamic Subtitle Box', startOffsetMs: 0, endOffsetMs: 2000 }],
+      modifiers: [
+        {
+          type: 'transform',
+          params: { x: 192, y: 108, scale: 1.5 }, // 10% offset X, 10% offset Y, 1.5x scale
+        },
+      ],
+    };
+
+    const tracks = [{ id: 'track-t1', name: 'Text 1', type: 'timed_text', sequences: [mockSeq] }];
+
+    const regions = CanvasHitTester.computeHitRegions([mockSeq as any], tracks as any);
+    expect(regions.length).toBe(1);
+    const region = regions[0];
+
+    // normX should be 0.5 + 192 / 1920 = 0.60
+    expect(region.normX).toBeCloseTo(0.60, 2);
+    // scale should increase normWidth
+    expect(region.normWidth).toBeGreaterThan(0.3);
+  });
 });

@@ -79,15 +79,19 @@ export class CanvasHitTester {
       if (p.position === 'top') yPos = marginVNorm + normH / 2;
       else if (p.position === 'center') yPos = 0.5;
 
+      const offsetX = typeof tp.x === 'number' ? tp.x / 1920 : 0;
+      const offsetY = typeof tp.y === 'number' ? tp.y / 1080 : 0;
+      const scale = typeof tp.scale === 'number' ? tp.scale : 1.0;
+
       return {
         sequenceId: seq.id,
         sequenceType: 'text',
         trackIndex,
         trackId,
-        normX: 0.5,
-        normY: yPos,
-        normWidth: normW,
-        normHeight: normH,
+        normX: Math.max(0, Math.min(1, (typeof tp.normX === 'number' ? tp.normX : 0.5) + offsetX)),
+        normY: Math.max(0, Math.min(1, yPos + offsetY)),
+        normWidth: normW * scale,
+        normHeight: normH * scale,
         label: `Subtitle: "${cueText.slice(0, 20)}${cueText.length > 20 ? '...' : ''}"`,
         zIndex: 100 + trackIndex,
       };
