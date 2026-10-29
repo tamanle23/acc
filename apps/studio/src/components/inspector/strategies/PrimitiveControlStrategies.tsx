@@ -4,8 +4,6 @@ import { Slider } from '../../ui/slider';
 import { Switch } from '../../ui/switch';
 import type { ParamFieldDescriptor } from '@acc/ir';
 import { EasingCurveSelector } from '../../EasingCurveSelector';
-import { KeyframeDiamondButton } from '../KeyframeDiamondButton';
-import { useIRSelector, usePlayheadFrame } from '../../../lib/ir/useStudioStore';
 
 export interface ControlStrategyProps {
   descriptor: ParamFieldDescriptor;
@@ -16,7 +14,8 @@ export interface ControlStrategyProps {
 
 /**
  * Strategy 1: NumberControlStrategy
- * Renders a synchronized slider + numerical input with keyframe toggle button and unit badges.
+ * Renders a clean synchronized slider + numerical input with unit badges.
+ * Applies values statically at the sequence level without per-frame keyframe branching.
  */
 export const NumberControlStrategy: React.FC<ControlStrategyProps> = ({
   descriptor,
@@ -29,26 +28,11 @@ export const NumberControlStrategy: React.FC<ControlStrategyProps> = ({
   const step = descriptor.step ?? 1;
   const defaultVal = typeof descriptor.defaultValue === 'number' ? descriptor.defaultValue : min;
 
-  // Check if current value is a TemporalCurve with keyframes
-  const isKeyframed = Boolean(value && typeof value === 'object' && Array.isArray(value.keyframes));
-  const keyframes: Array<{ timeSec: number; value: number; ease?: string }> = isKeyframed ? value.keyframes : [];
-
-  // Determine current timeline playhead time from StudioPlayheadController & IRStateManager
-  const currentFrame = usePlayheadFrame();
-  const fps = useIRSelector((s) => s.timeline?.meta.globalFps ?? s.doc.meta?.globalFps ?? 30);
-  const currentTimeSec = currentFrame / fps;
-
-  // Check if a keyframe exists exactly at or near the current frame (+/- 0.5 frame)
-  const activeKfIndex = keyframes.findIndex((k) => Math.abs(k.timeSec - currentTimeSec) < 0.5 / fps);
-  const hasKeyframeAtCurrent = activeKfIndex !== -1;
-
-  // Resolve current scalar value
-  let numericVal = defaultVal;
-  if (typeof value === 'number' && !Number.isNaN(value)) {
-    numericVal = value;
-  } else if (isKeyframed && keyframes.length > 0) {
-    numericVal = hasKeyframeAtCurrent ? keyframes[activeKfIndex].value : keyframes[0].value;
-  }
+  // Resolve current scalar value (fall back to default if NaN, undefined, or an object)
+  const numericVal =
+    typeof value === 'number' && !Number.isNaN(value)
+      ? value
+      : defaultVal;
 
   const [localVal, setLocalVal] = React.useState(String(numericVal));
 
@@ -62,35 +46,7 @@ export const NumberControlStrategy: React.FC<ControlStrategyProps> = ({
     const num = parseFloat(e.target.value);
     if (!Number.isNaN(num)) {
       const clamped = Math.max(min, Math.min(max, num));
-      if (isKeyframed) {
-        const updated = [...keyframes];
-        if (hasKeyframeAtCurrent) {
-          updated[activeKfIndex] = { ...updated[activeKfIndex], value: clamped };
-        } else {
-          updated.push({ timeSec: currentTimeSec, value: clamped, ease: 'ease-in-out' });
-          updated.sort((a, b) => a.timeSec - b.timeSec);
-        }
-        onChange({ ...value, keyframes: updated });
-      } else {
-        onChange(clamped);
-      }
-    }
-  };
-
-  const handleToggleKeyframe = () => {
-    if (disabled) return;
-    if (hasKeyframeAtCurrent) {
-      const updated = keyframes.filter((_, idx) => idx !== activeKfIndex);
-      if (updated.length === 0) {
-        onChange(numericVal);
-      } else {
-        onChange({ ...value, keyframes: updated });
-      }
-    } else {
-      const updated = isKeyframed ? [...keyframes] : [{ timeSec: 0, value: numericVal, ease: 'ease-in-out' }];
-      updated.push({ timeSec: currentTimeSec, value: numericVal, ease: 'ease-in-out' });
-      updated.sort((a, b) => a.timeSec - b.timeSec);
-      onChange({ keyframes: updated });
+      onChange(clamped);
     }
   };
 
@@ -98,11 +54,6 @@ export const NumberControlStrategy: React.FC<ControlStrategyProps> = ({
     <div className={`space-y-1 ${disabled ? 'pointer-events-none' : ''}`}>
       <div className="flex justify-between items-center text-[11px]">
         <div className="flex items-center gap-1.5">
-          <KeyframeDiamondButton
-            hasKeyframe={hasKeyframeAtCurrent}
-            onToggleKeyframe={handleToggleKeyframe}
-            disabled={disabled}
-          />
           <span
             onDoubleClick={() => !disabled && onChange(defaultVal)}
             className={`text-muted-foreground hover:text-accent-theme select-none ${
@@ -135,19 +86,7 @@ export const NumberControlStrategy: React.FC<ControlStrategyProps> = ({
         value={[numericVal]}
         onValueChange={(v) => {
           if (disabled) return;
-          const val = v[0];
-          if (isKeyframed) {
-            const updated = [...keyframes];
-            if (hasKeyframeAtCurrent) {
-              updated[activeKfIndex] = { ...updated[activeKfIndex], value: val };
-            } else {
-              updated.push({ timeSec: currentTimeSec, value: val, ease: 'ease-in-out' });
-              updated.sort((a, b) => a.timeSec - b.timeSec);
-            }
-            onChange({ ...value, keyframes: updated });
-          } else {
-            onChange(val);
-          }
+          onChange(v[0]);
         }}
       />
     </div>
