@@ -160,8 +160,15 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
     opacity: 0,
   }));
 
+  public static cleanupSequence(sequenceIdOrSeq: any): void {
+    const id = typeof sequenceIdOrSeq === 'string' ? sequenceIdOrSeq : sequenceIdOrSeq?.id;
+    if (id) {
+      NativeResourceManager.getInstance().disposeSequenceScope(id);
+    }
+  }
+
   public cleanupSequence(sequenceId: string): void {
-    NativeResourceManager.getInstance().disposeSequenceScope(sequenceId);
+    Depth3DPlugin.cleanupSequence(sequenceId);
   }
 
   public async execute(context: ModifierContext, params: Depth3DPluginParams): Promise<void> {

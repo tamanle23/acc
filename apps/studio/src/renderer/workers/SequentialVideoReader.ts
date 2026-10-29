@@ -88,8 +88,9 @@ export class SequentialVideoReader {
   }
 
   private async paintSlot(slot: 'A' | 'B', frame: number, fps: number): Promise<boolean> {
+    const targetCanvas = slot === 'A' ? this.canvasA : this.canvasB;
     const targetCtx = slot === 'A' ? this.ctxA : this.ctxB;
-    if (!targetCtx || !this.canvasSink) return false;
+    if (!targetCtx || !this.canvasSink || !targetCanvas) return false;
 
     const sec = Math.max(0, frame / (fps || 30));
     try {
@@ -100,12 +101,22 @@ export class SequentialVideoReader {
           : wrapped.canvas || wrapped;
 
         if (raw) {
-          targetCtx.clearRect(0, 0, this.width, this.height);
-          targetCtx.drawImage(raw, 0, 0, this.width, this.height);
+          const w = raw.width || this.width || 1920;
+          const h = raw.height || this.height || 1080;
+          if (targetCanvas.width !== w || targetCanvas.height !== h) {
+            targetCanvas.width = w;
+            targetCanvas.height = h;
+            this.width = w;
+            this.height = h;
+          }
+          targetCtx.clearRect(0, 0, w, h);
+          targetCtx.drawImage(raw, 0, 0, w, h);
           return true;
         }
       }
-    } catch {}
+    } catch (err) {
+      console.warn('[SequentialVideoReader] paintSlot error:', err);
+    }
     return false;
   }
 

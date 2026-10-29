@@ -137,8 +137,15 @@ export class Camera3DPlugin implements ModifierPlugin<Camera3DPluginParams> {
     return Boolean(params && typeof params === 'object');
   }
 
+  public static cleanupSequence(sequenceIdOrSeq: any): void {
+    const id = typeof sequenceIdOrSeq === 'string' ? sequenceIdOrSeq : sequenceIdOrSeq?.id;
+    if (id) {
+      NativeResourceManager.getInstance().disposeSequenceScope(id);
+    }
+  }
+
   public cleanupSequence(sequenceId: string): void {
-    NativeResourceManager.getInstance().disposeSequenceScope(sequenceId);
+    Camera3DPlugin.cleanupSequence(sequenceId);
   }
 
   public async execute(context: ModifierContext, params: Camera3DPluginParams): Promise<void> {

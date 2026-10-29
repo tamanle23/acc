@@ -29,3 +29,4 @@
 | 368 | [Studio Lock-Free AudioWorklet SPSC RingBuffer (Phase 3)](./368_studio_spsc_audioworklet_ring_buffer.md) | Completed |
 | 369 | [Studio Pro NLE Shortcuts & Ripple Delete (Phase 4)](./369_studio_pro_nle_shortcuts_and_ripple_delete.md) | Completed |
 | 370 | [Scoped Native Resource Manager & Zero-Alloc Video Playback Pipeline](./370_scoped_native_resource_manager_and_zero_alloc_playback_pipeline.md) | Completed |
+| 371 | [Fix Studio Preview Canvas Black Screen](./371_fix_studio_preview_canvas_black_screen.md) | Completed |

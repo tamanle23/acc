@@ -3,7 +3,7 @@ if (typeof self !== 'undefined' && typeof (self as any).window === 'undefined') 
   (self as any).window = self;
 }
 
-import { registerCoreModifierPlugins, Depth3DPlugin, type ResolvedTimeline } from '@acc/ir';
+import { registerCoreModifierPlugins, Depth3DPlugin, Camera3DPlugin, type ResolvedTimeline } from '@acc/ir';
 import { IRPreviewEngine } from '../IRPreviewEngine';
 import { DeterministicTimelineClock, UniversalCanvasProvider, ContentCacheRegistry, NativeResourceManager } from '@acc/core-isomorphic';
 import { WebCanvasAdapter } from '@acc/core-web';
@@ -81,6 +81,7 @@ let pendingRender: {
   isScrubbing?: boolean;
   clearColor?: string;
   debugMode?: 'none' | 'depth_heatmap' | 'normals' | 'alpha';
+  isSequentialPlayback?: boolean;
 } | null = null;
 
 // Playback state
@@ -96,7 +97,8 @@ function renderCurrentFrame(
   lod = 1.0,
   isScrubbing = false,
   clearColor = '#000000',
-  debugMode?: 'none' | 'depth_heatmap' | 'normals' | 'alpha'
+  debugMode?: 'none' | 'depth_heatmap' | 'normals' | 'alpha',
+  isSequentialPlayback = false
 ) {
   if (!canvas || !ctx || !engine) return;
 
@@ -113,7 +115,7 @@ function renderCurrentFrame(
 
   if (isRendering) {
     // Coalesce latest requested frame to avoid worker message queue pileup
-    pendingRender = { frame, lod, isScrubbing, clearColor, debugMode };
+    pendingRender = { frame, lod, isScrubbing, clearColor, debugMode, isSequentialPlayback };
     return;
   }
 
@@ -148,12 +150,17 @@ function renderCurrentFrame(
     const localFrame = Math.max(0, frame - (seq.startFrame ?? 0));
     const assetId = seq.assetId;
 
-    if (isPlaying) {
+    const useSequential = isPlaying || isSequentialPlayback;
+    if (useSequential) {
       // 1. Zero-Alloc Sequential Playback Path via Circular Ping-Pong Buffer:
       decoderPool.acquireLease(assetId, 1000).then(() => {
         reader.requestSequentialFrame(localFrame, currentFps).then((canvasSlot) => {
           if (!canvasSlot) return;
           safeSetTexture(assetId, canvasSlot);
+          if (currentFrame === frame) {
+            texturesDirty = true;
+            renderCurrentFrame(currentFrame, lod, false, clearColor, debugMode);
+          }
         });
       });
     } else {
@@ -168,7 +175,7 @@ function renderCurrentFrame(
             if (bmp && (bmp.width === undefined || bmp.width > 0)) {
               memoryManager.set(assetId, localFrame, bmp);
               safeSetTexture(assetId, bmp);
-              if (!isPlaying && currentFrame === frame) {
+              if (currentFrame === frame) {
                 texturesDirty = true;
                 renderCurrentFrame(currentFrame, lod, false, clearColor, debugMode);
               }
@@ -243,7 +250,8 @@ function renderCurrentFrame(
       next.lod,
       next.isScrubbing,
       next.clearColor ?? clearColor,
-      next.debugMode
+      next.debugMode,
+      next.isSequentialPlayback
     );
   }
 }
@@ -412,7 +420,10 @@ self.onmessage = (e: MessageEvent) => {
     case 'updateTimeline': {
       if (currentTimeline?.sequences) {
         for (const seq of currentTimeline.sequences.values()) {
-          Depth3DPlugin.cleanupSequence(seq);
+          if (seq?.id) {
+            Depth3DPlugin.cleanupSequence(seq.id);
+            Camera3DPlugin.cleanupSequence(seq.id);
+          }
         }
       }
       if (data.timeline) {
@@ -455,12 +466,14 @@ self.onmessage = (e: MessageEvent) => {
     case 'renderFrame': {
       currentFrame = data.frame;
       const isScrub = Boolean(data.isScrubbing);
+      const isPlay = Boolean(data.isPlaying);
       renderCurrentFrame(
         currentFrame,
         data.lod ?? 1.0,
         isScrub,
         data.clearColor ?? '#000000',
-        data.debugMode
+        data.debugMode,
+        isPlay
       );
       break;
     }

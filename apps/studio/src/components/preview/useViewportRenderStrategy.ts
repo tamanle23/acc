@@ -114,13 +114,10 @@ export function useViewportRenderStrategy({
     const strategy = strategyRef.current;
     if (!strategy) return;
 
-    // Decouple React: worker RAF loop owns frame rendering and textures completely during playback
-    if (isPlaying && strategy.id === 'worker') {
-      return;
-    }
-
     const renderOptions: WorkerRenderOptions = {
       lod: isPlaying ? 0.5 : 1.0,
+      isScrubbing: !isPlaying,
+      isPlaying,
       clearColor,
       debugMode,
     };
@@ -140,12 +137,10 @@ export function useViewportRenderStrategy({
     return StudioPlayheadController.getInstance().subscribeHighFrequency((frame, playing) => {
       const strategy = strategyRef.current;
       if (strategy && strategy.isReady) {
-        // If worker is running its internal RAF loop, do not spam worker with renderFrame
-        if (playing && strategy.id === 'worker') return;
-
         strategy.renderFrame(frame, {
           lod: playing ? 0.5 : 1.0,
           isScrubbing: !playing,
+          isPlaying: playing,
         });
       }
     });

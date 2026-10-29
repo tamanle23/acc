@@ -4,6 +4,7 @@ import { DeterministicTimelineClock } from '@acc/core-isomorphic';
 export interface WorkerRenderOptions {
   lod?: number;
   isScrubbing?: boolean;
+  isPlaying?: boolean;
   clearColor?: string;
   debugMode?: 'none' | 'depth_heatmap' | 'normals' | 'alpha';
 }
@@ -370,12 +371,14 @@ export class PreviewWorkerBridge implements Disposable {
     let scrubbing = isScrubbing;
     let color = clearColor;
     let mode = debugMode;
+    let playing = false;
 
     if (typeof optionsOrLod === 'object' && optionsOrLod !== null) {
       lod = optionsOrLod.lod ?? 1.0;
       scrubbing = optionsOrLod.isScrubbing ?? false;
       color = optionsOrLod.clearColor;
       mode = optionsOrLod.debugMode;
+      playing = Boolean(optionsOrLod.isPlaying);
     } else if (typeof optionsOrLod === 'number') {
       lod = optionsOrLod;
     }
@@ -385,6 +388,7 @@ export class PreviewWorkerBridge implements Disposable {
       frame,
       lod,
       isScrubbing: scrubbing,
+      isPlaying: playing,
       clearColor: color,
       debugMode: mode,
     });
