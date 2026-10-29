@@ -44,3 +44,4 @@
 | 382 | [Console Dead Code Elimination & Shared Data-Table Consolidation](./381_phase3_dead_code_and_ui_consolidation.md) | Completed |
 | 383 | [Studio Inspector Cleanliness, Keyframe Diamond UI & Temporal Coordinate Guide](./382_studio_inspector_cleanliness_and_keyframe_guide.md) | Completed |
 | 384 | [Studio Inspector Simplification: Keyframe Diamond Elimination & Pure Sequence Controls](./383_studio_inspector_simplification_and_keyframe_diamond_pruning.md) | Completed |
+| 385 | [TimeSpaceModifierPlugin Refinement & Demo Showcase](./384_timespace_modifier_plugin_refinement_and_demo_showcase.md) | Completed |

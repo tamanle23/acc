@@ -530,20 +530,19 @@ export const complexSciFiDemoIR: VideoIRDocument = {
               },
             },
             {
-              type: 'vfx/partial',
+              type: 'time_space',
               target: ['video', 'overlay'],
               params: {
-                regions: [
-                  {
-                    type: 'blur',
-                    x: 0.25,
-                    y: 0.85,
-                    width: 0.45,
-                    height: 0.12,
-                    intensity: 1.0,
-                    color: '#0b0f19',
-                  },
-                ],
+                templateId: 'callout_leader',
+                boundary: 'loop',
+                seed: 42,
+                params: {
+                  text: 'SECTOR 7-G LOCK',
+                  targetX: -0.15,
+                  targetY: 0.1,
+                  labelX: 0.25,
+                  labelY: -0.2,
+                },
               },
             },
           ],

@@ -116,6 +116,22 @@ export const defaultDemoIR: VideoIRDocument = {
                 opacity: 0.4,
               },
             },
+            {
+              type: 'time_space',
+              target: ['video', 'overlay'],
+              params: {
+                templateId: 'callout_leader',
+                boundary: 'loop',
+                seed: 1337,
+                params: {
+                  text: 'NATURE RESERVE',
+                  targetX: -0.2,
+                  targetY: 0.1,
+                  labelX: 0.2,
+                  labelY: -0.25,
+                },
+              },
+            },
           ],
         },
       ],

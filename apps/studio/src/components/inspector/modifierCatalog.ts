@@ -565,15 +565,21 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
     },
   },
   time_space: {
-    name: 'Time-Space Speed Ramp',
+    name: 'Time-Space Motion Graphic',
     category: 'motion',
-    icon: Clock,
-    supportedTrackTypes: ['video', 'audio'],
+    icon: Sparkles,
+    supportedTrackTypes: ['video', 'overlay', 'image'],
     defaultParams: {
-      enabled: true,
-      playbackRate: 1.0,
-      reverse: false,
-      preservePitch: true,
+      templateId: 'callout_leader',
+      boundary: 'loop',
+      seed: 1337,
+      params: {
+        text: 'TARGET ACQUIRED',
+        targetX: 0.0,
+        targetY: 0.0,
+        labelX: 0.35,
+        labelY: -0.25,
+      },
     },
   },
 };

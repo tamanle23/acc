@@ -40,19 +40,20 @@ export class TimeSpaceModifierPlugin implements ModifierPlugin<TimeSpaceModifier
 
   public getOrCreateMachine(templateId: string, customParams?: any, targetHolder?: any): TimeSpaceStateMachine {
     if (targetHolder) {
-      if (!targetHolder._timeSpaceMachine) {
+      if (!targetHolder._timeSpaceMachine || targetHolder._timeSpaceTemplateId !== templateId) {
         targetHolder._timeSpaceMachine = TimeSpaceRegistry.instantiate(templateId, customParams);
+        targetHolder._timeSpaceTemplateId = templateId;
       }
       return targetHolder._timeSpaceMachine;
     }
     return TimeSpaceRegistry.instantiate(templateId, customParams);
   }
 
-  public renderClip(ctx: ClipRenderContext, params: TimeSpaceModifierParams): void {
+  public renderClipSpace(ctx: ClipRenderContext, params: TimeSpaceModifierParams): void {
     if (!params || !params.templateId) return;
 
     const machine = this.getOrCreateMachine(params.templateId, params.params, ctx.sequence);
-    const fps = 30; // Standard baseline frame rate
+    const fps = (ctx.sequence as any)?.fps || 30;
     const viewport = { width: ctx.width, height: ctx.height };
 
     const snapshot = machine.seek(ctx.localFrame, fps, params.seed ?? 1337, viewport);
@@ -60,6 +61,13 @@ export class TimeSpaceModifierPlugin implements ModifierPlugin<TimeSpaceModifier
     if (params.renderMode !== 'webgl_buffers') {
       snapshot.render(ctx.ctx);
     }
+  }
+
+  /**
+   * Backward-compatible alias for existing test calls or direct invocation.
+   */
+  public renderClip(ctx: ClipRenderContext, params: TimeSpaceModifierParams): void {
+    this.renderClipSpace(ctx, params);
   }
 
   public renderMasterComposite(ctx: MasterCompositeContext, params: TimeSpaceModifierParams): void {
