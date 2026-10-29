@@ -3,7 +3,7 @@ if (typeof self !== 'undefined' && typeof (self as any).window === 'undefined') 
   (self as any).window = self;
 }
 
-import { registerCoreModifierPlugins, Depth3DPlugin, Camera3DPlugin, type ResolvedTimeline } from '@acc/ir';
+import { registerCoreModifierPlugins, type ResolvedTimeline } from '@acc/ir';
 import { IRPreviewEngine } from '../IRPreviewEngine';
 import { DeterministicTimelineClock, UniversalCanvasProvider, ContentCacheRegistry, NativeResourceManager } from '@acc/core-isomorphic';
 import { WebCanvasAdapter } from '@acc/core-web';
@@ -419,10 +419,10 @@ self.onmessage = (e: MessageEvent) => {
 
     case 'updateTimeline': {
       if (currentTimeline?.sequences) {
+        const resourceManager = NativeResourceManager.getInstance();
         for (const seq of currentTimeline.sequences.values()) {
           if (seq?.id) {
-            Depth3DPlugin.cleanupSequence(seq.id);
-            Camera3DPlugin.cleanupSequence(seq.id);
+            resourceManager.disposeSequenceScope(seq.id);
           }
         }
       }
