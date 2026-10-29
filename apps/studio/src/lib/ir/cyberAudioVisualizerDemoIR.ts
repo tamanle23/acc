@@ -33,16 +33,14 @@ export const cyberAudioVisualizerDemoIR: VideoIRDocument = {
       id: 'track-v1',
       name: 'V1 - Hex Grid Ambient',
       type: 'video',
-      volume: 1.0,
       muted: false,
       visible: true,
       sequences: [
         {
           id: 'seq-energy-shield-bg',
-          trackId: 'track-v1',
           name: 'Energy Shield Matrix',
           type: 'overlay',
-          timing: {
+          time: {
             start: 0,
             duration: 300,
           },
@@ -71,16 +69,14 @@ export const cyberAudioVisualizerDemoIR: VideoIRDocument = {
       id: 'track-v2',
       name: 'V2 - Procedural Audio Visualizers',
       type: 'video',
-      volume: 1.0,
       muted: false,
       visible: true,
       sequences: [
         {
           id: 'seq-waveform-ring',
-          trackId: 'track-v2',
           name: 'Radial Waveform Ring',
           type: 'overlay',
-          timing: {
+          time: {
             start: 0,
             duration: 150,
           },
@@ -104,10 +100,9 @@ export const cyberAudioVisualizerDemoIR: VideoIRDocument = {
         },
         {
           id: 'seq-equalizer-spectrum',
-          trackId: 'track-v2',
           name: 'Equalizer Spectrum Bars',
           type: 'overlay',
-          timing: {
+          time: {
             start: 150,
             duration: 150,
           },
@@ -136,17 +131,15 @@ export const cyberAudioVisualizerDemoIR: VideoIRDocument = {
       id: 'track-a1',
       name: 'A1 - Master Synth Track',
       type: 'audio',
-      volume: 1.0,
       muted: false,
       visible: true,
       sequences: [
         {
           id: 'seq-synth-lead',
-          trackId: 'track-a1',
           name: 'Modular Synth Lead',
           type: 'audio',
           assetId: 'asset-synth-loop',
-          timing: {
+          time: {
             start: 0,
             duration: 300,
           },
@@ -168,30 +161,26 @@ export const cyberAudioVisualizerDemoIR: VideoIRDocument = {
       id: 'track-sub1',
       name: 'TXT - Audio HUD',
       type: 'timed_text',
-      volume: 1.0,
       muted: false,
       visible: true,
       sequences: [
         {
           id: 'seq-audio-hud-text',
-          trackId: 'track-sub1',
           name: 'Track Telemetry',
-          type: 'timed_text',
-          timing: {
+          type: 'text',
+          time: {
             start: 0,
             duration: 300,
           },
           cues: [
             {
-              id: 'cue-audio-1',
-              start: 0,
-              end: 150,
+              startOffsetMs: 0,
+              endOffsetMs: 5000,
               text: 'AUDIO VISUALIZER // RADIAL FFT // 128 BPM',
             },
             {
-              id: 'cue-audio-2',
-              start: 150,
-              end: 300,
+              startOffsetMs: 5000,
+              endOffsetMs: 10000,
               text: 'AUDIO EQUALIZER // GRAVITATIONAL PEAK HOLD // 48 BANDS',
             },
           ],

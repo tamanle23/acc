@@ -41,17 +41,15 @@ export const broadcastNewsDemoIR: VideoIRDocument = {
       id: 'track-v1',
       name: 'V1 - Main Camera',
       type: 'video',
-      volume: 1.0,
       muted: false,
       visible: true,
       sequences: [
         {
           id: 'seq-anchor-intro',
-          trackId: 'track-v1',
           name: 'Main Anchor Desk',
           type: 'image',
           assetId: 'asset-studio-anchor',
-          timing: {
+          time: {
             start: 0,
             duration: 150,
           },
@@ -71,12 +69,13 @@ export const broadcastNewsDemoIR: VideoIRDocument = {
         },
         {
           id: 'seq-satellite-broll',
-          trackId: 'track-v1',
           name: 'Orbital Telemetry Feed',
           type: 'image',
           assetId: 'asset-satellite-feed',
-          timing: {
-            after: 'seq-anchor-intro',
+          time: {
+            start: {
+              after: 'seq-anchor-intro',
+            },
             duration: 150,
           },
           modifiers: [
@@ -101,16 +100,14 @@ export const broadcastNewsDemoIR: VideoIRDocument = {
       id: 'track-v2',
       name: 'V2 - Broadcast Graphics',
       type: 'video',
-      volume: 1.0,
       muted: false,
       visible: true,
       sequences: [
         {
           id: 'seq-lower-third',
-          trackId: 'track-v2',
           name: 'Cyber Lower-Third',
           type: 'overlay',
-          timing: {
+          time: {
             start: 15,
             duration: 120,
           },
@@ -135,10 +132,9 @@ export const broadcastNewsDemoIR: VideoIRDocument = {
         },
         {
           id: 'seq-countdown-overlay',
-          trackId: 'track-v2',
           name: 'Orbital Insertion Countdown',
           type: 'overlay',
-          timing: {
+          time: {
             start: 150,
             duration: 150,
           },
@@ -167,17 +163,15 @@ export const broadcastNewsDemoIR: VideoIRDocument = {
       id: 'track-a1',
       name: 'A1 - Studio Audio Bed',
       type: 'audio',
-      volume: 0.75,
       muted: false,
       visible: true,
       sequences: [
         {
           id: 'seq-news-intro-sfx',
-          trackId: 'track-a1',
           name: 'News Stinger SFX',
           type: 'audio',
           assetId: 'asset-news-intro',
-          timing: {
+          time: {
             start: 0,
             duration: 60,
           },
@@ -193,11 +187,10 @@ export const broadcastNewsDemoIR: VideoIRDocument = {
         },
         {
           id: 'seq-news-bed-loop',
-          trackId: 'track-a1',
           name: 'News Ambient Bed',
           type: 'audio',
           assetId: 'asset-news-bed',
-          timing: {
+          time: {
             start: 0,
             duration: 300,
           },
@@ -219,42 +212,37 @@ export const broadcastNewsDemoIR: VideoIRDocument = {
       id: 'track-sub1',
       name: 'TXT - News Ticker',
       type: 'timed_text',
-      volume: 1.0,
       muted: false,
       visible: true,
       sequences: [
         {
           id: 'seq-ticker-1',
-          trackId: 'track-sub1',
           name: 'Breaking Headline',
-          type: 'timed_text',
-          timing: {
+          type: 'text',
+          time: {
             start: 0,
             duration: 150,
           },
           cues: [
             {
-              id: 'cue-news-1',
-              start: 0,
-              end: 150,
+              startOffsetMs: 0,
+              endOffsetMs: 5000,
               text: 'BREAKING: DEEP SPACE TELEMETRY CONFIRMS ANOMALOUS SIGNAL FROM SECTOR 9',
             },
           ],
         },
         {
           id: 'seq-ticker-2',
-          trackId: 'track-sub1',
           name: 'Secondary Report',
-          type: 'timed_text',
-          timing: {
+          type: 'text',
+          time: {
             start: 150,
             duration: 150,
           },
           cues: [
             {
-              id: 'cue-news-2',
-              start: 150,
-              end: 300,
+              startOffsetMs: 0,
+              endOffsetMs: 5000,
               text: 'COUNTDOWN INITIATED FOR HIGH-ALTITUDE PROBE ORBITAL INSERTION',
             },
           ],

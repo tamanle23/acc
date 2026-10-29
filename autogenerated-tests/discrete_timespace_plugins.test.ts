@@ -17,6 +17,8 @@ import {
   VideoIRSchemaValidator,
   type VideoIRDocument,
 } from '@acc/ir';
+import { broadcastNewsDemoIR } from '../apps/studio/src/lib/ir/broadcastNewsDemoIR';
+import { cyberAudioVisualizerDemoIR } from '../apps/studio/src/lib/ir/cyberAudioVisualizerDemoIR';
 
 describe('Discrete time_space/* Motion Graphic Plugins Suite', () => {
   const discreteTypes = [
@@ -228,7 +230,7 @@ describe('Discrete time_space/* Motion Graphic Plugins Suite', () => {
             {
               id: 'seq-1',
               type: 'overlay',
-              timing: { start: 0, duration: 90 },
+              time: { start: 0, duration: 90 },
               modifiers: [
                 {
                   type: 'time_space/callout_leader',
@@ -259,6 +261,18 @@ describe('Discrete time_space/* Motion Graphic Plugins Suite', () => {
     };
 
     const val = VideoIRSchemaValidator.validate(doc);
+    expect(val.valid).toBe(true);
+    expect(val.errors).toEqual([]);
+  });
+
+  it('validates broadcastNewsDemoIR without schema errors', () => {
+    const val = VideoIRSchemaValidator.validate(broadcastNewsDemoIR);
+    expect(val.valid).toBe(true);
+    expect(val.errors).toEqual([]);
+  });
+
+  it('validates cyberAudioVisualizerDemoIR without schema errors', () => {
+    const val = VideoIRSchemaValidator.validate(cyberAudioVisualizerDemoIR);
     expect(val.valid).toBe(true);
     expect(val.errors).toEqual([]);
   });
