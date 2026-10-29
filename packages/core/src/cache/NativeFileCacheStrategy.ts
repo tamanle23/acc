@@ -37,7 +37,21 @@ export class NativeFileCacheStrategy implements IContentCacheStrategy {
   }
 
   private getFilePath(key: string): string {
-    // Sanitize key for safe filesystem usage
+    // If key contains namespace partition (namespace/subpath or namespace::key)
+    if (key.includes('/')) {
+      const parts = key.split('/');
+      const dirPart = parts.slice(0, -1).map((p) => p.replace(/[^a-zA-Z0-9_\-.]/g, '_')).join(path.sep);
+      const filePart = parts[parts.length - 1].replace(/[^a-zA-Z0-9_\-.]/g, '_');
+      const targetDir = path.join(this.baseDir, dirPart);
+      if (!fs.existsSync(targetDir)) {
+        try {
+          fs.mkdirSync(targetDir, { recursive: true });
+        } catch {}
+      }
+      return path.join(targetDir, filePart);
+    }
+
+    // Sanitize flat key for safe filesystem usage
     const safeKey = key.replace(/[^a-zA-Z0-9_\-.]/g, '_');
     return path.join(this.baseDir, safeKey);
   }
@@ -210,13 +224,35 @@ export class NativeFileCacheStrategy implements IContentCacheStrategy {
     return deleted;
   }
 
+  public async getKeys(): Promise<string[]> {
+    if (!fs.existsSync(this.baseDir)) return [];
+
+    const getFilesRecursively = async (dir: string, base: string): Promise<string[]> => {
+      const dirents = await fs.promises.readdir(dir, { withFileTypes: true });
+      const files: string[] = [];
+      for (const dirent of dirents) {
+        const fullPath = path.join(dir, dirent.name);
+        const relativePath = path.relative(base, fullPath).replace(/\\/g, '/');
+        if (dirent.isDirectory()) {
+          files.push(...(await getFilesRecursively(fullPath, base)));
+        } else if (dirent.isFile() && !dirent.name.endsWith('.meta.json')) {
+          files.push(relativePath);
+        }
+      }
+      return files;
+    };
+
+    return getFilesRecursively(this.baseDir, this.baseDir);
+  }
+
   public async clear(): Promise<void> {
     try {
       if (fs.existsSync(this.baseDir)) {
         const files = await fs.promises.readdir(this.baseDir);
         for (const file of files) {
           try {
-            await fs.promises.unlink(path.join(this.baseDir, file));
+            const fullPath = path.join(this.baseDir, file);
+            await fs.promises.rm(fullPath, { recursive: true, force: true });
           } catch {}
         }
       }

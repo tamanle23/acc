@@ -1,6 +1,7 @@
 import {
   UniversalCanvasProvider,
   ContentCacheRegistry,
+  CacheNamespace,
   NativeResourceManager,
 } from '@acc/core-isomorphic';
 import type {
@@ -172,7 +173,8 @@ export class Camera3DPlugin implements ModifierPlugin<Camera3DPluginParams> {
     seqScope.setMetadata('camera3d_traj', trajectory);
     try {
       const blob = new Blob([trajectory.buffer], { type: 'application/octet-stream' });
-      await ContentCacheRegistry.get().set(cacheKey, blob, {
+      const vfxCache = ContentCacheRegistry.namespace(CacheNamespace.VFX);
+      await vfxCache.set(cacheKey, blob, {
         metadata: { totalFrames, width, height },
       });
     } catch {}
@@ -217,8 +219,9 @@ export class Camera3DPlugin implements ModifierPlugin<Camera3DPluginParams> {
             const fbData = fbCtx.getImageData(0, 0, width, height);
             const nearBlob = new Blob([nbData.data.buffer], { type: 'application/octet-stream' });
             const farBlob = new Blob([fbData.data.buffer], { type: 'application/octet-stream' });
-            await ContentCacheRegistry.get().set(`camera3d_focal_near_${cacheKey}`, nearBlob);
-            await ContentCacheRegistry.get().set(`camera3d_focal_far_${cacheKey}`, farBlob);
+            const vfxCache = ContentCacheRegistry.namespace(CacheNamespace.VFX);
+            await vfxCache.set(`camera3d_focal_near_${cacheKey}`, nearBlob);
+            await vfxCache.set(`camera3d_focal_far_${cacheKey}`, farBlob);
           } catch {}
         }
       } catch {}
@@ -240,8 +243,9 @@ export class Camera3DPlugin implements ModifierPlugin<Camera3DPluginParams> {
       seqScope.getMetadata<Float32Array>('camera3d_traj') || seqScope.get('camera3d_traj')?.getRaw();
     if (!trajectory) {
       try {
-        if (await ContentCacheRegistry.get().has(cacheKey)) {
-          const blob = await ContentCacheRegistry.get().get(cacheKey);
+        const vfxCache = ContentCacheRegistry.namespace(CacheNamespace.VFX);
+        if (await vfxCache.has(cacheKey)) {
+          const blob = await vfxCache.get(cacheKey);
           if (blob) {
             const ab = await blob.arrayBuffer();
             trajectory = new Float32Array(ab);
@@ -293,7 +297,7 @@ export class Camera3DPlugin implements ModifierPlugin<Camera3DPluginParams> {
     canvasCtx.translate(-centerX, -centerY);
 
     // Render Dynamic Rack Focus crossfade if focal zones exist
-    let focalZones = seqScope.getMetadata<FocalZoneCanvases>('focal_zones');
+    let focalZones = seqScope.getMetadata<FocalZoneCanvases>('focal_zones') || (sequence as any)?._focalZones;
     if (!focalZones && focalAperture > 0.01) {
       const nearCanvas = seqScope.get('focal_near')?.getRaw();
       const farCanvas = seqScope.get('focal_far')?.getRaw();
@@ -306,8 +310,9 @@ export class Camera3DPlugin implements ModifierPlugin<Camera3DPluginParams> {
         seqScope.setMetadata('focal_zones', focalZones);
       } else {
         try {
-          const nearBlob = await ContentCacheRegistry.get().get(`camera3d_focal_near_${cacheKey}`);
-          const farBlob = await ContentCacheRegistry.get().get(`camera3d_focal_far_${cacheKey}`);
+          const vfxCache = ContentCacheRegistry.namespace(CacheNamespace.VFX);
+          const nearBlob = await vfxCache.get(`camera3d_focal_near_${cacheKey}`);
+          const farBlob = await vfxCache.get(`camera3d_focal_far_${cacheKey}`);
           if (nearBlob && farBlob) {
             const nearBytes = new Uint8ClampedArray(await nearBlob.arrayBuffer());
             const farBytes = new Uint8ClampedArray(await farBlob.arrayBuffer());

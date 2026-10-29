@@ -5,7 +5,7 @@ import type { ResolvedTimeline, ResolvedTrack } from '../../types/VideoIR';
 import { ModifierPluginRegistry, type AudioProcessContext } from '../../plugins/ModifierPluginRegistry';
 import { DeterministicAudioClock } from '../../compiler/DeterministicAudioClock';
 import type { ModifierNode } from "../../types/modifiers";
-import { ContentCacheRegistry } from '@acc/core-isomorphic';
+import { ContentCacheRegistry, CacheNamespace } from '@acc/core-isomorphic';
 
 export interface DecodedAudioPCM {
   sampleRate: number;
@@ -738,7 +738,7 @@ export class UniversalAudioMixer {
     headerBuffer.set([0x64, 0x61, 0x74, 0x61], 36); // 'data'
     headerView.setUint32(40, dataSize, true);
 
-    const cache = ContentCacheRegistry.get();
+    const cache = ContentCacheRegistry.namespace(CacheNamespace.Audio);
     const metadata = {
       mimeType: 'audio/wav',
       sizeBytes: totalBufferSize,

@@ -45,13 +45,13 @@ export function bootstrapCoreWeb(options: BootstrapClientOptions = {}): void {
 
   // 2. Client Cache Strategies Registration
   const opfsStrategy = new OpfsCacheStrategy();
-  if (!ContentCacheRegistry.has(ContentCacheStrategyId.Opfs)) {
+  if (!ContentCacheRegistry.hasStrategy(ContentCacheStrategyId.Opfs)) {
     ContentCacheRegistry.register(opfsStrategy);
   }
-  if (!ContentCacheRegistry.has(ContentCacheStrategyId.WebCache)) {
+  if (!ContentCacheRegistry.hasStrategy(ContentCacheStrategyId.WebCache)) {
     ContentCacheRegistry.register(new WebCacheStrategy());
   }
-  if (!ContentCacheRegistry.has(ContentCacheStrategyId.IndexedDb)) {
+  if (!ContentCacheRegistry.hasStrategy(ContentCacheStrategyId.IndexedDb)) {
     ContentCacheRegistry.register(new IndexedDbCacheStrategy());
   }
 
@@ -61,14 +61,14 @@ export function bootstrapCoreWeb(options: BootstrapClientOptions = {}): void {
     options.defaultCacheStrategy ||
     (opfsStrategy.isSupported()
       ? ContentCacheStrategyId.Opfs
-      : ContentCacheRegistry.has(ContentCacheStrategyId.IndexedDb)
+      : ContentCacheRegistry.hasStrategy(ContentCacheStrategyId.IndexedDb)
         ? ContentCacheStrategyId.IndexedDb
         : PlatformDetector.resolveDefaultCacheStrategy([
           ContentCacheStrategyId.IndexedDb,
           ContentCacheStrategyId.WebCache,
         ]));
 
-  if (ContentCacheRegistry.has(resolvedCacheStrategy)) {
+  if (ContentCacheRegistry.hasStrategy(resolvedCacheStrategy)) {
     ContentCacheRegistry.setDefault(resolvedCacheStrategy);
   }
 

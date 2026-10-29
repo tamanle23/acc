@@ -1,4 +1,4 @@
-import { ContentCacheRegistry } from '../cache/ContentCacheRegistry';
+import { ContentCacheRegistry, CacheNamespace } from '../cache';
 import { UniversalLogger as Logger } from '../logger/UniversalLogger';
 
 export interface OnnxModelMetadata {
@@ -74,7 +74,7 @@ export class OnnxModelManager {
    */
   public async getCachedModelBuffer(modelKey: string): Promise<Uint8Array | undefined> {
     try {
-      const cache = ContentCacheRegistry.get();
+      const cache = ContentCacheRegistry.namespace(CacheNamespace.Models);
       const cacheKey = `onnx_model_${modelKey.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
       if (await cache.has(cacheKey)) {
         const blob = await cache.get(cacheKey);
@@ -98,7 +98,7 @@ export class OnnxModelManager {
     mimeType = 'application/octet-stream'
   ): Promise<void> {
     try {
-      const cache = ContentCacheRegistry.get();
+      const cache = ContentCacheRegistry.namespace(CacheNamespace.Models);
       const cacheKey = `onnx_model_${modelKey.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
       const blob = new Blob([buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)], { type: mimeType });
       await cache.set(cacheKey, blob, { mimeType, sizeBytes: buffer.byteLength });

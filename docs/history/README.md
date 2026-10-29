@@ -34,3 +34,4 @@
 | 373 | [Headless Scoped Resource Engine & Unified Compositor RAII Parity](./373_headless_scoped_resource_engine_and_unified_compositor_raii.md) | Completed |
 | 374 | [Studio Architecture Remediation, Zero-Leak Memory Safety & State Integrity Plan](./374_studio_architecture_remediation_and_zero_leak_plan.md) | Completed |
 | 375 | [Isomorphic IRMasterRenderer Studio Web Worker Export & AssetProtocolRegistry](./375_isomorphic_ir_master_renderer_studio_export_and_asset_protocol_registry.md) | Completed |
+| 376 | [Mandatory Namespaced Cache Architecture with TTL, LRU/Size Eviction & Studio Codebase Optimization](./376_mandatory_namespaced_cache_architecture_ttl_eviction_and_studio_cleanup.md) | Completed |

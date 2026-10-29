@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'bun:test';
 import {
   ContentCacheRegistry,
+  CacheNamespace,
   type IContentCacheStrategy,
   type CachePayload,
   UniversalCanvasProvider,
@@ -78,7 +79,7 @@ describe('IR Plugin Cache Elimination & Blob-First ContentCacheRegistry Suite', 
 
   describe('Standardized IContentCacheStrategy with First-Class Blob', () => {
     it('stores and retrieves Blob directly via get() and set()', async () => {
-      const cache = ContentCacheRegistry.get();
+      const cache = ContentCacheRegistry.getStrategy();
       const payloadText = 'Standardized Blob payload verification';
       const inputBlob = new Blob([payloadText], { type: 'text/plain' });
 
@@ -92,7 +93,7 @@ describe('IR Plugin Cache Elimination & Blob-First ContentCacheRegistry Suite', 
     });
 
     it('stores ReadableStream and retrieves as standard Blob', async () => {
-      const cache = ContentCacheRegistry.get();
+      const cache = ContentCacheRegistry.getStrategy();
       const content = new Uint8Array([10, 20, 30, 40, 50]);
       const stream = new ReadableStream<Uint8Array>({
         start(controller) {
@@ -111,8 +112,8 @@ describe('IR Plugin Cache Elimination & Blob-First ContentCacheRegistry Suite', 
     });
 
     it('supports direct writable stream ingestion via createWritableStream()', async () => {
-      const cache = ContentCacheRegistry.get();
-      const writable = await cache.createWritableStream('writable_key_1');
+      const cache = ContentCacheRegistry.getStrategy();
+      const writable = await cache.createWritableStream!('writable_key_1');
       const writer = writable.getWriter();
 
       await writer.write(new Uint8Array([1, 2, 3]));
@@ -127,7 +128,7 @@ describe('IR Plugin Cache Elimination & Blob-First ContentCacheRegistry Suite', 
     });
 
     it('verifies obsolete methods (getBlob, setBlob, getBytes, getStream, setStream) are eliminated', () => {
-      const cache = ContentCacheRegistry.get() as any;
+      const cache = ContentCacheRegistry.getStrategy() as any;
       expect(cache.getBlob).toBeUndefined();
       expect(cache.setBlob).toBeUndefined();
       expect(cache.getBytes).toBeUndefined();
@@ -192,12 +193,12 @@ describe('IR Plugin Cache Elimination & Blob-First ContentCacheRegistry Suite', 
         ],
       });
 
-      // Verify trajectory was cached in ContentCacheRegistry as Blob
+      // Verify trajectory was cached in ContentCacheRegistry as Blob under VFX namespace
       const cacheKey = 'camera3d_traj_camera_seq_1_60';
-      const hasKey = await ContentCacheRegistry.get().has(cacheKey);
+      const hasKey = await ContentCacheRegistry.namespace(CacheNamespace.VFX).has(cacheKey);
       expect(hasKey).toBe(true);
 
-      const cachedBlob = await ContentCacheRegistry.get().get(cacheKey);
+      const cachedBlob = await ContentCacheRegistry.namespace(CacheNamespace.VFX).get(cacheKey);
       expect(cachedBlob).not.toBeNull();
       const ab = await cachedBlob!.arrayBuffer();
       const trajArray = new Float32Array(ab);

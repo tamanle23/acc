@@ -27,8 +27,8 @@ describe('Phase 2: Core Web Services Suite (@acc/core-web)', () => {
       bootstrapClient();
 
       expect(MediaEngineRegistry.has('mediabunny-client')).toBe(true);
-      expect(ContentCacheRegistry.has('indexeddb')).toBe(true);
-      expect(ContentCacheRegistry.get().id).toBe('indexeddb');
+      expect(ContentCacheRegistry.hasStrategy('indexeddb')).toBe(true);
+      expect(ContentCacheRegistry.getStrategy().id).toBe('indexeddb');
       expect(VisionEngineRegistry.hasDepthStrategy(DepthStrategyId.Heuristic)).toBe(true);
       expect(VisionEngineRegistry.hasSegmentationStrategy(SegmentationStrategyId.GrabCutFallback)).toBe(true);
       expect(VisionEngineRegistry.getDefaultDepthStrategyId()).toBe(DepthStrategyId.DepthAnythingV2Small);

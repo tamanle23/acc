@@ -9,12 +9,38 @@ export enum ContentCacheStrategyId {
   Opfs = 'opfs',
 }
 
+export enum CacheNamespace {
+  Assets = 'assets',
+  Textures = 'textures',
+  Audio = 'audio',
+  Models = 'models',
+  VFX = 'vfx',
+  Temp = 'temp',
+}
+
 export interface CacheEntryMetadata {
   checksum: string;
   mimeType?: string;
   createdAt: number;
+  lastAccessedAt?: number;
+  expiresAt?: number;
+  sizeBytes?: number;
+  namespace?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface CacheSetOptions {
+  ttlMs?: number;
+  mimeType?: string;
+  checksum?: string;
   sizeBytes?: number;
   metadata?: Record<string, unknown>;
+}
+
+export interface EvictionPolicyOptions {
+  maxEntries?: number;
+  maxSizeBytes?: number;
+  strategy?: 'lru' | 'fifo';
 }
 
 export type CachePayload = Blob | ReadableStream<Uint8Array> | ArrayBuffer | ArrayBufferView | string;
@@ -52,3 +78,18 @@ export interface IContentCacheStrategy {
   getKeys?(): Promise<string[]>;
 }
 
+export interface INamespacedCache {
+  readonly namespace: string;
+  readonly strategyId: string;
+
+  has(key: string): Promise<boolean>;
+  get(key: string): Promise<Blob | null>;
+  set(key: string, data: CachePayload, options?: CacheSetOptions): Promise<void>;
+  createWritableStream?(key: string, options?: CacheSetOptions): Promise<WritableStream<Uint8Array>>;
+  getMetadata(key: string): Promise<CacheEntryMetadata | null>;
+  delete(key: string): Promise<boolean>;
+  clear(): Promise<void>;
+  getKeys(): Promise<string[]>;
+  evictExpired(): Promise<number>;
+  evict(policy: EvictionPolicyOptions): Promise<number>;
+}

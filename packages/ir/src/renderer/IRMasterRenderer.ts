@@ -11,6 +11,7 @@ import {
   UniversalCanvasProvider,
   CanvasAssetLoader,
   ContentCacheRegistry,
+  CacheNamespace,
   NativeResourceManager,
   AssetProtocolRegistry,
 } from '@acc/core-isomorphic';
@@ -290,7 +291,7 @@ export class IRMasterRenderer implements Disposable {
       strategy = undefined;
     }
 
-    const cache = ContentCacheRegistry.get();
+    const cache = ContentCacheRegistry.namespace(CacheNamespace.Assets);
     const protocolRegistry = AssetProtocolRegistry.getInstance();
 
     for (const [assetId, assetDef] of Object.entries(this.timeline.assets)) {
@@ -458,7 +459,8 @@ export class IRMasterRenderer implements Disposable {
           // Store mixed audio buffer into Universal Content Cache Registry
           try {
             const wavBytes = UniversalAudioMixer.encodeToWav(audioResult);
-            await ContentCacheRegistry.get().set(tempAudioWavPath, new Blob([wavBytes as any], { type: 'audio/wav' }), {
+            const audioCache = ContentCacheRegistry.namespace(CacheNamespace.Audio);
+            await audioCache.set(tempAudioWavPath, new Blob([wavBytes as any], { type: 'audio/wav' }), {
               mimeType: 'audio/wav',
               sizeBytes: wavBytes.byteLength,
             });
@@ -567,7 +569,7 @@ export class IRMasterRenderer implements Disposable {
     // Clean up temporary audio file from cache and disk if generated
     if (tempAudioWavPath) {
       try {
-        await ContentCacheRegistry.get().delete(tempAudioWavPath);
+        await ContentCacheRegistry.namespace(CacheNamespace.Audio).delete(tempAudioWavPath);
       } catch {}
 
       if (typeof process !== 'undefined' && process.versions?.node) {

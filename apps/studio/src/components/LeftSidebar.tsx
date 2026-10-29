@@ -19,7 +19,7 @@ import { STAGING_PRESETS, type StagingPreset, type PresetCategory } from '../lib
 import { SFX_SOUND_BANKS } from '../lib/library/sfxBank';
 import { IRStateManager } from '../lib/ir/irState';
 import { useIRState } from '../lib/ir/useStudioStore';
-import { ContentCacheRegistry } from '@acc/core-isomorphic';
+import { ContentCacheRegistry, CacheNamespace } from '@acc/core-isomorphic';
 import {
   renderPresetIcon,
   ShapePresetThumbnail,
@@ -93,7 +93,7 @@ export function LeftSidebar({
 
       // Store into ContentCacheRegistry with Blob API zero-copy backing
       try {
-        const cache = ContentCacheRegistry.get();
+        const cache = ContentCacheRegistry.namespace(CacheNamespace.Assets);
         cache.set(assetId, file, { mimeType: file.type, sizeBytes: file.size }).catch(() => {});
       } catch {}
 

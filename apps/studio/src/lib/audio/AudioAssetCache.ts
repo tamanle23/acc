@@ -1,4 +1,4 @@
-import { AssetProtocolRegistry, ContentCacheRegistry } from '@acc/core-isomorphic';
+import { AssetProtocolRegistry, ContentCacheRegistry, CacheNamespace } from '@acc/core-isomorphic';
 
 /**
  * AudioAssetCache:
@@ -111,7 +111,7 @@ export class AudioAssetCache {
         // Check ContentCacheRegistry (OPFS / persistent cache) first
         let arrayBuffer: ArrayBuffer | null = null;
         try {
-          const contentCache = ContentCacheRegistry.get();
+          const contentCache = ContentCacheRegistry.namespace(CacheNamespace.Audio);
           const cachedBlob = await contentCache.get(src);
           if (cachedBlob) {
             arrayBuffer = await cachedBlob.arrayBuffer();
@@ -125,7 +125,7 @@ export class AudioAssetCache {
 
           // Asynchronously persist to ContentCacheRegistry (OPFS) for future fast streaming
           try {
-            const contentCache = ContentCacheRegistry.get();
+            const contentCache = ContentCacheRegistry.namespace(CacheNamespace.Audio);
             const rawBlob = await assetBlob.blob();
             contentCache.set(src, rawBlob).catch(() => {});
           } catch {}

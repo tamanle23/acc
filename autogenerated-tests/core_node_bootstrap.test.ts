@@ -50,14 +50,14 @@ describe('Phase 4: Node/Bun Runtime Bootstrap Suite (@acc/core)', () => {
     });
 
     it('registers NativeFileCacheStrategy with ContentCacheRegistry', async () => {
-      expect(ContentCacheRegistry.has('native-file')).toBe(false);
+      expect(ContentCacheRegistry.hasStrategy('native-file')).toBe(false);
 
       await bootstrapNode({
         cacheOptions: { baseDir: testCacheDir },
       });
 
-      expect(ContentCacheRegistry.has('native-file')).toBe(true);
-      const defaultCache = ContentCacheRegistry.get();
+      expect(ContentCacheRegistry.hasStrategy('native-file')).toBe(true);
+      const defaultCache = ContentCacheRegistry.getStrategy();
       expect(defaultCache.id).toBe('native-file');
       expect(defaultCache).toBeInstanceOf(NativeFileCacheStrategy);
 
@@ -66,7 +66,9 @@ describe('Phase 4: Node/Bun Runtime Bootstrap Suite (@acc/core)', () => {
       await defaultCache.set('bootstrap-test-key', testData, { mimeType: 'application/octet-stream' });
       expect(await defaultCache.has('bootstrap-test-key')).toBe(true);
       const retrieved = await defaultCache.get('bootstrap-test-key');
-      expect(retrieved).toEqual(testData);
+      expect(retrieved).not.toBeNull();
+      const ab = await retrieved!.arrayBuffer();
+      expect(new Uint8Array(ab)).toEqual(testData);
     });
 
     it('registers all Node/Bun server media engine strategies', async () => {
@@ -104,7 +106,7 @@ describe('Phase 4: Node/Bun Runtime Bootstrap Suite (@acc/core)', () => {
       await bootstrapNode();
 
       expect(UniversalCanvasProvider.getAdapter().name).toBe('node-napi-rs');
-      expect(ContentCacheRegistry.has('native-file')).toBe(true);
+      expect(ContentCacheRegistry.hasStrategy('native-file')).toBe(true);
       expect(MediaEngineRegistry.has('bun-ffi')).toBe(true);
       expect(MediaEngineRegistry.has('mediabunny-server')).toBe(true);
       expect(MediaEngineRegistry.has('fluent-ffmpeg')).toBe(true);

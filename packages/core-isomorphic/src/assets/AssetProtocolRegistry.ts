@@ -1,5 +1,5 @@
 import type { IAssetBlob } from './IAssetBlob';
-import { ContentCacheRegistry } from '../cache/ContentCacheRegistry';
+import { ContentCacheRegistry, CacheNamespace } from '../cache';
 
 function getMimeTypeFromExtension(ext: string): string {
   const cleanExt = ext.replace(/^\./, '').toLowerCase();
@@ -295,23 +295,18 @@ export class CachedAssetBlob implements IAssetBlob {
     return new ReadableStream<Uint8Array>({
       start: async (controller) => {
         try {
-          const strategy = ContentCacheRegistry.get(this.strategyId);
-          if (strategy.getStream) {
-            const stream = await strategy.getStream(this.cacheKey);
-            if (!stream) throw new Error(`[CachedAssetBlob] Key "${this.cacheKey}" not found in cache.`);
-            const reader = stream.getReader();
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) break;
-              if (value) controller.enqueue(value);
-            }
-            controller.close();
-            return;
+          const cache = ContentCacheRegistry.namespace(CacheNamespace.Assets, this.strategyId);
+          const blob = await cache.get(this.cacheKey);
+          if (!blob) throw new Error(`[CachedAssetBlob] Key "${this.cacheKey}" not found in cache.`);
+          const stream = blob.stream();
+          const reader = stream.getReader();
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            if (value) controller.enqueue(value);
           }
-          const bytes = await strategy.get(this.cacheKey);
-          if (!bytes) throw new Error(`[CachedAssetBlob] Key "${this.cacheKey}" not found in cache.`);
-          controller.enqueue(bytes);
           controller.close();
+          return;
         } catch (err) {
           controller.error(err);
         }
@@ -320,24 +315,21 @@ export class CachedAssetBlob implements IAssetBlob {
   }
 
   public async arrayBuffer(): Promise<ArrayBuffer> {
-    const strategy = ContentCacheRegistry.get(this.strategyId);
-    const bytes = await strategy.get(this.cacheKey);
-    if (!bytes) {
+    const cache = ContentCacheRegistry.namespace(CacheNamespace.Assets, this.strategyId);
+    const blob = await cache.get(this.cacheKey);
+    if (!blob) {
       throw new Error(`[CachedAssetBlob] Key "${this.cacheKey}" not found in cache.`);
     }
-    return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+    return blob.arrayBuffer();
   }
 
   public async blob(): Promise<Blob> {
-    const strategy = ContentCacheRegistry.get(this.strategyId);
-    if (strategy.getBlob) {
-      const blob = await strategy.getBlob(this.cacheKey);
-      if (blob) return blob;
-    }
-    const bytes = await strategy.get(this.cacheKey);
-    if (!bytes) {
+    const cache = ContentCacheRegistry.namespace(CacheNamespace.Assets, this.strategyId);
+    const blob = await cache.get(this.cacheKey);
+    if (!blob) {
       throw new Error(`[CachedAssetBlob] Key "${this.cacheKey}" not found in cache.`);
     }
+    return blob;
     return new Blob([bytes], { type: this.mimeType });
   }
 }

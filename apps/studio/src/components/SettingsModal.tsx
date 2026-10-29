@@ -18,7 +18,7 @@ import {
 } from '../lib/theme/ThemeProvider';
 import { Sliders, Sun, Moon, Sparkles, RefreshCw, Layers, Check, HardDrive, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { ContentCacheRegistry } from '@acc/core-isomorphic';
+import { ContentCacheRegistry, CacheNamespace } from '@acc/core-isomorphic';
 import { clearWaveSurferPeakCache } from './timeline/WaveSurferWaveform';
 import { OpfsDebuggerModal } from './debugger/opfs/OpfsDebuggerModal';
 
@@ -206,10 +206,11 @@ export function SettingsModal() {
                   className="text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border-rose-500/20 gap-1.5 cursor-pointer"
                   onClick={async () => {
                     try {
-                      const cache = ContentCacheRegistry.get();
-                      await cache.clear();
+                      await ContentCacheRegistry.namespace(CacheNamespace.Assets).clear();
+                      await ContentCacheRegistry.namespace(CacheNamespace.Textures).clear();
+                      await ContentCacheRegistry.namespace(CacheNamespace.Audio).clear();
                       clearWaveSurferPeakCache();
-                      toast.success(`Media cache [${cache.name}] purged successfully`);
+                      toast.success(`Media caches purged successfully`);
                     } catch (err: unknown) {
                       toast.error('Failed to clear cache');
                     }

@@ -53,7 +53,7 @@ export async function bootstrapNode(options: BootstrapNodeOptions = {}): Promise
   UniversalCanvasProvider.registerAdapter(new NapiCanvasAdapter(), true);
 
   // 2. Register native disk cache strategy
-  if (!ContentCacheRegistry.has(ContentCacheStrategyId.NativeFile)) {
+  if (!ContentCacheRegistry.hasStrategy(ContentCacheStrategyId.NativeFile)) {
     ContentCacheRegistry.register(new NativeFileCacheStrategy(options.cacheOptions), true);
   }
 

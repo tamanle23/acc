@@ -12,11 +12,25 @@ export default defineConfig({
   build: {
     outDir: 'dist/client',
     emptyOutDir: true,
+    chunkSizeWarningLimit: 1200,
     rollupOptions: {
       external: [
         /@napi-rs\/canvas/,
         /\.node$/,
       ],
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/shiki/')) {
+            return 'vendor-shiki';
+          }
+          if (id.includes('node_modules/wavesurfer.js/')) {
+            return 'vendor-wavesurfer';
+          }
+          if (id.includes('node_modules/@radix-ui/') || id.includes('node_modules/@base-ui/')) {
+            return 'vendor-ui-primitives';
+          }
+        },
+      },
     },
   },
   server: {

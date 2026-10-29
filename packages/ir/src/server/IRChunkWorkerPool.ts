@@ -5,6 +5,7 @@ import {
   MediaEngineRegistry,
   type MediaEngineType,
   ContentCacheRegistry,
+  CacheNamespace,
   UniversalHasher,
   NativeResourceManager,
 } from '@acc/core-isomorphic';
@@ -104,7 +105,7 @@ function getSystemConcurrency(): number {
  * Dynamic file existence check
  */
 async function checkPathExists(filePath: string): Promise<boolean> {
-  const cache = ContentCacheRegistry.get();
+  const cache = ContentCacheRegistry.namespace(CacheNamespace.Temp);
   if (await cache.has(filePath)) return true;
   if (typeof process !== 'undefined' && (process as any).versions?.node) {
     try {
@@ -121,7 +122,7 @@ async function checkPathExists(filePath: string): Promise<boolean> {
  * Dynamic file removal
  */
 async function removePathIfExists(filePath: string): Promise<void> {
-  const cache = ContentCacheRegistry.get();
+  const cache = ContentCacheRegistry.namespace(CacheNamespace.Temp);
   await cache.delete(filePath);
   if (typeof process !== 'undefined' && (process as any).versions?.node) {
     try {

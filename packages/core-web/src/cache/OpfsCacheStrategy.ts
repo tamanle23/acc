@@ -112,15 +112,44 @@ export class OpfsCacheStrategy implements IContentCacheStrategy {
     return encodeURIComponent(key).replace(/%/g, '_');
   }
 
-  public async has(key: string): Promise<boolean> {
-    const dir = await this.getDirectory();
-    if (!dir) {
-      return this.fallback.has(key);
+  private async resolveTargetDirectory(
+    key: string,
+    create: boolean = false
+  ): Promise<{ dir: FileSystemDirectoryHandle; fileName: string } | null> {
+    const rootDir = await this.getDirectory();
+    if (!rootDir) return null;
+
+    if (!key.includes('/')) {
+      return { dir: rootDir, fileName: this.sanitizeKey(key) };
     }
 
-    const safeName = this.sanitizeKey(key);
+    const segments = key.split('/');
+    const dirSegments = segments.slice(0, -1);
+    const fileSegment = segments[segments.length - 1];
+
+    let currentDir = rootDir;
+    for (const seg of dirSegments) {
+      const safeSeg = this.sanitizeKey(seg);
+      try {
+        currentDir = await currentDir.getDirectoryHandle(safeSeg, { create });
+      } catch {
+        return null;
+      }
+    }
+
+    return { dir: currentDir, fileName: this.sanitizeKey(fileSegment) };
+  }
+
+  public async has(key: string): Promise<boolean> {
+    const resolved = await this.resolveTargetDirectory(key, false);
+    if (!resolved) {
+      const dir = await this.getDirectory();
+      if (!dir) return this.fallback.has(key);
+      return false;
+    }
+
     try {
-      await dir.getFileHandle(safeName);
+      await resolved.dir.getFileHandle(resolved.fileName);
       return true;
     } catch {
       return false;
@@ -128,14 +157,15 @@ export class OpfsCacheStrategy implements IContentCacheStrategy {
   }
 
   public async get(key: string): Promise<Blob | null> {
-    const dir = await this.getDirectory();
-    if (!dir) {
-      return this.fallback.get(key);
+    const resolved = await this.resolveTargetDirectory(key, false);
+    if (!resolved) {
+      const dir = await this.getDirectory();
+      if (!dir) return this.fallback.get(key);
+      return null;
     }
 
-    const safeName = this.sanitizeKey(key);
     try {
-      const handle = await dir.getFileHandle(safeName);
+      const handle = await resolved.dir.getFileHandle(resolved.fileName);
       return await handle.getFile();
     } catch {
       return null;
@@ -147,14 +177,15 @@ export class OpfsCacheStrategy implements IContentCacheStrategy {
     data: CachePayload,
     metadata?: Partial<CacheEntryMetadata>
   ): Promise<void> {
-    const dir = await this.getDirectory();
-    if (!dir) {
-      return this.fallback.set(key, data, metadata);
+    const resolved = await this.resolveTargetDirectory(key, true);
+    if (!resolved) {
+      const dir = await this.getDirectory();
+      if (!dir) return this.fallback.set(key, data, metadata);
+      throw new Error(`[OpfsCacheStrategy] Failed to resolve directory for key: ${key}`);
     }
 
-    const safeName = this.sanitizeKey(key);
     const blob = await payloadToBlob(data, metadata?.mimeType);
-    const handle = await dir.getFileHandle(safeName, { create: true });
+    const handle = await resolved.dir.getFileHandle(resolved.fileName, { create: true });
     const writable = await handle.createWritable();
     try {
       await blob.stream().pipeTo(writable);
@@ -172,7 +203,7 @@ export class OpfsCacheStrategy implements IContentCacheStrategy {
       sizeBytes: metadata?.sizeBytes ?? blob.size,
       metadata: metadata?.metadata,
     };
-    await this.writeMetadata(dir, safeName, meta);
+    await this.writeMetadata(resolved.dir, resolved.fileName, meta);
   }
 
   public async createWritableStream(
@@ -521,14 +552,42 @@ export class OpfsCacheStrategy implements IContentCacheStrategy {
 
   /**
    * Directly reads a file in the OPFS cache directory as a Web Blob.
+   * Supports relative paths inside subdirectories (e.g. "assets/foo.mp4" or "acc-media-cache/assets/foo.mp4").
    */
   public async readEntryBlob(pathOrName: string): Promise<Blob | null> {
-    const dir = await this.getDirectory();
-    if (!dir) return null;
+    const rootDir = await this.getDirectory();
+    if (!rootDir) return null;
 
-    const fileName = pathOrName.split('/').pop() || pathOrName;
+    // Strip root directory prefix if present
+    let normalized = pathOrName.replace(/\\/g, '/').replace(/^\/+/, '');
+    if (normalized.startsWith(`${this.directoryName}/`)) {
+      normalized = normalized.slice(this.directoryName.length + 1);
+    }
+
+    if (!normalized.includes('/')) {
+      try {
+        const handle = await rootDir.getFileHandle(normalized);
+        return await handle.getFile();
+      } catch {
+        return null;
+      }
+    }
+
+    const segments = normalized.split('/');
+    const dirSegments = segments.slice(0, -1);
+    const fileName = segments[segments.length - 1];
+
+    let currentDir = rootDir;
+    for (const seg of dirSegments) {
+      try {
+        currentDir = await currentDir.getDirectoryHandle(seg);
+      } catch {
+        return null;
+      }
+    }
+
     try {
-      const handle = await dir.getFileHandle(fileName);
+      const handle = await currentDir.getFileHandle(fileName);
       return await handle.getFile();
     } catch {
       return null;
@@ -581,19 +640,40 @@ export class OpfsCacheStrategy implements IContentCacheStrategy {
   }
 
   /**
-   * Removes a file or directory entry by name.
+   * Removes a file or directory entry by path or name.
    */
-  public async removeCustomEntry(fileName: string, isDirectory: boolean = false): Promise<boolean> {
-    const dir = await this.getDirectory();
-    if (!dir) return false;
+  public async removeCustomEntry(pathOrName: string, isDirectory: boolean = false): Promise<boolean> {
+    const rootDir = await this.getDirectory();
+    if (!rootDir) return false;
 
-    const cleanName = fileName.split('/').pop() || fileName;
-    try {
-      await dir.removeEntry(cleanName, { recursive: isDirectory });
-      // If there's companion metadata, remove it as well
-      if (!isDirectory && !cleanName.endsWith('.meta.json')) {
+    let normalized = pathOrName.replace(/\\/g, '/').replace(/^\/+/, '');
+    if (normalized.startsWith(`${this.directoryName}/`)) {
+      normalized = normalized.slice(this.directoryName.length + 1);
+    }
+
+    let targetDir = rootDir;
+    let entryName = normalized;
+
+    if (normalized.includes('/')) {
+      const segments = normalized.split('/');
+      const dirSegments = segments.slice(0, -1);
+      entryName = segments[segments.length - 1];
+
+      for (const seg of dirSegments) {
         try {
-          await dir.removeEntry(`${cleanName}.meta.json`);
+          targetDir = await targetDir.getDirectoryHandle(seg);
+        } catch {
+          return false;
+        }
+      }
+    }
+
+    try {
+      await targetDir.removeEntry(entryName, { recursive: isDirectory });
+      // If there's companion metadata, remove it as well
+      if (!isDirectory && !entryName.endsWith('.meta.json')) {
+        try {
+          await targetDir.removeEntry(`${entryName}.meta.json`);
         } catch {}
       }
       return true;

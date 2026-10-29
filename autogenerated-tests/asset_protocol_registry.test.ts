@@ -7,15 +7,16 @@ import {
   DataUriAssetBlob,
   CachedAssetBlob,
   ContentCacheRegistry,
+  CacheNamespace,
 } from '../packages/core-isomorphic/src';
 import { NativeFileCacheStrategy } from '../packages/core/src';
 
 describe('Iteration 47: Isomorphic AssetProtocolRegistry & Universal Asset Loading', () => {
   beforeEach(async () => {
-    if (!ContentCacheRegistry.has('native-file')) {
+    if (!ContentCacheRegistry.hasStrategy('native-file')) {
       ContentCacheRegistry.register(new NativeFileCacheStrategy({ maxBytes: 10 * 1024 * 1024 }), true);
     }
-    await ContentCacheRegistry.get().clear();
+    await ContentCacheRegistry.namespace(CacheNamespace.Assets).clear();
   });
 
   it('resolves http:// and https:// URIs into HttpAssetBlob', () => {
@@ -50,7 +51,7 @@ describe('Iteration 47: Isomorphic AssetProtocolRegistry & Universal Asset Loadi
   it('resolves cache: URIs into CachedAssetBlob and transparently reads from ContentCacheRegistry', async () => {
     const registry = AssetProtocolRegistry.getInstance();
     const cacheKey = 'preloaded-test-texture';
-    const cache = ContentCacheRegistry.get();
+    const cache = ContentCacheRegistry.namespace(CacheNamespace.Assets);
 
     const sampleBytes = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]);
     await cache.set(cacheKey, new Blob([sampleBytes], { type: 'image/webp' }));

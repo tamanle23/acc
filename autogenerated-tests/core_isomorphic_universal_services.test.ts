@@ -145,9 +145,9 @@ describe('Phase 1: Universal Isomorphic Services Suite (@acc/core-isomorphic)', 
       const custom = new MockStandardCacheStrategy();
       ContentCacheRegistry.register(custom, true);
 
-      expect(ContentCacheRegistry.has('mock-storage')).toBe(true);
-      expect(ContentCacheRegistry.get('mock-storage').id).toBe('mock-storage');
-      expect(ContentCacheRegistry.get().id).toBe('mock-storage');
+      expect(ContentCacheRegistry.hasStrategy('mock-storage')).toBe(true);
+      expect(ContentCacheRegistry.getStrategy('mock-storage').id).toBe('mock-storage');
+      expect(ContentCacheRegistry.getStrategy().id).toBe('mock-storage');
     });
 
     it('supports direct zero-copy streaming ingest via createWritableStream', async () => {

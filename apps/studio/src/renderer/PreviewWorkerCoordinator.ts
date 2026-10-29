@@ -62,12 +62,19 @@ export class PreviewWorkerCoordinator {
     return PreviewWorkerCoordinator.instance;
   }
 
+  private isWorkerGlobal(): boolean {
+    if (typeof WorkerGlobalScope !== 'undefined' && typeof self !== 'undefined' && self instanceof WorkerGlobalScope) {
+      return true;
+    }
+    if (typeof self !== 'undefined' && 'importScripts' in self && typeof (self as Record<string, unknown>).importScripts === 'function') {
+      return true;
+    }
+    return false;
+  }
+
   private initWorker(customWorkerUrl?: URL): void {
     // Strictly prevent worker initialization if inside another worker
-    if (typeof WorkerGlobalScope !== 'undefined' && typeof self !== 'undefined' && self instanceof WorkerGlobalScope) {
-      return;
-    }
-    if (typeof self !== 'undefined' && typeof (self as any).importScripts === 'function') {
+    if (this.isWorkerGlobal()) {
       return;
     }
 

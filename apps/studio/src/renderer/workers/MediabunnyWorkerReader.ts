@@ -6,7 +6,7 @@ import {
   ALL_FORMATS,
   type InputVideoTrack,
 } from 'mediabunny';
-import { ContentCacheRegistry } from '@acc/core-isomorphic';
+import { ContentCacheRegistry, CacheNamespace } from '@acc/core-isomorphic';
 import { SequentialVideoReader } from './SequentialVideoReader';
 
 export interface MediabunnyReaderOptions {
@@ -73,7 +73,7 @@ export class MediabunnyWorkerReader {
 
         // Zero-copy OPFS / cached Blob streaming resolution
         try {
-          const cache = ContentCacheRegistry.get();
+          const cache = ContentCacheRegistry.namespace(CacheNamespace.Assets);
           let cachedBlob: Blob | null = null;
           if (this.assetId) {
             cachedBlob = await cache.get(this.assetId);
@@ -152,7 +152,7 @@ export class MediabunnyWorkerReader {
         // Cold start or Evicted Standby: Fall back to OPFS poster keyframe if available
         if (this.assetId && typeof createImageBitmap === 'function') {
           try {
-            const cache = ContentCacheRegistry.get();
+            const cache = ContentCacheRegistry.namespace(CacheNamespace.Assets);
             const posterBlob =
               (await cache.get(`poster:${this.assetId}`)) ||
               (await cache.get(this.assetId));
@@ -275,13 +275,13 @@ export class MediabunnyWorkerReader {
 
       if (raw && typeof raw.convertToBlob === 'function') {
         raw.convertToBlob({ type: 'image/jpeg', quality: 0.8 }).then((blob: Blob) => {
-          const cache = ContentCacheRegistry.get();
+          const cache = ContentCacheRegistry.namespace(CacheNamespace.Assets);
           cache.set(`poster:${this.assetId}`, blob).catch(() => {});
         }).catch(() => {});
       } else if (raw && typeof raw.toBlob === 'function') {
         raw.toBlob((blob: Blob | null) => {
           if (blob) {
-            const cache = ContentCacheRegistry.get();
+            const cache = ContentCacheRegistry.namespace(CacheNamespace.Assets);
             cache.set(`poster:${this.assetId}`, blob).catch(() => {});
           }
         }, 'image/jpeg', 0.8);

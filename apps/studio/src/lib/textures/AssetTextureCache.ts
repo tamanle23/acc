@@ -4,7 +4,7 @@
  * Seamlessly decodes real image/video files into HTMLCanvasElement / ImageBitmap,
  * and procedurally generates rich sci-fi filmstrips and 3D textures for mock asset IDs.
  */
-import { ContentCacheRegistry, UniversalCanvasProvider } from '@acc/core-isomorphic';
+import { ContentCacheRegistry, CacheNamespace, UniversalCanvasProvider } from '@acc/core-isomorphic';
 
 export interface VisualAssetResult {
   source: CanvasImageSource | null;
@@ -265,7 +265,7 @@ export class AssetTextureCache implements Disposable {
     try {
       let blob: Blob | null = null;
       try {
-        const cache = ContentCacheRegistry.get();
+        const cache = ContentCacheRegistry.namespace(CacheNamespace.Assets);
         blob = await cache.get(assetId);
         if (!blob && src) {
           blob = await cache.get(src);
@@ -276,7 +276,7 @@ export class AssetTextureCache implements Disposable {
         const res = await fetch(src);
         blob = await res.blob();
         try {
-          const cache = ContentCacheRegistry.get();
+          const cache = ContentCacheRegistry.namespace(CacheNamespace.Assets);
           cache.set(assetId, blob).catch(() => { });
         } catch { }
       }

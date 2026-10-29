@@ -180,9 +180,9 @@ describe('WebCacheStrategy (Standard Web Cache API Strategy Pattern)', () => {
       const strategy = new WebCacheStrategy();
       ContentCacheRegistry.register(strategy, true);
 
-      expect(ContentCacheRegistry.has('web-cache')).toBe(true);
-      expect(ContentCacheRegistry.get().id).toBe('web-cache');
-      expect(ContentCacheRegistry.get('web-cache')).toBe(strategy);
+      expect(ContentCacheRegistry.hasStrategy('web-cache')).toBe(true);
+      expect(ContentCacheRegistry.getStrategy().id).toBe('web-cache');
+      expect(ContentCacheRegistry.getStrategy('web-cache')).toBe(strategy);
     });
   });
 });

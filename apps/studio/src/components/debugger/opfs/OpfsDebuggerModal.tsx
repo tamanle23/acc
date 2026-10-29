@@ -43,8 +43,8 @@ export function OpfsDebuggerModal({ open, onOpenChange }: OpfsDebuggerModalProps
   // Obtain or instantiate OpfsCacheStrategy
   const strategy = useMemo(() => {
     try {
-      if (ContentCacheRegistry.has(ContentCacheStrategyId.Opfs)) {
-        const found = ContentCacheRegistry.get(ContentCacheStrategyId.Opfs);
+      if (ContentCacheRegistry.hasStrategy(ContentCacheStrategyId.Opfs)) {
+        const found = ContentCacheRegistry.getStrategy(ContentCacheStrategyId.Opfs);
         if (found instanceof OpfsCacheStrategy) {
           return found;
         }
@@ -112,7 +112,7 @@ export function OpfsDebuggerModal({ open, onOpenChange }: OpfsDebuggerModalProps
       });
 
       try {
-        const blob = await strategy.readEntryBlob(node.name);
+        const blob = await strategy.readEntryBlob(node.path || node.name);
         if (!blob) {
           setFileDetails((prev) =>
             prev ? { ...prev, isLoading: false, error: 'File handle inaccessible' } : null

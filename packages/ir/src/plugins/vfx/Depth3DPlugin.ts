@@ -5,6 +5,7 @@ import {
   SegmentationStrategyId,
   Logger,
   ContentCacheRegistry,
+  CacheNamespace,
   CanvasAssetLoader,
   NativeResourceManager,
 } from '@acc/core-isomorphic';
@@ -249,7 +250,8 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
             seqScope.setMetadata('normal_map', normalMap);
             const normalBlob = new Blob([normalMap.normals.buffer], { type: 'application/octet-stream' });
             for (const k of cacheKeys) {
-              await ContentCacheRegistry.get().set(`normal_${k}`, normalBlob, {
+              const vfxCache = ContentCacheRegistry.namespace(CacheNamespace.VFX);
+              await vfxCache.set(`normal_${k}`, normalBlob, {
                 metadata: { width: normalMap.width, height: normalMap.height },
               });
             }
@@ -475,10 +477,11 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
         if (!normalMap) {
           for (const k of candidateKeys) {
             const normalKey = `normal_${k}`;
-            if (await ContentCacheRegistry.get().has(normalKey)) {
-              const blob = await ContentCacheRegistry.get().get(normalKey);
+            const vfxCache = ContentCacheRegistry.namespace(CacheNamespace.VFX);
+            if (await vfxCache.has(normalKey)) {
+              const blob = await vfxCache.get(normalKey);
               if (blob) {
-                const meta = await ContentCacheRegistry.get().getMetadata(normalKey);
+                const meta = await vfxCache.getMetadata(normalKey);
                 const ab = await blob.arrayBuffer();
                 normalMap = {
                   normals: new Float32Array(ab),
@@ -563,10 +566,11 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
         if (!normalMap) {
           for (const k of candidateKeys) {
             const normalKey = `normal_${k}`;
-            if (await ContentCacheRegistry.get().has(normalKey)) {
-              const blob = await ContentCacheRegistry.get().get(normalKey);
+            const vfxCache = ContentCacheRegistry.namespace(CacheNamespace.VFX);
+            if (await vfxCache.has(normalKey)) {
+              const blob = await vfxCache.get(normalKey);
               if (blob) {
-                const meta = await ContentCacheRegistry.get().getMetadata(normalKey);
+                const meta = await vfxCache.getMetadata(normalKey);
                 const ab = await blob.arrayBuffer();
                 normalMap = {
                   normals: new Float32Array(ab),

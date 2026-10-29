@@ -2,6 +2,7 @@ import {
   UniversalCanvasProvider,
   CanvasAssetLoader,
   ContentCacheRegistry,
+  CacheNamespace,
   fastChecksum,
   MediaEngineRegistry,
   AssetProtocolRegistry,
@@ -85,7 +86,7 @@ function resolvePath(baseDir: string, relativeOrAbsolute: string): string {
  * Coordinates transparently through ContentCacheRegistry and AssetProtocolRegistry.
  */
 async function loadAssetBytes(assetPathOrUri: string): Promise<Uint8Array | null> {
-  const cache = ContentCacheRegistry.get();
+  const cache = ContentCacheRegistry.namespace(CacheNamespace.Assets);
   if (await cache.has(assetPathOrUri)) {
     const blob = await cache.get(assetPathOrUri);
     if (blob) {
@@ -98,7 +99,7 @@ async function loadAssetBytes(assetPathOrUri: string): Promise<Uint8Array | null
 }
 
 export async function checkExists(p: string): Promise<boolean> {
-  const cache = ContentCacheRegistry.get();
+  const cache = ContentCacheRegistry.namespace(CacheNamespace.Assets);
   if (await cache.has(p)) return true;
   try {
     const blob = AssetProtocolRegistry.getInstance().resolve(p);
@@ -443,7 +444,7 @@ export async function resolveSubjectCutout(
 
     // 1. Check in-memory ContentCacheRegistry
     const cacheKey = `cutout_${segStratName}_${fChecksum}`;
-    const cache = ContentCacheRegistry.get();
+    const cache = ContentCacheRegistry.namespace(CacheNamespace.VFX);
     if (await cache.has(cacheKey)) {
       const data = await cache.get(cacheKey);
       if (data) {
@@ -490,7 +491,7 @@ export async function resolveDepthMapData(
   const fChecksum = fastChecksum(imgBuffer);
 
   const cacheKey = `depth_${depthStratName}_${fChecksum}`;
-  const cache = ContentCacheRegistry.get();
+  const cache = ContentCacheRegistry.namespace(CacheNamespace.VFX);
 
   let loadedDepth = false;
   if (await cache.has(cacheKey)) {

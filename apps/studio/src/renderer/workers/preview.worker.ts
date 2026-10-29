@@ -5,7 +5,7 @@ if (typeof self !== 'undefined' && typeof (self as any).window === 'undefined') 
 
 import { registerCoreModifierPlugins, type ResolvedTimeline } from '@acc/ir';
 import { IRPreviewEngine } from '../IRPreviewEngine';
-import { DeterministicTimelineClock, UniversalCanvasProvider, ContentCacheRegistry, NativeResourceManager } from '@acc/core-isomorphic';
+import { DeterministicTimelineClock, UniversalCanvasProvider, ContentCacheRegistry, CacheNamespace, NativeResourceManager } from '@acc/core-isomorphic';
 import { WebCanvasAdapter } from '@acc/core-web';
 import { MediabunnyWorkerReader } from './MediabunnyWorkerReader';
 import { PreviewFrameMemoryManager } from './PreviewFrameMemoryManager';
@@ -347,7 +347,7 @@ function syncAssetSources(assets: Record<string, { src?: string; type?: string }
         // Attempt zero-copy retrieval from ContentCacheRegistry before network fetch
         const resolveBlob = async (): Promise<Blob | null> => {
           try {
-            const cache = ContentCacheRegistry.get();
+            const cache = ContentCacheRegistry.namespace(CacheNamespace.Assets);
             const cached = (await cache.get(assetId)) || (await cache.get(url));
             if (cached) return cached;
           } catch {}
@@ -356,7 +356,7 @@ function syncAssetSources(assets: Record<string, { src?: string; type?: string }
             const blob = await res.blob();
             // Store to cache asynchronously
             try {
-              const cache = ContentCacheRegistry.get();
+              const cache = ContentCacheRegistry.namespace(CacheNamespace.Assets);
               cache.set(assetId, blob).catch(() => {});
             } catch {}
             return blob;
