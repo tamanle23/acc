@@ -14,7 +14,7 @@ import { defaultSandboxStore } from '../packages/sandbox/src/store';
 describe('Phase 2: Metadata Unified Sandbox Platform Parity', () => {
   beforeEach(() => {
     metadataSandboxRepo.reset();
-    defaultSandboxStore.getState().setActiveTenant('tenant-acme');
+    defaultSandboxStore.setActiveTenant('tenant-acme');
   });
 
   test('Route matcher handles /api/v1/metadata, /v1/metadata, and /api/metadata namespaces', () => {
