@@ -12,6 +12,7 @@ import {
   type AudioMixResult,
   type IAudioSourceProvider,
 } from '@acc/ir';
+import { NativeResourceManager } from '@acc/core-isomorphic';
 
 import type {
   PreviewWorkerCoordinator,
@@ -231,12 +232,19 @@ export class IRPreviewEngine {
     const textures = options.textureCache ?? this.defaultTextureCache;
     const activeSequences = this.intervalTree.queryActive(clampedFrame);
 
+    const resourceManager = NativeResourceManager.getInstance();
+    const frameScope = resourceManager.createFrameScope(`preview-frame-${clampedFrame}`);
+
     void IRCanvasCompositor.renderFrame(ctx, this.timeline, clampedFrame, {
       pluginRegistry: this.pluginRegistry,
       assetResolver: textures,
       clearColor: options.clearColor || '#000000',
       debugMode: options.debugMode,
       executionProfile: 'preview',
+      frameScope,
+      resourceManager,
+    }).finally(() => {
+      frameScope.dispose();
     });
 
     const latencyMs = performance.now() - start;

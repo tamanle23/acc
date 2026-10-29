@@ -31,3 +31,4 @@
 | 370 | [Scoped Native Resource Manager & Zero-Alloc Video Playback Pipeline](./370_scoped_native_resource_manager_and_zero_alloc_playback_pipeline.md) | Completed |
 | 371 | [Fix Studio Preview Canvas Black Screen](./371_fix_studio_preview_canvas_black_screen.md) | Completed |
 | 372 | [Iteration 45 Architecture Compliance Audit & Code Cleanup](./372_iteration_45_architecture_compliance_and_code_cleanup.md) | Completed |
+| 373 | [Headless Scoped Resource Engine & Unified Compositor RAII Parity](./373_headless_scoped_resource_engine_and_unified_compositor_raii.md) | Completed |

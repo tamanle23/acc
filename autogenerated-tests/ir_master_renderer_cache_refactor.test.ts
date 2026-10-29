@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from 'bun:test';
-import { ContentCacheRegistry, MemoryCacheStrategy, UniversalCanvasProvider } from '@acc/core-isomorphic';
-import { NapiCanvasAdapter } from '@acc/core';
+import { ContentCacheRegistry, UniversalCanvasProvider } from '@acc/core-isomorphic';
+import { NapiCanvasAdapter, NativeFileCacheStrategy } from '@acc/core';
 import {
   IRMasterRenderer,
   type ResolvedTimeline,
@@ -13,8 +13,8 @@ describe('IRMasterRenderer Pure Isomorphic & Universal Content Cache Integration
     UniversalCanvasProvider.registerAdapter(new NapiCanvasAdapter(), true);
   });
   it('preloads image asset directly from ContentCacheRegistry without disk access', async () => {
-    // 1. Setup isolated memory cache
-    const testStrategy = new MemoryCacheStrategy(100);
+    // 1. Setup isolated native file cache
+    const testStrategy = new NativeFileCacheStrategy({ maxBytes: 10 * 1024 * 1024 });
     ContentCacheRegistry.register(testStrategy, true);
 
     const assetKey = 'virtual://assets/test_overlay.png';
@@ -31,7 +31,7 @@ describe('IRMasterRenderer Pure Isomorphic & Universal Content Cache Integration
       0x42, 0x60, 0x82,
     ]);
 
-    await testStrategy.set(assetKey, pngBytes, { mimeType: 'image/png' });
+    await testStrategy.set(assetKey, new Blob([pngBytes], { type: 'image/png' }), { mimeType: 'image/png' });
     expect(await testStrategy.has(assetKey)).toBe(true);
 
     // 2. Build minimal timeline referencing this cached asset

@@ -21,6 +21,7 @@ export interface INativeResourceScope extends Disposable {
   register<T extends INativeResource>(resource: T): T;
   get(id: string): INativeResource | undefined;
   has(id: string): boolean;
+  onExit?(callback: () => void): void;
   dispose(): void;
   [Symbol.dispose](): void;
 }
@@ -120,6 +121,7 @@ export class NativeResourceWrapper implements INativeResource {
 export class FrameResourceScope implements INativeResourceScope {
   public readonly id: string;
   private resources = new Map<string, INativeResource>();
+  private cleanupCallbacks: Array<() => void> = [];
   private disposed = false;
   private onScopeDispose?: (scope: FrameResourceScope) => void;
 
@@ -141,6 +143,20 @@ export class FrameResourceScope implements INativeResourceScope {
     return resource;
   }
 
+  /**
+   * Registers a deterministic RAII cleanup callback executed in LIFO order on frame exit.
+   * Useful for returning borrowed pooled scratch canvases without destroying their backing buffer.
+   */
+  public onExit(callback: () => void): void {
+    if (this.disposed) {
+      try {
+        callback();
+      } catch {}
+      return;
+    }
+    this.cleanupCallbacks.push(callback);
+  }
+
   public get(id: string): INativeResource | undefined {
     return this.resources.get(id);
   }
@@ -157,6 +173,13 @@ export class FrameResourceScope implements INativeResourceScope {
       res.close();
     }
     this.resources.clear();
+
+    for (let i = this.cleanupCallbacks.length - 1; i >= 0; i--) {
+      try {
+        this.cleanupCallbacks[i]();
+      } catch {}
+    }
+    this.cleanupCallbacks.length = 0;
 
     if (this.onScopeDispose) {
       try {

@@ -35,13 +35,46 @@ export class NativeResourceManager {
   private resources = new Map<string, { resource: INativeResource; lastAccess: number }>();
   private scopes = new Map<string, INativeResourceScope>();
 
-  private constructor() {}
+  private constructor(maxGpuBytes?: number) {
+    if (maxGpuBytes !== undefined) {
+      this.setMaxGpuBytes(maxGpuBytes);
+    }
+  }
 
   public static getInstance(): NativeResourceManager {
     if (!NativeResourceManager.instance) {
       NativeResourceManager.instance = new NativeResourceManager();
     }
     return NativeResourceManager.instance;
+  }
+
+  /**
+   * Factory method creating an isolated resource manager instance for worker threads
+   * or independent chunk rendering pipelines without sharing global singleton state.
+   */
+  public static createIsolated(maxGpuBytes?: number): NativeResourceManager {
+    return new NativeResourceManager(maxGpuBytes);
+  }
+
+  /**
+   * Computes optimal native GPU/heap memory budget based on canvas resolution
+   * or explicit override in megabytes.
+   */
+  public static computeResolutionBudgetBytes(
+    width: number,
+    height: number,
+    customMaxMemoryMb?: number
+  ): number {
+    if (customMaxMemoryMb !== undefined && customMaxMemoryMb > 0) {
+      return Math.max(16, customMaxMemoryMb) * 1024 * 1024;
+    }
+    if (width >= 3840 || height >= 2160) {
+      return 256 * 1024 * 1024; // 256 MB for 4K+
+    }
+    if (width >= 2560 || height >= 1440) {
+      return 128 * 1024 * 1024; // 128 MB for 2K/1440p
+    }
+    return 64 * 1024 * 1024; // 64 MB default for <=1080p
   }
 
   public setMaxGpuBytes(maxBytes: number): void {
@@ -91,6 +124,28 @@ export class NativeResourceManager {
     if (scope) {
       scope.dispose();
       this.scopes.delete(sequenceId);
+    }
+  }
+
+  /**
+   * Checks whether an active sequence scope exists for the given sequence ID.
+   */
+  public hasSequenceScope(sequenceId: string): boolean {
+    const scope = this.scopes.get(sequenceId);
+    return Boolean(scope && !scope.isDisposed && scope instanceof SequenceResourceScope);
+  }
+
+  /**
+   * Disposes all active SequenceResourceScopes while leaving pinned global resources intact.
+   */
+  public disposeAllSequenceScopes(): void {
+    for (const [id, scope] of Array.from(this.scopes.entries())) {
+      if (scope instanceof SequenceResourceScope) {
+        try {
+          scope.dispose();
+        } catch {}
+        this.scopes.delete(id);
+      }
     }
   }
 

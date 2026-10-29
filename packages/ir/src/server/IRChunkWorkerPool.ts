@@ -6,6 +6,7 @@ import {
   type MediaEngineType,
   ContentCacheRegistry,
   UniversalHasher,
+  NativeResourceManager,
 } from '@acc/core-isomorphic';
 
 export interface ChunkSlice {
@@ -24,6 +25,7 @@ export interface IRWorkerPoolOptions {
   seed?: number;
   generateFrameHash?: boolean;
   jobId?: string;
+  maxMemoryMb?: number;
   onProgress?: (progress: {
     completedChunks: number;
     totalChunks: number;
@@ -336,24 +338,43 @@ export class IRChunkWorkerPool {
         }
       }
 
-    const effectiveSeed = options.seed ?? this.seed;
-    const workerRenderer = new IRMasterRenderer(this.timeline, effectiveSeed);
+      const effectiveSeed = options.seed ?? this.seed;
+      const { w: width, h: height } = this.timeline.meta.canvasSize;
+      const isolatedBudget = NativeResourceManager.computeResolutionBudgetBytes(
+        width,
+        height,
+        options.maxMemoryMb
+      );
+      const workerResourceManager = NativeResourceManager.createIsolated(isolatedBudget);
+      const workerRenderer = new IRMasterRenderer(
+        this.timeline,
+        effectiveSeed,
+        undefined,
+        workerResourceManager
+      );
 
       let sink: IIRFrameSink | undefined;
       if (chunkMp4Path) {
         sink = MediaEngineRegistry.get(options.engine).createVideoSink() as IIRFrameSink;
       }
 
-      const chunkResult = await workerRenderer.render({
-        sink,
-        outputPath: chunkMp4Path,
-        audioPath: undefined,
-        skipAudio: true, // Video chunks are pure video streams; audio muxed once on final stitch
-        baseDir,
-        chunkStart: slice.startFrame,
-        chunkEnd: slice.endFrame,
-        generateFrameHash: options.generateFrameHash ?? false,
-      });
+      let chunkResult: Awaited<ReturnType<IRMasterRenderer['render']>>;
+      try {
+        chunkResult = await workerRenderer.render({
+          sink,
+          outputPath: chunkMp4Path,
+          audioPath: undefined,
+          skipAudio: true, // Video chunks are pure video streams; audio muxed once on final stitch
+          baseDir,
+          chunkStart: slice.startFrame,
+          chunkEnd: slice.endFrame,
+          generateFrameHash: options.generateFrameHash ?? false,
+          maxMemoryMb: options.maxMemoryMb,
+        });
+      } finally {
+        workerRenderer.dispose();
+        workerResourceManager.clear();
+      }
 
       chunkHashes[slice.chunkIndex] = chunkResult.cumulativeHash;
 

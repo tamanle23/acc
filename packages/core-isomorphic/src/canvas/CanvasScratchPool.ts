@@ -115,14 +115,34 @@ export class CanvasScratchPool {
 
     if (bucket.length < this.maxPerBucket) {
       bucket.push(target);
+    } else {
+      this.destroyCanvasBacking(target);
     }
-    // Else let excess canvases be naturally collected by GC
+  }
+
+  private destroyCanvasBacking(canvas: ICanvasInstance | any): void {
+    try {
+      const raw = typeof canvas?.getRawCanvas === 'function' ? canvas.getRawCanvas() : canvas;
+      if (raw) {
+        if (typeof raw.close === 'function') {
+          raw.close();
+        } else {
+          raw.width = 0;
+          raw.height = 0;
+        }
+      }
+    } catch {}
   }
 
   /**
-   * Empties all pooled canvases and resets tracking.
+   * Empties all pooled canvases, immediately freeing their native backing stores.
    */
   public clear(): void {
+    for (const bucket of this.pool.values()) {
+      for (const canvas of bucket) {
+        this.destroyCanvasBacking(canvas);
+      }
+    }
     this.pool.clear();
     this.inUseSet.clear();
   }

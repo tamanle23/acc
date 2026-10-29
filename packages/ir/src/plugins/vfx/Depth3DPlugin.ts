@@ -477,20 +477,23 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
 
       // Dynamic Relighting Pass (Phase 1)
       if (params.relighting?.enabled) {
-        let normalMap: SurfaceNormalMap | undefined;
-        for (const k of candidateKeys) {
-          const normalKey = `normal_${k}`;
-          if (await ContentCacheRegistry.get().has(normalKey)) {
-            const blob = await ContentCacheRegistry.get().get(normalKey);
-            if (blob) {
-              const meta = await ContentCacheRegistry.get().getMetadata(normalKey);
-              const ab = await blob.arrayBuffer();
-              normalMap = {
-                normals: new Float32Array(ab),
-                width: (meta?.metadata?.width as number) || width,
-                height: (meta?.metadata?.height as number) || height,
-              };
-              break;
+        let normalMap: SurfaceNormalMap | undefined = (sequence as any)._prebakedNormalMap;
+        if (!normalMap) {
+          for (const k of candidateKeys) {
+            const normalKey = `normal_${k}`;
+            if (await ContentCacheRegistry.get().has(normalKey)) {
+              const blob = await ContentCacheRegistry.get().get(normalKey);
+              if (blob) {
+                const meta = await ContentCacheRegistry.get().getMetadata(normalKey);
+                const ab = await blob.arrayBuffer();
+                normalMap = {
+                  normals: new Float32Array(ab),
+                  width: (meta?.metadata?.width as number) || width,
+                  height: (meta?.metadata?.height as number) || height,
+                };
+                (sequence as any)._prebakedNormalMap = normalMap;
+                break;
+              }
             }
           }
         }
@@ -562,20 +565,23 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
           }
         }
       } else if (ctx.debugMode === 'normals') {
-        let normalMap: SurfaceNormalMap | undefined;
-        for (const k of candidateKeys) {
-          const normalKey = `normal_${k}`;
-          if (await ContentCacheRegistry.get().has(normalKey)) {
-            const blob = await ContentCacheRegistry.get().get(normalKey);
-            if (blob) {
-              const meta = await ContentCacheRegistry.get().getMetadata(normalKey);
-              const ab = await blob.arrayBuffer();
-              normalMap = {
-                normals: new Float32Array(ab),
-                width: (meta?.metadata?.width as number) || width,
-                height: (meta?.metadata?.height as number) || height,
-              };
-              break;
+        let normalMap: SurfaceNormalMap | undefined = (sequence as any)._prebakedNormalMap;
+        if (!normalMap) {
+          for (const k of candidateKeys) {
+            const normalKey = `normal_${k}`;
+            if (await ContentCacheRegistry.get().has(normalKey)) {
+              const blob = await ContentCacheRegistry.get().get(normalKey);
+              if (blob) {
+                const meta = await ContentCacheRegistry.get().getMetadata(normalKey);
+                const ab = await blob.arrayBuffer();
+                normalMap = {
+                  normals: new Float32Array(ab),
+                  width: (meta?.metadata?.width as number) || width,
+                  height: (meta?.metadata?.height as number) || height,
+                };
+                (sequence as any)._prebakedNormalMap = normalMap;
+                break;
+              }
             }
           }
         }

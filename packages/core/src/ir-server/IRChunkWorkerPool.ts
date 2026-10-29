@@ -4,7 +4,11 @@ import path from 'path';
 import os from 'os';
 import type { ResolvedTimeline, IIRFrameSink } from '@acc/ir';
 import { IRMasterRenderer, DecoupledAudioMixer } from '@acc/ir';
-import { MediaEngineRegistry, type MediaEngineType } from '@acc/core-isomorphic';
+import {
+  MediaEngineRegistry,
+  type MediaEngineType,
+  NativeResourceManager,
+} from '@acc/core-isomorphic';
 
 export interface ChunkSlice {
   chunkIndex: number;
@@ -22,6 +26,7 @@ export interface IRWorkerPoolOptions {
   seed?: number;
   generateFrameHash?: boolean;
   jobId?: string;
+  maxMemoryMb?: number;
   onProgress?: (progress: {
     completedChunks: number;
     totalChunks: number;
@@ -212,24 +217,43 @@ export class IRChunkWorkerPool {
         }
       }
 
-      // Each worker gets an isolated renderer instance seeded deterministically with the global seed
-      const workerRenderer = new IRMasterRenderer(this.timeline, this.seed);
+      // Each worker gets an isolated renderer and isolated resource manager instance
+      const { w: width, h: height } = this.timeline.meta.canvasSize;
+      const isolatedBudget = NativeResourceManager.computeResolutionBudgetBytes(
+        width,
+        height,
+        options.maxMemoryMb
+      );
+      const workerResourceManager = NativeResourceManager.createIsolated(isolatedBudget);
+      const workerRenderer = new IRMasterRenderer(
+        this.timeline,
+        this.seed,
+        undefined,
+        workerResourceManager
+      );
 
       let sink: IIRFrameSink | undefined;
       if (chunkMp4Path) {
         sink = MediaEngineRegistry.get(options.engine).createVideoSink() as IIRFrameSink;
       }
 
-      const chunkResult = await workerRenderer.render({
-        sink,
-        outputPath: chunkMp4Path,
-        audioPath: undefined,
-        skipAudio: true, // Video chunks are pure video streams; audio muxed once on final stitch
-        baseDir,
-        chunkStart: slice.startFrame,
-        chunkEnd: slice.endFrame,
-        generateFrameHash: options.generateFrameHash ?? false,
-      });
+      let chunkResult: Awaited<ReturnType<IRMasterRenderer['render']>>;
+      try {
+        chunkResult = await workerRenderer.render({
+          sink,
+          outputPath: chunkMp4Path,
+          audioPath: undefined,
+          skipAudio: true, // Video chunks are pure video streams; audio muxed once on final stitch
+          baseDir,
+          chunkStart: slice.startFrame,
+          chunkEnd: slice.endFrame,
+          generateFrameHash: options.generateFrameHash ?? false,
+          maxMemoryMb: options.maxMemoryMb,
+        });
+      } finally {
+        workerRenderer.dispose();
+        workerResourceManager.clear();
+      }
 
       chunkHashes[slice.chunkIndex] = chunkResult.cumulativeHash;
 

@@ -7,7 +7,12 @@ import {
 } from './audio/UniversalAudioMixer';
 import type { IIRFrameSink, SinkFinalizeResult } from './sink/IIRFrameSink';
 import { ModifierPluginRegistry, registerCoreModifierPlugins, createIsolatedCoreModifierPlugins } from '../plugins';
-import { UniversalCanvasProvider, CanvasAssetLoader, ContentCacheRegistry } from '@acc/core-isomorphic';
+import {
+  UniversalCanvasProvider,
+  CanvasAssetLoader,
+  ContentCacheRegistry,
+  NativeResourceManager,
+} from '@acc/core-isomorphic';
 import { MediaEngineRegistry, type IVideoDecoder, type MediaEngineType } from '@acc/core-isomorphic';
 import { IRCanvasCompositor, type IAssetSourceResolver } from './shared/IRCanvasCompositor';
 
@@ -22,6 +27,7 @@ export interface HeadlessRenderOptions {
   chunkStart?: number;
   chunkEnd?: number;
   skipAudio?: boolean;
+  maxMemoryMb?: number;
 }
 
 export interface HeadlessRenderResult {
@@ -138,24 +144,202 @@ class UniversalHasher {
  * Feeds dual target sinks (FFIVideoEncoderSink or PreviewCanvasSink).
  * Pure isomorphic TS with zero static fs or path dependencies.
  */
-export class IRMasterRenderer {
+export class IRMasterRenderer implements Disposable {
   private timeline: ResolvedTimeline;
   private noiseGen: DeterministicNoiseGenerator;
   private lock: FrameBackpressureLock;
   private audioMixer: UniversalAudioMixer;
   private pluginRegistry: ModifierPluginRegistry;
+  private resourceManager: NativeResourceManager;
 
   // Cached assets to prevent disk/network re-reads in render loop
   private imageCache: Map<string, any> = new Map();
   private videoDecoders: Map<string, IVideoDecoder> = new Map();
 
-  constructor(timeline: ResolvedTimeline, seed: number = 42, pluginRegistry?: ModifierPluginRegistry) {
+  // Lookahead asset lifespan tracking for sliding hybrid sequence eviction
+  private assetLastEndFrame: Map<string, number> = new Map();
+  private sequencesByAssetKey: Map<string, ResolvedSequence[]> = new Map();
+  private preflightedSequenceIds: Set<string> = new Set();
+  private evictedAssetKeys: Set<string> = new Set();
+
+  constructor(
+    timeline: ResolvedTimeline,
+    seed: number = 42,
+    pluginRegistry?: ModifierPluginRegistry,
+    resourceManager?: NativeResourceManager
+  ) {
     this.timeline = timeline;
     this.noiseGen = new DeterministicNoiseGenerator(seed);
     this.lock = new FrameBackpressureLock();
     this.audioMixer = new UniversalAudioMixer([], 48000);
     // Use passed isolated registry or create an isolated one for deterministic multi-worker safety
     this.pluginRegistry = pluginRegistry ?? createIsolatedCoreModifierPlugins();
+    this.resourceManager = resourceManager ?? NativeResourceManager.getInstance();
+    this.computeAssetLifespans();
+  }
+
+  public getResourceManager(): NativeResourceManager {
+    return this.resourceManager;
+  }
+
+  /**
+   * Computes the canonical asset key for a sequence to identify shared asset reuse across cuts.
+   */
+  private getSequenceAssetKey(seq: ResolvedSequence): string {
+    return seq.assetId || (seq as any).src || seq.id;
+  }
+
+  /**
+   * Scans the timeline to map each asset/cache key to the final frame it is referenced on.
+   * Enables deterministic sliding eviction as soon as an asset's final sequence completes.
+   */
+  private computeAssetLifespans(): void {
+    this.assetLastEndFrame.clear();
+    this.sequencesByAssetKey.clear();
+
+    for (const track of this.timeline.tracks.values()) {
+      if ((track as any).muted === true || (track.style as any)?.visible === false) {
+        continue;
+      }
+      for (const seq of track.sequences) {
+        if ((seq as any).enabled === false) continue;
+        const key = this.getSequenceAssetKey(seq);
+        const prevMax = this.assetLastEndFrame.get(key) ?? 0;
+        if (seq.endFrame > prevMax) {
+          this.assetLastEndFrame.set(key, seq.endFrame);
+        }
+        let list = this.sequencesByAssetKey.get(key);
+        if (!list) {
+          list = [];
+          this.sequencesByAssetKey.set(key, list);
+        }
+        list.push(seq);
+      }
+    }
+  }
+
+  /**
+   * Executes Just-In-Time Phase 1 preflight for sequences becoming active at globalFrame.
+   * If an earlier sequence sharing the same asset key already baked textures, propagates them
+   * to avoid redundant re-decoding or re-allocation.
+   */
+  private async ensureActiveSequencesPreflighted(
+    globalFrame: number,
+    width: number,
+    height: number,
+    fps: number
+  ): Promise<void> {
+    for (const track of this.timeline.tracks.values()) {
+      if ((track as any).muted === true || (track.style as any)?.visible === false) {
+        continue;
+      }
+      for (const seq of track.sequences) {
+        if ((seq as any).enabled === false) continue;
+        if (globalFrame >= seq.startFrame && globalFrame < seq.endFrame) {
+          if (this.preflightedSequenceIds.has(seq.id)) continue;
+          this.preflightedSequenceIds.add(seq.id);
+
+          // Check if another sequence with the same asset key already has prebaked data
+          const assetKey = this.getSequenceAssetKey(seq);
+          const siblings = this.sequencesByAssetKey.get(assetKey) || [];
+          for (const sibling of siblings) {
+            if (sibling.id !== seq.id) {
+              if ((sibling as any)._prebakedCutout && !(seq as any)._prebakedCutout) {
+                (seq as any)._prebakedCutout = (sibling as any)._prebakedCutout;
+              }
+              if ((sibling as any)._prebakedDepthData && !(seq as any)._prebakedDepthData) {
+                (seq as any)._prebakedDepthData = (sibling as any)._prebakedDepthData;
+              }
+              if ((sibling as any)._prebakedBgCanvas && !(seq as any)._prebakedBgCanvas) {
+                (seq as any)._prebakedBgCanvas = (sibling as any)._prebakedBgCanvas;
+              }
+              if ((sibling as any)._prebakedWiggleBase && !(seq as any)._prebakedWiggleBase) {
+                (seq as any)._prebakedWiggleBase = (sibling as any)._prebakedWiggleBase;
+              }
+              if ((sibling as any)._prebakedCamera3D && !(seq as any)._prebakedCamera3D) {
+                (seq as any)._prebakedCamera3D = (sibling as any)._prebakedCamera3D;
+              }
+            }
+          }
+
+          if (seq.modifiers) {
+            for (const mod of seq.modifiers) {
+              const plugin = this.pluginRegistry.get(mod.type);
+              if (plugin && plugin.execute) {
+                await plugin.execute(
+                  {
+                    targetType: 'sequence',
+                    targetEntity: seq,
+                    timeline: new Map(),
+                    fps,
+                    canvas: { width, height },
+                  },
+                  mod.params
+                );
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Sliding Hybrid Sequence Scope Eviction:
+   * Immediately disposes a sequence's SequenceResourceScope when its out-point passes,
+   * unless a subsequent sequence on the timeline shares the exact same asset key.
+   */
+  private evictExpiredSequences(completedFrame: number): void {
+    const nextFrame = completedFrame + 1;
+
+    for (const track of this.timeline.tracks.values()) {
+      for (const seq of track.sequences) {
+        if (nextFrame >= seq.endFrame) {
+          const assetKey = this.getSequenceAssetKey(seq);
+          if (this.evictedAssetKeys.has(assetKey)) {
+            continue;
+          }
+
+          const lastReferencedFrame = this.assetLastEndFrame.get(assetKey) ?? seq.endFrame;
+          if (nextFrame >= lastReferencedFrame) {
+            // No future sequence on the timeline references this asset key -> evict all sibling scopes
+            this.evictedAssetKeys.add(assetKey);
+            const siblings = this.sequencesByAssetKey.get(assetKey) || [seq];
+            for (const s of siblings) {
+              this.resourceManager.disposeSequenceScope(s.id);
+              if (this.resourceManager !== NativeResourceManager.getInstance()) {
+                NativeResourceManager.getInstance().disposeSequenceScope(s.id);
+              }
+              delete (s as any)._prebakedCutout;
+              delete (s as any)._prebakedDepthData;
+              delete (s as any)._prebakedBgCanvas;
+              delete (s as any)._prebakedWiggleBase;
+              delete (s as any)._prebakedCamera3D;
+            }
+
+            if (seq.assetId && this.imageCache.has(seq.assetId)) {
+              const img = this.imageCache.get(seq.assetId);
+              this.imageCache.delete(seq.assetId);
+              if (img && typeof img.close === 'function') {
+                try {
+                  img.close();
+                } catch {}
+              }
+            }
+
+            if (seq.assetId && this.videoDecoders.has(seq.assetId)) {
+              const dec = this.videoDecoders.get(seq.assetId);
+              this.videoDecoders.delete(seq.assetId);
+              if (dec) {
+                try {
+                  dec.close();
+                } catch {}
+              }
+            }
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -186,7 +370,12 @@ export class IRMasterRenderer {
         let cachedBytes: Uint8Array | null = null;
 
         if (assetExists) {
-          cachedBytes = await cache.get(resolvedPath);
+          const cachedVal = await cache.get(resolvedPath);
+          if (cachedVal instanceof Blob) {
+            cachedBytes = new Uint8Array(await cachedVal.arrayBuffer());
+          } else if (cachedVal instanceof Uint8Array) {
+            cachedBytes = cachedVal;
+          }
         } else if (typeof process !== 'undefined' && process.versions?.node) {
           try {
             const fsModule = await import('fs');
@@ -234,12 +423,28 @@ export class IRMasterRenderer {
     const fps = this.timeline.meta.globalFps;
     const sink = options.sink;
 
+    // Configure dynamic resolution-aware native GPU/heap memory ceiling
+    const budgetBytes = NativeResourceManager.computeResolutionBudgetBytes(
+      width,
+      height,
+      options.maxMemoryMb
+    );
+    this.resourceManager.setMaxGpuBytes(budgetBytes);
+    if (this.resourceManager !== NativeResourceManager.getInstance()) {
+      NativeResourceManager.getInstance().setMaxGpuBytes(budgetBytes);
+    }
+
+    // Recompute lookahead lifespans for current timeline state
+    this.computeAssetLifespans();
+    this.preflightedSequenceIds.clear();
+    this.evictedAssetKeys.clear();
+
     // Preload assets if baseDir provided or assets exist
     if (this.timeline.assets && this.imageCache.size === 0) {
       await this.preloadAssets(options.baseDir || '.');
     }
 
-    // Pre-flight execution for all modifiers (e.g. Depth3D cutout pre-resolution, asset analysis)
+    // Pre-flight execution for track-level modifiers; sequence-level modifiers run JIT when entering active window
     for (const track of this.timeline.tracks.values()) {
       if (track.modifiers) {
         for (const mod of track.modifiers) {
@@ -255,25 +460,6 @@ export class IRMasterRenderer {
               },
               mod.params
             );
-          }
-        }
-      }
-      for (const seq of track.sequences) {
-        if (seq.modifiers) {
-          for (const mod of seq.modifiers) {
-            const plugin = this.pluginRegistry.get(mod.type);
-            if (plugin && plugin.execute) {
-              await plugin.execute(
-                {
-                  targetType: 'sequence',
-                  targetEntity: seq,
-                  timeline: new Map(),
-                  fps,
-                  canvas: { width, height },
-                },
-                mod.params
-              );
-            }
           }
         }
       }
@@ -356,6 +542,9 @@ export class IRMasterRenderer {
       // Synchronous backpressure acquire
       await this.lock.acquire(f);
 
+      // JIT preflight for sequences active at globalFrame
+      await this.ensureActiveSequencesPreflighted(globalFrame, width, height, fps);
+
       // Evaluate active sequences and procedural/visual rasterization for frame t
       if (canvas && canvasCtx) {
         await this.renderCanvasFrame(globalFrame, width, height, canvas, canvasCtx, framePixelBuffer);
@@ -376,6 +565,9 @@ export class IRMasterRenderer {
         frameHashes.push(frameHash);
         hashAccumulator.update(frameHash);
       }
+
+      // Sliding Hybrid Eviction: free SequenceResourceScopes whose out-point has passed without downstream reuse
+      this.evictExpiredSequences(globalFrame);
 
       // Simulate instantaneous consumer consumption ack
       this.lock.acknowledge(f);
@@ -436,7 +628,7 @@ export class IRMasterRenderer {
 
   private hasVisualTracks(): boolean {
     for (const track of this.timeline.tracks.values()) {
-      if (track.type === 'video' || track.type === 'timed_text') {
+      if (track.type === 'video' || track.type === 'image' || track.type === 'overlay' || track.type === 'timed_text') {
         return true;
       }
     }
@@ -444,7 +636,7 @@ export class IRMasterRenderer {
   }
 
   /**
-   * Zero-Allocation Frame Loop:
+   * Zero-Allocation Frame Loop with Transient FrameResourceScope RAII:
    * Composites active visual and timed-text layers onto reusable canvas and copies raw bytes into preallocated buffer.
    * Delegates directly to the canonical IRCanvasCompositor.
    */
@@ -456,6 +648,8 @@ export class IRMasterRenderer {
     ctx: any,
     buffer: Uint8Array
   ): Promise<void> {
+    const frameScope = this.resourceManager.createFrameScope(`master-frame-${t}`);
+
     // 1. Asynchronously pre-fetch next frame from active video decoders if required
     const activeVideoFrames = new Map<string, any>();
     for (const [assetId, decoder] of this.videoDecoders) {
@@ -463,6 +657,9 @@ export class IRMasterRenderer {
         const frame = await decoder.readNextFrame();
         if (frame) {
           activeVideoFrames.set(assetId, frame);
+          this.resourceManager.register(`video-frame-${t}-${assetId}`, frame, {
+            scope: frameScope,
+          });
         }
       } catch {}
     }
@@ -484,7 +681,7 @@ export class IRMasterRenderer {
       },
     };
 
-    // 3. Delegate to canonical IRCanvasCompositor with 'master' execution profile
+    // 3. Delegate to canonical IRCanvasCompositor with 'master' execution profile and active frameScope
     try {
       await IRCanvasCompositor.renderFrame(ctx, this.timeline, t, {
         pluginRegistry: this.pluginRegistry,
@@ -492,9 +689,11 @@ export class IRMasterRenderer {
         clearColor: '#000000',
         executionProfile: 'master',
         generatePixelBuffer: buffer,
+        frameScope,
+        resourceManager: this.resourceManager,
       });
     } finally {
-      // Ensure any remaining frames (e.g. from culled or hidden tracks) are closed immediately
+      // Ensure any remaining frames (e.g. from culled or hidden tracks) and scratch buffers are closed immediately
       for (const frame of activeVideoFrames.values()) {
         try {
           if (frame && typeof frame.close === 'function') {
@@ -503,6 +702,7 @@ export class IRMasterRenderer {
         } catch {}
       }
       activeVideoFrames.clear();
+      frameScope.dispose();
     }
   }
 
@@ -514,5 +714,31 @@ export class IRMasterRenderer {
     // Fill buffer with deterministic pattern (reusable memory loop)
     // To ensure zero allocation, we mutate buffer in-place
     buffer.fill(pixelByte);
+  }
+
+  /**
+   * Explicitly disposes all sequence scopes, cached images, and video decoders owned by this renderer.
+   */
+  public dispose(): void {
+    this.resourceManager.disposeAllSequenceScopes();
+    for (const img of this.imageCache.values()) {
+      if (img && typeof img.close === 'function') {
+        try {
+          img.close();
+        } catch {}
+      }
+    }
+    this.imageCache.clear();
+
+    for (const dec of this.videoDecoders.values()) {
+      try {
+        dec.close();
+      } catch {}
+    }
+    this.videoDecoders.clear();
+  }
+
+  public [Symbol.dispose](): void {
+    this.dispose();
   }
 }
