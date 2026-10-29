@@ -125,6 +125,7 @@ export type ModifierCategory =
   | 'transitions'
   | 'audio'
   | 'text'
+  | 'time_space'
   | 'custom';
 
 export type ModifierIconComponent = React.ComponentType<{ className?: string }>;
@@ -566,7 +567,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
   },
   time_space: {
     name: 'Time-Space Motion Graphic (Legacy)',
-    category: 'motion',
+    category: 'time_space',
     icon: Sparkles,
     supportedTrackTypes: ['video', 'overlay', 'image'],
     defaultParams: {
@@ -582,7 +583,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
   },
   'time_space/callout_leader': {
     name: 'Tracking Callout Leader',
-    category: 'motion',
+    category: 'time_space',
     icon: Sparkles,
     supportedTrackTypes: ['video', 'overlay', 'image'],
     defaultParams: {
@@ -601,7 +602,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
   },
   'time_space/callout_multitarget': {
     name: 'Multi-Target Leader Callout',
-    category: 'motion',
+    category: 'time_space',
     icon: Sparkles,
     supportedTrackTypes: ['video', 'overlay', 'image'],
     defaultParams: {
@@ -618,7 +619,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
   },
   'time_space/hud_reticle': {
     name: 'HUD Tactical Reticle',
-    category: 'motion',
+    category: 'time_space',
     icon: Sparkles,
     supportedTrackTypes: ['video', 'overlay', 'image'],
     defaultParams: {
@@ -635,7 +636,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
   },
   'time_space/kinetic_title': {
     name: 'Kinetic Pop-In Title',
-    category: 'motion',
+    category: 'time_space',
     icon: Type,
     supportedTrackTypes: ['video', 'overlay', 'image', 'timed_text'],
     defaultParams: {
@@ -652,7 +653,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
   },
   'time_space/cyber_lower_third': {
     name: 'Cyber Tech Lower-Third',
-    category: 'motion',
+    category: 'time_space',
     icon: Film,
     supportedTrackTypes: ['video', 'overlay', 'image'],
     defaultParams: {
@@ -670,7 +671,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
   },
   'time_space/countdown': {
     name: 'Cinematic Countdown Timer',
-    category: 'motion',
+    category: 'time_space',
     icon: Clock,
     supportedTrackTypes: ['video', 'overlay', 'image'],
     defaultParams: {
@@ -686,7 +687,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
   },
   'time_space/network_plexus': {
     name: 'Proximity Network Plexus',
-    category: 'motion',
+    category: 'time_space',
     icon: Layers,
     supportedTrackTypes: ['video', 'overlay', 'image'],
     defaultParams: {
@@ -701,7 +702,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
   },
   'time_space/audio_waveform': {
     name: 'Radial Audio Waveform Ring',
-    category: 'motion',
+    category: 'time_space',
     icon: Music,
     supportedTrackTypes: ['video', 'overlay', 'image', 'audio'],
     defaultParams: {
@@ -718,7 +719,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
   },
   'time_space/audio_spectrum': {
     name: 'Dynamic Audio Equalizer Spectrum',
-    category: 'motion',
+    category: 'time_space',
     icon: Volume2,
     supportedTrackTypes: ['video', 'overlay', 'image', 'audio'],
     defaultParams: {
@@ -734,7 +735,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
   },
   'time_space/superformula': {
     name: 'Parametric Superformula Geometry',
-    category: 'motion',
+    category: 'time_space',
     icon: Sparkles,
     supportedTrackTypes: ['video', 'overlay', 'image'],
     defaultParams: {
@@ -751,7 +752,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
   },
   'time_space/energy_shield': {
     name: 'Energy Shield Hex Lattice',
-    category: 'motion',
+    category: 'time_space',
     icon: Monitor,
     supportedTrackTypes: ['video', 'overlay', 'image'],
     defaultParams: {
@@ -767,7 +768,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
   },
   'time_space/glitch_data_stream': {
     name: 'Glitch Data Stream Matrix',
-    category: 'motion',
+    category: 'time_space',
     icon: Move,
     supportedTrackTypes: ['video', 'overlay', 'image'],
     defaultParams: {

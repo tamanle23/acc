@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback, useEffect } from 'react';
+import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { IRStateManager } from '../lib/ir/irState';
 import { useIRState } from '../lib/ir/useStudioStore';
@@ -18,6 +18,8 @@ import {
   usePreviewHotkeys,
   useViewportRenderStrategy,
 } from './preview/index';
+
+const EMPTY_ASSETS: Record<string, any> = {};
 
 interface PreviewProps {
   playhead: {
@@ -85,8 +87,11 @@ export function Preview({
   // Domain Hook 1: Pan & Zoom Navigation
   const panZoom = useViewportPanZoom();
 
-  // Query active sequences for hit detection, textures & rendering
-  const activeSequences = irState.intervalTree?.queryActive(currentFrame) || [];
+  // Query active sequences for hit detection, textures & rendering (memoized to prevent redundant texture sync during drag)
+  const activeSequences = useMemo(
+    () => irState.intervalTree?.queryActive(currentFrame) || [],
+    [irState.intervalTree, currentFrame]
+  );
   const clearColor = showCheckerboard ? 'transparent' : '#000000';
   const debugMode =
     visionPassMode === 'depth' || showDepthHeatmap
@@ -102,7 +107,7 @@ export function Preview({
     canvasRef,
     overlayCanvasRef,
     timeline: irState.timeline,
-    assetsMap: irState.doc?.assets || {},
+    assetsMap: irState.doc?.assets || EMPTY_ASSETS,
     width,
     height,
     fps,
@@ -329,10 +334,10 @@ export function Preview({
               transform={gizmo.transform}
               isDragging={gizmo.isDragging}
               previewEngine={renderStrategy.previewEngine}
-              transformSensors={gizmo.transformSensors}
-              onTransformDragStart={gizmo.handleTransformDragStart}
-              onTransformDragMove={gizmo.handleTransformDragMove}
-              onTransformDragEnd={gizmo.handleTransformDragEnd}
+              onHandlePointerDown={gizmo.handlePointerDown}
+              onHandlePointerMove={gizmo.handlePointerMove}
+              onHandlePointerUp={gizmo.handlePointerUp}
+              onHandlePointerCancel={gizmo.handlePointerCancel}
               onSetTransform={gizmo.setTransform}
               onToggleLock={() => setIsLocked(!isLocked)}
               onStartEditingCue={setEditingCue}

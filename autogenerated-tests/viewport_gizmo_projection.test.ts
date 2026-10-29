@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'bun:test';
 import { IRPreviewEngine } from '../apps/studio/src/renderer/IRPreviewEngine';
+import { Gizmo2DTransformation, type BoundingBox2D } from '../apps/studio/src/lib/gizmo';
 import type { ResolvedTimeline } from '../packages/ir/src/types/VideoIR';
 
 describe('Viewport Gizmo Projection & Ephemeral Transform Suite', () => {
@@ -45,27 +46,26 @@ describe('Viewport Gizmo Projection & Ephemeral Transform Suite', () => {
   });
 
   it('IRPreviewEngine manages ephemeral transform overrides with live merging during drag', () => {
+    const mockSeq = {
+      id: 'seq-test',
+      startFrame: 0,
+      durationFrames: 60,
+      endFrame: 60,
+      modifiers: [
+        {
+          type: 'transform',
+          params: { x: 100, y: 50, scale: 1.0, rotation: 0, opacity: 1.0 },
+        },
+      ],
+    };
+
     const mockTimeline: ResolvedTimeline = {
       meta: { globalFps: 30, canvasSize: { w: 1920, h: 1080 } },
       totalFrames: 120,
-      tracks: new Map(),
-      sequences: new Map([
-        [
-          'seq-test',
-          {
-            id: 'seq-test',
-            startFrame: 0,
-            durationFrames: 60,
-            endFrame: 60,
-            modifiers: [
-              {
-                type: 'transform',
-                params: { x: 100, y: 50, scale: 1.0, rotation: 0, opacity: 1.0 },
-              },
-            ],
-          } as any,
-        ],
+      tracks: new Map([
+        ['track-v1', { id: 'track-v1', type: 'video', sequences: [mockSeq] } as any],
       ]),
+      sequences: new Map([['seq-test', mockSeq as any]]),
     };
 
     const engine = new IRPreviewEngine(mockTimeline);
@@ -89,10 +89,100 @@ describe('Viewport Gizmo Projection & Ephemeral Transform Suite', () => {
     expect(activeWithOverride.y).toBe(120);
     expect(activeWithOverride.scaleX).toBe(1.5);
 
+    // Verify getEffectiveTimeline projects override into transient sequence modifiers
+    const effTimeline = engine.getEffectiveTimeline();
+    const effSeq = effTimeline.tracks.get('track-v1')?.sequences.find((s) => s.id === 'seq-test');
+    const effMod = effSeq?.modifiers?.find((m) => m.type === 'transform');
+    expect(effMod?.params?.x).toBe(250);
+    expect(effMod?.params?.y).toBe(120);
+
     // Clear ephemeral override on drag end
     engine.setEphemeralTransformOverride('seq-test', null);
     const restored = engine.getActiveInterpolatedTransform(seq, 0);
     expect(restored.x).toBe(100);
     expect(restored.y).toBe(50);
+
+    const cleanTimeline = engine.getEffectiveTimeline();
+    expect(cleanTimeline).toBe(mockTimeline); // Zero-alloc identity reference when no overrides active
+  });
+
+  it('Gizmo2DTransformation.computeDragTransform translates bounding box on body drag without re-measuring DOM', () => {
+    const startBox: BoundingBox2D = {
+      x: 0.5,
+      y: 0.5,
+      width: 0.5,
+      height: 0.5,
+      rotation: 0,
+    };
+
+    const startPointer = { x: 0.5, y: 0.5 };
+    // Drag body by +0.1 in X and +0.05 in Y
+    const currentPointer = { x: 0.6, y: 0.55 };
+
+    const result = Gizmo2DTransformation.computeDragTransform(
+      startBox,
+      'body',
+      currentPointer,
+      startPointer,
+      false,
+      false
+    );
+
+    expect(result.box.x).toBeCloseTo(0.6, 4);
+    expect(result.box.y).toBeCloseTo(0.55, 4);
+    expect(result.box.width).toBe(0.5);
+    expect(result.box.height).toBe(0.5);
+    expect(result.box.rotation).toBe(0);
+  });
+
+  it('Gizmo2DTransformation.computeDragTransform resizes bounding box proportionally from corner handle', () => {
+    const startBox: BoundingBox2D = {
+      x: 0.5,
+      y: 0.5,
+      width: 0.4,
+      height: 0.4,
+      rotation: 0,
+    };
+
+    const startPointer = { x: 0.7, y: 0.7 }; // bottom-right corner
+    const currentPointer = { x: 0.8, y: 0.8 }; // drag outward
+
+    const result = Gizmo2DTransformation.computeDragTransform(
+      startBox,
+      'br',
+      currentPointer,
+      startPointer,
+      false,
+      false
+    );
+
+    expect(result.box.width).toBeGreaterThan(0.4);
+    expect(result.box.height).toBeGreaterThan(0.4);
+    expect(result.box.x).toBeGreaterThan(0.5);
+    expect(result.box.y).toBeGreaterThan(0.5);
+  });
+
+  it('Gizmo2DTransformation.computeDragTransform rotates bounding box when dragging rotate knob', () => {
+    const startBox: BoundingBox2D = {
+      x: 0.5,
+      y: 0.5,
+      width: 0.4,
+      height: 0.4,
+      rotation: 0,
+    };
+
+    const startPointer = { x: 0.5, y: 0.2 }; // Above top center
+    const currentPointer = { x: 0.7, y: 0.5 }; // Drag to the right
+
+    const result = Gizmo2DTransformation.computeDragTransform(
+      startBox,
+      'rotate',
+      currentPointer,
+      startPointer,
+      false,
+      false
+    );
+
+    expect(result.box.rotation).not.toBe(0);
   });
 });

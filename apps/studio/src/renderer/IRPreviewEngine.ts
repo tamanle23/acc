@@ -250,6 +250,60 @@ export class IRPreviewEngine {
   }
 
   /**
+   * Returns an effective ResolvedTimeline view for rendering.
+   * If there are no ephemeral gizmo drag overrides active, returns this.timeline with zero allocations.
+   * If an active drag override exists, returns a transient shallow clone with the overridden modifier
+   * parameters applied strictly to the target sequence, keeping IRCanvasCompositor pure and decoupled.
+   */
+  public getEffectiveTimeline(): ResolvedTimeline {
+    if (this.ephemeralTransformOverrides.size === 0) {
+      return this.timeline;
+    }
+
+    const modifiedTracks = new Map<string, ResolvedTrack>();
+    for (const [trackId, track] of this.timeline.tracks.entries()) {
+      let trackModified = false;
+      const modifiedSeqs = track.sequences.map((seq) => {
+        const override = this.ephemeralTransformOverrides.get(seq.id);
+        if (!override) return seq;
+        trackModified = true;
+
+        const modifiedMods = (seq.modifiers || []).map((mod) => {
+          if (mod.type === 'transform') {
+            return {
+              ...mod,
+              params: {
+                ...mod.params,
+                ...override,
+              },
+            };
+          }
+          return mod;
+        });
+
+        return {
+          ...seq,
+          modifiers: modifiedMods,
+        };
+      });
+
+      if (trackModified) {
+        modifiedTracks.set(trackId, {
+          ...track,
+          sequences: modifiedSeqs,
+        });
+      } else {
+        modifiedTracks.set(trackId, track);
+      }
+    }
+
+    return {
+      ...this.timeline,
+      tracks: modifiedTracks,
+    };
+  }
+
+  /**
    * Renders a discrete frame deterministically onto the target CanvasRenderingContext2D.
    * Delegates pure visual layer blitting to canonical IRCanvasCompositor.
    */
@@ -270,18 +324,70 @@ export class IRPreviewEngine {
     const resourceManager = NativeResourceManager.getInstance();
     const frameScope = resourceManager.createFrameScope(`preview-frame-${clampedFrame}`);
 
-    void IRCanvasCompositor.renderFrame(ctx, this.timeline, clampedFrame, {
+    const effectiveTimeline = this.getEffectiveTimeline();
+
+    void IRCanvasCompositor.renderFrame(ctx, effectiveTimeline, clampedFrame, {
       pluginRegistry: this.pluginRegistry,
       assetResolver: textures,
       clearColor: options.clearColor || '#000000',
       debugMode: options.debugMode,
       executionProfile: 'preview',
-      transformOverrides: this.ephemeralTransformOverrides,
       frameScope,
       resourceManager,
-    }).finally(() => {
+    })
+      .catch((err) => {
+        // Defensive: catch background composition rejection without unhandled rejection
+        console.warn('[IRPreviewEngine] Composition warning at frame', clampedFrame, err);
+      })
+      .finally(() => {
+        frameScope.dispose();
+      });
+
+    const latencyMs = performance.now() - start;
+
+    return {
+      frame: clampedFrame,
+      timestampSeconds: timeSec,
+      activeSequences,
+      renderScale: this.currentScale,
+      latencyMs,
+    };
+  }
+
+  public async renderFrameAsync(
+    frame: number,
+    ctx: CanvasRenderingContext2D,
+    options: PreviewRenderOptions = {}
+  ): Promise<PreviewFrameResult> {
+    const start = performance.now();
+    const totalFrames = this.timeline.totalFrames;
+    const clampedFrame = Math.max(0, Math.min(totalFrames, Math.round(frame)));
+    const fps = this.timeline.meta.globalFps;
+    const timeSec = clampedFrame / fps;
+
+    const textures = options.textureCache ?? this.defaultTextureCache;
+    const activeSequences = this.intervalTree.queryActive(clampedFrame);
+
+    const resourceManager = NativeResourceManager.getInstance();
+    const frameScope = resourceManager.createFrameScope(`preview-frame-${clampedFrame}`);
+
+    const effectiveTimeline = this.getEffectiveTimeline();
+
+    try {
+      await IRCanvasCompositor.renderFrame(ctx, effectiveTimeline, clampedFrame, {
+        pluginRegistry: this.pluginRegistry,
+        assetResolver: textures,
+        clearColor: options.clearColor || '#000000',
+        debugMode: options.debugMode,
+        executionProfile: 'preview',
+        frameScope,
+        resourceManager,
+      });
+    } catch (err) {
+      console.warn('[IRPreviewEngine] Async composition error at frame', clampedFrame, err);
+    } finally {
       frameScope.dispose();
-    });
+    }
 
     const latencyMs = performance.now() - start;
 

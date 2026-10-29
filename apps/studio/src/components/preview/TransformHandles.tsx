@@ -1,5 +1,4 @@
 import React from 'react';
-import { useDraggable } from '@dnd-kit/core';
 import type { TransformHandleType } from '../../lib/gizmo';
 
 export interface TransformHandleProps {
@@ -7,30 +6,33 @@ export interface TransformHandleProps {
   isLocked: boolean;
   className: string;
   title: string;
+  onPointerDown?: (e: React.PointerEvent) => void;
+  onPointerMove?: (e: React.PointerEvent) => void;
+  onPointerUp?: (e: React.PointerEvent) => void;
+  onPointerCancel?: (e: React.PointerEvent) => void;
   children?: React.ReactNode;
 }
 
 export function TransformHandle({
-  handleType,
+  handleType: _handleType,
   isLocked,
   className,
   title,
+  onPointerDown,
+  onPointerMove,
+  onPointerUp,
+  onPointerCancel,
   children,
 }: TransformHandleProps) {
-  const { attributes, listeners, setNodeRef } = useDraggable({
-    id: `transform-handle-${handleType}`,
-    data: {
-      type: 'handle',
-      handleType,
-    },
-    disabled: isLocked,
-  });
-
   return (
     <div
-      ref={setNodeRef}
-      {...listeners}
-      {...attributes}
+      onPointerDown={(e) => {
+        if (isLocked) return;
+        onPointerDown?.(e);
+      }}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerCancel}
       className={className}
       title={title}
       onClick={(e) => e.stopPropagation()}
@@ -46,6 +48,10 @@ export interface TransformBodyDraggableProps {
   style: React.CSSProperties;
   className: string;
   onDoubleClick: () => void;
+  onPointerDown?: (e: React.PointerEvent) => void;
+  onPointerMove?: (e: React.PointerEvent) => void;
+  onPointerUp?: (e: React.PointerEvent) => void;
+  onPointerCancel?: (e: React.PointerEvent) => void;
 }
 
 export function TransformBodyDraggable({
@@ -54,21 +60,20 @@ export function TransformBodyDraggable({
   style,
   className,
   onDoubleClick,
+  onPointerDown,
+  onPointerMove,
+  onPointerUp,
+  onPointerCancel,
 }: TransformBodyDraggableProps) {
-  const { attributes, listeners, setNodeRef } = useDraggable({
-    id: 'transform-handle-body',
-    data: {
-      type: 'handle',
-      handleType: 'body' as TransformHandleType,
-    },
-    disabled: isLocked,
-  });
-
   return (
     <div
-      ref={setNodeRef}
-      {...listeners}
-      {...attributes}
+      onPointerDown={(e) => {
+        if (isLocked) return;
+        onPointerDown?.(e);
+      }}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerCancel}
       onDoubleClick={onDoubleClick}
       style={style}
       className={className}

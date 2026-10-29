@@ -12,6 +12,7 @@ import {
   Volume2,
   Type,
   FolderPlus,
+  Galaxy
 } from 'lucide-react';
 import { Button } from './ui/button';
 import {
@@ -46,6 +47,7 @@ export { DynamicModifierInspector } from './inspector/DynamicModifierInspector';
 
 const CATEGORY_CONFIG: Record<ModifierCategory, { label: string; icon: ModifierIconComponent }> = {
   motion: { label: 'Motion & Spatial', icon: Move },
+  time_space: { label: 'Spatio-Temporal ', icon: Galaxy },
   vfx: { label: 'Visual Effects (VFX)', icon: Sparkles },
   transitions: { label: 'Transitions', icon: Film },
   audio: { label: 'Audio & DSP', icon: Volume2 },

@@ -1,12 +1,4 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import {
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragStartEvent,
-  type DragMoveEvent,
-  type DragEndEvent,
-} from '@dnd-kit/core';
 import { IRStateManager } from '../../lib/ir/irState';
 import {
   getSequenceDurationFrames,
@@ -71,6 +63,7 @@ export function useGizmoTransform({
 
   // Sync transform state from selected sequence modifier if available, and auto-seek when paused
   useEffect(() => {
+    if (isDragging) return;
     if (!selectedSeqId) {
       setTransform({ x: 0, y: 0, scale: 1.0, rotation: 0 });
       return;
@@ -116,21 +109,22 @@ export function useGizmoTransform({
     });
   }, [selectedSeqId, timeline, doc]);
 
-  const transformSensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 3,
-      },
-    })
-  );
+  const dragStartCoordsRef = useRef<{ clientX: number; clientY: number } | null>(null);
+  const latestTransformRef = useRef<TransformState>(transform);
 
-  const handleTransformDragStart = useCallback(
-    (e: DragStartEvent) => {
+  useEffect(() => {
+    latestTransformRef.current = transform;
+  }, [transform]);
+
+  const handlePointerDown = useCallback(
+    (handleType: TransformHandleType, e: React.PointerEvent) => {
       if (isLocked) return;
-      const data = e.active.data.current;
-      if (!data) return;
+      e.stopPropagation();
+      try {
+        (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+      } catch {}
 
-      const handleType = data.handleType as TransformHandleType;
+      dragStartCoordsRef.current = { clientX: e.clientX, clientY: e.clientY };
       setIsDragging(true);
       setActiveHandle(handleType);
       setStartTransform({ ...transform });
@@ -141,12 +135,13 @@ export function useGizmoTransform({
     [isLocked, transform]
   );
 
-  const handleTransformDragMove = useCallback(
-    (e: DragMoveEvent) => {
-      if (!isDragging || !activeHandle || !selectedSeqId || isLocked) return;
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (!isDragging || !activeHandle || !selectedSeqId || isLocked || !dragStartCoordsRef.current) return;
+      e.stopPropagation();
 
-      const dx = e.delta.x;
-      const dy = e.delta.y;
+      const dx = e.clientX - dragStartCoordsRef.current.clientX;
+      const dy = e.clientY - dragStartCoordsRef.current.clientY;
 
       const baseW = 0.5;
       const baseH = 0.5;
@@ -193,6 +188,7 @@ export function useGizmoTransform({
         rotation: newNormBox.rotation,
       };
 
+      latestTransformRef.current = newTransform;
       setTransform(newTransform);
       overlayRef.current.update(newNormBox, dragRes.snapResult?.activeGuides || []);
 
@@ -210,10 +206,18 @@ export function useGizmoTransform({
     [isDragging, activeHandle, selectedSeqId, isLocked, startTransform, width, height, previewEngine, onRenderFrame]
   );
 
-  const handleTransformDragEnd = useCallback(
-    (_e: DragEndEvent) => {
+  const handlePointerUp = useCallback(
+    (e: React.PointerEvent) => {
+      if (!isDragging) return;
+      e.stopPropagation();
+      try {
+        (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+      } catch {}
+
+      dragStartCoordsRef.current = null;
+      const finalTransform = latestTransformRef.current || transform;
       if (selectedSeqId && !isLocked) {
-        IRStateManager.getInstance().updateModifier(selectedSeqId, 'transform', { ...transform });
+        IRStateManager.getInstance().updateModifier(selectedSeqId, 'transform', { ...finalTransform });
       }
       if (previewEngine?.setEphemeralTransformOverride && selectedSeqId) {
         previewEngine.setEphemeralTransformOverride(selectedSeqId, null);
@@ -224,7 +228,7 @@ export function useGizmoTransform({
       setActiveGuides([]);
       overlayRef.current.setActiveInteraction(null, null);
     },
-    [selectedSeqId, isLocked, transform, previewEngine, onRenderFrame]
+    [isDragging, selectedSeqId, isLocked, transform, previewEngine, onRenderFrame]
   );
 
   return {
@@ -234,9 +238,9 @@ export function useGizmoTransform({
     isDragging,
     activeHandle,
     activeGuides,
-    transformSensors,
-    handleTransformDragStart,
-    handleTransformDragMove,
-    handleTransformDragEnd,
+    handlePointerDown,
+    handlePointerMove,
+    handlePointerUp,
+    handlePointerCancel: handlePointerUp,
   };
 }

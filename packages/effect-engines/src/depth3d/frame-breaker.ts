@@ -25,7 +25,9 @@ export function drawFrameBreakerFrame(ctx: any, state: FrameBreakerState) {
   const floatMotion = depthConfig.floatMotion !== false;
 
   // 1. Calculate Backdrop Plate & Frame Sizing strictly preserving the Source Image Aspect Ratio
-  const imgRatio = img.width / img.height;
+  const imgW = (img && typeof img.width === 'number' && img.width > 0) ? img.width : 1920;
+  const imgH = (img && typeof img.height === 'number' && img.height > 0) ? img.height : 1080;
+  const imgRatio = imgW / imgH;
   const canvasRatio = width / height;
 
   let bgW = width;
@@ -213,7 +215,12 @@ export function drawFrameBreakerFrame(ctx: any, state: FrameBreakerState) {
   ctx.save();
   roundRect(ctx, innerX, innerY, innerW, innerH, Math.max(0, cornerRadius - 4));
   ctx.clip();
-  ctx.drawImage(img, sx, sy, sw, sh, innerX, innerY, innerW, innerH);
+  try {
+    ctx.drawImage(img, sx, sy, sw, sh, innerX, innerY, innerW, innerH);
+  } catch {
+    ctx.fillStyle = '#06060c';
+    ctx.fillRect(innerX, innerY, innerW, innerH);
+  }
   ctx.restore();
 
   // 6. Draw Frame Border Stroke

@@ -50,14 +50,30 @@ let currentFrame = 0;
 // Texture and video reader registries
 const textureCache = new Map<string, any>();
 const MAX_WORKER_TEXTURES = 32;
+const textureDisposalQueue: any[] = [];
+
+function drainDisposalQueue(): void {
+  while (textureDisposalQueue.length > 0) {
+    const old = textureDisposalQueue.pop();
+    if (old && typeof old.close === 'function') {
+      try {
+        old.close();
+      } catch {}
+    }
+  }
+}
 
 function safeSetTexture(id: string, bmp: any): void {
   const existing = textureCache.get(id);
   if (existing && existing !== bmp) {
     if (typeof existing.close === 'function') {
-      try {
-        existing.close();
-      } catch {}
+      if (isRendering) {
+        textureDisposalQueue.push(existing);
+      } else {
+        try {
+          existing.close();
+        } catch {}
+      }
     }
   }
 
@@ -66,9 +82,13 @@ function safeSetTexture(id: string, bmp: any): void {
     if (oldestKey) {
       const oldBmp = textureCache.get(oldestKey);
       if (oldBmp && typeof oldBmp.close === 'function') {
-        try {
-          oldBmp.close();
-        } catch {}
+        if (isRendering) {
+          textureDisposalQueue.push(oldBmp);
+        } else {
+          try {
+            oldBmp.close();
+          } catch {}
+        }
       }
       textureCache.delete(oldestKey);
     }
@@ -109,7 +129,7 @@ let lastRafTime = 0;
 let lastUiSyncTime = 0;
 let workerClock: DeterministicTimelineClock | null = null;
 
-function renderCurrentFrame(
+async function renderCurrentFrame(
   frame: number,
   lod = 1.0,
   isScrubbing = false,
@@ -232,7 +252,7 @@ function renderCurrentFrame(
   };
 
   try {
-    engine.renderFrame(frame, ctx as any, {
+    await engine.renderFrameAsync(frame, ctx as any, {
       textureCache: workerAssetResolver as any,
       clearColor,
       debugMode,
@@ -242,6 +262,7 @@ function renderCurrentFrame(
   } finally {
     frameScope.dispose();
     ctx.restore();
+    drainDisposalQueue();
     // Synchronously close any remaining playback transient bitmaps in textureCache
     for (const [id, val] of textureCache.entries()) {
       if (val && (val as any)._isTransient && typeof (val as any).close === 'function') {
@@ -251,9 +272,9 @@ function renderCurrentFrame(
         textureCache.delete(id);
       }
     }
+    isRendering = false;
   }
 
-  isRendering = false;
   texturesDirty = false;
   lastRenderedFrame = frame;
   lastRenderedLOD = lod;
@@ -262,7 +283,7 @@ function renderCurrentFrame(
   if (pendingRender) {
     const next = pendingRender;
     pendingRender = null;
-    renderCurrentFrame(
+    void renderCurrentFrame(
       next.frame,
       next.lod,
       next.isScrubbing,

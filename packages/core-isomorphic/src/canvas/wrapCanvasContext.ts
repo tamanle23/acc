@@ -21,15 +21,56 @@ export function wrapCanvasContext<T extends object>(rawCtx: T): ICanvasContext2D
     return source;
   };
 
+  const isDetachedOrInvalid = (source: any): boolean => {
+    if (!source) return true;
+    if (typeof source === 'object') {
+      // Detached ImageBitmap or zero-dimension canvas/image
+      if (source.width === 0 || source.height === 0) return true;
+      if (typeof source.displayWidth === 'number' && source.displayWidth === 0) return true;
+    }
+    return false;
+  };
+
   if (typeof origDrawImage === 'function') {
     (rawCtx as any).drawImage = function (image: any, ...args: any[]) {
-      return origDrawImage.call(this, unwrapSource(image), ...args);
+      const unwrapped = unwrapSource(image);
+      if (isDetachedOrInvalid(unwrapped)) {
+        return;
+      }
+      try {
+        return origDrawImage.call(this, unwrapped, ...args);
+      } catch (err: any) {
+        // Defensive: prevent detached buffer or closed resource error from crashing render loop
+        if (
+          err?.name === 'InvalidStateError' ||
+          err?.message?.includes('detached') ||
+          err?.message?.includes('closed')
+        ) {
+          return;
+        }
+        throw err;
+      }
     };
   }
 
   if (typeof origCreatePattern === 'function') {
     (rawCtx as any).createPattern = function (image: any, repetition: any) {
-      return origCreatePattern.call(this, unwrapSource(image), repetition);
+      const unwrapped = unwrapSource(image);
+      if (isDetachedOrInvalid(unwrapped)) {
+        return null;
+      }
+      try {
+        return origCreatePattern.call(this, unwrapped, repetition);
+      } catch (err: any) {
+        if (
+          err?.name === 'InvalidStateError' ||
+          err?.message?.includes('detached') ||
+          err?.message?.includes('closed')
+        ) {
+          return null;
+        }
+        throw err;
+      }
     };
   }
 
