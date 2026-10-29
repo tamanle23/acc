@@ -3,10 +3,23 @@ if (typeof self !== 'undefined' && typeof (self as any).window === 'undefined') 
   (self as any).window = self;
 }
 
-import { registerCoreModifierPlugins, type ResolvedTimeline } from '@acc/ir';
+import {
+  registerCoreModifierPlugins,
+  ModifierPluginRegistry,
+  type ModifierContext,
+  type ResolvedTimeline,
+} from '@acc/ir';
 import { IRPreviewEngine } from '../IRPreviewEngine';
-import { DeterministicTimelineClock, UniversalCanvasProvider, ContentCacheRegistry, CacheNamespace, NativeResourceManager } from '@acc/core-isomorphic';
-import { WebCanvasAdapter } from '@acc/core-web';
+import {
+  DeterministicTimelineClock,
+  UniversalCanvasProvider,
+  ContentCacheRegistry,
+  CacheNamespace,
+  NativeResourceManager,
+  VisionEngineRegistry,
+} from '@acc/core-isomorphic';
+import { WebCanvasAdapter, bootstrapCoreWeb } from '@acc/core-web';
+import type { SidecarMessage, SidecarResponse } from '../SidecarTypes';
 import { MediabunnyWorkerReader } from './MediabunnyWorkerReader';
 import { PreviewFrameMemoryManager } from './PreviewFrameMemoryManager';
 import { WorkerClipPrewarmer } from './WorkerClipPrewarmer';
@@ -17,8 +30,12 @@ import { WebCodecsDecoderPool } from './WebCodecsDecoderPool';
 const decoderPool = WebCodecsDecoderPool.getInstance();
 
 // Register isomorphic canvas adapter and canonical core modifiers for the dedicated worker thread
+bootstrapCoreWeb();
 UniversalCanvasProvider.registerAdapter(new WebCanvasAdapter(), true);
+const modifierPluginRegistry = registerCoreModifierPlugins(ModifierPluginRegistry.createIsolated());
 registerCoreModifierPlugins();
+
+const canceledSidecarTaskIds = new Set<string>();
 
 let canvas: OffscreenCanvas | null = null;
 let ctx: OffscreenCanvasRenderingContext2D | null = null;
@@ -381,7 +398,7 @@ function syncAssetSources(assets: Record<string, { src?: string; type?: string }
   }
 }
 
-self.onmessage = (e: MessageEvent) => {
+self.onmessage = async (e: MessageEvent) => {
   const data = e.data;
   if (!data || !data.type) return;
 
@@ -512,6 +529,99 @@ self.onmessage = (e: MessageEvent) => {
         if (!isPlaying) {
           renderCurrentFrame(currentFrame, 1.0, false);
         }
+      }
+      break;
+    }
+
+    // --- Sidecar & Background Modifier Preflight Protocol ---
+    case 'WARMUP': {
+      try {
+        const depthStrategy = VisionEngineRegistry.getDepthStrategy();
+        if (depthStrategy && !(depthStrategy as any).modelId && typeof (depthStrategy as any).init === 'function') {
+          await (depthStrategy as any).init();
+        }
+        const segStrategy = VisionEngineRegistry.getSegmentationStrategy();
+        if (segStrategy && !(segStrategy as any).modelId && typeof (segStrategy as any).init === 'function') {
+          await (segStrategy as any).init();
+        }
+        self.postMessage({ type: 'WARMED_UP' } satisfies SidecarResponse);
+      } catch (err: any) {
+        self.postMessage({
+          type: 'ERROR',
+          error: `[PreviewWorker:Warmup] ${err?.message || err}`,
+        } satisfies SidecarResponse);
+      }
+      break;
+    }
+
+    case 'CANCEL_TASK': {
+      canceledSidecarTaskIds.add(data.taskId);
+      self.postMessage({
+        type: 'TASK_CANCELED',
+        taskId: data.taskId,
+        targetId: data.targetId,
+      } satisfies SidecarResponse);
+      break;
+    }
+
+    case 'RESET': {
+      canceledSidecarTaskIds.clear();
+      break;
+    }
+
+    case 'EXECUTE_MODIFIER': {
+      const { payload } = data;
+      if (!payload) return;
+
+      if (canceledSidecarTaskIds.has(payload.taskId)) {
+        canceledSidecarTaskIds.delete(payload.taskId);
+        self.postMessage({
+          type: 'TASK_CANCELED',
+          taskId: payload.taskId,
+          targetId: payload.targetId,
+        } satisfies SidecarResponse);
+        return;
+      }
+
+      try {
+        const plugin = modifierPluginRegistry.get(payload.modifier.type);
+        const context: ModifierContext = {
+          targetType: payload.targetType,
+          targetEntity: payload.targetEntity,
+          timeline: new Map(),
+          fps: payload.fps,
+          canvas: payload.canvas,
+          assets: payload.assets,
+        };
+
+        if (plugin && typeof plugin.execute === 'function') {
+          await plugin.execute(context, payload.modifier.params);
+        }
+
+        if (canceledSidecarTaskIds.has(payload.taskId)) {
+          canceledSidecarTaskIds.delete(payload.taskId);
+          self.postMessage({
+            type: 'TASK_CANCELED',
+            taskId: payload.taskId,
+            targetId: payload.targetId,
+          } satisfies SidecarResponse);
+          return;
+        }
+
+        self.postMessage({
+          type: 'MODIFIER_EXECUTED',
+          taskId: payload.taskId,
+          targetId: payload.targetId,
+          modifierType: payload.modifier.type,
+          state: context.state,
+        } satisfies SidecarResponse);
+      } catch (err: any) {
+        self.postMessage({
+          type: 'ERROR',
+          taskId: payload.taskId,
+          targetId: payload.targetId,
+          error: `[PreviewWorker:Execute] ${err?.message || err}`,
+        } satisfies SidecarResponse);
       }
       break;
     }

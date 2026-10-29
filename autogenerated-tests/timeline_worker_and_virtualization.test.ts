@@ -102,8 +102,9 @@ describe('Timeline Virtualization & Memory Hygiene Suite', () => {
         terminate() { }
       };
 
-      const { TimelineWorkerBridge } = await import('../apps/studio/src/lib/timeline/TimelineWorkerBridge');
-      const bridge = new TimelineWorkerBridge();
+      const { PreviewWorkerBridge } = await import('../apps/studio/src/renderer/workers/PreviewWorkerBridge');
+      const { CanvasTransferTracker } = await import('../packages/core-web/src/canvas/CanvasTransferTracker');
+      const bridge = new PreviewWorkerBridge();
 
       let transferCount = 0;
       const mockCanvas: any = {
@@ -113,21 +114,24 @@ describe('Timeline Virtualization & Memory Hygiene Suite', () => {
         },
       };
 
-      const dummyModel: any = { tracks: [], clips: [], totalFrames: 100, fps: 30 };
-      const dummyViewport: any = { scrollLeft: 0, scrollTop: 0, viewportWidth: 1000, viewportHeight: 300, pixelsPerFrame: 4, dpr: 1 };
+      const mockTimeline: any = {
+        meta: { durationFrames: 100, fps: 30 },
+        tracks: new Map(),
+        sequences: new Map(),
+      };
 
-      const ok1 = bridge.init(mockCanvas, dummyModel, dummyViewport);
+      const ok1 = bridge.init(mockCanvas, mockTimeline, 1920, 1080, 30, 100);
       expect(ok1).toBe(true);
       expect(transferCount).toBe(1);
-      expect(mockCanvas.__transferred).toBe(true);
+      expect(CanvasTransferTracker.isTransferred(mockCanvas)).toBe(true);
 
       // Now simulate a remount where the bridge was disposed and a new bridge attempts to init with the same canvas
       bridge.dispose();
 
-      const newBridge = new TimelineWorkerBridge();
-      // Should reject without calling transferControlToOffscreen or throwing InvalidStateError
-      const ok2 = newBridge.init(mockCanvas, dummyModel, dummyViewport);
-      expect(ok2).toBe(false);
+      const newBridge = new PreviewWorkerBridge();
+      // Should handle already-transferred canvas safely without calling transferControlToOffscreen again
+      const ok2 = newBridge.init(mockCanvas, mockTimeline, 1920, 1080, 30, 100);
+      expect(ok2).toBe(true);
       expect(transferCount).toBe(1); // not called again
       newBridge.dispose();
     });

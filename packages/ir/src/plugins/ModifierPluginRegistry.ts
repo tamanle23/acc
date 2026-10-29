@@ -42,6 +42,7 @@ export type ParamFieldType =
   | 'regions_array'
   | 'vision_depth_strategy'
   | 'vision_segmentation_strategy'
+  | 'light_vector'
   | 'group';
 
 export interface ParamFieldDescriptor {

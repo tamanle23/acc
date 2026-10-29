@@ -2,7 +2,7 @@ import { describe, it, expect } from 'bun:test';
 import {
   ModifierPluginRegistry,
   type ModifierPlugin,
-} from '../packages/ir/src/client';
+} from '../packages/ir/src';
 import { registerCoreModifierPlugins } from '../packages/ir/src';
 import {
   getAvailableModifiersFromRegistry,

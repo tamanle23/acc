@@ -18,6 +18,7 @@ import { WebCacheStrategy } from './cache/WebCacheStrategy';
 import { OpfsCacheStrategy } from './cache/OpfsCacheStrategy';
 
 export * from './canvas/WebCanvasAdapter';
+export * from './canvas/CanvasTransferTracker';
 export * from './media-engine/MediabunnyClientSink';
 export * from './media-engine/MediabunnyClientStrategy';
 export * from './cache/IndexedDbCacheStrategy';

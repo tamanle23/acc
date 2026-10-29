@@ -3,134 +3,244 @@
 
 ---
 
-### Executive Summary
-`@acc/studio` is the high-performance non-linear video editing (NLE) web workstation of ACC, operating on React 19, Vite, Tailwind CSS v4, WebCodecs, Web Audio, and Web Workers. Over 42 iterative sprint cycles, the project has built rich capabilities (offscreen rendering, Mediabunny asset reading, procedural sound design, visual IR debugging). However, rapid feature development has led to:
-1. **Module & Case Resolution Inconsistencies**: Duplicate re-exports in `src/components/index.ts` referencing both PascalCase and lowercase paths (`./Preview` vs `./preview`, `./Timeline` vs `./timeline`), breaking strict TS compiler environments.
-2. **Duplicated Worker Infrastructure**: Concurrent existence of legacy `IRPreviewEngine.worker.ts` alongside modern `workers/preview.worker.ts` and `PreviewWorkerBridge.ts`, creating confusion in worker lifecycle management.
-3. **Type Looseness & `any` Escapes**: Multiple unsafe casts (`as any`, `unknown as Record<string, unknown>`) across coordinator and strategy modules that bypass domain safety.
-4. **Vite Bundle Bloat & Static/Dynamic Hybrid Import Warnings**: Direct monolithic bundle size warnings (>2.4 MB index bundle) due to ONNX runtime models and Hugging Face transformer static imports in renderer sidecars.
-5. **Timeline & Viewport Render Cascades**: Un-memoized selector subscriptions triggering full track DOM tree re-renders during high-frequency playhead movements (60 FPS scrub).
+### 1. Executive Summary
+`@acc/studio` is the high-performance non-linear video editing (NLE) web workstation of ACC, operating on React 19, Vite, Tailwind CSS v4, WebCodecs, Web Audio, and Web Workers. Over 42 iterative sprint cycles, the project has built rich capabilities (offscreen rendering, Mediabunny asset reading, procedural sound design, visual IR debugging). However, codebase analysis and build profiling reveal 5 concrete architectural pain points:
+1. **Worker Topology Bifurcation & Redundancy**: `PreviewWorkerCoordinator` spawns a dedicated sidecar worker (`IRPreviewEngine.worker.ts`) for neural/vision modifier preflight, while `PreviewWorkerBridge` spawns `workers/preview.worker.ts` for OffscreenCanvas viewport compositing. However, `IRPreviewEngine.worker.ts` duplicates modifier plugin registrations, loads duplicate bundles (>1.1 MB chunk), and runs in an isolated thread that is disconnected from the main render worker.
+2. **Type Looseness & Untyped Escapes**: Pervasive `as any` casts across `PreviewWorkerCoordinator.ts`, `SidecarTypes.ts`, and `ModifierControlStrategies.tsx`, where payload target entities are cast to `any` instead of strictly discriminated unions (`ResolvedTrack | ResolvedSequence`), and `light_vector` is handled at runtime but omitted from `ParamFieldType`.
+3. **Canvas Offscreen Transfer Marker**: Monkey-patching `(canvas as any).__transferred = true` on `HTMLCanvasElement` instances directly violates TypeScript type safety and can leak across component unmounts/remounts.
+4. **Vite Bundle Bloat & Static/Dynamic Chunk Pollution**: Heavy AI inference dependencies (`@huggingface/transformers` and `onnxruntime-web`) are bundled directly into the main index chunk (2,156 kB minified) due to mixed static/dynamic imports across vision strategies, triggering Rollup chunk warnings.
+5. **Timeline Re-Render Overhead**: In `SequenceInspector.tsx`, historical references to `time` instead of `startFrame` / `durationFrames` cause type safety degradations, and non-memoized inspectors trigger full tree re-evaluations during playhead movement.
 
-This plan outlines a zero-regression, comprehensive improvement roadmap to make `@acc/studio` clean, strictly typed, performant, and maintainable.
+This master implementation plan establishes an enterprise-grade, clean, strictly typed, zero-regression roadmap adhering to `enterprise-clean-coder`, `typescript-coding`, and `react-shadcn-tailwind` invariants.
 
 ---
 
-### Trade-off & Architectural Decision Matrix
+### 2. Trade-off & Architectural Decision Matrix
 
-| Dimension | Current State | Target State | Trade-off / Rationale |
+| Dimension | Current State | Target State | Trade-off / Architectural Rationale |
 | :--- | :--- | :--- | :--- |
-| **Component Barrel Exports** | Mixed casing exports in `src/components/index.ts` | Clean single-casing barrel exports matching on-disk components | **Win:** Eliminates TS1149 casing collisions across case-insensitive filesystems (Windows/macOS). |
-| **Worker Architecture** | Two preview worker implementations (`IRPreviewEngine.worker.ts` vs `workers/preview.worker.ts`) | Consolidate onto single `preview.worker.ts` orchestrated by `PreviewWorkerCoordinator` | **Win:** Single source of truth for OffscreenCanvas decoding; removes 250+ lines of duplicate logic. |
-| **Type Integrity & RootDir** | Permissive tsconfig without `noImplicitAny` & external relative imports | Explicit typings, elimination of `as any` in renderer strategies, clean tsconfig boundaries | **Win:** Zero compiler regressions, true enterprise clean code. |
-| **Vite Bundle & Code Splitting** | Monolithic index bundle (2.5 MB) importing heavy AI sidecars | Dynamic `manualChunks` in `vite.config.ts` separating ONNX/Transformers and Shiki JSON highlighter | **Win:** Drastic reduction of initial load latency; isolates AI vision weight chunks until requested. |
-| **Playhead & Scrubber React Renders** | Direct DOM-linked playhead state causing component tree reconciliations | RAF-driven decoupled transform styling for ruler & scrubber with memoized track bars | **Win:** Stable 60 FPS playback on 4K timelines without React main thread jank. |
+| **Worker Topology & Protocol Unification** | Two distinct workers: `IRPreviewEngine.worker.ts` (AI preflight) and `workers/preview.worker.ts` (Viewport compositor) | Unified single worker: Merge sidecar task handling into `preview.worker.ts`, re-point `PreviewWorkerCoordinator`, delete `IRPreviewEngine.worker.ts` | **Win:** Eliminates duplicate modifier plugin registrations, prevents double-loading heavy WASM runtimes (saves >1.1 MB worker chunk), ensures single coordinator lifecycle. |
+| **Canvas Transferred Tracking** | `(canvas as any).__transferred = true` monkey-patched onto DOM element | `WeakSet<HTMLCanvasElement>` encapsulation (`CanvasTransferTracker` in `@acc/core-web`) | **Win:** Zero DOM pollution, pure garbage collection on canvas detachment, strict TypeScript compliance without `any`. |
+| **Type Discriminated Unions** | `targetEntity: Record<string, unknown>` & `payload.targetEntity as any` | Discriminated union `SidecarTargetEntity = ResolvedTrack \| ResolvedSequence` with type predicates `isResolvedTrack` / `isResolvedSequence` | **Win:** Compile-time exhaustiveness checking, eliminates runtime undefined access, strictly adheres to `typescript-coding` guidelines. |
+| **ParamFieldType Alignment** | `light_vector` used in `ModifierControlStrategies.tsx` but missing from `ParamFieldType` | Synchronize `ParamFieldType` in `packages/ir/src/plugins/ModifierPluginRegistry.ts` | **Win:** Seamless schema-to-UI binding, eliminates type casting in modifier property inspectors. |
+| **Vite Manual Chunking** | Monolithic index bundle (2.15 MB) containing AI vision & transformers | Dynamic `manualChunks` isolating `vendor-ai` (`@huggingface/transformers`, `onnxruntime-web`) and `vendor-framework` (`react`, `react-dom`) | **Win:** Decreases initial page load payload by >55%; isolates heavy neural network WASM assets until vision modifiers are actively rendered. |
+| **Component Memoization & Styling** | Mixed inline styles and unmemoized HUD cards | Strictly typed `cn()` Tailwind v4 utilities, `React.memo` with shallow parameter comparison on HUD cards | **Win:** Guarantees 60 FPS transport scrubbing without main thread drops. |
 
 ---
 
-### Mermaid Topology: Consolidated Engine & UI Boundary
+### 3. Mermaid Topology: Consolidated Engine & UI Boundary
 
 ```mermaid
 flowchart TD
-    subgraph UI_Layer [React 19 Pure Presentation]
-        Titlebar[Titlebar (Action Handlers)]
-        LeftSidebar[LeftSidebar (Lazy Drawer Tabs)]
+    subgraph UI_Presentation_Tier [React 19 Pure Presentation]
+        Titlebar[Titlebar (Action Handlers & File IO)]
+        LeftSidebar[LeftSidebar (Lazy Drawer Tabs & Presets)]
         PreviewViewport[Preview Viewport (Direct Canvas Surface)]
-        TimelineDOM[Virtualized Timeline (Ruler + Tracks)]
+        TimelineDOM[Virtualized Timeline (Ruler + Track Lanes)]
+        SequenceInspector[Sequence & Track Inspector (Context-Aware)]
     end
 
-    subgraph Reactive_Bridge [Reactive Store & Command Dispatch]
-        Store[useSyncExternalStore (Segmented Slices)]
-        CommandHistory[Command Stack (Undo / Redo)]
-        MasterClock[SMPTE Master Clock (RAF Decoupled)]
+    subgraph Reactive_Store_Bridge [Zustand / useSyncExternalStore Bridge]
+        StudioStore[Studio State (IR Document & Timeline)]
+        PlayheadCtrl[StudioPlayheadController (High-Frequency Direct RAF)]
+        CanvasTracker[CanvasTransferTracker (WeakSet Memory Safe)]
     end
 
-    subgraph Renderer_Facade [Renderer Pipeline Boundary]
+    subgraph Coordinator_Facade [Renderer Pipeline Boundary]
         IRPreviewEngine[IRPreviewEngine (Single Facade)]
-        RenderStrategy[WorkerRenderStrategy (Default) / MainThreadFallback]
-        Coordinator[PreviewWorkerCoordinator (Singleton)]
+        RenderStrategy[WorkerRenderStrategy (Default) / MainThreadRenderStrategy]
+        PreviewWorkerCoordinator[PreviewWorkerCoordinator (Sidecar Preflight Task Queue)]
     end
 
-    subgraph Worker_Tier [Consolidated Worker Runtime]
-        PreviewWorker[workers/preview.worker.ts]
+    subgraph Unified_Worker_Runtime [Unified Web Worker: preview.worker.ts]
+        CompositorRouter["Message Router (Compositor + Sidecar)"]
         DecoderPool[WebCodecsDecoderPool]
         MemoryManager[PreviewFrameMemoryManager]
+        ModifierExecutor["ModifierPluginRegistry (In-Worker Execution)"]
     end
 
-    TimelineDOM -.->|High-frequency scrubbing (60fps)| MasterClock
-    MasterClock -.->|Direct RAF Timestamp| IRPreviewEngine
-    IRPreviewEngine --> RenderStrategy
-    RenderStrategy --> Coordinator
-    Coordinator --> PreviewWorker
-    PreviewWorker --> DecoderPool
-    PreviewWorker --> MemoryManager
-    Store --> IRPreviewEngine
-    CommandHistory --> Store
+    TimelineDOM -.->|60 FPS Direct Scrub| PlayheadCtrl
+    PlayheadCtrl -.->|Direct RAF Needle Transform| TimelineDOM
+    PlayheadCtrl -->|Frame Sync| IRPreviewEngine
+    PreviewViewport -->|Mount HTMLCanvasElement| CanvasTracker
+    CanvasTracker -->|Validate Transfer Safety| RenderStrategy
+    RenderStrategy --> CompositorRouter
+    IRPreviewEngine --> PreviewWorkerCoordinator
+    PreviewWorkerCoordinator --> CompositorRouter
+    CompositorRouter --> DecoderPool
+    CompositorRouter --> MemoryManager
+    CompositorRouter --> ModifierExecutor
+    StudioStore --> IRPreviewEngine
 ```
 
 ---
 
-### Mathematical & Performance Specifications
+### 4. Mathematical & Performance Specifications
 
-1. **Scrub Latency Bound**:
+1. **Scrub Latency Budget**:
    $$\Delta t_{\text{scrub}} = t_{\text{seek\_dispatch}} + t_{\text{worker\_decode}} + t_{\text{frame\_blit}} \le 16.67\,\text{ms}\quad (\text{guaranteeing } 60\text{ FPS})$$
 2. **VRAM Ceiling Formula**:
    $$\text{MaxFrames}_{\text{cached}} = \min\left(48,\; \left\lfloor \frac{256 \times 10^6}{\text{width} \times \text{height} \times 4} \right\rfloor\right)$$
    Guarantees memory overhead under 256MB across all decoded transient video frames.
-3. **Bundle Chunk Isolation**:
-   - Vendor Chunk 1: `@huggingface/transformers` + `onnxruntime-web` (isolated).
-   - Vendor Chunk 2: `shiki` (debugger syntax highlight).
-   - Core Studio Chunk: $< 800\,\text{kB}$ minified.
+3. **Bundle Chunk Size Targets**:
+   - `vendor-ai` (`@huggingface/transformers` + `onnxruntime-web`): isolated chunk $\approx 1.2\,\text{MB}$.
+   - `vendor-shiki` (debugger syntax highlight): isolated chunk $\approx 195\,\text{kB}$.
+   - `vendor-ui-primitives` (`@radix-ui/*`, `lucide-react`): isolated chunk $\approx 176\,\text{kB}$.
+   - `index` (Studio Application Core): $< 900\,\text{kB}$ minified.
 
 ---
 
-### Concrete Implementation Roadmap
+### 5. Concrete File & Class Signatures
 
-#### Phase 1: Clean Component Index & Case Sensitivity Normalization
-- Target: `apps/studio/src/components/index.ts`
-- Fix duplicate re-exports (`./Preview` vs `./preview`, `./Timeline` vs `./timeline`).
-- Ensure all component imports across `src/` reference the exact on-disk casing.
+#### 5.1 `CanvasTransferTracker` (`packages/core-web/src/canvas/CanvasTransferTracker.ts`)
+```ts
+export class CanvasTransferTracker {
+  private static readonly transferred = new WeakSet<HTMLCanvasElement | object>();
 
-#### Phase 2: Consolidate Worker Infrastructure & Remove Dead Files
-- Target: `apps/studio/src/renderer/IRPreviewEngine.worker.ts` & `src/renderer/workers/preview.worker.ts`
-- Verify that `IRPreviewEngine.worker.ts` is obsolete and superseded by `workers/preview.worker.ts`.
-- Prune `IRPreviewEngine.worker.ts` and consolidate any residual sidecar initialization logic into `PreviewWorkerCoordinator.ts`.
-- Clean up unused imports and orphan types in `src/renderer/SidecarTypes.ts`.
-
-#### Phase 3: Enterprise Clean Typing & Removal of `any` Escapes
-- Refactor `PreviewWorkerCoordinator.ts`, `MainThreadRenderStrategy.ts`, and `WorkerRenderStrategy.ts`:
-  - Replace `payload.targetEntity as any` with discriminated union types from `@acc/ir`.
-  - Fix `ModifierControlStrategies.tsx` type definitions (`ParamFieldType`, `ModifierNode` union matching).
-  - Clean up `(canvas as any).__transferred` via symbol-keyed internal properties or weak maps (`WeakSet<HTMLCanvasElement>`).
-
-#### Phase 4: Vite Code Splitting & Manual Chunks Optimization
-- Target: `apps/studio/vite.config.ts`
-- Configure `rollupOptions.output.manualChunks`:
-  ```ts
-  manualChunks: {
-    'vendor-react': ['react', 'react-dom'],
-    'vendor-radix': ['radix-ui', '@base-ui/react'],
-    'vendor-syntax': ['shiki'],
-    'vendor-audio': ['wavesurfer.js'],
+  public static markTransferred(canvas: HTMLCanvasElement | object): void {
+    if (canvas && typeof canvas === 'object') {
+      this.transferred.add(canvas);
+    }
   }
-  ```
-- Suppress or solve externalized Node module warnings (`crypto`, `fs`, `path`) cleanly for client-only builds.
 
-#### Phase 5: Timeline & Viewport Re-Render Performance Optimization
-- In `src/components/Timeline.tsx` and `src/components/timeline/`:
-  - Verify that scrub movements only mutate CSS transform / SVG playhead paths without triggering re-render of virtual track sequences.
-  - Wrap track sequence items in `React.memo` with custom equality checks (`prevProps.sequence === nextProps.sequence && prevProps.zoom === nextProps.zoom`).
+  public static isTransferred(canvas: HTMLCanvasElement | object): boolean {
+    if (!canvas || typeof canvas !== 'object') {
+      return false;
+    }
+    return this.transferred.has(canvas);
+  }
+}
+```
+
+#### 5.2 Strict Entity Type Predicates (`apps/studio/src/renderer/SidecarTypes.ts`)
+```ts
+import type { ResolvedTrack, ResolvedSequence, ModifierNode, AssetDefinition } from '@acc/ir';
+
+export type SidecarTargetEntity = ResolvedTrack | ResolvedSequence;
+
+export interface ExecuteModifierPayload {
+  taskId: string;
+  targetType: 'track' | 'sequence';
+  targetId: string;
+  targetEntity: SidecarTargetEntity;
+  rawEntity?: unknown;
+  modifier: ModifierNode;
+  assets?: Record<string, AssetDefinition | { src: string; type?: string }>;
+  fps: number;
+  canvas: { width: number; height: number };
+}
+
+export function isResolvedTrack(entity: SidecarTargetEntity | unknown): entity is ResolvedTrack {
+  return typeof entity === 'object' && entity !== null && 'sequences' in entity && Array.isArray((entity as ResolvedTrack).sequences);
+}
+
+export function isResolvedSequence(entity: SidecarTargetEntity | unknown): entity is ResolvedSequence {
+  return typeof entity === 'object' && entity !== null && 'startFrame' in entity && 'durationFrames' in entity;
+}
+```
+
+#### 5.3 Unified Worker Message Protocol (`apps/studio/src/renderer/SidecarTypes.ts` & `preview.worker.ts`)
+```ts
+export type SidecarMessage =
+  | { type: 'WARMUP' }
+  | { type: 'EXECUTE_MODIFIER'; payload: ExecuteModifierPayload }
+  | { type: 'CANCEL_TASK'; taskId: string; targetId?: string }
+  | { type: 'RESET' };
+
+export type SidecarResponse =
+  | { type: 'WARMED_UP' }
+  | {
+    type: 'MODIFIER_EXECUTED';
+    taskId: string;
+    targetId: string;
+    modifierType: string;
+    state?: Record<string, unknown>;
+  }
+  | { type: 'TASK_CANCELED'; taskId: string; targetId?: string }
+  | { type: 'ERROR'; taskId?: string; targetId?: string; error: string };
+```
+
+---
+
+### 6. Phased Implementation Roadmap
+
+#### Phase 1: Type Synchronization & Invariant Hardening [COMPLETED]
+- [x] Target 1: `packages/ir/src/plugins/ModifierPluginRegistry.ts`
+  - Added `'light_vector'` to `ParamFieldType`.
+- [x] Target 2: `apps/studio/src/renderer/SidecarTypes.ts`
+  - Strongly typed `SidecarTargetEntity = ResolvedTrack | ResolvedSequence` with `rawEntity?: unknown`.
+  - Added type predicates `isResolvedTrack` and `isResolvedSequence`.
+  - Strongly typed `modifier` as `ModifierNode`.
+- [x] Target 3: `apps/studio/src/renderer/PreviewWorkerCoordinator.ts`
+  - Removed unsafe `payload.targetEntity as any` casts.
+  - Replaced `(window as any).requestIdleCallback` with global `Window` augmentation in `apps/studio/src/types/globals.d.ts`.
+- [x] Target 4: `packages/ir/src/renderer/audio/UniversalAudioMixer.ts`
+  - Added null-safe navigation `timeline.meta?.globalFps || 30` to eliminate test mock crashes.
+
+#### Phase 2: Canvas Memory Safety & WeakSet Transfer Tracker [COMPLETED]
+- [x] Target 1: `packages/core-web/src/canvas/CanvasTransferTracker.ts`
+  - Created `CanvasTransferTracker` utilizing `WeakSet<HTMLCanvasElement | object>`.
+  - Exported via `packages/core-web/src/index.ts`.
+- [x] Target 2: `apps/studio/src/renderer/workers/PreviewWorkerBridge.ts`
+  - Replaced `(canvas as any).__transferred = true` with `CanvasTransferTracker.isTransferred(canvas)` and `markTransferred(canvas)`.
+  - Added `dispose()` method.
+- [x] Target 3: `autogenerated-tests/timeline_worker_and_virtualization.test.ts`
+  - Migrated test to assert `CanvasTransferTracker.isTransferred(mockCanvas) === true`.
+
+#### Phase 3: Worker Protocol Unification & Dead Worker Retirement
+- **Target 1**: `apps/studio/src/renderer/workers/preview.worker.ts`
+  - Integrate sidecar message handlers (`WARMUP`, `EXECUTE_MODIFIER`, `CANCEL_TASK`, `RESET`).
+  - Wire in-worker `registerCoreModifierPlugins()` to execute modifier preflight tasks and reply with `SidecarResponse`.
+- **Target 2**: `apps/studio/src/renderer/PreviewWorkerCoordinator.ts`
+  - Change worker initialization URL from `./IRPreviewEngine.worker.ts` to `./workers/preview.worker.ts`.
+- **Target 3**: `apps/studio/src/renderer/IRPreviewEngine.worker.ts`
+  - Grep monorepo to ensure zero remaining references.
+  - Delete `IRPreviewEngine.worker.ts` permanently.
+- **Target 4**: Autogenerated Tests Verification
+  - Run `studio_sidecar_coordinator.test.ts`, `studio_preview_engine_worker_decoupling.test.ts`, and `studio_offscreen_worker_parity.test.ts`.
+
+#### Phase 4: Vite Bundle Optimization & AI Chunk Splitting
+- **Target**: `apps/studio/vite.config.ts`
+  - Configure `rollupOptions.output.manualChunks` to split:
+    - `vendor-ai`: `@huggingface/transformers`, `onnxruntime-web`.
+    - `vendor-framework`: `react`, `react-dom`.
+    - `vendor-ui-primitives`: `@radix-ui/`, `@base-ui/`, `lucide-react`.
+    - `vendor-syntax`: `shiki`.
+    - `vendor-audio`: `wavesurfer.js`.
+  - Run `pnpm --filter @acc/studio build` to confirm index chunk size drops below 1,000 kB.
+
+#### Phase 5: UI Inspector & Modifier Control Cleanliness
+- **Target 1**: `apps/studio/src/components/inspector/ModifierControlStrategies.tsx`
+  - Ensure all control strategies strictly match `ParamFieldType`.
+  - Type all handlers and component parameters without `any`.
+- **Target 2**: `apps/studio/src/components/inspector/KeyframeDiamondButton.tsx`
+  - Fix tooltip attributes conforming strictly to Radix UI / custom Tooltip interface.
 
 #### Phase 6: Formal Verification & Autogenerated Tests Execution
 - Run `bun test autogenerated-tests/studio_*.test.ts`.
-- Ensure all test suites pass with zero regressions.
-- Verify `pnpm --filter @acc/studio build` finishes cleanly.
+- Run `bun test autogenerated-tests/modifier_plugin_registry_studio_integration.test.ts`.
+- Verify `pnpm --filter @acc/studio build` passes cleanly with optimized chunk boundaries.
 
 ---
 
-### Risk Assessment & Rollback Mitigations
+### 7. Formal Verification Matrix (`/autogenerated-tests/`)
+
+| Test File | Verification Objective | Success Criteria |
+| :--- | :--- | :--- |
+| `studio_preview_engine_worker_decoupling.test.ts` | Verify `IRPreviewEngine` decupling from `PreviewWorkerCoordinator` | Pass 6/6 assertions without missing `timeline.meta.globalFps` errors |
+| `studio_sidecar_coordinator.test.ts` | Verify `PreviewWorkerCoordinator` in-process task execution & worker isolation | Pass 4/4 assertions |
+| `studio_offscreen_worker_parity.test.ts` | Verify `preview.worker.ts` protocol and ring buffer execution | Pass 2/2 assertions |
+| `timeline_worker_and_virtualization.test.ts` | Verify `CanvasTransferTracker` transfer idempotence | Pass 5/5 assertions |
+| `studio_phase3_decomposition_and_60fps.test.ts` | Verify modular component boundaries and 60 FPS timeline memoization | Pass 8/8 assertions |
+| `studio_canvas_transform.test.ts` | Verify canvas pan/zoom transforms and coordinate mapping | Pass all assertions |
+| `modifier_plugin_registry_studio_integration.test.ts` | Verify `ParamFieldType` alignment including `light_vector` and custom schemas | Pass 5/5 assertions |
+
+---
+
+### 8. Risk Assessment & Rollback Mitigations
 
 | Risk | Probability | Impact | Mitigation Strategy |
 | :--- | :--- | :--- | :--- |
-| Deleting `IRPreviewEngine.worker.ts` breaks legacy callers | Low | Medium | Grep entire codebase for `IRPreviewEngine.worker` references; ensure coordinator routes all worker jobs through `workers/preview.worker.ts`. |
-| Rollup manual chunking breaks dynamic WASM loading | Medium | High | Keep `ort-wasm-simd-threaded.asyncify` asset handling intact; test production preview build locally with `vite preview`. |
-| Strict type fixes in Inspector surface schema mismatch | Low | Low | Align with latest `VideoIR` type definitions in `packages/ir/src/types/modifiers.ts`. |
+| Deleting `IRPreviewEngine.worker.ts` breaks lingering callers | Low | Medium | Strict git grep verification prior to deletion; route all tasks via `workers/preview.worker.ts`. |
+| Splitting `vendor-ai` chunk breaks dynamic WASM asset location | Medium | High | Verify `ort-wasm-simd-threaded.asyncify` path resolution remains relative to dist output via Vite's asset URL mechanism. |
+| In-worker modifier execution contends with OffscreenCanvas frame loop | Low | Medium | Execute modifiers asynchronously within the worker event loop; heavy neural models remain lazily loaded. |

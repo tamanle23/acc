@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'bun:test';
-import { MediabunnyClientSink } from '../packages/core/src/media-engine/sinks/MediabunnyClientSink';
+import { MediabunnyClientSink } from '../packages/core-web/src/media-engine/MediabunnyClientSink';
 
 describe('MediabunnyClientSink Audio-Video WebCodecs Muxing', () => {
   let origAudioEncoder: any;

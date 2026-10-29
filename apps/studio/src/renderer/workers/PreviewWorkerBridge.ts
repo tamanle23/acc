@@ -1,5 +1,6 @@
 import type { ResolvedTimeline } from '@acc/ir';
 import { DeterministicTimelineClock } from '@acc/core-isomorphic';
+import { CanvasTransferTracker } from '@acc/core-web';
 
 export interface WorkerRenderOptions {
   lod?: number;
@@ -272,11 +273,11 @@ export class PreviewWorkerBridge implements Disposable {
     assets?: Record<string, { src?: string; type?: string }>
   ): boolean {
     if (!this.isSupported) return false;
-    if (this.isTransferred || (canvas as any).__transferred) return true;
+    if (this.isTransferred || CanvasTransferTracker.isTransferred(canvas)) return true;
 
     try {
       const offscreen = canvas.transferControlToOffscreen();
-      (canvas as any).__transferred = true;
+      CanvasTransferTracker.markTransferred(canvas);
       this.worker = new Worker(new URL('./preview.worker.ts', import.meta.url), {
         type: 'module',
       });
@@ -453,6 +454,10 @@ export class PreviewWorkerBridge implements Disposable {
     }
     this.isTransferred = false;
     this.isReady = false;
+  }
+
+  public dispose(): void {
+    this.destroy();
   }
 
   public [Symbol.dispose](): void {

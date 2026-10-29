@@ -35,3 +35,4 @@
 | 374 | [Studio Architecture Remediation, Zero-Leak Memory Safety & State Integrity Plan](./374_studio_architecture_remediation_and_zero_leak_plan.md) | Completed |
 | 375 | [Isomorphic IRMasterRenderer Studio Web Worker Export & AssetProtocolRegistry](./375_isomorphic_ir_master_renderer_studio_export_and_asset_protocol_registry.md) | Completed |
 | 376 | [Mandatory Namespaced Cache Architecture with TTL, LRU/Size Eviction & Studio Codebase Optimization](./376_mandatory_namespaced_cache_architecture_ttl_eviction_and_studio_cleanup.md) | Completed |
+| 377 | [Studio Worker Protocol Unification, Canvas Transfer Tracker, and Strict Typing](./377_studio_worker_unification_canvas_transfer_tracker_and_strict_typing.md) | Completed |

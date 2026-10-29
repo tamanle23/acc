@@ -95,7 +95,7 @@ export class UniversalAudioMixer {
     timeline: ResolvedTimeline,
     audioSourceResolver?: (assetId: string, src?: string) => IAudioSourceProvider | undefined
   ): void {
-    const fps = timeline.meta.globalFps || 30;
+    const fps = timeline.meta?.globalFps || 30;
     const clips: AudioMixerClip[] = [];
     let customDuckingFactor: number | null = null;
 
@@ -431,9 +431,11 @@ export class UniversalAudioMixer {
 
     for (const track of timeline.tracks.values()) {
       if (track.type === 'audio') {
-        if (track.id.includes('voiceover') || track.id.includes('a1')) {
+        const idLower = (track.id || '').toLowerCase();
+        const nameLower = ((track as any).name || '').toLowerCase();
+        if (idLower.includes('voice') || idLower.includes('a1') || nameLower.includes('voice') || nameLower.includes('dialogue')) {
           voiceTracks.push(track);
-        } else if (track.id.includes('bgm') || track.id.includes('a2')) {
+        } else if (idLower.includes('bgm') || idLower.includes('a4') || idLower.includes('music') || nameLower.includes('bgm') || nameLower.includes('score') || nameLower.includes('music')) {
           bgmTracks.push(track);
         } else {
           sfxTracks.push(track);

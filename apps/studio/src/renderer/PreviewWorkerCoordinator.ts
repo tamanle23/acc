@@ -83,7 +83,7 @@ export class PreviewWorkerCoordinator {
         this.worker = customWorkerUrl
           ? new Worker(customWorkerUrl, { type: 'module' })
           : new Worker(
-            new URL('./IRPreviewEngine.worker.ts', import.meta.url),
+            new URL('./workers/preview.worker.ts', import.meta.url),
             { type: 'module' }
           );
 
@@ -119,8 +119,8 @@ export class PreviewWorkerCoordinator {
 
   private scheduleWarmup(): void {
     if (typeof window === 'undefined' || !this.worker) return;
-    if (typeof (window as any).requestIdleCallback === 'function') {
-      (window as any).requestIdleCallback(
+    if (typeof window.requestIdleCallback === 'function') {
+      window.requestIdleCallback(
         () => {
           if (this.worker && !this.isWarmedUp) {
             this.worker.postMessage({ type: 'WARMUP' } satisfies WorkerMessage);
@@ -249,7 +249,7 @@ export class PreviewWorkerCoordinator {
     if (plugin && typeof plugin.execute === 'function') {
       const context: ModifierContext = {
         targetType: payload.targetType,
-        targetEntity: payload.targetEntity as any,
+        targetEntity: payload.targetEntity,
         timeline: new Map(),
         assets: payload.assets,
         fps: payload.fps,
@@ -331,7 +331,7 @@ export class PreviewWorkerCoordinator {
                 taskId,
                 targetType: 'track',
                 targetId: track.id,
-                targetEntity: track as unknown as Record<string, unknown>,
+                targetEntity: track,
                 modifier: { type: mod.type, params: mod.params || {} },
                 fps,
                 canvas,
@@ -370,10 +370,11 @@ export class PreviewWorkerCoordinator {
                 taskId,
                 targetType: 'sequence',
                 targetId: seq.id,
-                targetEntity: {
+                targetEntity: seq,
+                rawEntity: {
                   ...seq,
                   src: effectiveImagePath,
-                } as unknown as Record<string, unknown>,
+                },
                 modifier: {
                   type: mod.type,
                   params: {
