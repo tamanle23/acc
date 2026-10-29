@@ -380,6 +380,97 @@ export interface GlitchDataStreamModifierParams extends BaseTimeSpaceModifierPar
   density?: number;
 }
 
+export interface CymaticChladniModifierParams extends BaseTimeSpaceModifierParams {
+  m?: number;
+  n?: number;
+  targetX?: number;
+  targetY?: number;
+  density?: number;
+  strokeWidth?: number;
+  particleCount?: number;
+  resonanceSpeed?: number;
+  dampingFactor?: number;
+  particleColor?: string;
+  nodalColor?: string;
+}
+
+export interface StrangeAttractorModifierParams extends BaseTimeSpaceModifierParams {
+  targetX?: number;
+  targetY?: number;
+  density?: number;
+  strokeWidth?: number;
+  attractorType?: 'clifford' | 'dejong';
+  iterations?: number;
+  a?: number;
+  b?: number;
+  c?: number;
+  d?: number;
+  burnIn?: number;
+  trailColor?: string;
+}
+
+export interface RelativisticBlackHoleModifierParams extends BaseTimeSpaceModifierParams {
+  targetX?: number;
+  targetY?: number;
+  density?: number;
+  strokeWidth?: number;
+  mass?: number;
+  spin?: number;
+  inclination?: number;
+  accretionDiskInner?: number;
+  accretionDiskOuter?: number;
+  dopplerBoost?: number;
+  gravitationalRedshift?: number;
+  beamingColor?: string;
+}
+
+export interface TopographicContourModifierParams extends BaseTimeSpaceModifierParams {
+  targetX?: number;
+  targetY?: number;
+  density?: number;
+  strokeWidth?: number;
+  octaves?: number;
+  contourCount?: number;
+  contourStep?: number;
+  turbulentFlow?: number;
+  showIndexContours?: boolean;
+  elevationGlow?: string;
+}
+
+export interface HyperbolicPoincareModifierParams extends BaseTimeSpaceModifierParams {
+  targetX?: number;
+  targetY?: number;
+  density?: number;
+  strokeWidth?: number;
+  p?: number;
+  q?: number;
+  depth?: number;
+  mobiusRotation?: number;
+  boundaryGlow?: boolean;
+  diskColor?: string;
+}
+
+export interface KineticHarmonographModifierParams extends BaseTimeSpaceModifierParams {
+  targetX?: number;
+  targetY?: number;
+  density?: number;
+  strokeWidth?: number;
+  f1?: number;
+  f2?: number;
+  f3?: number;
+  f4?: number;
+  p1?: number;
+  p2?: number;
+  p3?: number;
+  p4?: number;
+  d1?: number;
+  d2?: number;
+  d3?: number;
+  d4?: number;
+  stepsPerFrame?: number;
+  epicycleColor?: string;
+}
+
 export interface TimeSpaceModifierParams extends BaseTimeSpaceModifierParams {
   templateId?: string;
   density?: number;
@@ -414,6 +505,12 @@ export type StandardModifierNode =
   | TypedModifierNode<'time_space/superformula', 'video' | 'image' | 'overlay' | SequenceType[], SuperformulaModifierParams>
   | TypedModifierNode<'time_space/energy_shield', 'video' | 'image' | 'overlay' | SequenceType[], EnergyShieldModifierParams>
   | TypedModifierNode<'time_space/glitch_data_stream', 'video' | 'image' | 'overlay' | SequenceType[], GlitchDataStreamModifierParams>
+  | TypedModifierNode<'time_space/cymatic_chladni', 'video' | 'image' | 'overlay' | SequenceType[], CymaticChladniModifierParams>
+  | TypedModifierNode<'time_space/strange_attractor', 'video' | 'image' | 'overlay' | SequenceType[], StrangeAttractorModifierParams>
+  | TypedModifierNode<'time_space/relativistic_blackhole', 'video' | 'image' | 'overlay' | SequenceType[], RelativisticBlackHoleModifierParams>
+  | TypedModifierNode<'time_space/topographic_contour', 'video' | 'image' | 'overlay' | SequenceType[], TopographicContourModifierParams>
+  | TypedModifierNode<'time_space/hyperbolic_poincare', 'video' | 'image' | 'overlay' | SequenceType[], HyperbolicPoincareModifierParams>
+  | TypedModifierNode<'time_space/kinetic_harmonograph', 'video' | 'image' | 'overlay' | SequenceType[], KineticHarmonographModifierParams>
   | TypedModifierNode<'text/style', 'text' | SequenceType[], TextStyleModifierParams>
   | TypedModifierNode<'audio/volume', 'audio' | SequenceType[], VolumeModifierParams>
   | TypedModifierNode<'audio/pan', 'audio' | SequenceType[], PanModifierParams>

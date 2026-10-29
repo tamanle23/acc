@@ -780,7 +780,13 @@ export class VideoIRSchemaValidator {
       case 'time_space/audio_spectrum':
       case 'time_space/superformula':
       case 'time_space/energy_shield':
-      case 'time_space/glitch_data_stream': {
+      case 'time_space/glitch_data_stream':
+      case 'time_space/cymatic_chladni':
+      case 'time_space/strange_attractor':
+      case 'time_space/relativistic_blackhole':
+      case 'time_space/topographic_contour':
+      case 'time_space/hyperbolic_poincare':
+      case 'time_space/kinetic_harmonograph': {
         if (p.boundary !== undefined && !['loop', 'pingpong', 'clamp', 'once'].includes(p.boundary)) {
           errors.push(`Modifier "${type}" on ${context}: boundary must be 'loop', 'pingpong', 'clamp', or 'once'`);
         }

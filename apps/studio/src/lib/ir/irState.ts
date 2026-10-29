@@ -12,6 +12,8 @@ import { complexSciFiDemoIR } from './complexSciFiDemoIR';
 import { defaultDemoIR } from './defaultDemoIR';
 import { broadcastNewsDemoIR } from './broadcastNewsDemoIR';
 import { cyberAudioVisualizerDemoIR } from './cyberAudioVisualizerDemoIR';
+import { quantumPhysicsDemoIR } from './quantumPhysicsDemoIR';
+import { astroTelemetryDemoIR } from './astroTelemetryDemoIR';
 import { BrowserAssetMetadataProber } from './BrowserAssetMetadataProber';
 import { HistoryManager } from '../commands/HistoryManager';
 import type { ICommand } from '../commands/ICommand';
@@ -49,7 +51,7 @@ export interface IRState {
   error: string | null;
   canUndo: boolean;
   canRedo: boolean;
-  activeTemplate: 'scifi' | 'default' | 'broadcast' | 'visualizer';
+  activeTemplate: 'scifi' | 'default' | 'broadcast' | 'visualizer' | 'quantum' | 'astro';
 }
 
 export type IRStateSubscriber = (state: IRState) => void;
@@ -237,7 +239,7 @@ export class IRStateManager {
     this.notify();
   }
 
-  public async switchTemplate(template: 'scifi' | 'default' | 'broadcast' | 'visualizer'): Promise<void> {
+  public async switchTemplate(template: 'scifi' | 'default' | 'broadcast' | 'visualizer' | 'quantum' | 'astro'): Promise<void> {
     this.historyManager.clear();
     let targetDoc = defaultDemoIR;
     if (template === 'scifi') {
@@ -246,6 +248,10 @@ export class IRStateManager {
       targetDoc = broadcastNewsDemoIR;
     } else if (template === 'visualizer') {
       targetDoc = cyberAudioVisualizerDemoIR;
+    } else if (template === 'quantum') {
+      targetDoc = quantumPhysicsDemoIR;
+    } else if (template === 'astro') {
+      targetDoc = astroTelemetryDemoIR;
     }
     this.state = {
       ...this.state,

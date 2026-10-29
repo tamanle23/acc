@@ -32,6 +32,12 @@ import {
   SuperformulaPlugin,
   EnergyShieldPlugin,
   GlitchDataStreamPlugin,
+  CymaticChladniPlugin,
+  StrangeAttractorPlugin,
+  RelativisticBlackHolePlugin,
+  TopographicContourPlugin,
+  HyperbolicPoincarePlugin,
+  KineticHarmonographPlugin,
 } from './time-space';
 import { GSAPMotionPlugin } from './motion/GSAPMotionPlugin';
 import { DepthRelightingAdapterPlugin } from './vfx/DepthRelightingAdapterPlugin';
@@ -112,6 +118,12 @@ export function registerCoreModifierPlugins(
   registry.register(new SuperformulaPlugin());
   registry.register(new EnergyShieldPlugin());
   registry.register(new GlitchDataStreamPlugin());
+  registry.register(new CymaticChladniPlugin());
+  registry.register(new StrangeAttractorPlugin());
+  registry.register(new RelativisticBlackHolePlugin());
+  registry.register(new TopographicContourPlugin());
+  registry.register(new HyperbolicPoincarePlugin());
+  registry.register(new KineticHarmonographPlugin());
   return registry;
 }
 

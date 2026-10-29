@@ -56,3 +56,4 @@
 | 391 | [Discrete `time_space/*` Motion Graphic Plugins & Studio Showcase](./391_discrete_timespace_plugins_and_studio_showcase.md) | Completed |
 | 392 | [Fix Detached Image Guard and Preview Texture Lifecycle](./392_fix_detached_image_guard_and_preview_texture_lifecycle.md) | Completed |
 | 393 | [Eliminate DndContext and Infinite Update Depth in Viewport Gizmo Direct Manipulation](./393_eliminate_dnd_kit_and_infinite_update_depth_in_viewport_gizmo.md) | Completed |
+| 394 | [Advanced Spatio-Temporal Generators & Studio Multi-Domain Showcase](./394_advanced_spatio_temporal_generators_and_demos.md) | Completed |

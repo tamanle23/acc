@@ -1367,6 +1367,498 @@ export class TimeSpaceRegistry {
         },
       });
     });
+
+    // =========================================================================
+    // 14. Quantum Cymatics (Chladni Acoustic Resonance Plates)
+    // =========================================================================
+    this.register('cymatic_chladni', (params = {}) => {
+      const palette = resolveTimeSpacePalette(params);
+      const boundary = params.boundary || 'loop';
+      const density = Math.max(16, Math.min(128, params.density ?? 48));
+      const scale = params.scale ?? 1.0;
+
+      return createTimeSpaceMachine({
+        boundary,
+        initialState: {
+          modeN: 3,
+          modeM: 4,
+          amplitudeA: 1.0,
+          amplitudeB: 1.0,
+          threshold: 0.08,
+          rotation: 0,
+          alpha: 1.0,
+        },
+        setup: (tl, state) => {
+          tl.to(state, { modeN: 5, modeM: 2, duration: 4, ease: 'sine.inOut' })
+            .to(state, { amplitudeB: -1.0, duration: 2, ease: 'sine.inOut' }, '<')
+            .to(state, { modeN: 6, modeM: 7, threshold: 0.06, duration: 4, ease: 'sine.inOut' })
+            .to(state, { rotation: Math.PI * 2, duration: 10, ease: 'linear' }, 0);
+        },
+        generateGeometry: (state, space) => {
+          const origin = space.toPixels([params.targetX ?? 0.0, params.targetY ?? 0.0]);
+          const maxRadius = Math.min(space.width, space.height) * 0.42 * scale;
+          const points: Pt[] = [];
+          const step = 2.0 / density;
+          const cosR = Math.cos(state.rotation);
+          const sinR = Math.sin(state.rotation);
+
+          for (let ix = -1.0; ix <= 1.0; ix += step) {
+            for (let iy = -1.0; iy <= 1.0; iy += step) {
+              if (ix * ix + iy * iy > 1.0) continue;
+              const rx = ix * cosR - iy * sinR;
+              const ry = ix * sinR + iy * cosR;
+
+              const val = state.amplitudeA * Math.cos(state.modeN * Math.PI * rx) * Math.cos(state.modeM * Math.PI * ry) +
+                          state.amplitudeB * Math.cos(state.modeM * Math.PI * rx) * Math.cos(state.modeN * Math.PI * ry);
+
+              if (Math.abs(val) < state.threshold) {
+                points.push(new Pt(origin[0] + ix * maxRadius, origin[1] + iy * maxRadius));
+              }
+            }
+          }
+
+          return {
+            points,
+            meta: { palette, strokeWidth: params.strokeWidth ?? 1.5, alpha: state.alpha, origin, maxRadius },
+          };
+        },
+        render: (snapshot, ctx) => {
+          const meta = snapshot.geometry.meta;
+          const pal = meta?.palette || palette;
+          const points = snapshot.geometry.points;
+
+          ctx.save();
+          ctx.globalAlpha = meta?.alpha ?? 1.0;
+
+          // Bounding resonance ring
+          ctx.strokeStyle = pal.secondary;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.arc(meta.origin[0], meta.origin[1], meta.maxRadius, 0, Math.PI * 2);
+          ctx.stroke();
+
+          // Nodal points with glow
+          ctx.fillStyle = pal.primary;
+          ctx.shadowColor = pal.glow;
+          ctx.shadowBlur = 8;
+          for (let i = 0; i < points.length; i++) {
+            ctx.fillRect(points[i][0] - 1.2, points[i][1] - 1.2, 2.4, 2.4);
+          }
+          ctx.restore();
+        },
+      });
+    });
+
+    // =========================================================================
+    // 15. Chaotic Strange Attractors (Clifford & De Jong Maps)
+    // =========================================================================
+    this.register('strange_attractor', (params = {}) => {
+      const palette = resolveTimeSpacePalette(params);
+      const boundary = params.boundary || 'loop';
+      const density = Math.max(200, Math.min(2000, (params.density ?? 32) * 25));
+      const scale = params.scale ?? 1.0;
+
+      return createTimeSpaceMachine({
+        boundary,
+        initialState: {
+          a: -1.4,
+          b: 1.6,
+          c: 1.0,
+          d: 0.7,
+          rotation: 0,
+          alpha: 1.0,
+        },
+        setup: (tl, state) => {
+          tl.to(state, { a: 1.7, b: 1.7, c: 0.6, d: 1.2, duration: 5, ease: 'sine.inOut' })
+            .to(state, { a: -1.7, b: -1.8, c: -1.9, d: -0.4, duration: 5, ease: 'sine.inOut' })
+            .to(state, { a: -1.4, b: 1.6, c: 1.0, d: 0.7, duration: 5, ease: 'sine.inOut' })
+            .to(state, { rotation: Math.PI * 2, duration: 15, ease: 'linear' }, 0);
+        },
+        generateGeometry: (state, space) => {
+          const origin = space.toPixels([params.targetX ?? 0.0, params.targetY ?? 0.0]);
+          const maxDim = Math.min(space.width, space.height) * 0.22 * scale;
+          const points: Pt[] = [];
+          let x = 0.1;
+          let y = 0.1;
+
+          const cosR = Math.cos(state.rotation);
+          const sinR = Math.sin(state.rotation);
+
+          for (let i = 0; i < density; i++) {
+            const xNext = Math.sin(state.a * y) + state.c * Math.cos(state.a * x);
+            const yNext = Math.sin(state.b * x) + state.d * Math.cos(state.b * y);
+            x = xNext;
+            y = yNext;
+
+            if (i > 20) {
+              const rx = x * cosR - y * sinR;
+              const ry = x * sinR + y * cosR;
+              points.push(new Pt(origin[0] + rx * maxDim, origin[1] + ry * maxDim));
+            }
+          }
+
+          return {
+            points,
+            meta: { palette, alpha: state.alpha },
+          };
+        },
+        render: (snapshot, ctx) => {
+          const meta = snapshot.geometry.meta;
+          const pal = meta?.palette || palette;
+          const points = snapshot.geometry.points;
+
+          ctx.save();
+          ctx.globalAlpha = meta?.alpha ?? 1.0;
+          ctx.fillStyle = pal.primary;
+          ctx.shadowColor = pal.glow;
+          ctx.shadowBlur = 6;
+
+          for (let i = 0; i < points.length; i++) {
+            ctx.fillRect(points[i][0] - 1, points[i][1] - 1, 2, 2);
+          }
+          ctx.restore();
+        },
+      });
+    });
+
+    // =========================================================================
+    // 16. Relativistic Gravitational Lensing & Accretion Disk
+    // =========================================================================
+    this.register('relativistic_blackhole', (params = {}) => {
+      const palette = resolveTimeSpacePalette(params);
+      const boundary = params.boundary || 'loop';
+      const scale = params.scale ?? 1.0;
+      const strokeWidth = params.strokeWidth ?? 1.5;
+
+      return createTimeSpaceMachine({
+        boundary,
+        initialState: {
+          spin: 0.85,
+          accretionTwist: 0,
+          diskAlpha: 0.9,
+          lensingDistortion: 1.0,
+        },
+        setup: (tl, state) => {
+          tl.to(state, { accretionTwist: Math.PI * 4, duration: 10, ease: 'linear' })
+            .to(state, { lensingDistortion: 1.3, duration: 5, yoyo: true, repeat: -1, ease: 'sine.inOut' }, 0);
+        },
+        generateGeometry: (state, space) => {
+          const origin = space.toPixels([params.targetX ?? 0.0, params.targetY ?? 0.0]);
+          const rs = Math.min(space.width, space.height) * 0.08 * scale;
+          const photonRadius = rs * 1.5;
+          const rings: Array<{ group: Group; isDoppler: boolean; alpha: number }> = [];
+
+          const numRings = 16;
+          for (let r = 0; r < numRings; r++) {
+            const radius = photonRadius + (r + 1) * (rs * 0.28 * state.lensingDistortion);
+            const pts: Pt[] = [];
+            const ringSteps = 48;
+
+            for (let s = 0; s <= ringSteps; s++) {
+              const theta = (s / ringSteps) * Math.PI * 2;
+              const angle = theta + state.accretionTwist * (1 - r / numRings);
+              const warpY = Math.sin(angle) * 0.38 + (Math.cos(angle) > 0 ? -0.15 : 0.15);
+              const px = origin[0] + Math.cos(angle) * radius;
+              const py = origin[1] + warpY * radius;
+              pts.push(new Pt(px, py));
+            }
+
+            rings.push({
+              group: new Group(...pts),
+              isDoppler: r < 8,
+              alpha: 1.0 - (r / numRings) * 0.7,
+            });
+          }
+
+          return {
+            points: [origin],
+            groups: rings.map(r => r.group),
+            meta: { palette, origin, rs, photonRadius, rings, strokeWidth },
+          };
+        },
+        render: (snapshot, ctx) => {
+          const meta = snapshot.geometry.meta;
+          const pal = meta?.palette || palette;
+
+          ctx.save();
+
+          for (const ring of meta.rings) {
+            ctx.strokeStyle = ring.isDoppler ? pal.primary : pal.secondary;
+            ctx.lineWidth = meta.strokeWidth * (ring.isDoppler ? 1.5 : 1.0);
+            ctx.globalAlpha = ring.alpha;
+            ctx.shadowColor = pal.glow;
+            ctx.shadowBlur = ring.isDoppler ? 12 : 4;
+
+            ctx.beginPath();
+            for (let i = 0; i < ring.group.length; i++) {
+              const pt = ring.group[i];
+              if (i === 0) ctx.moveTo(pt[0], pt[1]);
+              else ctx.lineTo(pt[0], pt[1]);
+            }
+            ctx.stroke();
+          }
+
+          // Photon Sphere Ring
+          ctx.globalAlpha = 1.0;
+          ctx.strokeStyle = pal.accent;
+          ctx.lineWidth = meta.strokeWidth;
+          ctx.shadowColor = pal.accent;
+          ctx.shadowBlur = 16;
+          ctx.beginPath();
+          ctx.arc(meta.origin[0], meta.origin[1], meta.photonRadius, 0, Math.PI * 2);
+          ctx.stroke();
+
+          // Event Horizon (Absolute Void)
+          ctx.fillStyle = '#000000';
+          ctx.shadowBlur = 0;
+          ctx.beginPath();
+          ctx.arc(meta.origin[0], meta.origin[1], meta.rs, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.restore();
+        },
+      });
+    });
+
+    // =========================================================================
+    // 17. Topographic Contour Isoline Elevation
+    // =========================================================================
+    this.register('topographic_contour', (params = {}) => {
+      const palette = resolveTimeSpacePalette(params);
+      const boundary = params.boundary || 'loop';
+      const density = Math.max(4, Math.min(16, Math.floor((params.density ?? 32) / 4)));
+      const scale = params.scale ?? 1.0;
+      const strokeWidth = params.strokeWidth ?? 1.5;
+
+      return createTimeSpaceMachine({
+        boundary,
+        initialState: {
+          elevationOffset: 0,
+          alpha: 1.0,
+          scanSweep: 0,
+        },
+        setup: (tl, state) => {
+          tl.to(state, { elevationOffset: 10, duration: 15, ease: 'linear' })
+            .to(state, { scanSweep: 1.0, duration: 6, ease: 'sine.inOut', repeat: -1, yoyo: true }, 0);
+        },
+        generateGeometry: (state, space, time) => {
+          const origin = space.toPixels([params.targetX ?? 0.0, params.targetY ?? 0.0]);
+          const baseRadius = Math.min(space.width, space.height) * 0.38 * scale;
+          const contours: Group[] = [];
+          const numLevels = density;
+
+          for (let lvl = 1; lvl <= numLevels; lvl++) {
+            const rBase = (lvl / numLevels) * baseRadius;
+            const pts: Pt[] = [];
+            const numAngularSteps = 64;
+
+            for (let a = 0; a <= numAngularSteps; a++) {
+              const theta = (a / numAngularSteps) * Math.PI * 2;
+              const noiseSample = StatelessHashNoise.noise2D(
+                time.seed,
+                time.frame * 0.02 + state.elevationOffset * 0.1,
+                Math.cos(theta) * 1.5 + lvl * 0.3,
+                Math.sin(theta) * 1.5 + lvl * 0.3
+              );
+              const rWarp = rBase + noiseSample * (baseRadius * 0.08);
+              pts.push(new Pt(origin[0] + Math.cos(theta) * rWarp, origin[1] + Math.sin(theta) * rWarp));
+            }
+            contours.push(new Group(...pts));
+          }
+
+          return {
+            groups: contours,
+            meta: { palette, origin, strokeWidth, alpha: state.alpha, scanSweep: state.scanSweep },
+          };
+        },
+        render: (snapshot, ctx) => {
+          const meta = snapshot.geometry.meta;
+          const pal = meta?.palette || palette;
+          const contours = snapshot.geometry.groups;
+
+          ctx.save();
+          ctx.globalAlpha = meta?.alpha ?? 1.0;
+
+          for (let i = 0; i < contours.length; i++) {
+            const isKeyIndex = i % 4 === 0;
+            ctx.strokeStyle = isKeyIndex ? pal.primary : pal.secondary;
+            ctx.lineWidth = isKeyIndex ? meta.strokeWidth * 1.5 : meta.strokeWidth * 0.8;
+            if (!isKeyIndex) {
+              ctx.setLineDash([4, 4]);
+            } else {
+              ctx.setLineDash([]);
+            }
+
+            ctx.beginPath();
+            for (let p = 0; p < contours[i].length; p++) {
+              const pt = contours[i][p];
+              if (p === 0) ctx.moveTo(pt[0], pt[1]);
+              else ctx.lineTo(pt[0], pt[1]);
+            }
+            ctx.closePath();
+            ctx.stroke();
+          }
+
+          ctx.restore();
+        },
+      });
+    });
+
+    // =========================================================================
+    // 18. Poincaré Hyperbolic Conformal Tessellation
+    // =========================================================================
+    this.register('hyperbolic_poincare', (params = {}) => {
+      const palette = resolveTimeSpacePalette(params);
+      const boundary = params.boundary || 'loop';
+      const scale = params.scale ?? 1.0;
+      const strokeWidth = params.strokeWidth ?? 1.5;
+
+      return createTimeSpaceMachine({
+        boundary,
+        initialState: {
+          rotation: 0,
+          zoom: 1.0,
+          symmetry: 7,
+          alpha: 1.0,
+        },
+        setup: (tl, state) => {
+          tl.to(state, { rotation: Math.PI * 2, duration: 20, ease: 'linear' })
+            .to(state, { zoom: 1.25, duration: 6, yoyo: true, repeat: -1, ease: 'sine.inOut' }, 0);
+        },
+        generateGeometry: (state, space) => {
+          const origin = space.toPixels([params.targetX ?? 0.0, params.targetY ?? 0.0]);
+          const diskRadius = Math.min(space.width, space.height) * 0.4 * scale;
+          const arcs: Group[] = [];
+          const symmetry = Math.floor(state.symmetry);
+
+          const depths = 4;
+          for (let d = 0; d < depths; d++) {
+            const ringFraction = Math.pow(0.5, d + 1);
+            const subRadius = diskRadius * (1 - ringFraction * 0.5) * state.zoom;
+            const pts: Pt[] = [];
+            const steps = symmetry * 8;
+
+            for (let s = 0; s <= steps; s++) {
+              const theta = (s / steps) * Math.PI * 2 + state.rotation * (d % 2 === 0 ? 1 : -1);
+              const scallop = 1.0 - 0.12 * Math.cos(symmetry * theta);
+              const r = Math.min(diskRadius * 0.98, subRadius * scallop);
+              pts.push(new Pt(origin[0] + Math.cos(theta) * r, origin[1] + Math.sin(theta) * r));
+            }
+            arcs.push(new Group(...pts));
+          }
+
+          return {
+            groups: arcs,
+            meta: { palette, origin, diskRadius, strokeWidth, alpha: state.alpha },
+          };
+        },
+        render: (snapshot, ctx) => {
+          const meta = snapshot.geometry.meta;
+          const pal = meta?.palette || palette;
+          const arcs = snapshot.geometry.groups;
+
+          ctx.save();
+          ctx.globalAlpha = meta?.alpha ?? 1.0;
+
+          // Outer boundary circle of Poincaré disk
+          ctx.strokeStyle = pal.accent;
+          ctx.lineWidth = meta.strokeWidth * 1.5;
+          ctx.shadowColor = pal.glow;
+          ctx.shadowBlur = 10;
+          ctx.beginPath();
+          ctx.arc(meta.origin[0], meta.origin[1], meta.diskRadius, 0, Math.PI * 2);
+          ctx.stroke();
+
+          // Internal geodesic tessellations
+          for (let i = 0; i < arcs.length; i++) {
+            ctx.strokeStyle = i === 0 ? pal.primary : pal.secondary;
+            ctx.lineWidth = meta.strokeWidth * (1.0 - i * 0.15);
+            ctx.shadowBlur = 4;
+
+            ctx.beginPath();
+            for (let p = 0; p < arcs[i].length; p++) {
+              const pt = arcs[i][p];
+              if (p === 0) ctx.moveTo(pt[0], pt[1]);
+              else ctx.lineTo(pt[0], pt[1]);
+            }
+            ctx.closePath();
+            ctx.stroke();
+          }
+
+          ctx.restore();
+        },
+      });
+    });
+
+    // =========================================================================
+    // 19. Kinetic Harmonograph & Guilloché Epicycles
+    // =========================================================================
+    this.register('kinetic_harmonograph', (params = {}) => {
+      const palette = resolveTimeSpacePalette(params);
+      const boundary = params.boundary || 'loop';
+      const scale = params.scale ?? 1.0;
+      const strokeWidth = params.strokeWidth ?? 1.5;
+
+      return createTimeSpaceMachine({
+        boundary,
+        initialState: {
+          phaseX: 0,
+          phaseY: Math.PI / 4,
+          freqX: 2.001,
+          freqY: 3.0,
+          damping: 0.002,
+          epicycleRotation: 0,
+          alpha: 1.0,
+        },
+        setup: (tl, state) => {
+          tl.to(state, { phaseX: Math.PI * 2, duration: 12, ease: 'linear' })
+            .to(state, { epicycleRotation: Math.PI * 2, duration: 16, ease: 'linear' }, 0)
+            .to(state, { freqX: 3.002, freqY: 4.0, duration: 6, yoyo: true, repeat: -1, ease: 'sine.inOut' }, 0);
+        },
+        generateGeometry: (state, space) => {
+          const origin = space.toPixels([params.targetX ?? 0.0, params.targetY ?? 0.0]);
+          const maxAmp = Math.min(space.width, space.height) * 0.38 * scale;
+          const pts: Pt[] = [];
+          const samples = 400;
+
+          for (let i = 0; i < samples; i++) {
+            const t = i * 0.05;
+            const decay = Math.exp(-state.damping * t);
+            const x = maxAmp * decay * (Math.sin(state.freqX * t + state.phaseX) + 0.3 * Math.cos(state.epicycleRotation + t));
+            const y = maxAmp * decay * (Math.sin(state.freqY * t + state.phaseY) + 0.3 * Math.sin(state.epicycleRotation + t));
+            pts.push(new Pt(origin[0] + x, origin[1] + y));
+          }
+
+          return {
+            groups: [new Group(...pts)],
+            meta: { palette, strokeWidth, alpha: state.alpha },
+          };
+        },
+        render: (snapshot, ctx) => {
+          const meta = snapshot.geometry.meta;
+          const pal = meta?.palette || palette;
+          const curve = snapshot.geometry.groups[0];
+
+          if (!curve || curve.length === 0) return;
+
+          ctx.save();
+          ctx.globalAlpha = meta?.alpha ?? 1.0;
+          ctx.strokeStyle = pal.primary;
+          ctx.lineWidth = meta.strokeWidth;
+          ctx.shadowColor = pal.glow;
+          ctx.shadowBlur = 8;
+
+          ctx.beginPath();
+          for (let i = 0; i < curve.length; i++) {
+            if (i === 0) ctx.moveTo(curve[i][0], curve[i][1]);
+            else ctx.lineTo(curve[i][0], curve[i][1]);
+          }
+          ctx.stroke();
+
+          ctx.restore();
+        },
+      });
+    });
   }
 }
 
