@@ -134,11 +134,6 @@ export function Preview({
     setIsSpacePressed: panZoom.setIsSpacePressed,
     setVisionPassMode,
   });
-    isPlaying,
-    clearColor,
-    debugMode,
-    activeSeqs: activeSequences,
-  });
 
   // Vector Snapping Guide Canvas Render Pass
   useEffect(() => {
