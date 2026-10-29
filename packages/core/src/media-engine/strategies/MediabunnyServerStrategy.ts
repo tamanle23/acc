@@ -12,6 +12,7 @@ import {
   EncodedVideoPacketSource,
   EncodedAudioPacketSource,
   EncodedPacket,
+  AudioSampleSink,
 } from 'mediabunny';
 import { FFAudioMuxer } from '../../ffmpeg-ffi/FFAudioMuxer';
 import {
@@ -19,6 +20,8 @@ import {
   MediaEngineType,
   MediaEngineCapabilities,
   IMediaFrameSink,
+  IAudioDecoder,
+  DecodedAudioPCM,
   IMediaProbeStrategy,
   IMediaConcatStrategy,
   IAudioMuxerStrategy,
@@ -236,6 +239,110 @@ export class MediabunnyServerStrategy implements IMediaEngineStrategy {
 
   public createVideoSink(options?: SinkInitMetadata): IMediaFrameSink {
     return new MediabunnyServerSink();
+  }
+
+  public createAudioDecoder(): IAudioDecoder {
+    return {
+      decodeToPCM: async (filePath: string, targetSampleRate = 48000, targetChannels = 2): Promise<DecodedAudioPCM | null> => {
+        if (!fs.existsSync(filePath)) {
+          return null;
+        }
+
+        try {
+          // If FFIAudioDecoder is available in current runtime (Bun/FFI), take fast native path
+          try {
+            const ffiModule = await import('../../ffmpeg-ffi/FFIAudioDecoder');
+            if (ffiModule?.FFIAudioDecoder) {
+              const decoded = await ffiModule.FFIAudioDecoder.decodeToPCM(filePath, targetSampleRate, targetChannels);
+              if (decoded) return decoded;
+            }
+          } catch {
+            // Fall back to Mediabunny Server decoding pipeline
+          }
+
+          this.validatePrerequisites();
+
+          const input = new Input({
+            formats: ALL_FORMATS,
+            source: new FilePathSource(filePath),
+          });
+
+          const audioTrack = await input.getPrimaryAudioTrack();
+          if (!audioTrack) {
+            return null;
+          }
+
+          const durationSeconds = await input.computeDuration();
+          const audioSink = new AudioSampleSink(audioTrack);
+          const sampleChunks: Float32Array[] = [];
+          let totalExtractedSamplesPerChannel = 0;
+
+          for await (const sample of audioSink.samples()) {
+            try {
+              const numFrames = sample.numberOfFrames;
+              const numChannels = sample.numberOfChannels;
+
+              if (sample.format === 'f32') {
+                const interleaved = new Float32Array(numFrames * numChannels);
+                sample.copyTo(interleaved, { planeIndex: 0, format: 'f32' });
+                sampleChunks.push(interleaved);
+                totalExtractedSamplesPerChannel += numFrames;
+              } else if (sample.format === 'f32-planar' || numChannels === 2) {
+                const left = new Float32Array(numFrames);
+                const right = new Float32Array(numFrames);
+                sample.copyTo(left, { planeIndex: 0, format: 'f32-planar' });
+                if (numChannels > 1) {
+                  sample.copyTo(right, { planeIndex: 1, format: 'f32-planar' });
+                } else {
+                  right.set(left);
+                }
+                const interleaved = new Float32Array(numFrames * 2);
+                for (let i = 0; i < numFrames; i++) {
+                  interleaved[i * 2] = left[i];
+                  interleaved[i * 2 + 1] = right[i];
+                }
+                sampleChunks.push(interleaved);
+                totalExtractedSamplesPerChannel += numFrames;
+              } else {
+                // Fallback planar plane 0 copy
+                const mono = new Float32Array(numFrames);
+                sample.copyTo(mono, { planeIndex: 0, format: 'f32-planar' });
+                const interleaved = new Float32Array(numFrames * 2);
+                for (let i = 0; i < numFrames; i++) {
+                  interleaved[i * 2] = mono[i];
+                  interleaved[i * 2 + 1] = mono[i];
+                }
+                sampleChunks.push(interleaved);
+                totalExtractedSamplesPerChannel += numFrames;
+              }
+            } finally {
+              sample.close();
+            }
+          }
+
+          if (sampleChunks.length === 0) {
+            return null;
+          }
+
+          const finalPcm = new Float32Array(totalExtractedSamplesPerChannel * 2);
+          let offset = 0;
+          for (const chunk of sampleChunks) {
+            finalPcm.set(chunk, offset);
+            offset += chunk.length;
+          }
+
+          return {
+            sampleRate: targetSampleRate,
+            channels: 2,
+            totalSamplesPerChannel: totalExtractedSamplesPerChannel,
+            durationSeconds: durationSeconds || (totalExtractedSamplesPerChannel / targetSampleRate),
+            data: finalPcm,
+          };
+        } catch (err) {
+          return null;
+        }
+      },
+    };
   }
 
   public getProbeStrategy(): IMediaProbeStrategy {

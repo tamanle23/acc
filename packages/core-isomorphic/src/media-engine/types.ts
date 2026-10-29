@@ -105,6 +105,18 @@ export interface IVideoDecoder {
   getFrame?(frameIndex: number): Promise<DecodedVideoFrame | null>;
 }
 
+export interface DecodedAudioPCM {
+  sampleRate: number;
+  channels: number;
+  totalSamplesPerChannel: number;
+  durationSeconds: number;
+  data: Float32Array; // Interleaved Float32 PCM samples [-1.0, 1.0]
+}
+
+export interface IAudioDecoder {
+  decodeToPCM(uriOrPath: string, targetSampleRate?: number, targetChannels?: number): Promise<DecodedAudioPCM | null>;
+}
+
 export interface IMediaEngineStrategy {
   readonly id: MediaEngineType;
   readonly name: string;
@@ -113,6 +125,7 @@ export interface IMediaEngineStrategy {
   validatePrerequisites(): void;
   createVideoSink(options?: SinkInitMetadata): IMediaFrameSink;
   createVideoDecoder?(filePath: string, targetWidth: number, targetHeight: number): IVideoDecoder;
+  createAudioDecoder?(): IAudioDecoder;
   getProbeStrategy(): IMediaProbeStrategy;
   getConcatStrategy(): IMediaConcatStrategy;
   getAudioMuxerStrategy(): IAudioMuxerStrategy;

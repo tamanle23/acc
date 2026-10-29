@@ -5,15 +5,14 @@ import type { ResolvedTimeline, ResolvedTrack } from '../../types/VideoIR';
 import { ModifierPluginRegistry, type AudioProcessContext } from '../../plugins/ModifierPluginRegistry';
 import { DeterministicAudioClock } from '../../compiler/DeterministicAudioClock';
 import type { ModifierNode } from "../../types/modifiers";
-import { ContentCacheRegistry, CacheNamespace } from '@acc/core-isomorphic';
+import {
+  ContentCacheRegistry,
+  CacheNamespace,
+  MediaEngineRegistry,
+  type DecodedAudioPCM,
+} from '@acc/core-isomorphic';
 
-export interface DecodedAudioPCM {
-  sampleRate: number;
-  channels: number;
-  totalSamplesPerChannel: number;
-  durationSeconds: number;
-  data: Float32Array; // Interleaved Float32 PCM samples [-1.0, 1.0]
-}
+export type { DecodedAudioPCM };
 
 export interface DecoupledAudioMixResult {
   totalSamples: number;
@@ -592,12 +591,16 @@ export class UniversalAudioMixer {
         }
       } else {
         // Fallback procedural bed if asset is unresolved
+        const clipDurationSec = (endSample - startSample) / this.sampleRate;
         for (let s = startSample; s < endSample; s++) {
           const outIdx = s * channels;
           const duckMultiplier = duckingEnvelope ? duckingEnvelope[s] : 1.0;
-          const gain = 0.04 * duckMultiplier * volume;
-          masterBuffer[outIdx] += gain * panLeftGain;
-          masterBuffer[outIdx + 1] += gain * panRightGain;
+          const timeOffset = (s - startSample) / this.sampleRate;
+          // Generate audible waveform tone instead of flat DC
+          const synthSample = ProceduralAudioSynthesizer.synthBGM(timeOffset, clipDurationSec, this.sampleRate);
+          const currentGain = duckMultiplier * volume;
+          masterBuffer[outIdx] += synthSample * panLeftGain * currentGain;
+          masterBuffer[outIdx + 1] += synthSample * panRightGain * currentGain;
         }
       }
     }
@@ -619,7 +622,16 @@ export class UniversalAudioMixer {
   private audioCache = new Map<string, DecodedAudioPCM>();
 
   /**
-   * Universal audio decoder leveraging FFIAudioDecoder with memory caching.
+   * Prime or inject pre-decoded audio PCM buffers into memory cache.
+   * Useful when worker receives pre-decoded audio buffers from main thread or OPFS.
+   */
+  public primeAudioCache(key: string, decoded: DecodedAudioPCM): void {
+    this.audioCache.set(key, decoded);
+  }
+
+  /**
+   * Universal audio decoder leveraging MediaEngineRegistry with memory caching.
+   * Decoupled from runtime environment (Node, Bun, Web Worker, or Browser).
    */
   public async decodeAsset(filePath: string): Promise<DecodedAudioPCM | null> {
     if (this.audioCache.has(filePath)) {
@@ -627,20 +639,23 @@ export class UniversalAudioMixer {
     }
 
     try {
-      if (typeof process !== 'undefined' && process.versions?.node) {
-        // Dynamically load native FFIAudioDecoder only in Node/Bun runtime
-        const req = typeof require !== 'undefined' ? require : (0, eval)('require');
-        const core = req('@acc/core');
-        if (core?.FFIAudioDecoder) {
-          const decoded = await core.FFIAudioDecoder.decodeToPCM(filePath, this.sampleRate, 2);
-          if (decoded) {
-            this.audioCache.set(filePath, decoded);
-            return decoded;
-          }
+      let engine: any;
+      try {
+        engine = MediaEngineRegistry.get();
+      } catch {
+        engine = await MediaEngineRegistry.getAsync().catch(() => null);
+      }
+
+      if (engine && typeof engine.createAudioDecoder === 'function') {
+        const decoder = engine.createAudioDecoder();
+        const decoded = await decoder.decodeToPCM(filePath, this.sampleRate, 2);
+        if (decoded) {
+          this.audioCache.set(filePath, decoded);
+          return decoded;
         }
       }
-    } catch {
-      // Fallback
+    } catch (err) {
+      console.warn(`[UniversalAudioMixer] Failed to decode audio asset "${filePath}" via MediaEngine:`, err);
     }
     return null;
   }

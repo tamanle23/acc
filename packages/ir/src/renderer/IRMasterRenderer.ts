@@ -185,6 +185,10 @@ export class IRMasterRenderer implements Disposable {
     return this.resourceManager;
   }
 
+  public getAudioMixer(): UniversalAudioMixer {
+    return this.audioMixer;
+  }
+
   /**
    * Computes the canonical asset key for a sequence to identify shared asset reuse across cuts.
    */
@@ -475,17 +479,23 @@ export class IRMasterRenderer implements Disposable {
 
     const effectiveAudioPath = !options.skipAudio ? (options.audioPath || tempAudioWavPath) : undefined;
 
-    // Initialize Sink if provided
+    // Initialize Sink if provided and not already initialized by caller
     if (sink) {
-      await sink.initialize({
-        width,
-        height,
-        fps,
-        totalFrames,
-        durationSeconds: this.timeline.durationSeconds,
-        outputPath: options.outputPath,
-        audioPath: effectiveAudioPath,
-      });
+      const isAlreadyInit = typeof (sink as any).isInitialized === 'function'
+        ? (sink as any).isInitialized()
+        : Boolean((sink as any).output);
+
+      if (!isAlreadyInit) {
+        await sink.initialize({
+          width,
+          height,
+          fps,
+          totalFrames,
+          durationSeconds: this.timeline.durationSeconds,
+          outputPath: options.outputPath,
+          audioPath: effectiveAudioPath,
+        });
+      }
     }
 
     // 2. Discrete Frame-Step Scheduling (Zero Wall-Clock Dependency)

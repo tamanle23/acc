@@ -5,10 +5,13 @@ import { FFIConcatMuxer } from '../../ffmpeg-ffi/FFIConcatMuxer';
 import { FFAudioMuxer } from '../../ffmpeg-ffi/FFAudioMuxer';
 import { FFIVideoEncoderSink } from '../sinks/FFIVideoEncoderSink';
 import { FFIVideoDecoder } from '../../ffmpeg-ffi/FFIVideoDecoder';
+import { FFIAudioDecoder } from '../../ffmpeg-ffi/FFIAudioDecoder';
 import {
   IMediaEngineStrategy,
   IMediaFrameSink,
   IVideoDecoder,
+  IAudioDecoder,
+  DecodedAudioPCM,
   IMediaProbeStrategy,
   IMediaConcatStrategy,
   IAudioMuxerStrategy,
@@ -49,6 +52,14 @@ export class BunFFIEngineStrategy implements IMediaEngineStrategy {
 
   public createVideoDecoder(filePath: string, targetWidth: number, targetHeight: number): IVideoDecoder {
     return new FFIVideoDecoder(filePath, targetWidth, targetHeight);
+  }
+
+  public createAudioDecoder(): IAudioDecoder {
+    return {
+      decodeToPCM: async (filePath: string, targetSampleRate = 48000, targetChannels = 2): Promise<DecodedAudioPCM | null> => {
+        return FFIAudioDecoder.decodeToPCM(filePath, targetSampleRate, targetChannels);
+      },
+    };
   }
 
   public getProbeStrategy(): IMediaProbeStrategy {

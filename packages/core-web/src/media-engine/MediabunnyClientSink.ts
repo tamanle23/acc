@@ -36,9 +36,17 @@ export class MediabunnyClientSink implements IMediaFrameSink {
   private streamTarget?: StreamTarget;
   private hasAudioTrack: boolean = false;
 
+  public isInitialized(): boolean {
+    return this.output !== undefined;
+  }
+
   public async initialize(
     meta: SinkInitMetadata & { enableAudio?: boolean; writableStream?: WritableStream<Uint8Array> }
   ): Promise<void> {
+    if (this.output) {
+      // Idempotency: Already initialized by caller (e.g. export.worker.ts with custom writableStream)
+      return;
+    }
     this.meta = meta;
     this.outputPath = meta.outputPath;
     this.framesConsumed = 0;

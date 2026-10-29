@@ -39,3 +39,4 @@
 | 378 | [Universal Audio Track Processing and Dynamic Sidechain Ducking Architecture](./378_universal_audio_track_processing_and_dynamic_sidechain_ducking.md) | Completed |
 | 379 | [Zero-Stub Cryptographic Security, Route Unification to `/api/v1/...` & Persistence Hardening](./379_backend_hardening_route_unification.md) | Completed |
 | 380 | [Studio Vite Bundle Optimization and Lazy Vision Strategies](./380_studio_vite_bundle_optimization_and_lazy_vision_strategies.md) | Completed |
+| 381 | [Truly Isomorphic Audio Pipeline via MediaEngineStrategy & UniversalAudioMixer](./381_isomorphic_media_engine_audio_pipeline.md) | Completed |
