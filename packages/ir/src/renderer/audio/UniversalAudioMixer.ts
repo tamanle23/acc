@@ -592,12 +592,11 @@ export class UniversalAudioMixer {
       } else {
         // Fallback procedural bed if asset is unresolved
         const clipDurationSec = (endSample - startSample) / this.sampleRate;
+        const synthBuffer = ProceduralAudioSynthesizer.synthBGM(0, clipDurationSec, this.sampleRate);
         for (let s = startSample; s < endSample; s++) {
           const outIdx = s * channels;
           const duckMultiplier = duckingEnvelope ? duckingEnvelope[s] : 1.0;
-          const timeOffset = (s - startSample) / this.sampleRate;
-          // Generate audible waveform tone instead of flat DC
-          const synthSample = ProceduralAudioSynthesizer.synthBGM(timeOffset, clipDurationSec, this.sampleRate);
+          const synthSample = synthBuffer[s - startSample] || 0;
           const currentGain = duckMultiplier * volume;
           masterBuffer[outIdx] += synthSample * panLeftGain * currentGain;
           masterBuffer[outIdx + 1] += synthSample * panRightGain * currentGain;

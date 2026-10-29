@@ -109,22 +109,27 @@ export class MediabunnyClientStrategy implements IMediaEngineStrategy {
           try {
             const registry = AssetProtocolRegistry.getInstance();
             const asset = registry.resolve(uriOrPath);
-            if (asset && typeof asset.blob === 'function') {
-              blob = await asset.blob();
-            } else if (asset && typeof asset.arrayBuffer === 'function') {
+            if (asset && typeof asset.arrayBuffer === 'function') {
               arrayBuffer = await asset.arrayBuffer();
+            } else if (asset && typeof asset.blob === 'function') {
+              blob = await asset.blob();
+              arrayBuffer = await blob.arrayBuffer();
             }
           } catch {
             // Fall back to standard fetch if protocol registry is not registered for URI
           }
 
-          if (!blob && !arrayBuffer) {
+          if (!arrayBuffer) {
             if (typeof fetch !== 'undefined') {
               const res = await fetch(uriOrPath);
               if (res.ok) {
                 arrayBuffer = await res.arrayBuffer();
               }
             }
+          }
+
+          if (!blob && arrayBuffer) {
+            blob = new Blob([arrayBuffer]);
           }
 
           // 2. Decode using Web Audio OfflineAudioContext if supported in context
