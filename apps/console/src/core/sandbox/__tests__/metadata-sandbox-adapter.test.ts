@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { sandboxManager, useSandboxStore, sandboxRegistry, metadataSandboxAdapter } from '../index';
-import { mockMetadataStore } from '@/features/metadata/data/mock-metadata';
+import { sandboxManager, useSandboxStore, sandboxRegistry, metadataSandboxAdapter, mockMetadataStore } from '../index';
 
 describe('Extended Metadata Sandbox Adapter Routes', () => {
   beforeEach(() => {

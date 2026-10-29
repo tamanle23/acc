@@ -27,9 +27,6 @@ sandboxRegistry.register(systemSandboxHandler);
 
 export { workerFleetMockStore, workerSandboxHandler, approvalTaskMockStore, approvalsSandboxHandler, systemSandboxHandler, mockFleetStore };
 
-// Re-export mockMetadataStore for backward compatibility
-export { mockMetadataStore } from '@/features/metadata/data/mock-metadata';
-
 import axios from 'axios';
 import { attachSandboxFetchInterceptor } from './adapters/fetch-sandbox-adapter';
 import { attachSandboxAxiosInterceptor } from './adapters/axios-sandbox-adapter';

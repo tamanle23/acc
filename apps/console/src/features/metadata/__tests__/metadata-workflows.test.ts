@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { mockMetadataStore } from '../data/mock-metadata';
+import { mockMetadataStore } from '@acc/sandbox';
 import type { CreateAttributeDefinitionDto, CreateEntityRecordDto } from '../api/types';
 
 describe('Metadata Management Full E2E & Flow Test Suite', () => {

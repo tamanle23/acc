@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { mockMetadataStore } from '@/features/metadata/data/mock-metadata';
+import { mockMetadataStore } from '@acc/sandbox';
 import { useMetadataUiStore } from '@/features/metadata/store/use-metadata-ui-store';
 import { mockBlueprintSummaries, mockBlueprintManifests } from '@/features/metadata/data/mock-blueprints';
 import { billingSandboxHandler } from '@/core/sandbox/handlers/billing-sandbox-handler';

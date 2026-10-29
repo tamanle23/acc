@@ -4,8 +4,8 @@ import {
   useSandboxStore,
   usersSandboxRepo,
   tasksSandboxRepo,
+  mockMetadataStore,
 } from '../index';
-import { mockMetadataStore } from '@/features/metadata/data/mock-metadata';
 import { useSpringAuthStore } from '@/features/spring-auth/store';
 import { springApiClient } from '@/features/spring-auth/api-client';
 

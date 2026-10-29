@@ -4,7 +4,7 @@ import {
   generateWideAttributes,
   generateWideRecords,
 } from '../data/mock-wide-telemetry';
-import { mockMetadataStore } from '../data/mock-metadata';
+import { mockMetadataStore } from '@acc/sandbox';
 
 describe('100+ Columns Wide Telemetry Entity Sandbox Integration', () => {
   it('creates an entity type with 120 attributes in the sandbox catalog', () => {

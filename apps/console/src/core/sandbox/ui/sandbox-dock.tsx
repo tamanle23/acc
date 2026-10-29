@@ -19,7 +19,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { useSandboxStore, DEFAULT_SANDBOX_PERSONAS } from '../store/sandbox-store';
 import { sandboxManager } from '../manager/sandbox-manager';
-import { mockMetadataStore } from '@/features/metadata/data/mock-metadata';
+import { mockMetadataStore } from '@acc/sandbox';
 import { sandboxResetRegistry, dlqSandboxRepository } from '@acc/sandbox';
 import { useSpringAuthStore, springApiClient } from '@/features/spring-auth';
 import { useQueryClient } from '@tanstack/react-query';
