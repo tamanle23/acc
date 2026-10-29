@@ -4,7 +4,7 @@ import type {
   SinkFinalizeResult as CoreSinkFinalizeResult,
   MediaAudioMixResult,
 } from '@acc/core-isomorphic';
-import type { DecoupledAudioMixResult } from '../audio/DecoupledAudioMixer';
+import type { DecoupledAudioMixResult } from '../../server/DecoupledAudioMixer';
 
 export type SinkInitMetadata = CoreSinkInitMetadata;
 export type SinkFinalizeResult = CoreSinkFinalizeResult;

@@ -1,6 +1,6 @@
 import type { ResolvedTimeline, IIRFrameSink } from '../types/VideoIR';
 import { IRMasterRenderer } from '../renderer/IRMasterRenderer';
-import { DecoupledAudioMixer } from '../renderer/audio/DecoupledAudioMixer';
+import { DecoupledAudioMixer } from './DecoupledAudioMixer';
 import {
   MediaEngineRegistry,
   type MediaEngineType,
@@ -129,7 +129,7 @@ async function removePathIfExists(filePath: string): Promise<void> {
       if (fs.existsSync(filePath)) {
         await fs.promises.unlink(filePath);
       }
-    } catch {}
+    } catch { }
   }
 }
 
@@ -197,7 +197,7 @@ export class IRChunkWorkerPool {
         try {
           const { bootstrapNode } = await import('@acc/core');
           await bootstrapNode();
-        } catch {}
+        } catch { }
       }
     }
 
@@ -225,7 +225,7 @@ export class IRChunkWorkerPool {
         if (core.SagaOrchestrator) {
           saga = new core.SagaOrchestrator(options.jobId ? `chunk_pool_${options.jobId}` : `chunk_pool_${this.seed}`);
         }
-      } catch {}
+      } catch { }
     }
 
     const concurrency = Math.max(1, Math.min(safeConcurrency, totalFrames > 0 ? totalFrames : 1));
@@ -245,7 +245,7 @@ export class IRChunkWorkerPool {
         if (!fs.existsSync(workingDir)) {
           await fs.promises.mkdir(workingDir, { recursive: true });
         }
-      } catch {}
+      } catch { }
     }
 
     const jobId = options.jobId;
@@ -270,7 +270,7 @@ export class IRChunkWorkerPool {
         if (saga) {
           saga.addStep({
             name: 'master_audio',
-            execute: async () => {},
+            execute: async () => { },
             compensate: async () => {
               if (masterAudioWavPath) {
                 await removePathIfExists(masterAudioWavPath);
@@ -291,9 +291,9 @@ export class IRChunkWorkerPool {
     const activeTasks = slices.map((slice) => async () => {
       const chunkMp4Path = outPath
         ? resolvePath(
-            workingDir,
-            `.temp_chunk_${slice.chunkIndex}_${this.seed}_${jobId || 'job'}.mp4`
-          )
+          workingDir,
+          `.temp_chunk_${slice.chunkIndex}_${this.seed}_${jobId || 'job'}.mp4`
+        )
         : undefined;
 
       if (chunkMp4Path) {
@@ -301,7 +301,7 @@ export class IRChunkWorkerPool {
         if (saga) {
           saga.addStep({
             name: `chunk_${slice.chunkIndex}`,
-            execute: async () => {},
+            execute: async () => { },
             compensate: async () => {
               if (chunkMp4Path) {
                 await removePathIfExists(chunkMp4Path);
@@ -435,7 +435,7 @@ export class IRChunkWorkerPool {
             const fs = await import('fs');
             await fs.promises.copyFile(validChunkPaths[0], outPath);
             await removePathIfExists(validChunkPaths[0]);
-          } catch {}
+          } catch { }
         }
       } else if (validChunkPaths.length > 0) {
         const tempVideoOnlyPath = resolvePath(
@@ -464,7 +464,7 @@ export class IRChunkWorkerPool {
                 await fs.promises.unlink(outPath);
               }
               await fs.promises.rename(tempVideoOnlyPath, outPath);
-            } catch {}
+            } catch { }
           }
         }
       }

@@ -1,5 +1,5 @@
 import type { IIRFrameSink, SinkInitMetadata, SinkFinalizeResult } from './IIRFrameSink';
-import type { DecoupledAudioMixResult } from '../audio/DecoupledAudioMixer';
+import type { DecoupledAudioMixResult } from '../../server/DecoupledAudioMixer';
 
 export type PreviewFrameCallback = (frameIndex: number, rgbaBuffer: Uint8Array, meta: SinkInitMetadata) => void;
 
