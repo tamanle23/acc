@@ -5,9 +5,7 @@ export class ExportWorkerBridge {
   private currentExportId: string | null = null;
 
   public async export(
-    options: ClientExportOptions,
-    opfsWritable?: FileSystemWritableFileStream,
-    opfsFileHandle?: FileSystemFileHandle | null
+    options: ClientExportOptions
   ): Promise<ClientExportResult> {
     const {
       irState,
@@ -86,29 +84,12 @@ export class ExportWorkerBridge {
 
           case 'EXPORT_COMPLETE': {
             onProgress?.(100);
-            let finalBuffer: Uint8Array | ArrayBuffer | Blob | null = null;
-            let finalSize = data.fileSizeBytes;
-
-            // 1. Zero-memory OPFS scratch file retrieval
-            if (opfsFileHandle) {
-              try {
-                const opfsFile = await opfsFileHandle.getFile();
-                finalBuffer = opfsFile;
-                finalSize = opfsFile.size;
-              } catch {}
-            }
-
-            // 2. Fallback to transferred ArrayBuffer
-            if (!finalBuffer && data.buffer) {
-              finalBuffer = data.buffer;
-            }
-
             cleanup();
             resolve({
               cancelled: false,
               framesConsumed: totalFrames,
-              fileSizeBytes: finalSize,
-              buffer: finalBuffer,
+              fileSizeBytes: data.fileSizeBytes || (data.buffer?.byteLength ?? 0),
+              buffer: data.buffer || null,
             });
             break;
           }
@@ -132,7 +113,6 @@ export class ExportWorkerBridge {
           totalFrames,
           videoBitrate,
           codec,
-          writableStream: opfsWritable,
         },
       });
     });

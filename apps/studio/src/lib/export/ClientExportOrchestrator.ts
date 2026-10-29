@@ -103,7 +103,17 @@ export class ClientExportOrchestrator {
 
     onProgress?.(0);
 
-    // Attempt OPFS scratch stream to eliminate in-memory buffer retention
+    // 1. Primary Path: Dedicated Web Worker running IRMasterRenderer + MediabunnyClientSink
+    if (typeof Worker !== 'undefined' && !sinkFactory && irState.timeline) {
+      try {
+        const bridge = new ExportWorkerBridge();
+        return await bridge.export(options);
+      } catch (workerErr) {
+        console.warn('[ClientExportOrchestrator] Web Worker export failed, falling back to in-process IRMasterRenderer:', workerErr);
+      }
+    }
+
+    // 2. Fallback Path: In-process IRMasterRenderer execution (e.g. Node tests or Worker-restricted envs)
     let opfsFileHandle: FileSystemFileHandle | null = null;
     let opfsWritable: FileSystemWritableFileStream | undefined = undefined;
 
@@ -121,17 +131,6 @@ export class ClientExportOrchestrator {
       } catch {}
     }
 
-    // 1. Primary Path: Dedicated Web Worker running IRMasterRenderer + MediabunnyClientSink
-    if (typeof Worker !== 'undefined' && !sinkFactory && irState.timeline) {
-      try {
-        const bridge = new ExportWorkerBridge();
-        return await bridge.export(options, opfsWritable, opfsFileHandle);
-      } catch (workerErr) {
-        console.warn('[ClientExportOrchestrator] Web Worker export failed, falling back to in-process IRMasterRenderer:', workerErr);
-      }
-    }
-
-    // 2. Fallback Path: In-process IRMasterRenderer execution (e.g. Node tests or Worker-restricted envs)
     const sink: ClientExportSinkLike = sinkFactory ? sinkFactory() : new MediabunnyClientSink();
     await (sink as any).initialize({
       width,

@@ -104,12 +104,25 @@ self.onmessage = async (event: MessageEvent<ExportWorkerInMessage>) => {
       const sinkResult = renderResult.sinkResult;
       const fileSizeBytes = sinkResult?.fileSizeBytes || sinkBuffer?.byteLength || 0;
 
-      self.postMessage({
-        type: 'EXPORT_COMPLETE',
-        exportId,
-        fileSizeBytes,
-        buffer: sinkBuffer,
-      });
+      // Transfer sinkBuffer to main thread if available
+      if (sinkBuffer && sinkBuffer instanceof ArrayBuffer) {
+        self.postMessage(
+          {
+            type: 'EXPORT_COMPLETE',
+            exportId,
+            fileSizeBytes: sinkBuffer.byteLength,
+            buffer: sinkBuffer,
+          },
+          [sinkBuffer]
+        );
+      } else {
+        self.postMessage({
+          type: 'EXPORT_COMPLETE',
+          exportId,
+          fileSizeBytes,
+          buffer: sinkBuffer,
+        });
+      }
     } catch (err: any) {
       self.postMessage({
         type: 'EXPORT_ERROR',
