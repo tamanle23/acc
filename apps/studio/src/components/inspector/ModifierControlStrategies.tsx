@@ -128,6 +128,7 @@ export const SFXActionsControlStrategy: React.FC<ControlStrategyProps> = ({
       modifiers: [
         {
           type: 'sfx/procedural',
+          target: 'audio',
           params: {
             synthType,
             durationSec,
