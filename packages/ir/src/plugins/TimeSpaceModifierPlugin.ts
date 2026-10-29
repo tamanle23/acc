@@ -1,21 +1,21 @@
 import { TimeSpaceRegistry, TimeSpaceStateMachine } from '@acc/core-isomorphic';
 import type { TimeSpaceModifierParams } from '../types/modifiers';
-import type {
-  ModifierPlugin,
-  ClipRenderContext,
-  MasterCompositeContext,
-} from './ModifierPluginRegistry';
+import type { ModifierParameterSchema } from './ModifierPluginRegistry';
+import { BaseTimeSpacePlugin } from './time-space/BaseTimeSpacePlugin';
 
 /**
- * TimeSpaceModifierPlugin:
- * Connects the isomorphic Time-Space State Machine into the VideoIR rendering pipeline.
- * Evaluates procedural motion graphics, callouts, and particle fields deterministically.
+ * TimeSpaceModifierPlugin (Legacy Adapter):
+ * Preserves 100% backwards compatibility for legacy VideoIR documents and tests
+ * referencing the monolithic 'time_space' type.
+ * Discrete implementations are now available under 'time_space/*'.
  */
-export class TimeSpaceModifierPlugin implements ModifierPlugin<TimeSpaceModifierParams> {
+export class TimeSpaceModifierPlugin extends BaseTimeSpacePlugin<TimeSpaceModifierParams> {
   public readonly type = 'time_space';
-  public readonly targetScope = 'both';
-  public readonly targetPhase = 2;
-  public readonly schema = {
+  public readonly templateId = 'callout_leader';
+
+  public readonly schema: ModifierParameterSchema = {
+    displayName: 'Legacy Time-Space Procedural Motion Graphic',
+    category: 'motion',
     fields: {
       templateId: {
         key: 'templateId',
@@ -38,201 +38,23 @@ export class TimeSpaceModifierPlugin implements ModifierPlugin<TimeSpaceModifier
           { label: 'Dynamic Audio Equalizer Spectrum', value: 'audio_equalizer_spectrum' },
         ],
       },
-      theme: {
-        key: 'theme',
-        label: 'Aesthetic Theme',
-        type: 'select' as const,
-        defaultValue: 'cyberpunk',
-        options: [
-          { label: 'Cyberpunk Neon', value: 'cyberpunk' },
-          { label: 'Solar Flare Warmth', value: 'solar_flare' },
-          { label: 'Emerald Matrix', value: 'emerald_matrix' },
-          { label: 'Monochrome Titanium', value: 'monochrome_titanium' },
-          { label: 'Synthwave Neon', value: 'synthwave_neon' },
-          { label: 'Tactical Amber', value: 'tactical_amber' },
-        ],
-      },
-      primaryColor: {
-        key: 'primaryColor',
-        label: 'Primary Accent Color',
-        type: 'string' as const,
-        defaultValue: '',
-      },
-      accentColor: {
-        key: 'accentColor',
-        label: 'Secondary / Highlight Color',
-        type: 'string' as const,
-        defaultValue: '',
-      },
-      speedMultiplier: {
-        key: 'speedMultiplier',
-        label: 'Motion Speed Multiplier',
-        type: 'number' as const,
-        min: 0.1,
-        max: 5.0,
-        step: 0.1,
-        defaultValue: 1.0,
-      },
-      scale: {
-        key: 'scale',
-        label: 'Geometric Scale',
-        type: 'number' as const,
-        min: 0.2,
-        max: 3.0,
-        step: 0.1,
-        defaultValue: 1.0,
-      },
-      density: {
-        key: 'density',
-        label: 'Lattice / Particle Density',
-        type: 'number' as const,
-        min: 8,
-        max: 128,
-        step: 4,
-        defaultValue: 32,
-        visibleIf: (p: any) =>
-          ['particle_ambient', 'network_plexus', 'audio_waveform_ring', 'glitch_data_stream', 'parametric_superformula', 'audio_equalizer_spectrum'].includes(p?.templateId),
-      },
-      strokeWidth: {
-        key: 'strokeWidth',
-        label: 'Vector Stroke Width',
-        type: 'number' as const,
-        min: 0.5,
-        max: 8.0,
-        step: 0.5,
-        defaultValue: 1.5,
-        visibleIf: (p: any) =>
-          !['glitch_data_stream', 'audio_equalizer_spectrum'].includes(p?.templateId),
-      },
-      boundary: {
-        key: 'boundary',
-        label: 'Temporal Boundary Mode',
-        type: 'select' as const,
-        defaultValue: 'loop',
-        options: [
-          { label: 'Loop Continuously', value: 'loop' },
-          { label: 'Ping-Pong Oscillate', value: 'pingpong' },
-          { label: 'Clamp Terminal Frame', value: 'clamp' },
-          { label: 'Play Once', value: 'once' },
-        ],
-      },
-      text: {
-        key: 'text',
-        label: 'Callout / Title Text',
-        type: 'string' as const,
-        defaultValue: 'TARGET ACQUIRED',
-        visibleIf: (p: any) =>
-          ['callout_leader', 'kinetic_title', 'hud_tactical_reticle', 'callout_multitarget', 'cyber_lower_third'].includes(p?.templateId),
-      },
-      subtitle: {
-        key: 'subtitle',
-        label: 'Subtitle / Role Text',
-        type: 'string' as const,
-        defaultValue: 'UNIPOST CORE OS // TC {{timecode}}',
-        visibleIf: (p: any) => p?.templateId === 'cyber_lower_third',
-      },
-      targetX: {
-        key: 'targetX',
-        label: 'Target X Position',
-        type: 'number' as const,
-        min: -1.0,
-        max: 1.0,
-        step: 0.05,
-        defaultValue: 0.0,
-        visibleIf: (p: any) =>
-          !['particle_ambient', 'network_plexus', 'glitch_data_stream'].includes(p?.templateId),
-      },
-      targetY: {
-        key: 'targetY',
-        label: 'Target Y Position',
-        type: 'number' as const,
-        min: -1.0,
-        max: 1.0,
-        step: 0.05,
-        defaultValue: 0.0,
-        visibleIf: (p: any) =>
-          !['particle_ambient', 'network_plexus', 'glitch_data_stream'].includes(p?.templateId),
-      },
-      labelX: {
-        key: 'labelX',
-        label: 'Label X Offset',
-        type: 'number' as const,
-        min: -1.0,
-        max: 1.0,
-        step: 0.05,
-        defaultValue: 0.35,
-        visibleIf: (p: any) => p?.templateId === 'callout_leader',
-      },
-      labelY: {
-        key: 'labelY',
-        label: 'Label Y Offset',
-        type: 'number' as const,
-        min: -1.0,
-        max: 1.0,
-        step: 0.05,
-        defaultValue: -0.25,
-        visibleIf: (p: any) => p?.templateId === 'callout_leader',
-      },
     },
   };
 
-  public getOrCreateMachine(templateId: string, customParams?: any, targetHolder?: any): TimeSpaceStateMachine {
-    if (targetHolder) {
-      // Re-create machine if templateId or critical parametric keys change
-      const paramSignature = `${templateId}_${customParams?.theme}_${customParams?.primaryColor}_${customParams?.speedMultiplier}_${customParams?.scale}_${customParams?.density}_${customParams?.strokeWidth}`;
-      if (!targetHolder._timeSpaceMachine || targetHolder._timeSpaceSignature !== paramSignature) {
-        targetHolder._timeSpaceMachine = TimeSpaceRegistry.instantiate(templateId, customParams);
-        targetHolder._timeSpaceSignature = paramSignature;
-        targetHolder._timeSpaceTemplateId = templateId;
-      }
-      return targetHolder._timeSpaceMachine;
-    }
-    return TimeSpaceRegistry.instantiate(templateId, customParams);
-  }
-
-  public renderClipSpace(ctx: ClipRenderContext, params: TimeSpaceModifierParams): void {
-    if (!params || !params.templateId) return;
-
-    // Merge flat descriptor params (text, targetX, etc.) with any nested params object for maximum ergonomics
-    const effectiveParams = {
-      ...(params as any),
-      ...(params.params || {}),
-    };
-
-    const machine = this.getOrCreateMachine(params.templateId, effectiveParams, ctx.sequence);
-    const fps = (ctx.sequence as any)?.fps || 30;
-    const viewport = { width: ctx.width, height: ctx.height };
-
-    const snapshot = machine.seek(ctx.localFrame, fps, params.seed ?? 1337, viewport);
-
-    if (params.renderMode !== 'webgl_buffers') {
-      snapshot.render(ctx.ctx);
-    }
-  }
-
   /**
-   * Backward-compatible alias for existing test calls or direct invocation.
+   * Overridden machine resolution supporting dynamic templateId dispatching.
    */
-  public renderClip(ctx: ClipRenderContext, params: TimeSpaceModifierParams): void {
-    this.renderClipSpace(ctx, params);
-  }
-
-  public renderMasterComposite(ctx: MasterCompositeContext, params: TimeSpaceModifierParams): void {
-    if (!params || !params.templateId) return;
-
-    const effectiveParams = {
-      ...(params as any),
-      ...(params.params || {}),
-    };
-
-    const machine = this.getOrCreateMachine(params.templateId, effectiveParams, ctx);
-    const fps = 30;
-    const viewport = { width: ctx.width, height: ctx.height };
-
-    const snapshot = machine.seek(ctx.frame, fps, params.seed ?? 1337, viewport);
-
-    if (params.renderMode !== 'webgl_buffers') {
-      snapshot.render(ctx.ctx);
+  public override getOrCreateMachine(params: TimeSpaceModifierParams, holder?: any): TimeSpaceStateMachine {
+    const templateId = params?.templateId || this.templateId;
+    if (holder) {
+      const paramSignature = `${templateId}_${params?.theme}_${params?.primaryColor}_${params?.accentColor}_${params?.speedMultiplier}_${params?.scale}_${params?.density}_${params?.strokeWidth}_${params?.boundary}_${params?.text}_${params?.subtitle}_${params?.targetX}_${params?.targetY}_${params?.labelX}_${params?.labelY}`;
+      if (!holder._timeSpaceMachine || holder._timeSpaceSignature !== paramSignature || holder._timeSpaceTemplateId !== templateId) {
+        holder._timeSpaceMachine = TimeSpaceRegistry.instantiate(templateId, params);
+        holder._timeSpaceSignature = paramSignature;
+        holder._timeSpaceTemplateId = templateId;
+      }
+      return holder._timeSpaceMachine;
     }
+    return TimeSpaceRegistry.instantiate(templateId, params);
   }
 }

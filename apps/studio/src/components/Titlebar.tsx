@@ -139,14 +139,16 @@ export function Titlebar({
         <div className="ml-4 flex items-center gap-1.5">
           <Select
             value={activeTemplate}
-            onValueChange={(val: 'scifi' | 'default') => manager.switchTemplate(val)}
+            onValueChange={(val: 'scifi' | 'default' | 'broadcast' | 'visualizer') => manager.switchTemplate(val)}
           >
-            <SelectTrigger className="h-7 text-[11px] w-48 bg-[var(--glass-bg)] border-[var(--glass-border)] text-foreground">
+            <SelectTrigger className="h-7 text-[11px] w-52 bg-[var(--glass-bg)] border-[var(--glass-border)] text-foreground">
               <SelectValue placeholder="Select Demo" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="scifi">Sci-Fi Cyberpunk (9-Track Epic)</SelectItem>
               <SelectItem value="default">Default Cinematic Reel (5-Track)</SelectItem>
+              <SelectItem value="broadcast">Broadcast News Matrix (4-Track)</SelectItem>
+              <SelectItem value="visualizer">Cyber Audio Visualizer (4-Track)</SelectItem>
             </SelectContent>
           </Select>
         </div>

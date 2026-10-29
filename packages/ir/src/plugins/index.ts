@@ -19,6 +19,20 @@ import { PitchModifierPlugin } from './audio/PitchModifierPlugin';
 import { ShapeModifierPlugin } from './shape/ShapeModifierPlugin';
 import { ProceduralSFXModifierPlugin } from './sfx/ProceduralSFXModifierPlugin';
 import { TimeSpaceModifierPlugin } from './TimeSpaceModifierPlugin';
+import {
+  CalloutLeaderPlugin,
+  CalloutMultiTargetPlugin,
+  HUDReticlePlugin,
+  KineticTitlePlugin,
+  CyberLowerThirdPlugin,
+  CountdownPlugin,
+  NetworkPlexusPlugin,
+  AudioWaveformPlugin,
+  AudioSpectrumPlugin,
+  SuperformulaPlugin,
+  EnergyShieldPlugin,
+  GlitchDataStreamPlugin,
+} from './time-space';
 import { GSAPMotionPlugin } from './motion/GSAPMotionPlugin';
 import { DepthRelightingAdapterPlugin } from './vfx/DepthRelightingAdapterPlugin';
 import { AutoReframeModifierPlugin } from './vfx/AutoReframeModifierPlugin';
@@ -26,6 +40,7 @@ import { AutoReframeModifierPlugin } from './vfx/AutoReframeModifierPlugin';
 export * from './ModifierPluginRegistry';
 export * from './IVideoPluginStrategy';
 export * from './TimeSpaceModifierPlugin';
+export * from './time-space';
 export * from './vfx/Depth3DPlugin';
 export * from './vfx/DepthRelightingAdapterPlugin';
 export * from './vfx/Camera3DPlugin';
@@ -85,6 +100,18 @@ export function registerCoreModifierPlugins(
   registry.register(new FilterModifierPlugin());
   registry.register(new PitchModifierPlugin());
   registry.register(new TimeSpaceModifierPlugin());
+  registry.register(new CalloutLeaderPlugin());
+  registry.register(new CalloutMultiTargetPlugin());
+  registry.register(new HUDReticlePlugin());
+  registry.register(new KineticTitlePlugin());
+  registry.register(new CyberLowerThirdPlugin());
+  registry.register(new CountdownPlugin());
+  registry.register(new NetworkPlexusPlugin());
+  registry.register(new AudioWaveformPlugin());
+  registry.register(new AudioSpectrumPlugin());
+  registry.register(new SuperformulaPlugin());
+  registry.register(new EnergyShieldPlugin());
+  registry.register(new GlitchDataStreamPlugin());
   return registry;
 }
 

@@ -181,10 +181,9 @@ export const defaultDemoIR: VideoIRDocument = {
               },
             },
             {
-              type: 'time_space',
+              type: 'time_space/callout_leader',
               target: ['video', 'overlay'],
               params: {
-                templateId: 'callout_leader',
                 boundary: 'loop',
                 seed: 1337,
                 text: 'NATURE RESERVE',

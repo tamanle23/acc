@@ -283,16 +283,105 @@ export interface TypedModifierNode<TType extends string, TTarget extends Sequenc
   params: TParams;
 }
 
-export interface TimeSpaceModifierParams {
-  templateId: string;
+export type TimeSpaceTheme = 'cyberpunk' | 'solar_flare' | 'emerald_matrix' | 'monochrome_titanium' | 'synthwave_neon' | 'tactical_amber' | 'custom';
+export type TimeSpaceBoundary = 'loop' | 'pingpong' | 'clamp' | 'once';
+export type TimeSpaceRenderMode = 'canvas2d' | 'webgl_buffers';
+
+export interface BaseTimeSpaceModifierParams {
   seed?: number;
-  theme?: 'cyberpunk' | 'solar_flare' | 'emerald_matrix' | 'monochrome_titanium' | 'synthwave_neon' | 'tactical_amber' | 'custom';
+  theme?: TimeSpaceTheme;
   primaryColor?: string;
   secondaryColor?: string;
   accentColor?: string;
   surfaceColor?: string;
   speedMultiplier?: number;
   scale?: number;
+  boundary?: TimeSpaceBoundary;
+  renderMode?: TimeSpaceRenderMode;
+  params?: Record<string, number | string | boolean>;
+}
+
+export interface CalloutLeaderModifierParams extends BaseTimeSpaceModifierParams {
+  text?: string;
+  targetX?: number;
+  targetY?: number;
+  labelX?: number;
+  labelY?: number;
+  strokeWidth?: number;
+}
+
+export interface CalloutMultiTargetModifierParams extends BaseTimeSpaceModifierParams {
+  text?: string;
+  targetX?: number;
+  targetY?: number;
+  strokeWidth?: number;
+}
+
+export interface HUDReticleModifierParams extends BaseTimeSpaceModifierParams {
+  text?: string;
+  targetX?: number;
+  targetY?: number;
+  strokeWidth?: number;
+}
+
+export interface KineticTitleModifierParams extends BaseTimeSpaceModifierParams {
+  text?: string;
+  targetX?: number;
+  targetY?: number;
+  strokeWidth?: number;
+}
+
+export interface CyberLowerThirdModifierParams extends BaseTimeSpaceModifierParams {
+  text?: string;
+  subtitle?: string;
+  targetX?: number;
+  targetY?: number;
+  strokeWidth?: number;
+}
+
+export interface CountdownModifierParams extends BaseTimeSpaceModifierParams {
+  targetX?: number;
+  targetY?: number;
+  strokeWidth?: number;
+}
+
+export interface NetworkPlexusModifierParams extends BaseTimeSpaceModifierParams {
+  density?: number;
+  strokeWidth?: number;
+}
+
+export interface AudioWaveformModifierParams extends BaseTimeSpaceModifierParams {
+  density?: number;
+  targetX?: number;
+  targetY?: number;
+  strokeWidth?: number;
+}
+
+export interface AudioSpectrumModifierParams extends BaseTimeSpaceModifierParams {
+  density?: number;
+  targetX?: number;
+  targetY?: number;
+}
+
+export interface SuperformulaModifierParams extends BaseTimeSpaceModifierParams {
+  density?: number;
+  targetX?: number;
+  targetY?: number;
+  strokeWidth?: number;
+}
+
+export interface EnergyShieldModifierParams extends BaseTimeSpaceModifierParams {
+  targetX?: number;
+  targetY?: number;
+  strokeWidth?: number;
+}
+
+export interface GlitchDataStreamModifierParams extends BaseTimeSpaceModifierParams {
+  density?: number;
+}
+
+export interface TimeSpaceModifierParams extends BaseTimeSpaceModifierParams {
+  templateId?: string;
   density?: number;
   strokeWidth?: number;
   text?: string;
@@ -301,9 +390,6 @@ export interface TimeSpaceModifierParams {
   targetY?: number;
   labelX?: number;
   labelY?: number;
-  params?: Record<string, number | string | boolean>;
-  boundary?: 'loop' | 'pingpong' | 'clamp' | 'once';
-  renderMode?: 'canvas2d' | 'webgl_buffers';
 }
 export type TimeSpaceModifierConfig = TimeSpaceModifierParams & { type: 'time_space' };
 
@@ -316,6 +402,18 @@ export type StandardModifierNode =
   | TypedModifierNode<'overlay/hologram_hud', 'video' | 'overlay' | SequenceType[], HologramHudModifierParams>
   | TypedModifierNode<'overlay/blend_mode', 'video' | 'image' | 'overlay' | SequenceType[], BlendModeModifierParams>
   | TypedModifierNode<'time_space', 'video' | 'image' | 'overlay' | SequenceType[], TimeSpaceModifierParams>
+  | TypedModifierNode<'time_space/callout_leader', 'video' | 'image' | 'overlay' | SequenceType[], CalloutLeaderModifierParams>
+  | TypedModifierNode<'time_space/callout_multitarget', 'video' | 'image' | 'overlay' | SequenceType[], CalloutMultiTargetModifierParams>
+  | TypedModifierNode<'time_space/hud_reticle', 'video' | 'image' | 'overlay' | SequenceType[], HUDReticleModifierParams>
+  | TypedModifierNode<'time_space/kinetic_title', 'video' | 'image' | 'overlay' | SequenceType[], KineticTitleModifierParams>
+  | TypedModifierNode<'time_space/cyber_lower_third', 'video' | 'image' | 'overlay' | SequenceType[], CyberLowerThirdModifierParams>
+  | TypedModifierNode<'time_space/countdown', 'video' | 'image' | 'overlay' | SequenceType[], CountdownModifierParams>
+  | TypedModifierNode<'time_space/network_plexus', 'video' | 'image' | 'overlay' | SequenceType[], NetworkPlexusModifierParams>
+  | TypedModifierNode<'time_space/audio_waveform', 'video' | 'image' | 'overlay' | SequenceType[], AudioWaveformModifierParams>
+  | TypedModifierNode<'time_space/audio_spectrum', 'video' | 'image' | 'overlay' | SequenceType[], AudioSpectrumModifierParams>
+  | TypedModifierNode<'time_space/superformula', 'video' | 'image' | 'overlay' | SequenceType[], SuperformulaModifierParams>
+  | TypedModifierNode<'time_space/energy_shield', 'video' | 'image' | 'overlay' | SequenceType[], EnergyShieldModifierParams>
+  | TypedModifierNode<'time_space/glitch_data_stream', 'video' | 'image' | 'overlay' | SequenceType[], GlitchDataStreamModifierParams>
   | TypedModifierNode<'text/style', 'text' | SequenceType[], TextStyleModifierParams>
   | TypedModifierNode<'audio/volume', 'audio' | SequenceType[], VolumeModifierParams>
   | TypedModifierNode<'audio/pan', 'audio' | SequenceType[], PanModifierParams>

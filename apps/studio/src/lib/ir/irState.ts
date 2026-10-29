@@ -10,6 +10,8 @@ import {
 } from '@acc/ir';
 import { complexSciFiDemoIR } from './complexSciFiDemoIR';
 import { defaultDemoIR } from './defaultDemoIR';
+import { broadcastNewsDemoIR } from './broadcastNewsDemoIR';
+import { cyberAudioVisualizerDemoIR } from './cyberAudioVisualizerDemoIR';
 import { BrowserAssetMetadataProber } from './BrowserAssetMetadataProber';
 import { HistoryManager } from '../commands/HistoryManager';
 import type { ICommand } from '../commands/ICommand';
@@ -47,7 +49,7 @@ export interface IRState {
   error: string | null;
   canUndo: boolean;
   canRedo: boolean;
-  activeTemplate: 'scifi' | 'default';
+  activeTemplate: 'scifi' | 'default' | 'broadcast' | 'visualizer';
 }
 
 export type IRStateSubscriber = (state: IRState) => void;
@@ -235,9 +237,16 @@ export class IRStateManager {
     this.notify();
   }
 
-  public async switchTemplate(template: 'scifi' | 'default'): Promise<void> {
+  public async switchTemplate(template: 'scifi' | 'default' | 'broadcast' | 'visualizer'): Promise<void> {
     this.historyManager.clear();
-    const targetDoc = template === 'scifi' ? complexSciFiDemoIR : defaultDemoIR;
+    let targetDoc = defaultDemoIR;
+    if (template === 'scifi') {
+      targetDoc = complexSciFiDemoIR;
+    } else if (template === 'broadcast') {
+      targetDoc = broadcastNewsDemoIR;
+    } else if (template === 'visualizer') {
+      targetDoc = cyberAudioVisualizerDemoIR;
+    }
     this.state = {
       ...this.state,
       doc: cloneIR(targetDoc),

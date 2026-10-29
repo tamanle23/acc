@@ -769,6 +769,46 @@ export class VideoIRSchemaValidator {
         break;
       }
 
+      case 'time_space/callout_leader':
+      case 'time_space/callout_multitarget':
+      case 'time_space/hud_reticle':
+      case 'time_space/kinetic_title':
+      case 'time_space/cyber_lower_third':
+      case 'time_space/countdown':
+      case 'time_space/network_plexus':
+      case 'time_space/audio_waveform':
+      case 'time_space/audio_spectrum':
+      case 'time_space/superformula':
+      case 'time_space/energy_shield':
+      case 'time_space/glitch_data_stream': {
+        if (p.boundary !== undefined && !['loop', 'pingpong', 'clamp', 'once'].includes(p.boundary)) {
+          errors.push(`Modifier "${type}" on ${context}: boundary must be 'loop', 'pingpong', 'clamp', or 'once'`);
+        }
+        if (p.renderMode !== undefined && !['canvas2d', 'webgl_buffers'].includes(p.renderMode)) {
+          errors.push(`Modifier "${type}" on ${context}: renderMode must be 'canvas2d' or 'webgl_buffers'`);
+        }
+        if (p.theme !== undefined && !['cyberpunk', 'solar_flare', 'emerald_matrix', 'monochrome_titanium', 'synthwave_neon', 'tactical_amber', 'custom'].includes(p.theme)) {
+          errors.push(`Modifier "${type}" on ${context}: theme must be a valid theme name`);
+        }
+        if (p.speedMultiplier !== undefined && (typeof p.speedMultiplier !== 'number' || p.speedMultiplier <= 0)) {
+          errors.push(`Modifier "${type}" on ${context}: speedMultiplier must be a positive number`);
+        }
+        if (p.scale !== undefined && (typeof p.scale !== 'number' || p.scale <= 0)) {
+          errors.push(`Modifier "${type}" on ${context}: scale must be a positive number`);
+        }
+        if (type === 'time_space/callout_leader' || type === 'time_space/callout_multitarget' || type === 'time_space/hud_reticle' || type === 'time_space/kinetic_title' || type === 'time_space/cyber_lower_third') {
+          if (p.text !== undefined && typeof p.text !== 'string') {
+            errors.push(`Modifier "${type}" on ${context}: text must be a string`);
+          }
+        }
+        if (type === 'time_space/cyber_lower_third') {
+          if (p.subtitle !== undefined && typeof p.subtitle !== 'string') {
+            errors.push(`Modifier "${type}" on ${context}: subtitle must be a string`);
+          }
+        }
+        break;
+      }
+
       default:
         // Permissive Open-Closed Principle fallback: unknown / custom modifier types are allowed
         // as long as their params is an object (already validated above).
