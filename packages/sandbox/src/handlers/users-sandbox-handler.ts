@@ -1,6 +1,7 @@
 import type { SandboxRouteHandler, SandboxRequest } from '../types';
 import { defaultSandboxStore } from '../store';
 import { sandboxResetRegistry } from '../reset-registry';
+import { extractTenantFromAuth } from '../tenant-auth';
 import type { User } from '@acc/client';
 import usersData from './data/users-mock.json';
 
@@ -97,9 +98,14 @@ export const usersSandboxHandler: SandboxRouteHandler = {
     return cleanPath.startsWith('/users');
   },
   handler: async (req: SandboxRequest, ctx) => {
+    const authResult = extractTenantFromAuth(req);
+    if (!authResult.success) {
+      return authResult.response;
+    }
+    const tenantId = authResult.tenantId;
+
     const cleanPath = ctx.pathname.replace(/^\/(api\/v1|api|v1)/, '');
     const subPath = cleanPath.replace(/^\/users/, '');
-    const tenantId = (req.headers?.['x-tenant-id'] as string) || defaultSandboxStore.getState().activeTenantId || 'tenant-acme';
 
     if (subPath === '' || subPath === '/') {
       if (req.method === 'GET') {

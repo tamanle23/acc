@@ -5,6 +5,7 @@ export * from './simulation';
 export * from './store';
 export * from './engine';
 export * from './jwt';
+export * from './tenant-auth';
 export * from './adapters/fetch-adapter';
 export * from './adapters/axios-adapter';
 

@@ -1,6 +1,7 @@
 import type { SandboxRouteHandler, SandboxRequest } from '../types';
 import { defaultSandboxStore } from '../store';
 import { sandboxResetRegistry } from '../reset-registry';
+import { extractTenantFromAuth } from '../tenant-auth';
 import type {
   SubscriptionTier,
   TenantBillingSummary,
@@ -135,8 +136,24 @@ export const billingSandboxHandler: SandboxRouteHandler = {
     ctx.pathname.startsWith('/api/billing'),
   handler: async (req: SandboxRequest, ctx) => {
     const { pathname } = ctx;
-    const activeTenantId = defaultSandboxStore.getState().activeTenantId || 'tenant-acme';
     const subPath = pathname.replace(/^\/(api\/v1\/billing|api\/billing)/, '');
+
+    // Allow public contact sales or payment webhook simulation without strict auth if simulating payOS webhook
+    const isWebhookOrPublic = subPath === '/contact-sales' || subPath === '/webhook-simulate' || subPath === '/payos/webhook';
+    let activeTenantId = defaultSandboxStore.getState().activeTenantId || 'tenant-acme';
+
+    if (!isWebhookOrPublic) {
+      const authResult = extractTenantFromAuth(req);
+      if (!authResult.success) {
+        return authResult.response;
+      }
+      activeTenantId = authResult.tenantId;
+    } else {
+      const authResult = extractTenantFromAuth(req);
+      if (authResult.success) {
+        activeTenantId = authResult.tenantId;
+      }
+    }
 
     // 1. GET /summary
     if (subPath === '/summary' || subPath === '/summary/') {

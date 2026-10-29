@@ -1,6 +1,7 @@
 import type { SandboxRouteHandler, SandboxRequest } from '../types';
 import { defaultSandboxStore } from '../store';
 import { sandboxResetRegistry } from '../reset-registry';
+import { extractTenantFromAuth } from '../tenant-auth';
 
 export interface SandboxWorkspaceRecord {
   id: number;
@@ -154,7 +155,11 @@ export const workspaceSandboxHandler: SandboxRouteHandler = {
     return req.url.startsWith('/api/v1/workspaces');
   },
   handler: async (req: SandboxRequest) => {
-    const activeTenantId = defaultSandboxStore.getState().activeTenantId || 'tenant-acme';
+    const authResult = extractTenantFromAuth(req);
+    if (!authResult.success) {
+      return authResult.response;
+    }
+    const activeTenantId = authResult.tenantId;
     const method = req.method.toUpperCase();
     const url = req.url.split('?')[0];
 
