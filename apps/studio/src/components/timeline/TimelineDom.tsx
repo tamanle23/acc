@@ -49,6 +49,7 @@ export function TimelineDom({
   mutedTracks,
   onToggleLock,
   onToggleMute,
+  onToggleVisible,
   selectedSeqId,
   activeTool,
   fps,
