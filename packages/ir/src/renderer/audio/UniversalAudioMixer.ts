@@ -5,6 +5,7 @@ import type { ResolvedTimeline, ResolvedTrack } from '../../types/VideoIR';
 import { ModifierPluginRegistry, type AudioProcessContext } from '../../plugins/ModifierPluginRegistry';
 import { DeterministicAudioClock } from '../../compiler/DeterministicAudioClock';
 import type { ModifierNode } from "../../types/modifiers";
+import { ContentCacheRegistry } from '@acc/core-isomorphic';
 
 export interface DecodedAudioPCM {
   sampleRate: number;
@@ -705,13 +706,31 @@ export class UniversalAudioMixer {
   public static async exportToWav(filePath: string, mixResult: DecoupledAudioMixResult): Promise<void> {
     const wavBytes = UniversalAudioMixer.encodeToWav(mixResult);
 
-    const pathModule = await import('path');
-    const fsModule = await import('fs');
-    const dir = pathModule.dirname(filePath);
-    if (!fsModule.existsSync(dir)) {
-      await fsModule.promises.mkdir(dir, { recursive: true });
+    // Isomorphic storage: persist directly to ContentCacheRegistry (OPFS in browser, native file in Node/Bun)
+    try {
+      const cache = ContentCacheRegistry.get();
+      await cache.set(filePath, new Blob([wavBytes as any], { type: 'audio/wav' }), {
+        mimeType: 'audio/wav',
+        sizeBytes: wavBytes.byteLength,
+      });
+    } catch {
+      // Non-critical cache error fallback
     }
 
-    await fsModule.promises.writeFile(filePath, Buffer.from(wavBytes.buffer, wavBytes.byteOffset, wavBytes.byteLength));
+    // Node/Bun runtime direct filesystem export fallback
+    if (typeof process !== 'undefined' && process.versions?.node) {
+      try {
+        const pathModule = await import('path');
+        const fsModule = await import('fs');
+        const dir = pathModule.dirname(filePath);
+        if (!fsModule.existsSync(dir)) {
+          await fsModule.promises.mkdir(dir, { recursive: true });
+        }
+        await fsModule.promises.writeFile(
+          filePath,
+          Buffer.from(wavBytes.buffer, wavBytes.byteOffset, wavBytes.byteLength)
+        );
+      } catch {}
+    }
   }
 }
