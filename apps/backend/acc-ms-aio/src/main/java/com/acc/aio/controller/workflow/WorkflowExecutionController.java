@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.UUID;
 
 @RestController
-@RequestMapping({"/api/v1/workflow/executions", "/api/workflow/executions"})
+@RequestMapping("/api/v1/workflow/executions")
 public class WorkflowExecutionController {
 
     private final WorkflowEngineService engineService;

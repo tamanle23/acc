@@ -10,16 +10,13 @@ export function useWorkflowExecutionsQuery() {
     queryKey: WORKFLOW_EXECUTIONS_QUERY_KEY,
     queryFn: async (): Promise<WorkflowExecution[]> => {
       try {
-        const response = await springApiClient.get<any>('/api/v1/workflow/executions');
+        const response = await springApiClient.get<any>('/v1/workflow/executions');
         const raw = response.data;
         if (Array.isArray(raw)) return raw;
         if (raw && Array.isArray(raw.content)) return raw.content;
         return [];
-      } catch {
-        const fallback = await springApiClient.get<any>('/api/workflow/executions');
-        const raw = fallback.data;
-        if (Array.isArray(raw)) return raw;
-        if (raw && Array.isArray(raw.content)) return raw.content;
+      } catch (err) {
+        console.warn('Failed to fetch workflow executions:', err);
         return [];
       }
     },
@@ -51,7 +48,7 @@ export function useCreateWorkflowExecutionMutation() {
         inputData: newWorkflowExecution.inputData,
         outputData: newWorkflowExecution.outputData,
       };
-      const response = await springApiClient.post<WorkflowExecution>('/api/workflow/executions', payload);
+      const response = await springApiClient.post<WorkflowExecution>('/v1/workflow/executions', payload);
       return response.data;
     },
     onSuccess: () => {
@@ -69,7 +66,7 @@ export function useUpdateWorkflowExecutionMutation() {
 
   return useMutation({
     mutationFn: async ({ id, ...patch }: { id: string } & Partial<WorkflowExecution>): Promise<WorkflowExecution> => {
-      const response = await springApiClient.patch<WorkflowExecution>(`/api/workflow/executions/${id}`, patch);
+      const response = await springApiClient.patch<WorkflowExecution>(`/v1/workflow/executions/${id}`, patch);
       return response.data;
     },
     onSuccess: () => {
@@ -87,7 +84,7 @@ export function useDeleteWorkflowExecutionMutation() {
 
   return useMutation({
     mutationFn: async (id: string): Promise<boolean> => {
-      const response = await springApiClient.delete<{ success: boolean }>(`/api/workflow/executions/${id}`);
+      const response = await springApiClient.delete<{ success: boolean }>(`/v1/workflow/executions/${id}`);
       return response.data?.success ?? true;
     },
     onSuccess: () => {
@@ -105,7 +102,7 @@ export function useBulkDeleteWorkflowExecutionsMutation() {
 
   return useMutation({
     mutationFn: async (ids: string[]): Promise<void> => {
-      await Promise.all(ids.map((id) => springApiClient.delete(`/api/workflow/executions/${id}`)));
+      await Promise.all(ids.map((id) => springApiClient.delete(`/v1/workflow/executions/${id}`)));
     },
     onSuccess: (_, ids) => {
       queryClient.invalidateQueries({ queryKey: WORKFLOW_EXECUTIONS_QUERY_KEY });
@@ -122,7 +119,7 @@ export function useBulkUpdateWorkflowExecutionsStatusMutation() {
 
   return useMutation({
     mutationFn: async ({ ids, status }: { ids: string[]; status: string }): Promise<void> => {
-      await Promise.all(ids.map((id) => springApiClient.patch(`/api/workflow/executions/${id}`, { status })));
+      await Promise.all(ids.map((id) => springApiClient.patch(`/v1/workflow/executions/${id}`, { status })));
     },
     onSuccess: (_, { ids, status }) => {
       queryClient.invalidateQueries({ queryKey: WORKFLOW_EXECUTIONS_QUERY_KEY });
@@ -139,7 +136,7 @@ export function useBulkUpdateWorkflowExecutionsPriorityMutation() {
 
   return useMutation({
     mutationFn: async ({ ids, priority }: { ids: string[]; priority: string }): Promise<void> => {
-      await Promise.all(ids.map((id) => springApiClient.patch(`/api/workflow/executions/${id}`, { priority })));
+      await Promise.all(ids.map((id) => springApiClient.patch(`/v1/workflow/executions/${id}`, { priority })));
     },
     onSuccess: (_, { ids, priority }) => {
       queryClient.invalidateQueries({ queryKey: WORKFLOW_EXECUTIONS_QUERY_KEY });

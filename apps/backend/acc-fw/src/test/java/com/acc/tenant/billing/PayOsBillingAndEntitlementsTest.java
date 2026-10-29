@@ -128,13 +128,36 @@ class PayOsBillingAndEntitlementsTest {
         assertEquals(4, summary.getQuotas().getSchemasUsed());
         assertEquals(1500L, summary.getQuotas().getRecordsUsed());
         assertEquals(5, summary.getQuotas().getMaxWorkspaces());
-        assertNotNull(summary.getVatInvoice());
+        assertNull(summary.getVatInvoice(), "Unconfigured VAT invoice should be null, not synthetic mock company");
         assertNotNull(summary.getHistory());
         assertFalse(summary.getHistory().isEmpty());
     }
 
+    private String computeHmacSha256(String data, String key) {
+        try {
+            javax.crypto.Mac mac = javax.crypto.Mac.getInstance("HmacSHA256");
+            mac.init(new javax.crypto.spec.SecretKeySpec(key.getBytes(java.nio.charset.StandardCharsets.UTF_8), "HmacSHA256"));
+            byte[] raw = mac.doFinal(data.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder();
+            for (byte b : raw) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     @Test
-    void testVatInvoiceUpdateAndContactSales() {
+    void testVatInvoiceUpdateAndRetrievalViaBillingMetadata() {
+        TenantBilling billing = new TenantBilling();
+        billing.setTenantId(TEST_TENANT);
+        when(billingRepository.findByTenantId(TEST_TENANT)).thenReturn(Optional.of(billing));
+        when(billingRepository.save(any(TenantBilling.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Initial state before configuration should be null (no mock company defaults)
+        assertNull(billingService.getVatInvoice(TEST_TENANT));
+
         VatInvoiceDto vatDto = VatInvoiceDto.builder()
                 .companyName("ACME Vietnam Co.")
                 .taxCode("0101122334")
@@ -145,7 +168,13 @@ class PayOsBillingAndEntitlementsTest {
 
         VatInvoiceDto saved = billingService.updateVatInvoice(TEST_TENANT, vatDto);
         assertEquals("ACME Vietnam Co.", saved.getCompanyName());
-        assertEquals("0101122334", billingService.getVatInvoice(TEST_TENANT).getTaxCode());
+        assertNotNull(billing.getBillingMetadata());
+        assertTrue(billing.getBillingMetadata().containsKey("vat_invoice"));
+
+        VatInvoiceDto retrieved = billingService.getVatInvoice(TEST_TENANT);
+        assertNotNull(retrieved);
+        assertEquals("0101122334", retrieved.getTaxCode());
+        assertEquals("accounting@acme.com", retrieved.getEmail());
 
         ContactSalesRequest salesReq = ContactSalesRequest.builder()
                 .companyName("Big Enterprise Corp")
@@ -157,6 +186,17 @@ class PayOsBillingAndEntitlementsTest {
                 .build();
 
         assertDoesNotThrow(() -> billingService.recordContactSales(TEST_TENANT, salesReq));
+    }
+
+    @Test
+    void testEmptyBillingHistoryHonesty_NoSyntheticMockTransactions() {
+        when(billingRepository.findByTenantId(TEST_TENANT)).thenReturn(Optional.empty());
+        when(featureRepository.findByTenantId(TEST_TENANT)).thenReturn(Collections.emptyList());
+
+        TenantBillingSummaryDto summary = billingService.getTenantBillingSummary(TEST_TENANT);
+        assertNotNull(summary);
+        assertNotNull(summary.getHistory());
+        assertTrue(summary.getHistory().isEmpty(), "Empty billing history must return empty collection, not mock transaction");
     }
 
     @Test
@@ -196,13 +236,17 @@ class PayOsBillingAndEntitlementsTest {
         PayOsWebhookPayload payload = new PayOsWebhookPayload();
         payload.setCode("00");
         payload.setDesc("Success");
-        payload.setSignature("test_valid_sig_hash");
 
         PayOsWebhookPayload.PayOsWebhookData data = new PayOsWebhookPayload.PayOsWebhookData();
         data.setOrderCode(orderCode);
         data.setAmount(4990000L);
         data.setDescription("UNIPOST PRO_MAX YEARLY");
         payload.setData(data);
+
+        // Compute authentic HMAC-SHA256 signature
+        String canonicalQuery = "amount=4990000&description=UNIPOST PRO_MAX YEARLY&orderCode=" + orderCode;
+        String validSig = computeHmacSha256(canonicalQuery, "a6b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8");
+        payload.setSignature(validSig);
 
         boolean processed = billingService.verifyAndProcessWebhook(payload);
         assertTrue(processed);
@@ -215,18 +259,28 @@ class PayOsBillingAndEntitlementsTest {
     }
 
     @Test
-    void testInvalidWebhookSignatureRejected() {
+    void testBypassSignaturesStrictlyRejected_ZeroStubEnforcement() {
         PayOsWebhookPayload payload = new PayOsWebhookPayload();
         payload.setCode("00");
-        payload.setSignature("forged_invalid_signature");
 
         PayOsWebhookPayload.PayOsWebhookData data = new PayOsWebhookPayload.PayOsWebhookData();
         data.setOrderCode(999999L);
         data.setAmount(199000L);
+        data.setDescription("Test Plan");
         payload.setData(data);
 
-        boolean processed = billingService.verifyAndProcessWebhook(payload);
-        assertFalse(processed);
-        verify(billingRepository, never()).findByCurrentOrderCode(anyLong());
+        // 1. "mock_signature_ok" must be rejected
+        payload.setSignature("mock_signature_ok");
+        assertFalse(billingService.verifyAndProcessWebhook(payload), "mock_signature_ok must be rejected in production code");
+
+        // 2. "test_valid_sig_*" prefix must be rejected
+        payload.setSignature("test_valid_sig_12345");
+        assertFalse(billingService.verifyAndProcessWebhook(payload), "test_valid_sig prefix must be rejected");
+
+        // 3. Forged signature must be rejected
+        payload.setSignature("forged_invalid_signature_hex");
+        assertFalse(billingService.verifyAndProcessWebhook(payload), "Forged signature must be rejected");
+
+        verify(billingRepository, never()).findByCurrentOrderCode(999999L);
     }
 }

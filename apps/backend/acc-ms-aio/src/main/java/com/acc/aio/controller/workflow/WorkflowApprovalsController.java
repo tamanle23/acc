@@ -29,7 +29,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
-@RequestMapping({"/api/v1/workflows/approvals", "/api/v1/workflow/approvals"})
+@RequestMapping("/api/v1/workflow/approvals")
 public class WorkflowApprovalsController {
 
     private final WorkflowEngineService engineService;

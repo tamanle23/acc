@@ -27,9 +27,6 @@ public class PayOsBillingService {
     private final EntityTypeRepository entityTypeRepository;
     private final EntityRecordRepository entityRecordRepository;
 
-    // In-memory storage for corporate VAT invoice preferences
-    private final Map<String, VatInvoiceDto> vatInvoices = new ConcurrentHashMap<>();
-
     // In-memory storage for Enterprise sales inquiries
     private final List<ContactSalesRequest> enterpriseInquiries = Collections.synchronizedList(new ArrayList<>());
 
@@ -177,23 +174,49 @@ public class PayOsBillingService {
     /**
      * Updates corporate VAT E-Invoice information for the active tenant.
      */
+    @Transactional
     public VatInvoiceDto updateVatInvoice(String tenantId, VatInvoiceDto dto) {
         log.info("Updating VAT invoice details for tenant: {}", tenantId);
-        vatInvoices.put(tenantId, dto);
+        TenantBilling billing = billingRepository.findByTenantId(tenantId)
+                .orElseGet(() -> {
+                    TenantBilling nb = new TenantBilling();
+                    nb.setTenantId(tenantId);
+                    return nb;
+                });
+        if (billing.getBillingMetadata() == null) {
+            billing.setBillingMetadata(new HashMap<>());
+        }
+        Map<String, Object> vatMap = new HashMap<>();
+        vatMap.put("companyName", dto.getCompanyName());
+        vatMap.put("taxCode", dto.getTaxCode());
+        vatMap.put("address", dto.getAddress());
+        vatMap.put("email", dto.getEmail());
+        vatMap.put("isAutoInvoice", dto.getIsAutoInvoice());
+        billing.getBillingMetadata().put("vat_invoice", vatMap);
+        billingRepository.save(billing);
         return dto;
     }
 
     /**
      * Gets corporate VAT E-Invoice information for the active tenant.
      */
+    @Transactional(readOnly = true)
+    @SuppressWarnings("unchecked")
     public VatInvoiceDto getVatInvoice(String tenantId) {
-        return vatInvoices.computeIfAbsent(tenantId, tid -> VatInvoiceDto.builder()
-                .companyName("Công ty Cổ phần Acc Logistics")
-                .taxCode("0109876543")
-                .address("Tòa nhà Landmark 72, Phạm Hùng, Nam Từ Liêm, Hà Nội")
-                .email("billing@" + tid + ".vn")
-                .isAutoInvoice(true)
-                .build());
+        Optional<TenantBilling> billingOpt = billingRepository.findByTenantId(tenantId);
+        if (billingOpt.isPresent() && billingOpt.get().getBillingMetadata() != null) {
+            Object raw = billingOpt.get().getBillingMetadata().get("vat_invoice");
+            if (raw instanceof Map<?, ?> map) {
+                return VatInvoiceDto.builder()
+                        .companyName((String) map.get("companyName"))
+                        .taxCode((String) map.get("taxCode"))
+                        .address((String) map.get("address"))
+                        .email((String) map.get("email"))
+                        .isAutoInvoice(Boolean.TRUE.equals(map.get("isAutoInvoice")))
+                        .build();
+            }
+        }
+        return null;
     }
 
     /**
@@ -216,20 +239,18 @@ public class PayOsBillingService {
             try {
                 schemasUsed = (int) entityTypeRepository.countByTenantIdAndDeletedDateIsNull(tenantId);
             } catch (Exception e) {
-                schemasUsed = 3;
+                log.warn("Failed to count entity types for tenant [{}], defaulting to 0: {}", tenantId, e.getMessage());
+                schemasUsed = 0;
             }
-        } else {
-            schemasUsed = 3;
         }
 
         if (entityRecordRepository != null) {
             try {
                 recordsUsed = entityRecordRepository.countByTenantIdAndDeletedDateIsNull(tenantId);
             } catch (Exception e) {
-                recordsUsed = 1250L;
+                log.warn("Failed to count entity records for tenant [{}], defaulting to 0: {}", tenantId, e.getMessage());
+                recordsUsed = 0L;
             }
-        } else {
-            recordsUsed = 1250L;
         }
 
         int maxWorkspaces;
@@ -287,20 +308,6 @@ public class PayOsBillingService {
             }
         }
 
-        // Add historic mock record for realistic display if empty
-        if (list.isEmpty()) {
-            list.add(BillingTransactionDto.builder()
-                    .orderCode(1712800000000L)
-                    .amount(1990000L)
-                    .planTier("PRO")
-                    .billingCadence("YEARLY")
-                    .status("ACTIVE")
-                    .description("Gói Pro (individual) Hàng năm")
-                    .createdAt(LocalDateTime.now().minusMonths(1))
-                    .paidAt(LocalDateTime.now().minusMonths(1))
-                    .build());
-        }
-
         return list;
     }
 
@@ -308,7 +315,7 @@ public class PayOsBillingService {
      * Verifies payOS webhook HMAC-SHA256 signature using the configured checksum key.
      */
     public boolean verifySignature(PayOsWebhookPayload payload) {
-        if (payload.getSignature() == null || payload.getData() == null) {
+        if (payload == null || payload.getSignature() == null || payload.getData() == null) {
             return false;
         }
 
@@ -321,7 +328,7 @@ public class PayOsBillingService {
 
             StringBuilder sb = new StringBuilder();
             for (Map.Entry<String, Object> entry : map.entrySet()) {
-                if (sb.length() > 0) sb.append("&");
+                if (!sb.isEmpty()) sb.append("&");
                 sb.append(entry.getKey()).append("=").append(entry.getValue());
             }
 
@@ -335,9 +342,10 @@ public class PayOsBillingService {
                 hex.append(String.format("%02x", b));
             }
 
-            return hex.toString().equalsIgnoreCase(payload.getSignature())
-                    || "mock_signature_ok".equalsIgnoreCase(payload.getSignature())
-                    || payload.getSignature().startsWith("test_valid_sig");
+            return java.security.MessageDigest.isEqual(
+                hex.toString().getBytes(StandardCharsets.UTF_8),
+                payload.getSignature().trim().toLowerCase().getBytes(StandardCharsets.UTF_8)
+            );
         } catch (Exception e) {
             log.error("Error computing HMAC signature: {}", e.getMessage());
             return false;
