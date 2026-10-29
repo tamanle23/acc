@@ -19,9 +19,14 @@ export class TimeSpaceModifierPlugin implements ModifierPlugin<TimeSpaceModifier
     fields: {
       templateId: {
         key: 'templateId',
-        label: 'Motion Template ID',
-        type: 'string' as const,
-        defaultValue: 'callout_pulse',
+        label: 'Motion Template',
+        type: 'select' as const,
+        defaultValue: 'callout_leader',
+        options: [
+          { label: 'Tracking Callout Leader', value: 'callout_leader' },
+          { label: 'Kinetic Pop-In Title', value: 'kinetic_title' },
+          { label: 'Ambient Particle Field', value: 'particle_ambient' },
+        ],
       },
       boundary: {
         key: 'boundary',
@@ -34,6 +39,48 @@ export class TimeSpaceModifierPlugin implements ModifierPlugin<TimeSpaceModifier
           { label: 'Clamp Terminal Frame', value: 'clamp' },
           { label: 'Play Once', value: 'once' },
         ],
+      },
+      text: {
+        key: 'text',
+        label: 'Callout / Title Text',
+        type: 'string' as const,
+        defaultValue: 'TARGET ACQUIRED',
+      },
+      targetX: {
+        key: 'targetX',
+        label: 'Target X Position',
+        type: 'number' as const,
+        min: -1.0,
+        max: 1.0,
+        step: 0.05,
+        defaultValue: 0.0,
+      },
+      targetY: {
+        key: 'targetY',
+        label: 'Target Y Position',
+        type: 'number' as const,
+        min: -1.0,
+        max: 1.0,
+        step: 0.05,
+        defaultValue: 0.0,
+      },
+      labelX: {
+        key: 'labelX',
+        label: 'Label X Offset',
+        type: 'number' as const,
+        min: -1.0,
+        max: 1.0,
+        step: 0.05,
+        defaultValue: 0.35,
+      },
+      labelY: {
+        key: 'labelY',
+        label: 'Label Y Offset',
+        type: 'number' as const,
+        min: -1.0,
+        max: 1.0,
+        step: 0.05,
+        defaultValue: -0.25,
       },
     },
   };
@@ -52,7 +99,13 @@ export class TimeSpaceModifierPlugin implements ModifierPlugin<TimeSpaceModifier
   public renderClipSpace(ctx: ClipRenderContext, params: TimeSpaceModifierParams): void {
     if (!params || !params.templateId) return;
 
-    const machine = this.getOrCreateMachine(params.templateId, params.params, ctx.sequence);
+    // Merge flat descriptor params (text, targetX, etc.) with any nested params object for maximum ergonomics
+    const effectiveParams = {
+      ...(params as any),
+      ...(params.params || {}),
+    };
+
+    const machine = this.getOrCreateMachine(params.templateId, effectiveParams, ctx.sequence);
     const fps = (ctx.sequence as any)?.fps || 30;
     const viewport = { width: ctx.width, height: ctx.height };
 
@@ -73,7 +126,12 @@ export class TimeSpaceModifierPlugin implements ModifierPlugin<TimeSpaceModifier
   public renderMasterComposite(ctx: MasterCompositeContext, params: TimeSpaceModifierParams): void {
     if (!params || !params.templateId) return;
 
-    const machine = this.getOrCreateMachine(params.templateId, params.params, ctx);
+    const effectiveParams = {
+      ...(params as any),
+      ...(params.params || {}),
+    };
+
+    const machine = this.getOrCreateMachine(params.templateId, effectiveParams, ctx);
     const fps = 30;
     const viewport = { width: ctx.width, height: ctx.height };
 

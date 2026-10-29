@@ -45,3 +45,4 @@
 | 383 | [Studio Inspector Cleanliness, Keyframe Diamond UI & Temporal Coordinate Guide](./382_studio_inspector_cleanliness_and_keyframe_guide.md) | Completed |
 | 384 | [Studio Inspector Simplification: Keyframe Diamond Elimination & Pure Sequence Controls](./383_studio_inspector_simplification_and_keyframe_diamond_pruning.md) | Completed |
 | 385 | [TimeSpaceModifierPlugin Refinement & Demo Showcase](./384_timespace_modifier_plugin_refinement_and_demo_showcase.md) | Completed |
+| 386 | [TimeSpaceModifierPlugin Schema Declarations & Inspector Param Flat Serialization](./385_timespace_schema_declarations_and_inspector_flat_serialization.md) | Completed |

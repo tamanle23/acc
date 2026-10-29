@@ -573,13 +573,11 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
       templateId: 'callout_leader',
       boundary: 'loop',
       seed: 1337,
-      params: {
-        text: 'TARGET ACQUIRED',
-        targetX: 0.0,
-        targetY: 0.0,
-        labelX: 0.35,
-        labelY: -0.25,
-      },
+      text: 'TARGET ACQUIRED',
+      targetX: 0.0,
+      targetY: 0.0,
+      labelX: 0.35,
+      labelY: -0.25,
     },
   },
 };
