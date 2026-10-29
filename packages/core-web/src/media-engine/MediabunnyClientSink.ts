@@ -108,7 +108,7 @@ export class MediabunnyClientSink implements IMediaFrameSink {
     return this.bufferTarget?.buffer;
   }
 
-  public async finalize(audioResult?: MediaAudioMixResult): Promise<SinkFinalizeResult> {
+  public async finalize(audioResult?: MediaAudioMixResult | { totalSamples: number; sampleRate: number; channels: number; buffer: Float32Array; pcmLeft?: Float32Array; pcmRight?: Float32Array }): Promise<SinkFinalizeResult> {
     // If audio track is enabled and audioResult is provided, encode PCM audio samples
     if (this.audioSource && audioResult && audioResult.totalSamples > 0) {
       const sampleRate = audioResult.sampleRate || 48_000;

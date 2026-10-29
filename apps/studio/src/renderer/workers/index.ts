@@ -5,3 +5,4 @@ export * from './WorkerClipPrewarmer';
 export * from './ContentHashTextureCache';
 export * from './WebCodecsDecoderPool';
 export * from './timelineTypes';
+export * from './ExportWorkerBridge';

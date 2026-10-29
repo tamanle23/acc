@@ -1,10 +1,7 @@
 import { MediabunnyClientSink } from '@acc/core-web';
-import { UniversalAudioMixer, DecodedPcmSource } from '@acc/ir';
-import { IRPreviewEngine } from '../../renderer';
-import { AssetTextureCache } from '../textures/AssetTextureCache';
-import { AudioAssetCache } from '../audio/AudioAssetCache';
-import { normalizeTracksList } from '../ir/studioTypes';
+import { IRMasterRenderer } from '@acc/ir';
 import type { IRState } from '../ir/irState';
+import { ExportWorkerBridge } from '../../renderer/workers/ExportWorkerBridge';
 
 export interface ClientExportSinkLike {
   initialize(config: {
@@ -49,24 +46,14 @@ export interface ClientExportResult {
 /**
  * Yields control back to the browser main thread so React UI state updates
  * (progress bar, Cancel Export button clicks, animations) can flush without
- * freezing the tab during heavy frame-by-frame encoding.
+ * stuttering the tab.
  */
 export async function yieldToMainThread(): Promise<void> {
-  const g = globalThis as unknown as {
-    scheduler?: { yield?: () => Promise<void> };
-    requestAnimationFrame?: (cb: FrameRequestCallback) => number;
-  };
-  if (g.scheduler && typeof g.scheduler.yield === 'function') {
-    await g.scheduler.yield();
-    return;
+  if (typeof (globalThis as any).scheduler !== 'undefined' && typeof (globalThis as any).scheduler.yield === 'function') {
+    await (globalThis as any).scheduler.yield();
+  } else {
+    await new Promise((resolve) => setTimeout(resolve, 0));
   }
-  if (typeof g.requestAnimationFrame === 'function') {
-    await new Promise<void>((resolve) => {
-      g.requestAnimationFrame!(() => resolve());
-    });
-    return;
-  }
-  await new Promise<void>((resolve) => setTimeout(resolve, 0));
 }
 
 /**
@@ -95,9 +82,9 @@ export function downloadExportedMp4(
 
 /**
  * Enterprise Non-Blocking Client Export Orchestrator.
- * Encapsulates frame-by-frame canvas rasterization, lazy texture hydration,
- * stereo PCM audio mixing via UniversalAudioMixer, and Mediabunny MP4 muxing
- * with cooperative main-thread yielding and AbortSignal cancellation.
+ * Delegates the full video rendering, modifier preflight, and audio mixdown to
+ * IRMasterRenderer via a dedicated Web Worker (ExportWorkerBridge) with OPFS scratch streaming,
+ * or runs an isomorphic in-process fallback when Web Workers are unavailable.
  */
 export class ClientExportOrchestrator {
   static async exportToMp4(options: ClientExportOptions): Promise<ClientExportResult> {
@@ -109,7 +96,6 @@ export class ClientExportOrchestrator {
       totalFrames,
       videoBitrate = 4_000_000,
       codec = 'avc1.42E01E',
-      yieldEveryNFrames = 3,
       signal,
       onProgress,
       sinkFactory,
@@ -135,6 +121,17 @@ export class ClientExportOrchestrator {
       } catch {}
     }
 
+    // 1. Primary Path: Dedicated Web Worker running IRMasterRenderer + MediabunnyClientSink
+    if (typeof Worker !== 'undefined' && !sinkFactory && irState.timeline) {
+      try {
+        const bridge = new ExportWorkerBridge();
+        return await bridge.export(options, opfsWritable, opfsFileHandle);
+      } catch (workerErr) {
+        console.warn('[ClientExportOrchestrator] Web Worker export failed, falling back to in-process IRMasterRenderer:', workerErr);
+      }
+    }
+
+    // 2. Fallback Path: In-process IRMasterRenderer execution (e.g. Node tests or Worker-restricted envs)
     const sink: ClientExportSinkLike = sinkFactory ? sinkFactory() : new MediabunnyClientSink();
     await (sink as any).initialize({
       width,
@@ -147,197 +144,19 @@ export class ClientExportOrchestrator {
       writableStream: opfsWritable,
     });
 
-    let offscreenCanvas: HTMLCanvasElement | null = null;
-    let ctx: CanvasRenderingContext2D | null = null;
-
-    if (typeof document !== 'undefined') {
-      offscreenCanvas = document.createElement('canvas');
-      offscreenCanvas.width = width;
-      offscreenCanvas.height = height;
-      ctx = offscreenCanvas.getContext('2d', { willReadFrequently: true });
+    if (!irState.timeline) {
+      throw new Error('[ClientExportOrchestrator] Timeline is not initialized');
     }
 
-    const previewEngine = irState.timeline ? new IRPreviewEngine(irState.timeline) : null;
-    const studioTextureCache = AssetTextureCache.getInstance();
-    const assetsMap = irState.doc?.assets || {};
-    const engineTextures = previewEngine ? previewEngine.getTextureCache() : null;
+    const masterRenderer = new IRMasterRenderer(irState.timeline, 42);
 
-    const safeTotalFrames = Math.max(1, totalFrames);
-    const yieldStride = Math.max(1, yieldEveryNFrames);
-
-    // Single pre-allocated frame buffer to eliminate per-frame GC thrashing
-    const reusableRgba = new Uint8Array(width * height * 4);
-
-    try {
-      for (let f = 0; f < safeTotalFrames; f++) {
-        if (signal?.aborted) {
-          console.warn('Client export cancelled by user.');
-          if (typeof (sink as any).dispose === 'function') {
-            await (sink as any).dispose();
-          }
-          return {
-            cancelled: true,
-            framesConsumed: f,
-            fileSizeBytes: 0,
-            buffer: null,
-          };
-        }
-
-        let rgba: Uint8Array;
-        if (ctx && offscreenCanvas) {
-          ctx.fillStyle = '#000000';
-          ctx.fillRect(0, 0, width, height);
-
-          if (previewEngine && engineTextures) {
-            const activeSeqs = irState.intervalTree?.queryActive(f) || [];
-            for (const seq of activeSeqs) {
-              if (seq.assetId) {
-                const assetDef = assetsMap[seq.assetId];
-                const assetSrc = assetDef?.src;
-                const assetType = assetDef?.type;
-                const seqStart = seq.startFrame ?? 0;
-                const seqLocalTimeSec = Math.max(0, (f - seqStart) / fps);
-
-                const visualAsset = studioTextureCache.getVisualAsset(
-                  seq.assetId,
-                  assetSrc,
-                  assetType === 'image' ? 'image' : 'video',
-                  seqLocalTimeSec
-                );
-
-                if (visualAsset.source) {
-                  engineTextures.set(seq.assetId, visualAsset.source);
-                }
-              }
-            }
-
-            previewEngine.renderFrame(f, ctx, {
-              textureCache: engineTextures,
-            });
-          }
-
-          const imgData = ctx.getImageData(0, 0, width, height);
-          reusableRgba.set(imgData.data);
-          rgba = reusableRgba;
-        } else {
-          reusableRgba.fill(0);
-          rgba = reusableRgba;
-        }
-
-        await sink.consumeFrame(f, rgba);
-        onProgress?.(Math.round(((f + 1) / safeTotalFrames) * 85));
-
-        // Yield to main thread periodically so UI remains 60fps responsive & Cancel works immediately
-        if ((f + 1) % yieldStride === 0) {
-          await yieldToMainThread();
-        }
-      }
-    } finally {
-      offscreenCanvas = null;
-      ctx = null;
-    }
-
-    if (signal?.aborted) {
-      return {
-        cancelled: true,
-        framesConsumed: safeTotalFrames,
-        fileSizeBytes: 0,
-        buffer: null,
-      };
-    }
-
-    onProgress?.(90);
-    await yieldToMainThread();
-
-    // Mix timeline audio using UniversalAudioMixer
-    let audioMixResult:
-      | {
-        totalSamples: number;
-        sampleRate: number;
-        channels: number;
-        durationSeconds: number;
-        buffer: Float32Array;
-        pcmLeft: Float32Array;
-        pcmRight: Float32Array;
-      }
-      | undefined = undefined;
-
-    try {
-      const resolvedTracks = normalizeTracksList(irState.timeline?.tracks);
-      const audioTracks = resolvedTracks.filter((t) => t.type === 'audio');
-      if (audioTracks.length > 0) {
-        const sampleRate = 48000;
-        const totalDurationSec = safeTotalFrames / fps;
-        const totalSamples = Math.floor(totalDurationSec * sampleRate);
-        const mixer = new UniversalAudioMixer([], sampleRate);
-
-        for (const track of audioTracks) {
-          const sequences = track.sequences || [];
-          for (const seq of sequences) {
-            const startSec = (seq.startFrame ?? 0) / fps;
-            const durationSec = (seq.durationFrames ?? 30) / fps;
-            const isVoice =
-              track.id?.includes('voice') || seq.name?.toLowerCase().includes('voice');
-
-            let audioSource: DecodedPcmSource | undefined;
-            if (seq.assetId && assetsMap[seq.assetId]) {
-              const assetDef = assetsMap[seq.assetId];
-              let decoded = AudioAssetCache.getInstance().getAudioChannels(
-                seq.assetId,
-                assetDef.src
-              );
-              if (!decoded && assetDef.src) {
-                try {
-                  decoded = await AudioAssetCache.getInstance().fetchAndDecode(
-                    seq.assetId,
-                    assetDef.src
-                  );
-                } catch (e) {
-                  console.warn(`[Export] Failed to decode audio for asset ${seq.assetId}:`, e);
-                }
-              }
-              if (decoded) {
-                audioSource = new DecodedPcmSource({
-                  channels: decoded.channels,
-                  sourceSampleRate: decoded.sampleRate,
-                  sourceTrimStartSec: (seq.sourceTrim?.startFrame || 0) / fps,
-                  loop:
-                    track.id?.toLowerCase().includes('bgm') ||
-                    track.name?.toLowerCase().includes('bgm'),
-                });
-              }
-            }
-
-            mixer.addClip({
-              id: seq.id,
-              type: isVoice ? 'voice' : 'bgm',
-              startTimeSec: startSec,
-              durationSec: durationSec,
-              volume: 0.85,
-              assetId: seq.assetId,
-              audioSource,
-              modifiers: seq.modifiers,
-            });
-          }
-        }
-
-        const mix = mixer.mixStereo(0, totalDurationSec);
-        audioMixResult = {
-          totalSamples,
-          sampleRate,
-          channels: 2,
-          durationSeconds: totalDurationSec,
-          buffer: new Float32Array(totalSamples * 2),
-          pcmLeft: mix.left,
-          pcmRight: mix.right,
-        };
-      }
-    } catch (audioErr) {
-      console.warn(
-        'Audio mixing for export encountered an error, falling back to silent/video-only:',
-        audioErr
-      );
-    }
+    const renderResult = await masterRenderer.render({
+      engine: 'mediabunny-client' as any,
+      sink: sink as any,
+      signal,
+      yieldInterval: 4,
+      onProgress: ({ percent }) => onProgress?.(percent),
+    });
 
     if (signal?.aborted) {
       if (typeof (sink as any).dispose === 'function') {
@@ -345,20 +164,15 @@ export class ClientExportOrchestrator {
       }
       return {
         cancelled: true,
-        framesConsumed: safeTotalFrames,
+        framesConsumed: 0,
         fileSizeBytes: 0,
         buffer: null,
       };
     }
 
-    onProgress?.(95);
-    const result = await sink.finalize(audioMixResult);
-    onProgress?.(100);
-
     let exportBuffer: Uint8Array | ArrayBuffer | Blob | null = null;
-    let fileSizeBytes = result.fileSizeBytes || 0;
+    let fileSizeBytes = renderResult.sinkResult?.fileSizeBytes || 0;
 
-    // 1. Zero-memory OPFS scratch file retrieval
     if (opfsFileHandle) {
       try {
         const opfsFile = await opfsFileHandle.getFile();
@@ -367,9 +181,8 @@ export class ClientExportOrchestrator {
       } catch {}
     }
 
-    // 2. Fallback to in-memory ArrayBuffer
     if (!exportBuffer) {
-      exportBuffer = (result.buffer || sink.getBuffer?.() || null) as any;
+      exportBuffer = (sink.getBuffer?.() || null) as any;
       if (!fileSizeBytes && exportBuffer && 'byteLength' in exportBuffer) {
         fileSizeBytes = exportBuffer.byteLength;
       }
@@ -377,7 +190,7 @@ export class ClientExportOrchestrator {
 
     return {
       cancelled: false,
-      framesConsumed: result.framesConsumed ?? safeTotalFrames,
+      framesConsumed: renderResult.totalFrames || totalFrames,
       fileSizeBytes,
       buffer: exportBuffer,
     };

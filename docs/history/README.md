@@ -32,3 +32,5 @@
 | 371 | [Fix Studio Preview Canvas Black Screen](./371_fix_studio_preview_canvas_black_screen.md) | Completed |
 | 372 | [Iteration 45 Architecture Compliance Audit & Code Cleanup](./372_iteration_45_architecture_compliance_and_code_cleanup.md) | Completed |
 | 373 | [Headless Scoped Resource Engine & Unified Compositor RAII Parity](./373_headless_scoped_resource_engine_and_unified_compositor_raii.md) | Completed |
+| 374 | [Studio Architecture Remediation, Zero-Leak Memory Safety & State Integrity Plan](./374_studio_architecture_remediation_and_zero_leak_plan.md) | Completed |
+| 375 | [Isomorphic IRMasterRenderer Studio Web Worker Export & AssetProtocolRegistry](./375_isomorphic_ir_master_renderer_studio_export_and_asset_protocol_registry.md) | Completed |

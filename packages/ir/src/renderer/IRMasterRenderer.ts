@@ -12,6 +12,7 @@ import {
   CanvasAssetLoader,
   ContentCacheRegistry,
   NativeResourceManager,
+  AssetProtocolRegistry,
 } from '@acc/core-isomorphic';
 import { MediaEngineRegistry, type IVideoDecoder, type MediaEngineType } from '@acc/core-isomorphic';
 import { IRCanvasCompositor, type IAssetSourceResolver } from './shared/IRCanvasCompositor';
@@ -28,6 +29,8 @@ export interface HeadlessRenderOptions {
   chunkEnd?: number;
   skipAudio?: boolean;
   maxMemoryMb?: number;
+  signal?: AbortSignal;
+  yieldInterval?: number;
 }
 
 export interface HeadlessRenderResult {
@@ -288,41 +291,56 @@ export class IRMasterRenderer implements Disposable {
     }
 
     const cache = ContentCacheRegistry.get();
+    const protocolRegistry = AssetProtocolRegistry.getInstance();
 
     for (const [assetId, assetDef] of Object.entries(this.timeline.assets)) {
       if (assetDef.type === 'image' || assetDef.type === 'video') {
-        const resolvedPath = resolveAssetPath(baseDir, assetDef.src);
+        const rawSrc = assetDef.src || assetId;
+        const resolvedPath = resolveAssetPath(baseDir, rawSrc);
         const ext = getFileExtension(resolvedPath);
 
-        let assetExists = await cache.has(resolvedPath);
+        let assetExists = await cache.has(resolvedPath) || await cache.has(assetId);
         let cachedBytes: Uint8Array | null = null;
 
         if (assetExists) {
-          const cachedVal = await cache.get(resolvedPath);
+          const cachedVal = (await cache.get(resolvedPath)) || (await cache.get(assetId));
           if (cachedVal instanceof Blob) {
             cachedBytes = new Uint8Array(await cachedVal.arrayBuffer());
           } else if (cachedVal instanceof Uint8Array) {
             cachedBytes = cachedVal;
           }
-        } else if (typeof process !== 'undefined' && process.versions?.node) {
+        } else {
+          // Resolve transparently via isomorphic AssetProtocolRegistry (supports http:, blob:, data:, cache:, file:)
           try {
-            const fsModule = await import('fs');
-            if (fsModule.existsSync(resolvedPath)) {
+            const assetBlob = protocolRegistry.resolve(rawSrc, baseDir);
+            const blobData = await assetBlob.blob();
+            if (blobData && blobData.size > 0) {
+              cachedBytes = new Uint8Array(await blobData.arrayBuffer());
               assetExists = true;
+              await cache.set(resolvedPath, blobData);
             }
           } catch {
-            assetExists = false;
+            if (typeof process !== 'undefined' && process.versions?.node) {
+              try {
+                const fsModule = await import('fs');
+                if (fsModule.existsSync(resolvedPath)) {
+                  assetExists = true;
+                }
+              } catch {
+                assetExists = false;
+              }
+            }
           }
         }
 
         if (assetExists || isAbsolutePath(resolvedPath)) {
           try {
             // Load if image format
-            if (['.jpg', '.jpeg', '.png', '.webp', '.bmp'].includes(ext)) {
+            if (['.jpg', '.jpeg', '.png', '.webp', '.bmp', '.svg'].includes(ext) || assetDef.type === 'image') {
               const imageSource = cachedBytes || resolvedPath;
               const img = await CanvasAssetLoader.loadImage(imageSource);
               this.imageCache.set(assetId, img);
-            } else if (['.mp4', '.mov', '.mkv', '.webm', '.avi'].includes(ext)) {
+            } else if (['.mp4', '.mov', '.mkv', '.webm', '.avi'].includes(ext) || assetDef.type === 'video') {
               if (strategy && typeof strategy.createVideoDecoder === 'function') {
                 const decoder = strategy.createVideoDecoder(
                   resolvedPath,
@@ -485,7 +503,13 @@ export class IRMasterRenderer implements Disposable {
       canvasCtx = canvas.getContext('2d');
     }
 
+    const yieldInterval = options.yieldInterval ?? 5;
+
     for (let f = 0; f < framesToRender; f++) {
+      if (options.signal?.aborted) {
+        break;
+      }
+
       const globalFrame = startFrame + f;
 
       // Synchronous backpressure acquire
@@ -518,12 +542,17 @@ export class IRMasterRenderer implements Disposable {
       // Simulate instantaneous consumer consumption ack
       this.lock.acknowledge(f);
 
-      if (options.onProgress && (f % 30 === 0 || f === framesToRender - 1)) {
+      if (options.onProgress && (f % 5 === 0 || f === framesToRender - 1)) {
         options.onProgress({
           currentFrame: f + 1,
           totalFrames: framesToRender,
           percent: parseFloat((((f + 1) / framesToRender) * 100).toFixed(1)),
         });
+      }
+
+      // Cooperative yield for browser/worker responsiveness
+      if (yieldInterval > 0 && (f + 1) % yieldInterval === 0) {
+        await new Promise((resolve) => setTimeout(resolve, 0));
       }
     }
 
