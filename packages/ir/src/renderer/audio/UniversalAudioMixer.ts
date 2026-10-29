@@ -703,34 +703,117 @@ export class UniversalAudioMixer {
     return buffer;
   }
 
+  /**
+   * Pure isomorphic stream-oriented WAV exporter.
+   * Streams 16-bit PCM chunks directly into a storage WritableStream (OPFS in browser, native file in Node/Bun)
+   * via ContentCacheRegistry, avoiding giant monolithic in-memory Blob allocations.
+   */
   public static async exportToWav(filePath: string, mixResult: DecoupledAudioMixResult): Promise<void> {
-    const wavBytes = UniversalAudioMixer.encodeToWav(mixResult);
+    const totalFrames = mixResult.totalSamples;
+    const channels = mixResult.channels;
+    const sampleRate = mixResult.sampleRate;
+    const bytesPerSample = 2; // 16-bit PCM
+    const blockAlign = channels * bytesPerSample;
+    const byteRate = sampleRate * blockAlign;
+    const dataSize = totalFrames * blockAlign;
+    const totalBufferSize = 44 + dataSize;
 
-    // Isomorphic storage: persist directly to ContentCacheRegistry (OPFS in browser, native file in Node/Bun)
-    try {
-      const cache = ContentCacheRegistry.get();
-      await cache.set(filePath, new Blob([wavBytes as any], { type: 'audio/wav' }), {
-        mimeType: 'audio/wav',
-        sizeBytes: wavBytes.byteLength,
-      });
-    } catch {
-      // Non-critical cache error fallback
-    }
+    // 1. Generate standard 44-byte RIFF/WAVE header
+    const headerBuffer = new Uint8Array(44);
+    const headerView = new DataView(headerBuffer.buffer, headerBuffer.byteOffset, headerBuffer.byteLength);
 
-    // Node/Bun runtime direct filesystem export fallback
-    if (typeof process !== 'undefined' && process.versions?.node) {
+    headerBuffer.set([0x52, 0x49, 0x46, 0x46], 0); // 'RIFF'
+    headerView.setUint32(4, totalBufferSize - 8, true);
+    headerBuffer.set([0x57, 0x41, 0x56, 0x45], 8); // 'WAVE'
+
+    headerBuffer.set([0x66, 0x6d, 0x74, 0x20], 12); // 'fmt '
+    headerView.setUint32(16, 16, true);
+    headerView.setUint16(20, 1, true); // PCM format
+    headerView.setUint16(22, channels, true);
+    headerView.setUint32(24, sampleRate, true);
+    headerView.setUint32(28, byteRate, true);
+    headerView.setUint16(32, blockAlign, true);
+    headerView.setUint16(34, 16, true); // 16-bit
+
+    headerBuffer.set([0x64, 0x61, 0x74, 0x61], 36); // 'data'
+    headerView.setUint32(40, dataSize, true);
+
+    const cache = ContentCacheRegistry.get();
+    const metadata = {
+      mimeType: 'audio/wav',
+      sizeBytes: totalBufferSize,
+      createdAt: Date.now(),
+    };
+
+    const floatSamples = mixResult.buffer;
+    const totalSampleCount = floatSamples.length;
+    const chunkSize = 16384; // 16k samples per chunk = 32KB buffer chunks
+
+    // 2. If storage strategy supports streaming (OPFS / NativeFile), stream directly to WritableStream
+    if (typeof cache.createWritableStream === 'function') {
+      const writable = await cache.createWritableStream(filePath, metadata);
+      const writer = writable.getWriter();
+
       try {
-        const pathModule = await import('path');
-        const fsModule = await import('fs');
-        const dir = pathModule.dirname(filePath);
-        if (!fsModule.existsSync(dir)) {
-          await fsModule.promises.mkdir(dir, { recursive: true });
+        await writer.write(headerBuffer);
+
+        let sampleOffset = 0;
+        while (sampleOffset < totalSampleCount) {
+          const chunkLen = Math.min(chunkSize, totalSampleCount - sampleOffset);
+          const pcmChunk = new Uint8Array(chunkLen * 2);
+          const chunkView = new DataView(pcmChunk.buffer, pcmChunk.byteOffset, pcmChunk.byteLength);
+
+          let bOffset = 0;
+          for (let i = 0; i < chunkLen; i++) {
+            let s = floatSamples[sampleOffset + i];
+            if (s > 1.0) s = 1.0;
+            else if (s < -1.0) s = -1.0;
+            const int16 = s < 0 ? Math.round(s * 32768) : Math.round(s * 32767);
+            chunkView.setInt16(bOffset, int16, true);
+            bOffset += 2;
+          }
+
+          await writer.write(pcmChunk);
+          sampleOffset += chunkLen;
         }
-        await fsModule.promises.writeFile(
-          filePath,
-          Buffer.from(wavBytes.buffer, wavBytes.byteOffset, wavBytes.byteLength)
-        );
-      } catch {}
+
+        await writer.close();
+        return;
+      } catch (streamErr) {
+        await writer.abort(streamErr);
+        throw streamErr;
+      }
     }
+
+    // 3. ReadableStream fallback for strategies without createWritableStream
+    const readable = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(headerBuffer);
+
+        let sampleOffset = 0;
+        while (sampleOffset < totalSampleCount) {
+          const chunkLen = Math.min(chunkSize, totalSampleCount - sampleOffset);
+          const pcmChunk = new Uint8Array(chunkLen * 2);
+          const chunkView = new DataView(pcmChunk.buffer, pcmChunk.byteOffset, pcmChunk.byteLength);
+
+          let bOffset = 0;
+          for (let i = 0; i < chunkLen; i++) {
+            let s = floatSamples[sampleOffset + i];
+            if (s > 1.0) s = 1.0;
+            else if (s < -1.0) s = -1.0;
+            const int16 = s < 0 ? Math.round(s * 32768) : Math.round(s * 32767);
+            chunkView.setInt16(bOffset, int16, true);
+            bOffset += 2;
+          }
+
+          controller.enqueue(pcmChunk);
+          sampleOffset += chunkLen;
+        }
+
+        controller.close();
+      },
+    });
+
+    await cache.set(filePath, readable, metadata);
   }
 }
