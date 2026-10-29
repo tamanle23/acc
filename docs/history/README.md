@@ -30,3 +30,4 @@
 | 369 | [Studio Pro NLE Shortcuts & Ripple Delete (Phase 4)](./369_studio_pro_nle_shortcuts_and_ripple_delete.md) | Completed |
 | 370 | [Scoped Native Resource Manager & Zero-Alloc Video Playback Pipeline](./370_scoped_native_resource_manager_and_zero_alloc_playback_pipeline.md) | Completed |
 | 371 | [Fix Studio Preview Canvas Black Screen](./371_fix_studio_preview_canvas_black_screen.md) | Completed |
+| 372 | [Iteration 45 Architecture Compliance Audit & Code Cleanup](./372_iteration_45_architecture_compliance_and_code_cleanup.md) | Completed |
