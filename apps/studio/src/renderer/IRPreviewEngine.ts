@@ -33,6 +33,8 @@ export interface PreviewRenderOptions {
   debugMode?: 'none' | 'depth_heatmap' | 'normals' | 'alpha';
 }
 
+export type EphemeralTransformOverride = Partial<InterpolatedTransformState>;
+
 export interface PreviewFrameResult {
   frame: number;
   timestampSeconds: number;
@@ -68,6 +70,7 @@ export class IRPreviewEngine {
   private audioSourceResolver?: (assetId: string, src?: string) => IAudioSourceProvider | undefined;
   private sidecarCoordinator: PreviewWorkerCoordinator | null = null;
   private autoPreflight: boolean = true;
+  private ephemeralTransformOverrides: Map<string, EphemeralTransformOverride> = new Map();
 
   constructor(
     timeline: ResolvedTimeline,
@@ -200,6 +203,27 @@ export class IRPreviewEngine {
   }
 
   /**
+   * Set an ephemeral interactive transform override during active gizmo dragging.
+   */
+  public setEphemeralTransformOverride(
+    sequenceId: string,
+    override: EphemeralTransformOverride | null
+  ): void {
+    if (override === null) {
+      this.ephemeralTransformOverrides.delete(sequenceId);
+    } else {
+      this.ephemeralTransformOverrides.set(sequenceId, override);
+    }
+  }
+
+  /**
+   * Get any active ephemeral transform override for a sequence.
+   */
+  public getEphemeralTransformOverride(sequenceId: string): EphemeralTransformOverride | undefined {
+    return this.ephemeralTransformOverrides.get(sequenceId);
+  }
+
+  /**
    * Evaluates deterministic interpolated transform state for a sequence.
    */
   public getActiveInterpolatedTransform(
@@ -211,7 +235,18 @@ export class IRPreviewEngine {
     const durationSec = Math.max(0.01, sequence.durationFrames / fps);
     const transMod = sequence.modifiers?.find((m) => m.type === 'transform');
 
-    return evaluateSequenceMotion(transMod?.params, localSec, durationSec);
+    const base = evaluateSequenceMotion(transMod?.params, localSec, durationSec);
+    const override = this.ephemeralTransformOverrides.get(sequence.id);
+    if (!override) return base;
+
+    return {
+      x: override.x !== undefined ? override.x : base.x,
+      y: override.y !== undefined ? override.y : base.y,
+      scaleX: override.scaleX !== undefined ? override.scaleX : base.scaleX,
+      scaleY: override.scaleY !== undefined ? override.scaleY : base.scaleY,
+      rotation: override.rotation !== undefined ? override.rotation : base.rotation,
+      opacity: override.opacity !== undefined ? override.opacity : base.opacity,
+    };
   }
 
   /**

@@ -148,6 +148,7 @@ export function useViewportRenderStrategy({
 
   return {
     strategy: strategyRef.current,
+    previewEngine: strategyRef.current?.getEngine?.() ?? null,
     isReady,
     assetTick,
     renderFrame: (frame: number, options?: WorkerRenderOptions) => {

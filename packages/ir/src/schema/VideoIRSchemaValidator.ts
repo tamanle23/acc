@@ -136,6 +136,22 @@ export class VideoIRSchemaValidator {
           errors.push(`Track "${track.id || tIdx}" has invalid blendMode "${track.blendMode}"`);
         }
 
+        if (track.muted !== undefined && typeof track.muted !== 'boolean') {
+          errors.push(`Track "${track.id || tIdx}" "muted" must be a boolean`);
+        }
+
+        if (track.visible !== undefined && typeof track.visible !== 'boolean') {
+          errors.push(`Track "${track.id || tIdx}" "visible" must be a boolean`);
+        }
+
+        if (track.locked !== undefined && typeof track.locked !== 'boolean') {
+          errors.push(`Track "${track.id || tIdx}" "locked" must be a boolean`);
+        }
+
+        if (track.routeTo !== undefined && typeof track.routeTo !== 'string') {
+          errors.push(`Track "${track.id || tIdx}" "routeTo" must be a string`);
+        }
+
         if (track.modifiers !== undefined) {
           this.validateModifiers(track.modifiers, `track "${track.id || tIdx}"`, errors, track.type);
         }

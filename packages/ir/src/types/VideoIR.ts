@@ -81,6 +81,14 @@ export interface IRSequence {
   modifiers?: ModifierNode[];
 }
 
+export interface TrackStyle {
+  opacity?: number;
+  blendMode?: GlobalCompositeOperation | BlendMode | 'none';
+  volume?: number;       // Linear bus volume (0.0 to 2.0)
+  pan?: number;          // Stereo pan (-1.0 to 1.0)
+  [key: string]: unknown;
+}
+
 export interface IRTrack {
   id: string;
   type: TrackType;
@@ -88,7 +96,10 @@ export interface IRTrack {
   routeTo?: string;
   parentTrack?: string;
   blendMode?: BlendMode;
-  style?: Record<string, unknown>;
+  muted?: boolean;       // Silences audio on this track
+  visible?: boolean;     // Hides visuals on this track (default true)
+  locked?: boolean;      // Protects track clips from edits, trims, cuts, deletes
+  style?: TrackStyle;
   modifiers?: ModifierNode[];
   sequences: IRSequence[];
 }
@@ -130,7 +141,11 @@ export interface ResolvedTrack {
   type: TrackType;
   blendMode?: BlendMode;
   opacity?: number;
-  style?: Record<string, unknown>;
+  muted?: boolean;
+  visible?: boolean;
+  locked?: boolean;
+  routeTo?: string;
+  style?: TrackStyle;
   modifiers?: ModifierNode[];
   sequences: ResolvedSequence[];
 }

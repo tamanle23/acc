@@ -20,6 +20,10 @@ export class MainThreadRenderStrategy implements IPreviewRenderStrategy {
     return this.ready;
   }
 
+  public getEngine(): IRPreviewEngine | null {
+    return this.engine;
+  }
+
   public init(canvas: HTMLCanvasElement): boolean {
     this.canvas = canvas;
     if (this.timeline) {

@@ -7,6 +7,8 @@ import {
   Unlock,
   Volume2,
   VolumeX,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { IRStateManager } from '../../lib/ir/irState';
@@ -16,21 +18,32 @@ export interface TrackHeaderCardProps {
   track: StudioTrack;
   isLocked: boolean;
   isMuted: boolean;
+  isVisible?: boolean;
   canMoveUp: boolean;
   canMoveDown: boolean;
   onToggleLock: (trackId: string) => void;
   onToggleMute: (trackId: string) => void;
+  onToggleVisible?: (trackId: string) => void;
 }
 
 export function TrackHeaderCard({
   track,
   isLocked,
   isMuted,
+  isVisible = true,
   canMoveUp,
   canMoveDown,
   onToggleLock,
   onToggleMute,
+  onToggleVisible,
 }: TrackHeaderCardProps) {
+  const isAudioTrack = track.type === 'audio';
+  const isTextOrOverlay = track.type === 'timed_text' || track.type === 'overlay';
+  const isVideoTrack = track.type === 'video';
+
+  const showVisibilityControl = isVideoTrack || isTextOrOverlay;
+  const showMuteControl = isVideoTrack || isAudioTrack;
+
   return (
     <div
       onClick={() => {
@@ -76,6 +89,7 @@ export function TrackHeaderCard({
           <ChevronDown className="w-3 h-3" />
         </Button>
 
+        {/* Lock Control */}
         <Button
           variant="ghost"
           size="icon"
@@ -95,24 +109,49 @@ export function TrackHeaderCard({
           {isLocked ? <Lock className="w-2.5 h-2.5" /> : <Unlock className="w-2.5 h-2.5" />}
         </Button>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-pressed={isMuted}
-          aria-label={isMuted ? 'Unmute Track' : 'Mute Track'}
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleMute(track.id);
-          }}
-          className={`h-5 w-5 rounded transition-colors ${
-            isMuted
-              ? 'text-rose-400 bg-rose-500/15 hover:bg-rose-500/25 font-bold shadow-xs'
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
-          title={isMuted ? 'Unmute Track' : 'Mute Track'}
-        >
-          {isMuted ? <VolumeX className="w-2.5 h-2.5" /> : <Volume2 className="w-2.5 h-2.5" />}
-        </Button>
+        {/* Visibility (Eye) Control for Video and Overlay/Text Tracks */}
+        {showVisibilityControl && (
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-pressed={!isVisible}
+            aria-label={isVisible ? 'Hide Track Visuals' : 'Show Track Visuals'}
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleVisible?.(track.id);
+            }}
+            className={`h-5 w-5 rounded transition-colors ${
+              !isVisible
+                ? 'text-muted-foreground/40 bg-muted/20 font-bold'
+                : 'text-sky-400 hover:bg-sky-500/15'
+            }`}
+            title={isVisible ? 'Hide Track Visuals' : 'Show Track Visuals'}
+          >
+            {isVisible ? <Eye className="w-2.5 h-2.5" /> : <EyeOff className="w-2.5 h-2.5" />}
+          </Button>
+        )}
+
+        {/* Mute (Speaker) Control for Audio and Video Tracks */}
+        {showMuteControl && (
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-pressed={isMuted}
+            aria-label={isMuted ? 'Unmute Track Audio' : 'Mute Track Audio'}
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleMute(track.id);
+            }}
+            className={`h-5 w-5 rounded transition-colors ${
+              isMuted
+                ? 'text-rose-400 bg-rose-500/15 hover:bg-rose-500/25 font-bold shadow-xs'
+                : 'text-emerald-400 hover:bg-emerald-500/15'
+            }`}
+            title={isMuted ? 'Unmute Track Audio' : 'Mute Track Audio'}
+          >
+            {isMuted ? <VolumeX className="w-2.5 h-2.5" /> : <Volume2 className="w-2.5 h-2.5" />}
+          </Button>
+        )}
       </div>
     </div>
   );

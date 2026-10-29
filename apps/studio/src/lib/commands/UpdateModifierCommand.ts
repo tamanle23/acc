@@ -42,6 +42,9 @@ export class UpdateModifierCommand implements ICommand {
               this.previousParamsSnapshot = JSON.parse(JSON.stringify(existingMod.params));
               this.wasPreviouslyExisting = true;
             }
+            if (!existingMod.id) {
+              existingMod.id = `mod_${this.modifierType.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`;
+            }
             if (this.target && !existingMod.target) {
               existingMod.target = this.target;
             }
@@ -52,6 +55,7 @@ export class UpdateModifierCommand implements ICommand {
               this.wasPreviouslyExisting = false;
             }
             seq.modifiers.push({
+              id: `mod_${this.modifierType.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`,
               type: this.modifierType,
               target: this.target || (seq.type ? seq.type : 'video'),
               params: { ...this.params },

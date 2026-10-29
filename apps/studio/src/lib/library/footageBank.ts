@@ -46,7 +46,7 @@ export const VIDEO_FOOTAGE_PRESETS: StagingPreset[] = [
     durationSec: 8.0,
     createSequence: ({ startFrame, durationFrames = 240, normX = 0.5, normY = 0.5 }) => ({
       id: `seq-footage-matrix-${Date.now()}`,
-      type: 'image',
+      type: 'video',
       assetId: 'asset-matrix-core',
       time: { start: startFrame, duration: durationFrames },
       modifiers: [
@@ -98,7 +98,7 @@ export const VIDEO_FOOTAGE_PRESETS: StagingPreset[] = [
     durationSec: 10.0,
     createSequence: ({ startFrame, durationFrames = 300, normX = 0.5, normY = 0.5 }) => ({
       id: `seq-footage-globe-${Date.now()}`,
-      type: 'image',
+      type: 'video',
       assetId: 'asset-holo-globe',
       time: { start: startFrame, duration: durationFrames },
       modifiers: [
@@ -124,7 +124,7 @@ export const VIDEO_FOOTAGE_PRESETS: StagingPreset[] = [
     durationSec: 6.0,
     createSequence: ({ startFrame, durationFrames = 180, normX = 0.5, normY = 0.5 }) => ({
       id: `seq-footage-filmburn-${Date.now()}`,
-      type: 'image',
+      type: 'video',
       assetId: 'asset-film-burn',
       time: { start: startFrame, duration: durationFrames },
       modifiers: [
@@ -150,7 +150,7 @@ export const VIDEO_FOOTAGE_PRESETS: StagingPreset[] = [
     durationSec: 15.0,
     createSequence: ({ startFrame, durationFrames = 450, normX = 0.5, normY = 0.5 }) => ({
       id: `seq-footage-synthgrid-${Date.now()}`,
-      type: 'image',
+      type: 'video',
       assetId: 'asset-synth-grid',
       time: { start: startFrame, duration: durationFrames },
       modifiers: [
@@ -176,7 +176,7 @@ export const VIDEO_FOOTAGE_PRESETS: StagingPreset[] = [
     durationSec: 5.0,
     createSequence: ({ startFrame, durationFrames = 150, normX = 0.5, normY = 0.5 }) => ({
       id: `seq-footage-lightning-${Date.now()}`,
-      type: 'image',
+      type: 'video',
       assetId: 'asset-lightning',
       time: { start: startFrame, duration: durationFrames },
       modifiers: [
@@ -202,7 +202,7 @@ export const VIDEO_FOOTAGE_PRESETS: StagingPreset[] = [
     durationSec: 10.0,
     createSequence: ({ startFrame, durationFrames = 300, normX = 0.5, normY = 0.5 }) => ({
       id: `seq-footage-ocean-${Date.now()}`,
-      type: 'image',
+      type: 'video',
       assetId: 'asset-ocean-caustics',
       time: { start: startFrame, duration: durationFrames },
       modifiers: [

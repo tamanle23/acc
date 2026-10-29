@@ -160,11 +160,35 @@ export class PartialVFXPlugin implements ModifierPlugin<PartialVFXPluginParams> 
     timeSec: number,
     params: PartialVFXPluginParams
   ): void {
-    if (!params.regions || params.regions.length === 0) return;
+    let regions = params.regions;
+    if (!regions || regions.length === 0) {
+      const anyParams = params as any;
+      if (
+        anyParams.normX !== undefined ||
+        anyParams.normY !== undefined ||
+        anyParams.x !== undefined ||
+        anyParams.y !== undefined ||
+        anyParams.radius !== undefined ||
+        anyParams.intensity !== undefined
+      ) {
+        regions = [
+          {
+            type: anyParams.vfxType || anyParams.type || 'spotlight',
+            x: anyParams.normX ?? (anyParams.x !== undefined ? anyParams.x / w : 0.5),
+            y: anyParams.normY ?? (anyParams.y !== undefined ? anyParams.y / h : 0.5),
+            radius: anyParams.radius ?? 160,
+            intensity: anyParams.intensity ?? 1.5,
+            color: anyParams.color ?? '#00d4ff',
+          },
+        ];
+      } else {
+        return;
+      }
+    }
 
     ctx.save();
 
-    for (const reg of params.regions) {
+    for (const reg of regions) {
       const rx = reg.x * w;
       const ry = reg.y * h;
       const rw = (reg.width ?? 0.3) * w;

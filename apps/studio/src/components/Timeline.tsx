@@ -27,6 +27,10 @@ export interface TimelineProps {
   isPlaying: boolean;
   onTogglePlay?: () => void;
   shuttle: UseShuttleEngineReturn;
+  zoomScale?: number;
+  onZoomChange?: (zoom: number) => void;
+  scrollLeft?: number;
+  onScrollChange?: (scrollLeft: number) => void;
 }
 
 export function Timeline({
@@ -35,13 +39,24 @@ export function Timeline({
   isPlaying,
   onTogglePlay,
   shuttle,
+  zoomScale: propZoomScale,
+  onZoomChange,
+  scrollLeft: propScrollLeft,
+  onScrollChange,
 }: TimelineProps) {
   const currentFrame = playhead?.currentFrame || 0;
   const fps = playhead?.fps || 30;
 
   const [snapEnabled, setSnapEnabled] = useState(true);
   const [rippleEnabled, setRippleEnabled] = useState(false);
-  const [zoomScale, setZoomScale] = useState(1.65); // 1.0 = ~1.5px per frame
+  const [internalZoomScale, setInternalZoomScale] = useState(1.65); // 1.0 = ~1.5px per frame
+  const zoomScale = propZoomScale ?? internalZoomScale;
+  const setZoomScale = (zoom: number | ((prev: number) => number)) => {
+    const nextZoom = typeof zoom === 'function' ? zoom(zoomScale) : zoom;
+    if (onZoomChange) onZoomChange(nextZoom);
+    else setInternalZoomScale(nextZoom);
+  };
+
   const [activeTool, setActiveTool] = useState<'select' | 'razor' | 'hand'>('select');
   const [timecodeHUD, setTimecodeHUD] = useState<{
     frame: number;
@@ -50,8 +65,6 @@ export function Timeline({
     durationFrames?: number;
   } | null>(null);
   const [razorHoverFrame, setRazorHoverFrame] = useState<number | null>(null);
-  const [lockedTracks, setLockedTracks] = useState<Record<string, boolean>>({});
-  const [mutedTracks, setMutedTracks] = useState<Record<string, boolean>>({});
   const [activeSnapGuideline, setActiveSnapGuideline] = useState<{
     frame: number;
     label?: string;
@@ -63,6 +76,14 @@ export function Timeline({
   const totalFrames = irState.timeline?.totalFrames || playhead?.totalFrames || 300;
   const tracks = normalizeTracksList(irState.timeline?.tracks);
   const selectedSeqId = irState.selectedSequenceId;
+
+  // Derive authoritative track lock and mute states from VideoIR document
+  const lockedTracks: Record<string, boolean> = {};
+  const mutedTracks: Record<string, boolean> = {};
+  for (const t of tracks) {
+    if (t.locked) lockedTracks[t.id] = true;
+    if (t.muted) mutedTracks[t.id] = true;
+  }
 
   // Adaptive Zoom Scaling: 1.5px/frame at 1.0x allows standard 3s (90f) clips to render at 135px (LOD 2)
   const pixelsPerFrame = Math.max(0.2, 1.5 * zoomScale);
@@ -102,15 +123,18 @@ export function Timeline({
   }, [pixelsPerFrame]);
 
   // Virtualization Scroll & Viewport Observers
-  const [scrollLeft, setScrollLeft] = useState(0);
+  const [internalScrollLeft, setInternalScrollLeft] = useState(0);
+  const scrollLeft = propScrollLeft ?? internalScrollLeft;
   const [clientWidth, setClientWidth] = useState(1200);
 
   const handleScroll = useCallback(() => {
     if (scrollContainerRef.current) {
-      setScrollLeft(scrollContainerRef.current.scrollLeft);
+      const sl = scrollContainerRef.current.scrollLeft;
+      if (onScrollChange) onScrollChange(sl);
+      else setInternalScrollLeft(sl);
       setClientWidth(scrollContainerRef.current.clientWidth);
     }
-  }, []);
+  }, [onScrollChange]);
 
   useEffect(() => {
     const el = scrollContainerRef.current;
@@ -130,9 +154,23 @@ export function Timeline({
   };
 
   const handleTimelineMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isPanningRef.current || activeTool !== 'hand' || !scrollContainerRef.current) return;
-    const dx = e.clientX - panStartRef.current.x;
-    scrollContainerRef.current.scrollLeft = panStartRef.current.scrollLeft - dx;
+    if (isPanningRef.current && activeTool === 'hand' && scrollContainerRef.current) {
+      const dx = e.clientX - panStartRef.current.x;
+      scrollContainerRef.current.scrollLeft = panStartRef.current.scrollLeft - dx;
+      return;
+    }
+
+    if (activeTool === 'razor') {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = e.clientX - rect.left - 208 + scrollLeft;
+      if (x >= 0) {
+        setRazorHoverFrame(Math.round(x / pixelsPerFrame));
+      } else {
+        setRazorHoverFrame(null);
+      }
+    } else if (razorHoverFrame !== null) {
+      setRazorHoverFrame(null);
+    }
   };
 
   const handleTimelineMouseUp = () => {
@@ -140,11 +178,29 @@ export function Timeline({
   };
 
   const toggleLock = (trackId: string) => {
-    setLockedTracks((prev) => ({ ...prev, [trackId]: !prev[trackId] }));
+    const isLocked = Boolean(lockedTracks[trackId]);
+    IRStateManager.getInstance().setTrackLocked(trackId, !isLocked);
   };
 
   const toggleMute = (trackId: string) => {
-    setMutedTracks((prev) => ({ ...prev, [trackId]: !prev[trackId] }));
+    const isMuted = Boolean(mutedTracks[trackId]);
+    IRStateManager.getInstance().setTrackMuted(trackId, !isMuted);
+  };
+
+  const toggleVisible = (trackId: string) => {
+    const track = tracks.find((t) => t.id === trackId);
+    const isVisible = track?.visible !== false;
+    IRStateManager.getInstance().setTrackVisible(trackId, !isVisible);
+  };
+
+  const isSelectedSeqLocked = (): boolean => {
+    if (!selectedSeqId) return false;
+    for (const track of tracks) {
+      if (track.sequences.some((s) => s.id === selectedSeqId)) {
+        return Boolean(track.locked);
+      }
+    }
+    return false;
   };
 
   // Keyboard shortcuts (editing tools, split, ripple delete, and zoom; transport/scrubbing handled by useShuttleEngine)
@@ -155,7 +211,7 @@ export function Timeline({
       if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
         // Cmd+K / Ctrl+K: Split selected clip at playhead
         e.preventDefault();
-        if (selectedSeqId) {
+        if (selectedSeqId && !isSelectedSeqLocked()) {
           TimelineCommandDispatcher.getInstance().dispatch(
             new RazorCutCommand(selectedSeqId, currentFrame)
           );
@@ -163,7 +219,7 @@ export function Timeline({
       } else if (e.shiftKey && (e.key === 'Delete' || e.key === 'Backspace')) {
         // Shift+Delete / Shift+Backspace: Professional NLE Ripple Delete
         e.preventDefault();
-        if (selectedSeqId) {
+        if (selectedSeqId && !isSelectedSeqLocked()) {
           TimelineCommandDispatcher.getInstance().dispatch(
             new RippleDeleteCommand(selectedSeqId, rippleEnabled)
           );
@@ -171,7 +227,7 @@ export function Timeline({
       } else if (e.key === 'Delete' || e.key === 'Backspace') {
         // Delete / Backspace: Regular delete or ripple delete depending on rippleEnabled toggle
         e.preventDefault();
-        if (selectedSeqId) {
+        if (selectedSeqId && !isSelectedSeqLocked()) {
           if (rippleEnabled) {
             TimelineCommandDispatcher.getInstance().dispatch(
               new RippleDeleteCommand(selectedSeqId, true)
@@ -184,7 +240,7 @@ export function Timeline({
         setActiveTool((prev) => (prev === 'razor' ? 'select' : 'razor'));
       } else if (e.key === 's' || e.key === 'S') {
         // Split selected clip at playhead
-        if (selectedSeqId) {
+        if (selectedSeqId && !isSelectedSeqLocked()) {
           TimelineCommandDispatcher.getInstance().dispatch(
             new RazorCutCommand(selectedSeqId, currentFrame)
           );
@@ -201,7 +257,7 @@ export function Timeline({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedSeqId, currentFrame, rippleEnabled]);
+  }, [selectedSeqId, currentFrame, rippleEnabled, tracks]);
 
   return (
     <footer className="h-full glass-panel border-t border-border/50 flex flex-col select-none shadow-sm z-10 shrink-0">
@@ -285,6 +341,7 @@ export function Timeline({
               mutedTracks={mutedTracks}
               onToggleLock={toggleLock}
               onToggleMute={toggleMute}
+              onToggleVisible={toggleVisible}
               selectedSeqId={selectedSeqId}
               activeTool={activeTool}
               fps={fps}

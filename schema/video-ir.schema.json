@@ -390,6 +390,18 @@
         "blendMode": {
           "$ref": "#/definitions/BlendMode"
         },
+        "muted": {
+          "type": "boolean",
+          "description": "Silences audio on this track"
+        },
+        "visible": {
+          "type": "boolean",
+          "description": "Hides visual rendering on this track"
+        },
+        "locked": {
+          "type": "boolean",
+          "description": "Protects track clips from edits, cuts, trims, and deletion"
+        },
         "style": {
           "type": "object",
           "description": "Track-level styling directives (typography, font size, default position)",

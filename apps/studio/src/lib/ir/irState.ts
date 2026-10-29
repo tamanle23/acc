@@ -316,7 +316,10 @@ export class IRStateManager {
   }
 
   public rippleMoveSequence(sequenceId: string, targetTrackId: string, targetStartFrame: number): void {
-    this.dispatch(new RippleMoveSequenceCommand(sequenceId, targetTrackId, targetStartFrame));
+    const resolvedSeq = this.state.timeline?.sequences?.get(sequenceId);
+    const resolvedStartFrame = resolvedSeq?.startFrame;
+    const resolvedDurationFrames = resolvedSeq?.durationFrames;
+    this.dispatch(new RippleMoveSequenceCommand(sequenceId, targetTrackId, targetStartFrame, resolvedStartFrame, resolvedDurationFrames));
   }
 
   public splitSequence(sequenceId: string, splitFrame: number): void {
@@ -330,19 +333,40 @@ export class IRStateManager {
     this.dispatch(new UpdateSequenceTimeCommand(sequenceId, time));
   }
 
-  public updateModifier(sequenceId: string, modifierType: string, params: Record<string, unknown>): void {
-    this.dispatch(new UpdateModifierCommand(sequenceId, modifierType, params));
+  public updateModifier(
+    sequenceId: string,
+    modifierType: string,
+    params: Record<string, unknown>,
+    target?: SequenceType | SequenceType[]
+  ): void {
+    let resolvedTarget = target;
+    if (!resolvedTarget) {
+      for (const track of this.state.doc.tracks) {
+        const found = track.sequences.find((s) => s.id === sequenceId);
+        if (found) {
+          resolvedTarget = found.type;
+          break;
+        }
+      }
+    }
+    this.dispatch(new UpdateModifierCommand(sequenceId, modifierType, params, resolvedTarget));
   }
 
   public addModifier(
     sequenceId: string,
-    modifierOrType: string | { type: string; params?: Record<string, unknown> },
-    params?: Record<string, unknown>
+    modifierOrType: string | { type: string; params?: Record<string, unknown>; target?: SequenceType | SequenceType[] },
+    params?: Record<string, unknown>,
+    target?: SequenceType | SequenceType[]
   ): void {
     if (typeof modifierOrType === 'string') {
-      this.updateModifier(sequenceId, modifierOrType, params || {});
+      this.updateModifier(sequenceId, modifierOrType, params || {}, target);
     } else {
-      this.updateModifier(sequenceId, modifierOrType.type, modifierOrType.params || {});
+      this.updateModifier(
+        sequenceId,
+        modifierOrType.type,
+        modifierOrType.params || {},
+        modifierOrType.target || target
+      );
     }
   }
 
@@ -408,6 +432,41 @@ export class IRStateManager {
 
   public updateTrack(trackId: string, updates: UpdateTrackProperties): void {
     this.dispatch(new UpdateTrackCommand(trackId, updates));
+  }
+
+  public setTrackMuted(trackId: string, muted: boolean): void {
+    const track = this.state.doc.tracks.find((t) => t.id === trackId);
+    if (track) {
+      track.muted = muted;
+      this.notify();
+      this.recompile();
+    }
+  }
+
+  public setTrackVisible(trackId: string, visible: boolean): void {
+    const track = this.state.doc.tracks.find((t) => t.id === trackId);
+    if (track) {
+      track.visible = visible;
+      this.notify();
+      this.recompile();
+    }
+  }
+
+  public setTrackLocked(trackId: string, locked: boolean): void {
+    const track = this.state.doc.tracks.find((t) => t.id === trackId);
+    if (track) {
+      track.locked = locked;
+      this.notify();
+      this.recompile();
+    }
+  }
+
+  public updateTrackStyle(trackId: string, styleUpdates: Record<string, unknown>): void {
+    this.dispatch(new UpdateTrackCommand(trackId, { style: styleUpdates }));
+  }
+
+  public updateTrackRouting(trackId: string, routeTo: string): void {
+    this.dispatch(new UpdateTrackCommand(trackId, { routeTo }));
   }
 
   public reorderTrack(trackId: string, direction: 'up' | 'down'): void {

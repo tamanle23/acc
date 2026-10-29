@@ -1,11 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
-  DndContext,
   DragOverlay,
-  PointerSensor,
-  pointerWithin,
-  useSensor,
-  useSensors,
+  useDndMonitor,
   type DragStartEvent,
   type DragMoveEvent,
   type DragEndEvent,
@@ -30,6 +26,7 @@ export interface TimelineDomProps {
   mutedTracks: Record<string, boolean>;
   onToggleLock: (trackId: string) => void;
   onToggleMute: (trackId: string) => void;
+  onToggleVisible?: (trackId: string) => void;
   selectedSeqId: string | null;
   activeTool: 'select' | 'razor' | 'hand';
   fps: number;
@@ -85,16 +82,22 @@ export function TimelineDom({
     activeTrack?: StudioTrack;
   } | null>(null);
 
-  const timelineSensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 5,
-      },
-    })
-  );
-
   // rAF Throttle for DragMove to prevent state thrashing during 144Hz high-frequency mouse moves
   const dragRafRef = useRef<number | null>(null);
+
+  useDndMonitor({
+    onDragStart: (e) => handleDragStart(e),
+    onDragMove: (e) => handleDragMove(e),
+    onDragEnd: (e) => handleDragEnd(e),
+    onDragCancel: () => {
+      if (dragRafRef.current !== null) {
+        cancelAnimationFrame(dragRafRef.current);
+        dragRafRef.current = null;
+      }
+      onActiveSnapGuidelineChange(null);
+      setActiveDragState(null);
+    },
+  });
 
   useEffect(() => {
     return () => {
@@ -381,22 +384,7 @@ export function TimelineDom({
   );
 
   return (
-    <DndContext
-      sensors={timelineSensors}
-      collisionDetection={pointerWithin}
-      autoScroll={{
-        threshold: {
-          x: 0.15,
-          y: 0.2,
-        },
-        acceleration: 15,
-        interval: 10,
-        layoutShiftCompensation: false,
-      }}
-      onDragStart={handleDragStart}
-      onDragMove={handleDragMove}
-      onDragEnd={handleDragEnd}
-    >
+    <>
       <div
         style={{
           width: `${timelineWidth + 208}px`,
@@ -404,8 +392,9 @@ export function TimelineDom({
         className="flex flex-col gap-1 relative"
       >
         {tracks.map((track: StudioTrack, idx: number) => {
-          const isLocked = lockedTracks[track.id] || false;
-          const isMuted = mutedTracks[track.id] || false;
+          const isLocked = lockedTracks[track.id] ?? track.locked ?? false;
+          const isMuted = mutedTracks[track.id] ?? track.muted ?? false;
+          const isVisible = track.visible !== false;
           const canMoveUp = idx > 0;
           const canMoveDown = idx < tracks.length - 1;
 
@@ -434,10 +423,12 @@ export function TimelineDom({
                 track={track}
                 isLocked={isLocked}
                 isMuted={isMuted}
+                isVisible={isVisible}
                 canMoveUp={canMoveUp}
                 canMoveDown={canMoveDown}
                 onToggleLock={onToggleLock}
                 onToggleMute={onToggleMute}
+                onToggleVisible={onToggleVisible}
               />
 
               {/* Track Sequence Lane: Render DOM clips with CSS content-visibility optimization */}
@@ -497,6 +488,6 @@ export function TimelineDom({
           />
         ) : null}
       </DragOverlay>
-    </DndContext>
+    </>
   );
 }

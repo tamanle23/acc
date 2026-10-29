@@ -20,9 +20,9 @@ export const AUDIO_FOOTAGE_PRESETS: StagingPreset[] = [
       time: { start: startFrame, duration: durationFrames },
       modifiers: [
         {
-          type: 'audio/gain',
+          type: 'audio/volume',
           target: ['audio'],
-          params: { gain: 0.85, fadeInSec: 1.0, fadeOutSec: 2.0 },
+          params: { volume: 0.85, fadeInSec: 1.0, fadeOutSec: 2.0 },
         },
       ],
     }),
@@ -46,9 +46,9 @@ export const AUDIO_FOOTAGE_PRESETS: StagingPreset[] = [
       time: { start: startFrame, duration: durationFrames },
       modifiers: [
         {
-          type: 'audio/gain',
+          type: 'audio/volume',
           target: ['audio'],
-          params: { gain: 0.9, fadeInSec: 0.5, fadeOutSec: 1.5 },
+          params: { volume: 0.9, fadeInSec: 0.5, fadeOutSec: 1.5 },
         },
       ],
     }),
@@ -68,13 +68,13 @@ export const AUDIO_FOOTAGE_PRESETS: StagingPreset[] = [
     createSequence: ({ startFrame, durationFrames = 480 }) => ({
       id: `seq-bgm-lofi-${Date.now()}`,
       type: 'audio',
-      assetId: 'asset-bgm-lofi',
+      assetId: 'asset-bgm-sunset',
       time: { start: startFrame, duration: durationFrames },
       modifiers: [
         {
-          type: 'audio/gain',
+          type: 'audio/volume',
           target: ['audio'],
-          params: { gain: 0.78, fadeInSec: 1.5, fadeOutSec: 2.5 },
+          params: { volume: 0.78, fadeInSec: 1.5, fadeOutSec: 2.5 },
         },
       ],
     }),
@@ -98,9 +98,9 @@ export const AUDIO_FOOTAGE_PRESETS: StagingPreset[] = [
       time: { start: startFrame, duration: durationFrames },
       modifiers: [
         {
-          type: 'audio/gain',
+          type: 'audio/volume',
           target: ['audio'],
-          params: { gain: 0.75, fadeInSec: 2.0, fadeOutSec: 3.0 },
+          params: { volume: 0.75, fadeInSec: 2.0, fadeOutSec: 3.0 },
         },
       ],
     }),
@@ -120,13 +120,13 @@ export const AUDIO_FOOTAGE_PRESETS: StagingPreset[] = [
     createSequence: ({ startFrame, durationFrames = 420 }) => ({
       id: `seq-bgm-cyberclub-${Date.now()}`,
       type: 'audio',
-      assetId: 'asset-bgm-cyberclub',
+      assetId: 'asset-bgm-action',
       time: { start: startFrame, duration: durationFrames },
       modifiers: [
         {
-          type: 'audio/gain',
+          type: 'audio/volume',
           target: ['audio'],
-          params: { gain: 0.88, fadeInSec: 0.2, fadeOutSec: 1.0 },
+          params: { volume: 0.88, fadeInSec: 0.2, fadeOutSec: 1.0 },
         },
       ],
     }),
@@ -150,9 +150,9 @@ export const AUDIO_FOOTAGE_PRESETS: StagingPreset[] = [
       time: { start: startFrame, duration: durationFrames },
       modifiers: [
         {
-          type: 'audio/gain',
+          type: 'audio/volume',
           target: ['audio'],
-          params: { gain: 0.82, fadeInSec: 1.0, fadeOutSec: 2.0 },
+          params: { volume: 0.82, fadeInSec: 1.0, fadeOutSec: 2.0 },
         },
       ],
     }),
@@ -172,13 +172,13 @@ export const AUDIO_FOOTAGE_PRESETS: StagingPreset[] = [
     createSequence: ({ startFrame, durationFrames = 450 }) => ({
       id: `seq-bgm-tech-${Date.now()}`,
       type: 'audio',
-      assetId: 'asset-bgm-tech',
+      assetId: 'asset-bgm-retro',
       time: { start: startFrame, duration: durationFrames },
       modifiers: [
         {
-          type: 'audio/gain',
+          type: 'audio/volume',
           target: ['audio'],
-          params: { gain: 0.84, fadeInSec: 0.8, fadeOutSec: 1.5 },
+          params: { volume: 0.84, fadeInSec: 0.8, fadeOutSec: 1.5 },
         },
       ],
     }),
@@ -198,13 +198,13 @@ export const AUDIO_FOOTAGE_PRESETS: StagingPreset[] = [
     createSequence: ({ startFrame, durationFrames = 540 }) => ({
       id: `seq-bgm-abyss-${Date.now()}`,
       type: 'audio',
-      assetId: 'asset-bgm-abyss',
+      assetId: 'asset-bgm-tension',
       time: { start: startFrame, duration: durationFrames },
       modifiers: [
         {
-          type: 'audio/gain',
+          type: 'audio/volume',
           target: ['audio'],
-          params: { gain: 0.92, fadeInSec: 2.0, fadeOutSec: 3.5 },
+          params: { volume: 0.92, fadeInSec: 2.0, fadeOutSec: 3.5 },
         },
       ],
     }),

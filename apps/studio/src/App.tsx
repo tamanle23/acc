@@ -68,6 +68,9 @@ function StudioWorkspace() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isRightOpen]);
 
+  const [timelineScrollLeft, setTimelineScrollLeft] = useState(0);
+  const [timelineZoomScale, setTimelineZoomScale] = useState(1.65);
+
   const handleSequenceInserted = useCallback(() => {
     setIsRightOpen(true);
   }, []);
@@ -75,6 +78,8 @@ function StudioWorkspace() {
   const { sensors, activeDragItem, handleDragStart, handleDragEnd } = useWorkspaceDnd({
     currentFrame,
     fps,
+    timelineScrollLeft,
+    timelineZoomScale,
     onSequenceInserted: handleSequenceInserted,
   });
 
@@ -261,6 +266,10 @@ function StudioWorkspace() {
                 isPlaying={isPlaying}
                 onTogglePlay={handleTogglePlay}
                 shuttle={shuttle}
+                zoomScale={timelineZoomScale}
+                onZoomChange={setTimelineZoomScale}
+                scrollLeft={timelineScrollLeft}
+                onScrollChange={setTimelineScrollLeft}
               />
             </div>
           </ResizablePanel>

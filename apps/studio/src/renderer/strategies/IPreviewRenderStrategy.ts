@@ -50,6 +50,11 @@ export interface IPreviewRenderStrategy {
   resize(width: number, height: number): void;
 
   /**
+   * Optional direct engine access if running on main thread.
+   */
+  getEngine?(): any;
+
+  /**
    * Subscribes to readiness callbacks.
    */
   onReady(callback: () => void): void;

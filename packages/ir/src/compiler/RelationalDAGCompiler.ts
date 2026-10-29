@@ -48,6 +48,10 @@ export class RelationalDAGCompiler {
         modifiers: track.modifiers,
         blendMode: track.blendMode || (track.style as any)?.blendMode || 'normal',
         opacity: typeof (track.style as any)?.opacity === 'number' ? (track.style as any).opacity : 1.0,
+        muted: track.muted ?? false,
+        visible: track.visible !== false,
+        locked: track.locked ?? false,
+        routeTo: track.routeTo || 'master',
         sequences: [],
       });
 

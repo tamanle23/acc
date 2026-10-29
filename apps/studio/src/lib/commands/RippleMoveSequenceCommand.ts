@@ -23,19 +23,29 @@ export class RippleMoveSequenceCommand implements ICommand {
   private sequenceId: string;
   private targetTrackId: string;
   private targetStartFrame: number;
+  private resolvedStartFrame?: number;
+  private resolvedDurationFrames?: number;
 
   private previousTrackId: string | null = null;
   private previousStartFrame: number | null = null;
   private displacedClips: DisplacedClipRecord[] = [];
   private linkedDisplacement: { linkedId: string; originalStart: number; newStart: number } | null = null;
 
-  constructor(sequenceId: string, targetTrackId: string, targetStartFrame: number) {
+  constructor(
+    sequenceId: string,
+    targetTrackId: string,
+    targetStartFrame: number,
+    resolvedStartFrame?: number,
+    resolvedDurationFrames?: number
+  ) {
     this.id = `ripple_move_${sequenceId}_${Date.now()}`;
     this.description = `Ripple move sequence ${sequenceId} to track ${targetTrackId} at frame ${targetStartFrame}`;
     this.timestamp = Date.now();
     this.sequenceId = sequenceId;
     this.targetTrackId = targetTrackId;
     this.targetStartFrame = Math.max(0, targetStartFrame);
+    this.resolvedStartFrame = resolvedStartFrame;
+    this.resolvedDurationFrames = resolvedDurationFrames;
   }
 
   public execute(doc: VideoIRDocument): VideoIRDocument {
@@ -79,6 +89,8 @@ export class RippleMoveSequenceCommand implements ICommand {
     if (this.previousStartFrame === null) {
       if (typeof sequenceToMove.time.start === 'number') {
         this.previousStartFrame = sequenceToMove.time.start;
+      } else if (this.resolvedStartFrame !== undefined) {
+        this.previousStartFrame = this.resolvedStartFrame;
       } else if (sequenceToMove.time.start && typeof sequenceToMove.time.start === 'object') {
         this.previousStartFrame = sequenceToMove.time.start.offsetFrames ?? 0;
       } else {
@@ -89,9 +101,13 @@ export class RippleMoveSequenceCommand implements ICommand {
     const durationFrames =
       typeof sequenceToMove.time.duration === 'number'
         ? sequenceToMove.time.duration
-        : sequenceToMove.time.duration && typeof sequenceToMove.time.duration === 'object'
-          ? sequenceToMove.time.duration.frames ?? 90
-          : 90;
+        : this.resolvedDurationFrames !== undefined
+          ? this.resolvedDurationFrames
+          : typeof sequenceToMove.time.duration === 'string'
+            ? parseInt(sequenceToMove.time.duration, 10) || 90
+            : sequenceToMove.time.duration && typeof sequenceToMove.time.duration === 'object'
+              ? (sequenceToMove.time.duration as any).frames ?? 90
+              : 90;
 
     // Remove sequence from source track before calculating ripple shift on target track
     sourceTrack.sequences.splice(seqIndex, 1);
@@ -118,19 +134,16 @@ export class RippleMoveSequenceCommand implements ICommand {
         if (typeof s.time.start === 'number') {
           s.time.start = newStart;
         } else if (s.time.start && typeof s.time.start === 'object') {
-          s.time.start.offsetFrames = newStart;
+          s.time.start = newStart; // Materialize into absolute start
         }
       }
     }
 
-    // Set target start on moved sequence
-    if (typeof sequenceToMove.time.start === 'number') {
-      sequenceToMove.time.start = this.targetStartFrame;
-    } else if (sequenceToMove.time.start && typeof sequenceToMove.time.start === 'object') {
-      sequenceToMove.time.start.offsetFrames = this.targetStartFrame;
-    } else {
-      sequenceToMove.time.start = this.targetStartFrame;
-    }
+    // Materialize target start and duration on moved sequence into concrete absolute numbers
+    sequenceToMove.time = {
+      start: this.targetStartFrame,
+      duration: durationFrames,
+    };
 
     // Insert into target track
     targetTrack.sequences.push(sequenceToMove);

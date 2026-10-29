@@ -43,6 +43,19 @@ export function Preview({
   // Droppable container for dragging library presets into the viewport
   const { setNodeRef: setDroppableRef, isOver } = useDroppable({
     id: 'canvas-viewport-drop-zone',
+    data: {
+      type: 'canvas-viewport',
+      getNormalizedCoords: (clientX: number, clientY: number) => {
+        const rect = canvasRef.current?.getBoundingClientRect();
+        if (rect && rect.width > 0 && rect.height > 0) {
+          return {
+            normX: Math.max(0.05, Math.min(0.95, (clientX - rect.left) / rect.width)),
+            normY: Math.max(0.05, Math.min(0.95, (clientY - rect.top) / rect.height)),
+          };
+        }
+        return { normX: 0.5, normY: 0.5 };
+      },
+    },
   });
 
   // Global IR Reactive Subscription
@@ -72,26 +85,6 @@ export function Preview({
   // Domain Hook 1: Pan & Zoom Navigation
   const panZoom = useViewportPanZoom();
 
-  // Domain Hook 2: Gizmo Direct Manipulation & Vector Snapping
-  const gizmo = useGizmoTransform({
-    selectedSeqId,
-    width,
-    height,
-    isLocked,
-    timeline: irState.timeline,
-    doc: irState.doc,
-  });
-
-  // Domain Hook 3: Global Keyboard Hotkeys
-  usePreviewHotkeys({
-    selectedSeqId,
-    editingCue,
-    setEditingCue,
-    isSpacePressed: panZoom.isSpacePressed,
-    setIsSpacePressed: panZoom.setIsSpacePressed,
-    setVisionPassMode,
-  });
-
   // Query active sequences for hit detection, textures & rendering
   const activeSequences = irState.intervalTree?.queryActive(currentFrame) || [];
   const clearColor = showCheckerboard ? 'transparent' : '#000000';
@@ -105,7 +98,7 @@ export function Preview({
           : 'none';
 
   // Domain Hook 4: Viewport Render Strategy (Decoupled Worker / Main-Thread Pipeline)
-  useViewportRenderStrategy({
+  const renderStrategy = useViewportRenderStrategy({
     canvasRef,
     overlayCanvasRef,
     timeline: irState.timeline,
@@ -115,6 +108,32 @@ export function Preview({
     fps,
     totalFrames,
     currentFrame,
+    isPlaying,
+    clearColor,
+    debugMode,
+    activeSeqs: activeSequences,
+  });
+
+  // Domain Hook 2: Gizmo Direct Manipulation & Vector Snapping
+  const gizmo = useGizmoTransform({
+    selectedSeqId,
+    width,
+    height,
+    isLocked,
+    timeline: irState.timeline,
+    doc: irState.doc,
+    previewEngine: renderStrategy.previewEngine,
+  });
+
+  // Domain Hook 3: Global Keyboard Hotkeys
+  usePreviewHotkeys({
+    selectedSeqId,
+    editingCue,
+    setEditingCue,
+    isSpacePressed: panZoom.isSpacePressed,
+    setIsSpacePressed: panZoom.setIsSpacePressed,
+    setVisionPassMode,
+  });
     isPlaying,
     clearColor,
     debugMode,
@@ -311,7 +330,7 @@ export function Preview({
               isLocked={isLocked}
               transform={gizmo.transform}
               isDragging={gizmo.isDragging}
-              previewEngine={null}
+              previewEngine={renderStrategy.previewEngine}
               transformSensors={gizmo.transformSensors}
               onTransformDragStart={gizmo.handleTransformDragStart}
               onTransformDragMove={gizmo.handleTransformDragMove}

@@ -135,7 +135,7 @@ export class ShapeModifierPlugin implements ModifierPlugin<ShapeModifierParams> 
     const canvasCtx = ctx.ctx;
     if (!canvasCtx) return;
 
-    const geometry = params.geometry || 'rounded_rect';
+    const geometry = params.geometry || (params as any).shapeType || 'rounded_rect';
     const w = params.width ?? 320;
     const h = params.height ?? 180;
     const halfW = w * 0.5;
@@ -256,6 +256,20 @@ export class ShapeModifierPlugin implements ModifierPlugin<ShapeModifierParams> 
           canvasCtx.lineTo(-halfW, armH * 0.5);
           canvasCtx.lineTo(-halfW, -armH * 0.5);
           canvasCtx.lineTo(-armW * 0.5, -armH * 0.5);
+          canvasCtx.closePath();
+          break;
+        }
+
+        case 'arrow': {
+          const shaftW = w * 0.5;
+          const shaftH = h * 0.35;
+          canvasCtx.moveTo(-halfW, -shaftH * 0.5);
+          canvasCtx.lineTo(-halfW + shaftW, -shaftH * 0.5);
+          canvasCtx.lineTo(-halfW + shaftW, -halfH);
+          canvasCtx.lineTo(halfW, 0);
+          canvasCtx.lineTo(-halfW + shaftW, halfH);
+          canvasCtx.lineTo(-halfW + shaftW, shaftH * 0.5);
+          canvasCtx.lineTo(-halfW, shaftH * 0.5);
           canvasCtx.closePath();
           break;
         }

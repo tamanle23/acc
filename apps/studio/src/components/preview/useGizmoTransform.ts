@@ -36,6 +36,9 @@ export interface UseGizmoTransformOptions {
   isLocked: boolean;
   timeline?: ResolvedTimeline | null;
   doc?: VideoIRDocument | null;
+  previewEngine?: {
+    setEphemeralTransformOverride?: (sequenceId: string, override: any) => void;
+  } | null;
 }
 
 export function useGizmoTransform({
@@ -45,6 +48,7 @@ export function useGizmoTransform({
   isLocked,
   timeline,
   doc,
+  previewEngine,
 }: UseGizmoTransformOptions) {
   const overlayRef = useRef<Gizmo2DTransformation>(new Gizmo2DTransformation());
   const [transform, setTransform] = useState<TransformState>({
@@ -144,21 +148,24 @@ export function useGizmoTransform({
 
       const baseW = 0.5;
       const baseH = 0.5;
+      const canvasW = 1920;
+      const canvasH = 1080;
+
       const startNormBox: BoundingBox2D = {
-        x: 0.5 + startTransform.x / width,
-        y: 0.5 + startTransform.y / height,
+        x: 0.5 + startTransform.x / canvasW,
+        y: 0.5 + startTransform.y / canvasH,
         width: baseW * startTransform.scale,
         height: baseH * startTransform.scale,
         rotation: startTransform.rotation,
       };
 
       const currentPointerNorm = {
-        x: 0.5 + (startTransform.x + dx) / width,
-        y: 0.5 + (startTransform.y + dy) / height,
+        x: 0.5 + (startTransform.x / canvasW) + (dx / Math.max(1, width)),
+        y: 0.5 + (startTransform.y / canvasH) + (dy / Math.max(1, height)),
       };
       const startPointerNorm = {
-        x: 0.5 + startTransform.x / width,
-        y: 0.5 + startTransform.y / height,
+        x: 0.5 + startTransform.x / canvasW,
+        y: 0.5 + startTransform.y / canvasH,
       };
 
       const dragRes = Gizmo2DTransformation.computeDragTransform(
@@ -178,16 +185,26 @@ export function useGizmoTransform({
 
       const newNormBox = dragRes.box;
       const newTransform: TransformState = {
-        x: Math.round((newNormBox.x - 0.5) * width),
-        y: Math.round((newNormBox.y - 0.5) * height),
+        x: Math.round((newNormBox.x - 0.5) * canvasW),
+        y: Math.round((newNormBox.y - 0.5) * canvasH),
         scale: Number((newNormBox.width / baseW).toFixed(2)),
         rotation: newNormBox.rotation,
       };
 
       setTransform(newTransform);
       overlayRef.current.update(newNormBox, dragRes.snapResult?.activeGuides || []);
+
+      if (previewEngine?.setEphemeralTransformOverride && selectedSeqId) {
+        previewEngine.setEphemeralTransformOverride(selectedSeqId, {
+          x: newTransform.x,
+          y: newTransform.y,
+          scaleX: newTransform.scale,
+          scaleY: newTransform.scale,
+          rotation: newTransform.rotation,
+        });
+      }
     },
-    [isDragging, activeHandle, selectedSeqId, isLocked, startTransform, width, height]
+    [isDragging, activeHandle, selectedSeqId, isLocked, startTransform, width, height, previewEngine]
   );
 
   const handleTransformDragEnd = useCallback(
@@ -195,12 +212,15 @@ export function useGizmoTransform({
       if (selectedSeqId && !isLocked) {
         IRStateManager.getInstance().updateModifier(selectedSeqId, 'transform', { ...transform });
       }
+      if (previewEngine?.setEphemeralTransformOverride && selectedSeqId) {
+        previewEngine.setEphemeralTransformOverride(selectedSeqId, null);
+      }
       setIsDragging(false);
       setActiveHandle(null);
       setActiveGuides([]);
       overlayRef.current.setActiveInteraction(null, null);
     },
-    [selectedSeqId, isLocked, transform]
+    [selectedSeqId, isLocked, transform, previewEngine]
   );
 
   return {

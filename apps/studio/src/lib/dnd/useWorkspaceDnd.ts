@@ -14,8 +14,16 @@ import type { StagingPreset } from '../library/stagingPresets';
 export interface UseWorkspaceDndOptions {
   currentFrame: number;
   fps: number;
+  timelineScrollLeft?: number;
+  timelineZoomScale?: number;
   onSequenceInserted?: () => void;
 }
+
+export type WorkspaceDragPayload =
+  | { type: 'preset'; presetId?: string; category?: string; presetData?: any; preset?: StagingPreset }
+  | { type: 'asset'; assetId?: string; asset: StudioAssetRecord }
+  | { type: 'clip'; clipId?: string; seqId?: string; trackId: string; startFrame: number; durationFrames?: number; seq?: IRSequence }
+  | { type: 'trim'; handle: 'start' | 'end'; seqId: string; trackId: string; startFrame: number; durationFrames: number; seq?: IRSequence };
 
 /**
  * Custom hook encapsulating global workspace Drag-and-Drop (@dnd-kit) sensors and
@@ -25,15 +33,17 @@ export interface UseWorkspaceDndOptions {
 export function useWorkspaceDnd({
   currentFrame,
   fps,
+  timelineScrollLeft = 0,
+  timelineZoomScale = 1.65,
   onSequenceInserted,
 }: UseWorkspaceDndOptions) {
   const [activeDragItem, setActiveDragItem] = useState<Record<string, unknown> | null>(null);
 
-  // @dnd-kit PointerSensor with 6px distance activation constraint
+  // @dnd-kit PointerSensor with 5px distance activation constraint
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 6,
+        distance: 5,
       },
     })
   );
@@ -52,13 +62,29 @@ export function useWorkspaceDnd({
       const data = active.data.current;
       if (!data) return;
 
+      // Only handle preset and asset dropping in workspace DnD (clips and trims handled by TimelineDom monitor)
+      if (data.type !== 'preset' && data.type !== 'asset') {
+        return;
+      }
+
       if (over.id === 'canvas-viewport-drop-zone') {
+        let normX = 0.5;
+        let normY = 0.5;
+        if (event.active.rect.current.translated && over.rect) {
+          const relX = event.active.rect.current.translated.left - over.rect.left;
+          const relY = event.active.rect.current.translated.top - over.rect.top;
+          if (over.rect.width > 0 && over.rect.height > 0) {
+            normX = Math.max(0.05, Math.min(0.95, relX / over.rect.width));
+            normY = Math.max(0.05, Math.min(0.95, relY / over.rect.height));
+          }
+        }
+
         if (data.type === 'preset' && data.preset) {
           const preset = data.preset as StagingPreset;
           const seq = preset.createSequence({
             startFrame: currentFrame,
-            normX: 0.5,
-            normY: 0.5,
+            normX,
+            normY,
           });
           IRStateManager.getInstance().addSequence(preset.targetTrackId, seq, {
             trackTypeFallback: preset.targetTrackType,
@@ -85,7 +111,20 @@ export function useWorkspaceDnd({
             timelineStartFrame: currentFrame,
             durationFrames,
             assetId,
-            modifiers: [],
+            modifiers: [
+              {
+                type: 'transform',
+                target: ['video', 'image'],
+                params: {
+                  normX,
+                  normY,
+                  x: 0,
+                  y: 0,
+                  scale: 1.0,
+                  rotation: 0,
+                },
+              },
+            ],
           };
 
           IRStateManager.getInstance().addSequence(targetTrackId, newSeq, {
@@ -105,20 +144,20 @@ export function useWorkspaceDnd({
 
         // Calculate drop frame from translated pointer coordinate relative to target lane
         let dropFrame = currentFrame;
-        const zoomScale = 1.0; // default baseline zoom scale
-        const pixelsPerFrame = Math.max(1, 4 * zoomScale);
+        const pixelsPerFrame = Math.max(0.2, 1.5 * timelineZoomScale);
 
         if (event.active.rect.current.translated && over.rect) {
-          const relX = event.active.rect.current.translated.left - over.rect.left;
+          const relX = event.active.rect.current.translated.left - over.rect.left + timelineScrollLeft;
           if (relX > 0) {
-            dropFrame = Math.max(0, Math.round(relX / pixelsPerFrame));
+            dropFrame = Math.max(0, Math.floor(relX / pixelsPerFrame));
           } else {
             dropFrame = currentFrame;
           }
         }
 
         // Magnetic Snapping check against current playhead
-        if (Math.abs(dropFrame - currentFrame) <= 4) {
+        const snapThreshold = Math.max(2, Math.round(6 / pixelsPerFrame));
+        if (Math.abs(dropFrame - currentFrame) <= snapThreshold) {
           dropFrame = currentFrame;
         }
 
@@ -232,7 +271,7 @@ export function useWorkspaceDnd({
         }
       }
     },
-    [currentFrame, fps, onSequenceInserted]
+    [currentFrame, fps, timelineScrollLeft, timelineZoomScale, onSequenceInserted]
   );
 
   return {

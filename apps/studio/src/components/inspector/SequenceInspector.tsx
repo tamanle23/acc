@@ -95,6 +95,19 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
     }
   };
 
+  const effectiveOpenSections = React.useMemo(() => {
+    const set = new Set<string>();
+    (selectedSeq?.modifiers || []).forEach((m, idx) => {
+      const key = m.id || `${m.type}_${idx}`;
+      const secId = getSectionIdForModifierType(m.type);
+      if (openSections.includes(key) || openSections.includes(secId) || openSections.includes(m.type)) {
+        set.add(key);
+      }
+    });
+    openSections.forEach((s) => set.add(s));
+    return Array.from(set);
+  }, [openSections, selectedSeq?.modifiers]);
+
   if (!selectedSeq) {
     return (
       <div className="p-3 text-center text-xs text-muted-foreground">
@@ -711,11 +724,12 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
       {/* Dynamic Modifiers Accordion Engine */}
       <Accordion
         type="multiple"
-        value={openSections}
+        value={effectiveOpenSections}
         onValueChange={setOpenSections}
         className="border-glass-border space-y-2"
       >
-        {modifiers.map((mod: ModifierNode) => {
+        {modifiers.map((mod: ModifierNode, idx: number) => {
+          const modKey = mod.id || `${mod.type}_${idx}`;
           const sectionId = getSectionIdForModifierType(mod.type);
           const catalogEntry = MODIFIER_PRESENTATION_CATALOG[mod.type];
           const Icon = catalogEntry?.icon || Sparkles;
@@ -724,8 +738,8 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
 
           return (
             <AccordionItem
-              key={mod.type}
-              value={sectionId}
+              key={modKey}
+              value={modKey}
               className="rounded-md overflow-hidden glass-card border-glass-border"
             >
               <AccordionTrigger

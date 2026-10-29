@@ -97,8 +97,93 @@ export function LeftSidebar({
         cache.set(assetId, file, { mimeType: file.type, sizeBytes: file.size }).catch(() => {});
       } catch {}
 
-      IRStateManager.getInstance().addAsset(assetId, { id: assetId, type, src: objectUrl, name: file.name, size: file.size });
+      if (isVideo) {
+        const video = document.createElement('video');
+        video.preload = 'metadata';
+        video.src = objectUrl;
+        video.onloadedmetadata = () => {
+          IRStateManager.getInstance().addAsset(assetId, {
+            id: assetId,
+            type: 'video',
+            src: objectUrl,
+            name: file.name,
+            size: file.size,
+            durationSec: video.duration || 10,
+            hasAudio: true,
+          });
+        };
+        video.onerror = () => {
+          IRStateManager.getInstance().addAsset(assetId, {
+            id: assetId,
+            type: 'video',
+            src: objectUrl,
+            name: file.name,
+            size: file.size,
+            durationSec: 10,
+          });
+        };
+      } else if (isAudio) {
+        const audio = document.createElement('audio');
+        audio.preload = 'metadata';
+        audio.src = objectUrl;
+        audio.onloadedmetadata = () => {
+          IRStateManager.getInstance().addAsset(assetId, {
+            id: assetId,
+            type: 'audio',
+            src: objectUrl,
+            name: file.name,
+            size: file.size,
+            durationSec: audio.duration || 10,
+          });
+        };
+        audio.onerror = () => {
+          IRStateManager.getInstance().addAsset(assetId, {
+            id: assetId,
+            type: 'audio',
+            src: objectUrl,
+            name: file.name,
+            size: file.size,
+            durationSec: 10,
+          });
+        };
+      } else {
+        IRStateManager.getInstance().addAsset(assetId, {
+          id: assetId,
+          type,
+          src: objectUrl,
+          name: file.name,
+          size: file.size,
+        });
+      }
     }
+  };
+
+  const handleInsertAsset = (asset: StudioAssetRecord) => {
+    const assetId = String(asset.id || 'asset');
+    const targetTrackId = asset.type === 'audio' ? 'track-a1' : 'track-v1';
+    const targetTrackType = asset.type === 'audio' ? 'audio' : 'video';
+    const seqId = `seq_${assetId}_${Date.now().toString(36)}`;
+    const durationFrames = asset.durationSec ? Math.round(asset.durationSec * 30) : 90;
+
+    const newSeq: IRSequence = {
+      id: seqId,
+      name: asset.name || assetId,
+      type: asset.type === 'audio' ? 'audio' : asset.type === 'image' ? 'image' : 'video',
+      time: {
+        start: 0,
+        duration: durationFrames,
+      },
+      startFrame: 0,
+      timelineStartFrame: 0,
+      durationFrames,
+      assetId,
+      modifiers: [],
+    };
+
+    IRStateManager.getInstance().addSequence(targetTrackId, newSeq, {
+      trackTypeFallback: targetTrackType,
+      trackNameFallback: targetTrackId,
+    });
   };
 
   const handleInsert = (preset: StagingPreset) => {
@@ -126,7 +211,11 @@ export function LeftSidebar({
 
   const filteredAssets = assetList.filter((a) => {
     const matchesType = selectedAssetType === 'all' || a.type === selectedAssetType;
-    const matchesQuery = a.id.toLowerCase().includes(assetFilterQuery.toLowerCase()) || a.src.toLowerCase().includes(assetFilterQuery.toLowerCase());
+    const q = assetFilterQuery.toLowerCase();
+    const matchesQuery =
+      a.id.toLowerCase().includes(q) ||
+      a.src.toLowerCase().includes(q) ||
+      (a.name && a.name.toLowerCase().includes(q));
     return matchesType && matchesQuery;
   });
 

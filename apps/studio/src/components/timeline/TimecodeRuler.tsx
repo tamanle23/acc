@@ -1,5 +1,5 @@
 import { RationalTime } from '@acc/core-isomorphic';
-import React from 'react';
+import React, { useRef, useCallback } from 'react';
 
 interface TimecodeRulerProps {
   totalFrames: number;
@@ -16,11 +16,36 @@ export function TimecodeRuler({
   timelineWidth,
   onScrub,
 }: TimecodeRulerProps) {
-  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const targetFrame = Math.max(0, Math.min(totalFrames, Math.round(clickX / pixelsPerFrame)));
-    onScrub(targetFrame);
+  const isDraggingRef = useRef(false);
+
+  const updateFrameFromClientX = useCallback(
+    (clientX: number, target: HTMLDivElement) => {
+      const rect = target.getBoundingClientRect();
+      const clickX = clientX - rect.left;
+      const targetFrame = Math.max(0, Math.min(totalFrames, Math.round(clickX / pixelsPerFrame)));
+      onScrub(targetFrame);
+    },
+    [totalFrames, pixelsPerFrame, onScrub]
+  );
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    isDraggingRef.current = true;
+    updateFrameFromClientX(e.clientX, e.currentTarget);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDraggingRef.current) return;
+    updateFrameFromClientX(e.clientX, e.currentTarget);
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (isDraggingRef.current) {
+      isDraggingRef.current = false;
+      try {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      } catch {}
+    }
   };
 
   // Generate markers every second and intermediate frames using exact RationalTime arithmetic
@@ -38,9 +63,12 @@ export function TimecodeRuler({
 
   return (
     <div
-      onClick={handleClick}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
       style={{ width: `${timelineWidth}px` }}
-      className="h-6 bg-muted/30 border-b border-border/40 relative select-none cursor-pointer"
+      className="h-6 bg-muted/30 border-b border-border/40 relative select-none cursor-pointer touch-none"
     >
       {markers.map((m) => {
         const leftPx = m.frame * pixelsPerFrame;

@@ -129,7 +129,15 @@ export function DraggablePresetCard({
                 const source = ctx.createBufferSource();
                 source.buffer = audioBuf;
                 source.connect(ctx.destination);
+                source.onended = () => {
+                  ctx.close().catch(() => {});
+                };
                 source.start();
+                setTimeout(() => {
+                  if (ctx.state !== 'closed') {
+                    ctx.close().catch(() => {});
+                  }
+                }, 3500);
               } catch (err) {
                 console.warn('Audition error:', err);
               }
@@ -166,9 +174,11 @@ export function DraggablePresetCard({
 export function DraggableAssetCard({
   assetId,
   asset,
+  onInsert,
 }: {
   assetId: string;
   asset: StudioAssetRecord;
+  onInsert?: (asset: StudioAssetRecord) => void;
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `asset-${assetId}`,
@@ -219,12 +229,30 @@ export function DraggableAssetCard({
       <p className="text-[10px] text-muted-foreground truncate font-mono pointer-events-none">
         {asset.src}
       </p>
-      <div className="flex items-center justify-between pt-1 mt-1 border-t border-border/40 text-[10px] text-muted-foreground font-mono pointer-events-none">
-        <span className="flex items-center gap-1">
+      <div className="flex items-center justify-between pt-1 mt-1 border-t border-border/40 text-[10px] text-muted-foreground font-mono">
+        <span className="flex items-center gap-1 pointer-events-none">
           <GripVertical className="w-3 h-3 text-muted-foreground/60" />
-          Drag into canvas
+          Drag to timeline
         </span>
-        {asset.durationSec && <span>{asset.durationSec.toFixed(1)}s</span>}
+        <div className="flex items-center gap-1.5">
+          {asset.durationSec && <span>{asset.durationSec.toFixed(1)}s</span>}
+          {onInsert && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                onInsert(asset);
+              }}
+              className="h-5 px-1.5 text-[10px] font-medium text-primary hover:bg-primary/20 rounded cursor-pointer gap-0.5"
+              title="Insert into timeline"
+            >
+              <Plus className="w-2.5 h-2.5" />
+              Insert
+            </Button>
+          )}
+        </div>
       </div>
     </Card>
   );

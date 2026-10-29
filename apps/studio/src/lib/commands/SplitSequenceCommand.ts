@@ -9,16 +9,20 @@ export class SplitSequenceCommand implements ICommand {
 
   private sequenceId: string;
   private splitFrame: number;
+  private resolvedStartFrame: number;
+  private resolvedEndFrame: number;
   private originalSequenceSnapshot: IRSequence | null = null;
   private createdSequenceId: string | null = null;
   private nextSequenceIndexSnapshot: number | undefined = undefined;
 
-  constructor(sequenceId: string, splitFrame: number, startFrame: number, endFrame: number) {
+  constructor(sequenceId: string, splitFrame: number, startFrame?: number, endFrame?: number) {
     this.id = `split_${sequenceId}_${Date.now()}`;
     this.description = `Split sequence ${sequenceId} at frame ${splitFrame}`;
     this.timestamp = Date.now();
     this.sequenceId = sequenceId;
     this.splitFrame = splitFrame;
+    this.resolvedStartFrame = typeof startFrame === 'number' ? startFrame : 0;
+    this.resolvedEndFrame = typeof endFrame === 'number' ? endFrame : 90;
   }
 
   public execute(doc: VideoIRDocument): VideoIRDocument {
@@ -35,8 +39,24 @@ export class SplitSequenceCommand implements ICommand {
           this.nextSequenceIndexSnapshot = copy.meta?.nextSequenceIndex;
         }
 
-        const currentStart = typeof originalSeq.time.start === 'number' ? originalSeq.time.start : 0;
-        const currentDur = typeof originalSeq.time.duration === 'number' ? originalSeq.time.duration : 90;
+        let currentStart: number;
+        let currentDur: number;
+
+        if (typeof originalSeq.time.start === 'number') {
+          currentStart = originalSeq.time.start;
+        } else {
+          currentStart = this.resolvedStartFrame;
+        }
+
+        if (typeof originalSeq.time.duration === 'number') {
+          currentDur = originalSeq.time.duration;
+        } else if (typeof originalSeq.time.duration === 'string') {
+          const parsed = parseInt(originalSeq.time.duration, 10);
+          currentDur = !isNaN(parsed) && parsed > 0 ? parsed : Math.max(1, this.resolvedEndFrame - currentStart);
+        } else {
+          currentDur = Math.max(1, this.resolvedEndFrame - currentStart);
+        }
+
         const currentEnd = currentStart + currentDur;
 
         if (this.splitFrame <= currentStart || this.splitFrame >= currentEnd) {
@@ -65,10 +85,7 @@ export class SplitSequenceCommand implements ICommand {
           id: newSeqId,
           name: `${baseName} (Part 2)`,
           time: {
-            start: {
-              after: originalSeq.id,
-              offsetFrames: 0,
-            },
+            start: this.splitFrame,
             duration: dur2,
           },
         };

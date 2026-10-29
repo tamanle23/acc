@@ -169,7 +169,7 @@ export class IRCanvasCompositor {
       for (const track of tracksList) {
         if (track.type !== 'timed_text') continue;
 
-        if ((track as any).muted === true || (track.style as any)?.visible === false) {
+        if ((track as any).muted === true || (track as any).visible === false || (track.style as any)?.visible === false) {
           continue;
         }
 
@@ -191,11 +191,14 @@ export class IRCanvasCompositor {
             }
 
             const localTimeSec = (clampedFrame - seq.startFrame) / fps;
+            const localFrame = clampedFrame - seq.startFrame;
 
             const textMod = seq.modifiers?.find((m) => m.type === 'text/style');
+            const textParams = (textMod?.params as any) || {};
             const effectiveSettings: CaptionSettings = {
               ...trackCaptionSettings,
-              ...(textMod?.params as CaptionSettings || {}),
+              ...textParams,
+              fillColor: textParams.fillColor || textParams.textColor || (trackCaptionSettings as any)?.fillColor || (trackCaptionSettings as any)?.textColor,
             };
 
             const snapshot = IRCanvasCompositor.captionStrategy.evaluate(
@@ -205,6 +208,40 @@ export class IRCanvasCompositor {
             );
 
             if (snapshot.shouldRender) {
+              canvasCtx.save();
+
+              // Evaluate spatial/motion modifiers on timed_text sequence (e.g. transform, motion/gsap)
+              if (seq.modifiers) {
+                for (const mod of seq.modifiers) {
+                  if (mod.type === 'transform' || mod.type === 'motion/gsap') {
+                    const plugin = registry.get(mod.type);
+                    if (plugin && plugin.renderClipSpace) {
+                      try {
+                        plugin.renderClipSpace(
+                          {
+                            canvas,
+                            ctx: canvasCtx,
+                            frame: clampedFrame,
+                            localFrame,
+                            width,
+                            height,
+                            sequence: seq,
+                            baseAsset: undefined,
+                            debugMode: options.debugMode,
+                          },
+                          {
+                            ...(popOutIntensity !== undefined ? { popOutIntensity } : {}),
+                            ...mod.params,
+                          }
+                        );
+                      } catch (err) {
+                        console.warn('Error applying modifier on timed_text:', err);
+                      }
+                    }
+                  }
+                }
+              }
+
               drawCanvasCaptionsFromSnapshot(
                 canvasCtx,
                 snapshot,
@@ -213,6 +250,8 @@ export class IRCanvasCompositor {
                 height,
                 platform
               );
+
+              canvasCtx.restore();
             }
           }
         }
@@ -323,7 +362,7 @@ export class IRCanvasCompositor {
       for (let tIdx = startIndex; tIdx < tracksList.length; tIdx++) {
         const track = tracksList[tIdx];
 
-        if ((track as any).muted === true || (track.style as any)?.visible === false) {
+        if ((track as any).muted === true || (track as any).visible === false || (track.style as any)?.visible === false) {
           continue;
         }
 

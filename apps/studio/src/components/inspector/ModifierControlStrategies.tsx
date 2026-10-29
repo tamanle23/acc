@@ -100,13 +100,20 @@ export const SFXActionsControlStrategy: React.FC<ControlStrategyProps> = ({
         const source = ctx.createBufferSource();
         source.buffer = audioBuf;
         source.connect(ctx.destination);
+        source.onended = () => {
+          ctx.close().catch(() => {});
+          setIsPlayingAudition(false);
+        };
         source.start();
+        setTimeout(() => {
+          ctx.close().catch(() => {});
+          setIsPlayingAudition(false);
+        }, Math.min(10000, Math.max(1000, durationSec * 1000 + 500)));
       }
     } catch (e) {
       console.warn('Audio audition error:', e);
+      setIsPlayingAudition(false);
     }
-
-    setTimeout(() => setIsPlayingAudition(false), Math.min(2000, durationSec * 1000));
   };
 
   const handleInsertProceduralSFX = (

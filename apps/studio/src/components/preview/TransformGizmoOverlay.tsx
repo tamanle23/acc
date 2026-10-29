@@ -89,12 +89,23 @@ export function TransformGizmoOverlay({
               : null;
           const curX = activeInterp ? activeInterp.x : transform.x;
           const curY = activeInterp ? activeInterp.y : transform.y;
-          const curScale = activeInterp ? activeInterp.scale : transform.scale;
+          const curScale = activeInterp ? ((activeInterp as any).scale ?? (activeInterp as any).scaleX ?? transform.scale) : transform.scale;
           const curRot = activeInterp ? activeInterp.rotation : transform.rotation;
           const curOpacity = activeInterp ? activeInterp.opacity : 1.0;
 
+          const canvasW = 1920;
+          const canvasH = 1080;
+          const transMod = selectedSeq?.modifiers?.find((m) => m.type === 'transform');
+          const muX = typeof transMod?.params?.normX === 'number' ? transMod.params.normX : 0.5;
+          const muY = typeof transMod?.params?.normY === 'number' ? transMod.params.normY : 0.5;
+
+          const percentX = (muX + (curX / canvasW)) * 100;
+          const percentY = (muY + (curY / canvasH)) * 100;
+
           return {
-            transform: `translate(${curX}px, ${curY}px) scale(${curScale}) rotate(${curRot}deg)`,
+            left: `${percentX}%`,
+            top: `${percentY}%`,
+            transform: `translate(-50%, -50%) scale(${curScale}) rotate(${curRot}deg)`,
             opacity: curOpacity,
             width: '50%',
             height: '50%',

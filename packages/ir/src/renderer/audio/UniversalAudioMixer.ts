@@ -104,6 +104,12 @@ export class UniversalAudioMixer {
       if (track.type !== 'audio' && track.type !== 'video') {
         continue;
       }
+      if (track.muted) {
+        continue;
+      }
+
+      const trackVol = track.style?.volume !== undefined ? track.style.volume : 1.0;
+      const trackPan = track.style?.pan !== undefined ? track.style.pan : 0.0;
 
       for (const seq of track.sequences) {
         const hasAudioModifier = seq.modifiers?.some((m) =>
@@ -141,6 +147,9 @@ export class UniversalAudioMixer {
             }
           }
         }
+
+        clipVolume = clipVolume * trackVol;
+        clipPan = Math.max(-1.0, Math.min(1.0, clipPan + trackPan));
 
         let audioSource: IAudioSourceProvider | undefined;
         if (audioSourceResolver && seq.assetId) {

@@ -79,6 +79,58 @@ export const complexSciFiDemoIR: VideoIRDocument = {
       src: 'https://actions.google.com/sounds/v1/science_fiction/electric_ring_long.ogg',
       type: 'audio',
     },
+    'asset-holo-globe': {
+      src: 'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?w=1920&q=80',
+      type: 'video',
+    },
+    'asset-film-burn': {
+      src: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1920&q=80',
+      type: 'video',
+    },
+    'asset-synth-grid': {
+      src: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1920&q=80',
+      type: 'video',
+    },
+    'asset-lightning': {
+      src: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1920&q=80',
+      type: 'video',
+    },
+    'asset-ocean-caustics': {
+      src: 'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?w=1920&q=80',
+      type: 'video',
+    },
+    'asset-bgm-synthwave': {
+      src: 'https://actions.google.com/sounds/v1/science_fiction/electric_ring_long.ogg',
+      type: 'audio',
+    },
+    'asset-bgm-tension': {
+      src: 'https://actions.google.com/sounds/v1/science_fiction/deep_hum.ogg',
+      type: 'audio',
+    },
+    'asset-bgm-sunset': {
+      src: 'https://actions.google.com/sounds/v1/science_fiction/ringing_ambient_background.ogg',
+      type: 'audio',
+    },
+    'asset-bgm-ambient': {
+      src: 'https://actions.google.com/sounds/v1/science_fiction/windchime_drone.ogg',
+      type: 'audio',
+    },
+    'asset-bgm-drumstep': {
+      src: 'https://actions.google.com/sounds/v1/science_fiction/robot_code.ogg',
+      type: 'audio',
+    },
+    'asset-bgm-acoustic': {
+      src: 'https://actions.google.com/sounds/v1/science_fiction/ringing_ambient_background.ogg',
+      type: 'audio',
+    },
+    'asset-bgm-retro': {
+      src: 'https://actions.google.com/sounds/v1/science_fiction/electric_ring_long.ogg',
+      type: 'audio',
+    },
+    'asset-bgm-action': {
+      src: 'https://actions.google.com/sounds/v1/science_fiction/deep_hum.ogg',
+      type: 'audio',
+    },
   },
   tracks: [
     // =========================================================================
