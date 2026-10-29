@@ -21,7 +21,7 @@ import { Button } from '@/components/ui/button'
 import { UserPlus, Users as UsersIcon } from 'lucide-react'
 import { roles } from '../data/data'
 import { type User } from '../data/schema'
-import { DataTableBulkActions } from './data-table-bulk-actions'
+import { UsersBulkActions } from './users-bulk-actions'
 import { usersColumns as columns } from './users-columns'
 import { useUsers } from './users-provider'
 
@@ -143,7 +143,7 @@ export function UsersTable({ data, search, navigate }: DataTableProps) {
           <DataTablePagination table={table} />
         </div>
       </div>
-      <DataTableBulkActions table={table} />
+      <UsersBulkActions table={table} />
     </div>
   )
 }

@@ -20,7 +20,7 @@ import {
 } from '@/components/data-table'
 import { priorities, statuses } from '../types'
 import { type WorkflowExecution } from '../schema'
-import { DataTableBulkActions } from './data-table-bulk-actions'
+import { WorkflowExecutionsBulkActions } from './workflow-executions-bulk-actions'
 import { workflowExecutionsColumns as columns } from './workflow-executions-columns'
 import { useWorkflowExecutions } from './workflow-executions-provider'
 
@@ -135,7 +135,7 @@ export function WorkflowExecutionsTable({ data }: DataTableProps) {
         }}
       />
       <DataTablePagination table={table} className='mt-auto' />
-      <DataTableBulkActions table={table} />
+      <WorkflowExecutionsBulkActions table={table} />
     </div>
   )
 }

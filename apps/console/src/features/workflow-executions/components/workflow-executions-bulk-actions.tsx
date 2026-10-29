@@ -25,13 +25,13 @@ import {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
-type DataTableBulkActionsProps<TData> = {
+type WorkflowExecutionsBulkActionsProps<TData> = {
   table: Table<TData>
 }
 
-export function DataTableBulkActions<TData>({
+export function WorkflowExecutionsBulkActions<TData>({
   table,
-}: DataTableBulkActionsProps<TData>) {
+}: WorkflowExecutionsBulkActionsProps<TData>) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const bulkStatusMutation = useBulkUpdateWorkflowExecutionsStatusMutation()
   const bulkPriorityMutation = useBulkUpdateWorkflowExecutionsPriorityMutation()

@@ -41,3 +41,4 @@
 | 380 | [Metadata Unified Sandbox Consolidation & Ad-Hoc Mock Pruning](./380_metadata_unified_sandbox_consolidation.md) | Completed |
 | 380 | [Studio Vite Bundle Optimization and Lazy Vision Strategies](./380_studio_vite_bundle_optimization_and_lazy_vision_strategies.md) | Completed |
 | 381 | [Truly Isomorphic Audio Pipeline via MediaEngineStrategy & UniversalAudioMixer](./381_isomorphic_media_engine_audio_pipeline.md) | Completed |
+| 382 | [Console Dead Code Elimination & Shared Data-Table Consolidation](./381_phase3_dead_code_and_ui_consolidation.md) | Completed |

@@ -15,13 +15,13 @@ import {
   useInviteUserMutation,
 } from '../api/use-users'
 
-type DataTableBulkActionsProps<TData> = {
+type UsersBulkActionsProps<TData> = {
   table: Table<TData>
 }
 
-export function DataTableBulkActions<TData>({
+export function UsersBulkActions<TData>({
   table,
-}: DataTableBulkActionsProps<TData>) {
+}: UsersBulkActionsProps<TData>) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const bulkStatusMutation = useBulkUpdateUsersStatusMutation()
   const inviteMutation = useInviteUserMutation()
