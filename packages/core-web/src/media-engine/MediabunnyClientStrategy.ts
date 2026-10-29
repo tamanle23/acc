@@ -132,9 +132,21 @@ export class MediabunnyClientStrategy implements IMediaEngineStrategy {
             blob = new Blob([arrayBuffer]);
           }
 
-          // 2. Decode using Web Audio OfflineAudioContext if supported in context
+          // Capability & Container Inspection:
+          // Video container formats (MP4, MKV, WebM, MOV) contain multiplexed video/audio tracks.
+          // They should route directly to Mediabunny's container demuxer (Input + AudioSampleSink),
+          // whereas standalone audio formats (WAV, MP3, OGG, AAC, FLAC) decode fastest via OfflineAudioContext.
+          const cleanUri = uriOrPath.split('?')[0].toLowerCase();
+          const isVideoContainer =
+            cleanUri.endsWith('.mp4') ||
+            cleanUri.endsWith('.webm') ||
+            cleanUri.endsWith('.mkv') ||
+            cleanUri.endsWith('.mov') ||
+            (blob?.type && (blob.type.includes('video/') || blob.type === 'video/mp4' || blob.type === 'video/webm'));
+
+          // 2. Decode using Web Audio OfflineAudioContext for standalone audio files
           const OfflineCtx = (globalThis as any).OfflineAudioContext || (globalThis as any).webkitOfflineAudioContext;
-          if (OfflineCtx && arrayBuffer) {
+          if (!isVideoContainer && OfflineCtx && arrayBuffer) {
             try {
               // Decode audio data to obtain original sampleRate and channel buffers
               const offlineContext = new OfflineCtx(2, 48000, targetSampleRate);
@@ -159,11 +171,11 @@ export class MediabunnyClientStrategy implements IMediaEngineStrategy {
                 data: interleaved,
               };
             } catch {
-              // Fall back to Mediabunny Input decoding
+              // Fall through to Mediabunny demuxer if OfflineAudioContext rejects the format
             }
           }
 
-          // 3. Decode via Mediabunny Input + AudioSampleSink
+          // 3. Decode via Mediabunny Input + AudioSampleSink (Video containers, or fallback when Web Audio is unavailable)
           let inputSource: any;
           if (blob) {
             inputSource = new BlobSource(blob);
