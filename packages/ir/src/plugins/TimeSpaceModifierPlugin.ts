@@ -90,6 +90,8 @@ export class TimeSpaceModifierPlugin implements ModifierPlugin<TimeSpaceModifier
         max: 128,
         step: 4,
         defaultValue: 32,
+        visibleIf: (p: any) =>
+          ['particle_ambient', 'network_plexus', 'audio_waveform_ring', 'glitch_data_stream', 'parametric_superformula', 'audio_equalizer_spectrum'].includes(p?.templateId),
       },
       strokeWidth: {
         key: 'strokeWidth',
@@ -99,6 +101,8 @@ export class TimeSpaceModifierPlugin implements ModifierPlugin<TimeSpaceModifier
         max: 8.0,
         step: 0.5,
         defaultValue: 1.5,
+        visibleIf: (p: any) =>
+          !['glitch_data_stream', 'audio_equalizer_spectrum'].includes(p?.templateId),
       },
       boundary: {
         key: 'boundary',
@@ -117,6 +121,15 @@ export class TimeSpaceModifierPlugin implements ModifierPlugin<TimeSpaceModifier
         label: 'Callout / Title Text',
         type: 'string' as const,
         defaultValue: 'TARGET ACQUIRED',
+        visibleIf: (p: any) =>
+          ['callout_leader', 'kinetic_title', 'hud_tactical_reticle', 'callout_multitarget', 'cyber_lower_third'].includes(p?.templateId),
+      },
+      subtitle: {
+        key: 'subtitle',
+        label: 'Subtitle / Role Text',
+        type: 'string' as const,
+        defaultValue: 'UNIPOST CORE OS // TC {{timecode}}',
+        visibleIf: (p: any) => p?.templateId === 'cyber_lower_third',
       },
       targetX: {
         key: 'targetX',
@@ -126,6 +139,8 @@ export class TimeSpaceModifierPlugin implements ModifierPlugin<TimeSpaceModifier
         max: 1.0,
         step: 0.05,
         defaultValue: 0.0,
+        visibleIf: (p: any) =>
+          !['particle_ambient', 'network_plexus', 'glitch_data_stream'].includes(p?.templateId),
       },
       targetY: {
         key: 'targetY',
@@ -135,6 +150,8 @@ export class TimeSpaceModifierPlugin implements ModifierPlugin<TimeSpaceModifier
         max: 1.0,
         step: 0.05,
         defaultValue: 0.0,
+        visibleIf: (p: any) =>
+          !['particle_ambient', 'network_plexus', 'glitch_data_stream'].includes(p?.templateId),
       },
       labelX: {
         key: 'labelX',
@@ -144,6 +161,7 @@ export class TimeSpaceModifierPlugin implements ModifierPlugin<TimeSpaceModifier
         max: 1.0,
         step: 0.05,
         defaultValue: 0.35,
+        visibleIf: (p: any) => p?.templateId === 'callout_leader',
       },
       labelY: {
         key: 'labelY',
@@ -153,6 +171,7 @@ export class TimeSpaceModifierPlugin implements ModifierPlugin<TimeSpaceModifier
         max: 1.0,
         step: 0.05,
         defaultValue: -0.25,
+        visibleIf: (p: any) => p?.templateId === 'callout_leader',
       },
     },
   };

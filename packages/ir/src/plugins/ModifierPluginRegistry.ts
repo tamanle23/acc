@@ -59,6 +59,7 @@ export interface ParamFieldDescriptor {
   presets?: Array<{ name: string; hex: string }>;
   fields?: Record<string, ParamFieldDescriptor>;
   group?: string;
+  visibleIf?: (params: Record<string, any>) => boolean;
 }
 
 export interface ModifierParameterSchema {

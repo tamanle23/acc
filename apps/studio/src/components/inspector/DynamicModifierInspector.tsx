@@ -47,7 +47,12 @@ export const DynamicModifierInspector: React.FC<DynamicModifierInspectorProps> =
   };
 
   if (schema && schema.fields && Object.keys(schema.fields).length > 0) {
-    const schemaEntries = Object.entries(schema.fields);
+    const schemaEntries = Object.entries(schema.fields).filter(([, descriptor]) => {
+      if (typeof descriptor.visibleIf === 'function') {
+        return descriptor.visibleIf(params);
+      }
+      return true;
+    });
     const extraRuntimeEntries = Object.entries(params).filter(
       ([k]) => k !== 'enabled' && !(k in schema.fields)
     );
