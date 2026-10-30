@@ -98,9 +98,16 @@ public class WorkflowExecutionController {
         String executionId = "wf-exec-" + UUID.randomUUID().toString().substring(0, 8);
         long now = System.currentTimeMillis();
 
-        var initialInput = request.input() != null ? request.input() : Collections.<String, Object>emptyMap();
+        Map<String, Object> effectiveInput = new java.util.LinkedHashMap<>();
+        if (request.input() != null) {
+            effectiveInput.putAll(request.input());
+        }
+        if (request.breakpoints() != null && !request.breakpoints().isEmpty()) {
+            effectiveInput.put("__breakpoints", request.breakpoints());
+        }
+
         WorkflowSnapshot snapshot = engineService.startWorkflow(
-            executionId, tenantId, workspaceId, def, initialInput, request.breakpoints(), now
+            executionId, tenantId, workspaceId, def, effectiveInput, now
         );
 
         if (approvalsController != null) {
@@ -110,6 +117,7 @@ public class WorkflowExecutionController {
         broadcaster.broadcast(executionId, "WORKFLOW_STARTED", Map.of(
             "workflowId", executionId,
             "status", snapshot.status().name(),
+            "workflowKey", def.workflowKey(),
             "timestamp", now
         ));
 
