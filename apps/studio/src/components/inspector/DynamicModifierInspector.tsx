@@ -5,6 +5,7 @@ import {
   type ParamFieldDescriptor,
 } from '@acc/ir';
 import { resolveParamControlStrategy } from './ModifierControlStrategies';
+import { StudioColorGradingInspector } from './StudioColorGradingInspector';
 
 export interface DynamicModifierInspectorProps {
   modifierType: string;
@@ -37,6 +38,17 @@ export const DynamicModifierInspector: React.FC<DynamicModifierInspectorProps> =
 }) => {
   const registry = ensureRegistryPopulated(ModifierPluginRegistry.getInstance());
   const schema = registry.getSchema(modifierType);
+
+  // Dedicated Studio-Grade Color Grading & Correction Inspector
+  if (modifierType === 'vfx/color_grading') {
+    return (
+      <StudioColorGradingInspector
+        params={params}
+        onChange={onChange}
+        disabled={disabled}
+      />
+    );
+  }
 
   const handleFieldChange = (key: string, newVal: unknown) => {
     if (disabled) return;

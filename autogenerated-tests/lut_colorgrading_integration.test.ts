@@ -10,6 +10,7 @@ import {
   resolveLutPreset,
   LUT_PRESET_KEYS,
   applyLutToImageData,
+  applyColorCorrectionAndGrading,
   ColorPipeline,
   CubeLUTGenerator,
   CubeLUTParser,
@@ -319,6 +320,68 @@ describe('LUT ↔ ColorGrading Integration Suite', () => {
 
       // Executes smoothly with async LUT resolution
       await expect(plugin.renderClipSpace(clipContext, params)).resolves.toBeUndefined();
+    });
+  });
+
+  describe('4. Primary Color Correction Preceding Creative Color Grading', () => {
+    it('applies white balance temperature shifting red up and blue down for warm looks', () => {
+      const pixelArray = new Uint8ClampedArray([100, 100, 100, 255]);
+      const imgData: ImageData = { data: pixelArray, width: 1, height: 1, colorSpace: 'srgb' };
+
+      applyColorCorrectionAndGrading(imgData, { temperature: 50 }); // warm
+      expect(imgData.data[0]).toBeGreaterThan(100); // Red boosted
+      expect(imgData.data[2]).toBeLessThan(100);    // Blue suppressed
+      expect(imgData.data[3]).toBe(255);            // Alpha intact
+    });
+
+    it('applies photometric exposure multiplying signal by 2^EV', () => {
+      const pixelArray = new Uint8ClampedArray([50, 50, 50, 255]);
+      const imgData: ImageData = { data: pixelArray, width: 1, height: 1, colorSpace: 'srgb' };
+
+      applyColorCorrectionAndGrading(imgData, { exposure: 1.0 }); // +1 EV -> 2x
+      expect(Math.abs(imgData.data[0]! - 100)).toBeLessThanOrEqual(2);
+      expect(Math.abs(imgData.data[1]! - 100)).toBeLessThanOrEqual(2);
+      expect(Math.abs(imgData.data[2]! - 100)).toBeLessThanOrEqual(2);
+    });
+
+    it('blends 3D LUT intensity linearly between corrected input and LUT graded output', async () => {
+      const resolved = await resolveLutPreset('monochrome_noir', 9);
+      expect(resolved).not.toBeNull();
+      if (!resolved) return;
+
+      // Color with high saturation
+      const pixelFull = new Uint8ClampedArray([240, 20, 20, 255]);
+      const imgFull: ImageData = { data: pixelFull, width: 1, height: 1, colorSpace: 'srgb' };
+      applyColorCorrectionAndGrading(imgFull, { lut: 'monochrome_noir', lutIntensity: 1.0 }, resolved.data, resolved.size);
+
+      const pixelHalf = new Uint8ClampedArray([240, 20, 20, 255]);
+      const imgHalf: ImageData = { data: pixelHalf, width: 1, height: 1, colorSpace: 'srgb' };
+      applyColorCorrectionAndGrading(imgHalf, { lut: 'monochrome_noir', lutIntensity: 0.5 }, resolved.data, resolved.size);
+
+      // At 100% monochrome, R == G == B
+      expect(imgFull.data[0]).toBe(imgFull.data[1]);
+
+      // At 50% blend, R should be midway between original 240 and monochrome level
+      expect(imgHalf.data[0]).toBeGreaterThan(imgFull.data[0]!);
+      expect(imgHalf.data[0]).toBeLessThan(240);
+    });
+
+    it('ColorGradingPlugin schema exposes all studio-grade color correction fields', () => {
+      const plugin = new ColorGradingPlugin();
+      const fields = plugin.schema.fields;
+
+      expect(fields.temperature).toBeDefined();
+      expect(fields.tint).toBeDefined();
+      expect(fields.exposure).toBeDefined();
+      expect(fields.contrast).toBeDefined();
+      expect(fields.pivot).toBeDefined();
+      expect(fields.highlights).toBeDefined();
+      expect(fields.shadows).toBeDefined();
+      expect(fields.whites).toBeDefined();
+      expect(fields.blacks).toBeDefined();
+      expect(fields.lutIntensity).toBeDefined();
+      expect(fields.vibrance).toBeDefined();
+      expect(fields.vignetteAmount).toBeDefined();
     });
   });
 });

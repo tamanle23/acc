@@ -1,54 +1,73 @@
 import type { ModifierPlugin, ModifierContext, ClipRenderContext, MasterCompositeContext } from '../ModifierPluginRegistry';
 import type { ModifierTargetScope } from '../../types/modifiers';
 import type { SequenceType } from '../../types/VideoIR';
-import { resolveLutPreset, applyLutToImageData, LUT_PRESET_KEYS } from '../lut';
+import {
+  resolveLutPreset,
+  applyColorCorrectionAndGrading,
+  type ColorWheelValue,
+  type StudioColorPipelineParams,
+  LUT_PRESET_KEYS,
+} from '../lut';
 
-export interface ColorGradingParams {
+export type { ColorWheelValue };
+
+export interface ColorGradingParams extends StudioColorPipelineParams {
   lutPath?: string;
-  lut?: string;       // named preset key (e.g. 'cool_steel', 'bleach_bypass')
-  lutUrl?: string;    // URL/path to external .cube file (Phase 2 future)
-  contrast?: number;  // 0.5 to 2.0 (default 1.0)
-  saturation?: number; // 0.0 to 2.0 (default 1.0)
-  exposure?: number;  // -2.0 to +2.0 (default 0.0)
-  temperature?: number; // -100 to +100 (warm/cool, default 0)
-  tint?: number;       // -100 to +100 (default 0)
-  vignette?: number;   // 0.0 to 1.0 (default 0.0)
+  lutUrl?: string;
 }
 
 /**
  * ColorGradingPlugin:
- * Implements in-memory LUT and contrast/saturation adjustment ('vfx/color_grading').
- * Applies during Phase 2 (clip space) or Phase 4 (master composite).
+ * Professional Studio-Grade Color Correction & Color Grading Plugin ('vfx/color_grading').
  *
- * Fully isomorphic within @acc/ir:
- * Evaluates both CSS tone-mapping transforms and 3D tetrahedral LUT transformations
- * directly on Canvas / OffscreenCanvas without any external dependencies from @acc/effect-engines.
+ * Architecture:
+ * - Phase 1 (Color Correction): Planckian White Balance (Temp/Tint), Photometric Exposure (EV),
+ *   3-Way Color Wheels (Lift, Gamma, Gain, Offset), Highlights/Shadows Rolloff, Whites/Blacks Anchors,
+ *   Contrast with 18% Mid-Gray Pivot.
+ * - Phase 2 (Creative Color Grading): 3D LUT Tetrahedral Interpolation with Blend Intensity (0-100%),
+ *   Smart Vibrance & Master Saturation.
+ * - Phase 3 (Finishing): Radial Smoothstep Vignette.
+ *
+ * Fully isomorphic within @acc/ir: executes in browser canvas, workers, and headless renderers
+ * with zero dependencies on @acc/effect-engines.
  */
 export class ColorGradingPlugin implements ModifierPlugin<ColorGradingParams> {
   public readonly type = 'vfx/color_grading';
   public readonly targetScope: ModifierTargetScope = 'sequence';
   public readonly allowedSequenceTypes: readonly SequenceType[] = ['video', 'image'];
   public readonly targetPhase = 2;
+
   public readonly schema = {
     fields: {
-      lut: {
-        key: 'lut',
-        label: 'LUT Preset',
-        type: 'select' as const,
-        options: [
-          { value: '', label: 'None' },
-          { value: 'teal_and_orange', label: 'Teal & Orange' },
-          { value: 'kodak_2383', label: 'Kodak 2383 Film' },
-          { value: 'bleach_bypass', label: 'Bleach Bypass' },
-          { value: 'sci_fi_moody', label: 'Sci-Fi Moody' },
-          { value: 'cool_steel', label: 'Cool Steel' },
-          { value: 'warm_golden', label: 'Warm Golden' },
-          { value: 'light_and_airy', label: 'Light & Airy' },
-          { value: 'cyberpunk', label: 'Cyberpunk' },
-          { value: 'vintage_faded', label: 'Vintage Faded' },
-          { value: 'monochrome_noir', label: 'Monochrome Noir' },
-        ],
-        defaultValue: '',
+      // --- Stage 1: Primary Color Correction ---
+      temperature: {
+        key: 'temperature',
+        label: 'Color Temperature',
+        type: 'number' as const,
+        min: -100,
+        max: 100,
+        step: 1,
+        defaultValue: 0,
+        unit: 'K',
+      },
+      tint: {
+        key: 'tint',
+        label: 'Tint (Green / Magenta)',
+        type: 'number' as const,
+        min: -100,
+        max: 100,
+        step: 1,
+        defaultValue: 0,
+      },
+      exposure: {
+        key: 'exposure',
+        label: 'Exposure',
+        type: 'number' as const,
+        min: -3.0,
+        max: 3.0,
+        step: 0.05,
+        defaultValue: 0.0,
+        unit: 'EV',
       },
       contrast: {
         key: 'contrast',
@@ -56,6 +75,81 @@ export class ColorGradingPlugin implements ModifierPlugin<ColorGradingParams> {
         type: 'number' as const,
         min: 0.2,
         max: 2.5,
+        step: 0.05,
+        defaultValue: 1.0,
+      },
+      pivot: {
+        key: 'pivot',
+        label: 'Contrast Pivot',
+        type: 'number' as const,
+        min: 0.0,
+        max: 1.0,
+        step: 0.01,
+        defaultValue: 0.435,
+      },
+      highlights: {
+        key: 'highlights',
+        label: 'Highlights',
+        type: 'number' as const,
+        min: -100,
+        max: 100,
+        step: 1,
+        defaultValue: 0,
+      },
+      shadows: {
+        key: 'shadows',
+        label: 'Shadows',
+        type: 'number' as const,
+        min: -100,
+        max: 100,
+        step: 1,
+        defaultValue: 0,
+      },
+      whites: {
+        key: 'whites',
+        label: 'Whites',
+        type: 'number' as const,
+        min: -100,
+        max: 100,
+        step: 1,
+        defaultValue: 0,
+      },
+      blacks: {
+        key: 'blacks',
+        label: 'Blacks',
+        type: 'number' as const,
+        min: -100,
+        max: 100,
+        step: 1,
+        defaultValue: 0,
+      },
+
+      // --- Stage 2: Creative Color Grading ---
+      lut: {
+        key: 'lut',
+        label: 'LUT Look Preset',
+        type: 'select' as const,
+        options: [
+          { value: '', label: 'None (Bypass LUT)' },
+          { value: 'teal_and_orange', label: 'Teal & Orange (Blockbuster)' },
+          { value: 'kodak_2383', label: 'Kodak 2383 Print Film' },
+          { value: 'bleach_bypass', label: 'Bleach Bypass (Gritty)' },
+          { value: 'sci_fi_moody', label: 'Sci-Fi Moody (Thriller)' },
+          { value: 'cool_steel', label: 'Cool Steel (Futuristic)' },
+          { value: 'warm_golden', label: 'Warm Golden (Sunset)' },
+          { value: 'light_and_airy', label: 'Light & Airy (Pastel)' },
+          { value: 'cyberpunk', label: 'Cyberpunk (Neon Night)' },
+          { value: 'vintage_faded', label: 'Vintage Faded (90s VHS)' },
+          { value: 'monochrome_noir', label: 'Monochrome Noir (Dramatic)' },
+        ],
+        defaultValue: '',
+      },
+      lutIntensity: {
+        key: 'lutIntensity',
+        label: 'LUT Look Intensity',
+        type: 'number' as const,
+        min: 0.0,
+        max: 1.0,
         step: 0.05,
         defaultValue: 1.0,
       },
@@ -68,47 +162,47 @@ export class ColorGradingPlugin implements ModifierPlugin<ColorGradingParams> {
         step: 0.05,
         defaultValue: 1.0,
       },
-      exposure: {
-        key: 'exposure',
-        label: 'Exposure',
+      vibrance: {
+        key: 'vibrance',
+        label: 'Vibrance',
+        type: 'number' as const,
+        min: -100,
+        max: 100,
+        step: 1,
+        defaultValue: 0,
+      },
+
+      // --- Stage 3: Vignette & Finishing ---
+      vignetteAmount: {
+        key: 'vignetteAmount',
+        label: 'Vignette Amount',
         type: 'number' as const,
         min: -1.0,
         max: 1.0,
         step: 0.05,
         defaultValue: 0.0,
-        unit: 'EV',
       },
-      temperature: {
-        key: 'temperature',
-        label: 'Color Temperature',
+      vignetteMidpoint: {
+        key: 'vignetteMidpoint',
+        label: 'Vignette Midpoint',
         type: 'number' as const,
-        min: -100,
-        max: 100,
-        step: 1,
-        defaultValue: 0,
+        min: 0.1,
+        max: 0.9,
+        step: 0.05,
+        defaultValue: 0.5,
       },
-      tint: {
-        key: 'tint',
-        label: 'Magenta/Green Tint',
+      vignetteFeather: {
+        key: 'vignetteFeather',
+        label: 'Vignette Feather',
         type: 'number' as const,
-        min: -100,
-        max: 100,
-        step: 1,
-        defaultValue: 0,
-      },
-      vignette: {
-        key: 'vignette',
-        label: 'Vignette Falloff',
-        type: 'number' as const,
-        min: 0.0,
+        min: 0.1,
         max: 1.0,
         step: 0.05,
-        defaultValue: 0.0,
+        defaultValue: 0.5,
       },
     },
   };
 
-  // Ensure LUT_PRESET_KEYS is consumed so it's wired (not orphaned)
   public readonly supportedPresets: readonly string[] = LUT_PRESET_KEYS;
 
   public validate(params: unknown): params is ColorGradingParams {
@@ -121,7 +215,7 @@ export class ColorGradingPlugin implements ModifierPlugin<ColorGradingParams> {
   }
 
   /**
-   * Applies CSS tone-mapping canvas transforms (contrast, saturation, exposure).
+   * Applies CSS tone-mapping canvas transforms (fallback tier).
    */
   public applyCanvasTransform(
     ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
@@ -166,13 +260,13 @@ export class ColorGradingPlugin implements ModifierPlugin<ColorGradingParams> {
   }
 
   /**
-   * Applies pre-baked 3D LUT to every pixel on the canvas via isomorphic
-   * getImageData -> applyLutToImageData (tetrahedral) -> putImageData.
+   * Applies unified studio-grade Color Correction and Color Grading directly onto canvas context.
    */
-  public applyLutToCanvas(
+  public applyColorCorrectionAndGradingToCanvas(
     ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
-    lutData: Float32Array,
-    size: number
+    params: ColorGradingParams,
+    lutData?: Float32Array,
+    lutSize: number = 17
   ): void {
     const canvas = ctx.canvas;
     const w = canvas.width;
@@ -180,39 +274,58 @@ export class ColorGradingPlugin implements ModifierPlugin<ColorGradingParams> {
     if (w === 0 || h === 0) return;
 
     const imageData = ctx.getImageData(0, 0, w, h);
-    applyLutToImageData(imageData, lutData, size);
+    applyColorCorrectionAndGrading(imageData, params, lutData, lutSize);
     ctx.putImageData(imageData, 0, 0);
+  }
+
+  /**
+   * Backwards-compatible 3D LUT applicator.
+   */
+  public applyLutToCanvas(
+    ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+    lutData: Float32Array,
+    size: number
+  ): void {
+    this.applyColorCorrectionAndGradingToCanvas(ctx, {}, lutData, size);
   }
 
   public async renderClipSpace(ctx: ClipRenderContext, params: ColorGradingParams): Promise<void> {
     const { ctx: canvasCtx } = ctx;
-    this.applyCanvasTransform(canvasCtx, params);
+    let resolvedLut: { data: Float32Array; size: number } | null = null;
 
     if (params.lut) {
       try {
-        const resolved = await resolveLutPreset(params.lut, 17);
-        if (resolved) {
-          this.applyLutToCanvas(canvasCtx, resolved.data, resolved.size);
-        }
-      } catch {
-        // Graceful degradation: LUT not available, continue without pixel-level grading
-      }
-    }
-  }
-
-  public async renderMasterComposite(ctx: MasterCompositeContext, params: ColorGradingParams): Promise<void> {
-    const { ctx: canvasCtx } = ctx;
-    this.applyCanvasTransform(canvasCtx, params);
-
-    if (params.lut) {
-      try {
-        const resolved = await resolveLutPreset(params.lut, 17);
-        if (resolved) {
-          this.applyLutToCanvas(canvasCtx, resolved.data, resolved.size);
-        }
+        resolvedLut = await resolveLutPreset(params.lut, 17);
       } catch {
         // Graceful degradation
       }
     }
+
+    this.applyColorCorrectionAndGradingToCanvas(
+      canvasCtx,
+      params,
+      resolvedLut?.data,
+      resolvedLut?.size ?? 17
+    );
+  }
+
+  public async renderMasterComposite(ctx: MasterCompositeContext, params: ColorGradingParams): Promise<void> {
+    const { ctx: canvasCtx } = ctx;
+    let resolvedLut: { data: Float32Array; size: number } | null = null;
+
+    if (params.lut) {
+      try {
+        resolvedLut = await resolveLutPreset(params.lut, 17);
+      } catch {
+        // Graceful degradation
+      }
+    }
+
+    this.applyColorCorrectionAndGradingToCanvas(
+      canvasCtx,
+      params,
+      resolvedLut?.data,
+      resolvedLut?.size ?? 17
+    );
   }
 }

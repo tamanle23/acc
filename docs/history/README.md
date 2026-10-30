@@ -67,4 +67,5 @@
 | 402 | [Fix Demo Schema Errors & Expand Multi-Domain Use-Case Demos](./402_fix_demo_schema_errors_and_expand_use_case_demos.md) | Completed |
 | 403 | [Backend Sandbox Decoupling & Self-Contained Schema Initialization](./403_backend_sandbox_decoupling_and_self_contained_initialization.md) | Completed |
 | 404 | [3D LUT Pipeline Integration & Tetrahedral Color Grading](./404_lut_colorgrading_integration.md) | Completed |
+| 405 | [Studio-Grade Color Correction Stage & Multi-Tab Color Inspector](./405_color_correction_stage_and_studio_color_inspector.md) | Completed |
 
