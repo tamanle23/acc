@@ -52,13 +52,41 @@ class SandboxEnvironmentPostProcessorTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"dev", "local", "test", "docker"})
-  @DisplayName("Should permit sandbox enabled under safe non-production profiles")
+  @DisplayName("Should permit sandbox enabled under safe non-production profiles and inject PGlite properties")
   void shouldAllowSandboxUnderSafeProfiles(String profile) {
     MockEnvironment environment = new MockEnvironment();
     environment.setProperty("application.sandbox.enabled", "true");
     environment.setActiveProfiles(profile);
 
     assertThatNoException().isThrownBy(() -> postProcessor.postProcessEnvironment(environment, application));
+
+    assertThat(environment.getProperty("spring.datasource.url")).startsWith("jdbc:pglite:");
+    assertThat(environment.getProperty("spring.datasource.driver-class-name")).isEqualTo(SandboxEnvironmentPostProcessor.PGLITE_DRIVER);
+  }
+
+  @Test
+  @DisplayName("Should activate and inject PGlite datasource when 'sandbox' profile is active")
+  void shouldActivateWhenSandboxProfileActive() {
+    MockEnvironment environment = new MockEnvironment();
+    environment.setActiveProfiles("local", "sandbox");
+
+    postProcessor.postProcessEnvironment(environment, application);
+
+    assertThat(environment.getProperty("application.sandbox.enabled")).isEqualTo("true");
+    assertThat(environment.getProperty("spring.datasource.url")).startsWith("jdbc:pglite:file:");
+    assertThat(environment.getProperty("spring.datasource.driver-class-name")).isEqualTo(SandboxEnvironmentPostProcessor.PGLITE_DRIVER);
+  }
+
+  @Test
+  @DisplayName("Should configure in-memory PGlite in TEST mode")
+  void shouldConfigureInMemoryInTestMode() {
+    MockEnvironment environment = new MockEnvironment();
+    environment.setProperty("application.sandbox.enabled", "true");
+    environment.setProperty("application.sandbox.mode", "TEST");
+
+    postProcessor.postProcessEnvironment(environment, application);
+
+    assertThat(environment.getProperty("spring.datasource.url")).isEqualTo("jdbc:pglite:memory://");
   }
 
   @Test
@@ -69,6 +97,7 @@ class SandboxEnvironmentPostProcessorTest {
     environment.setActiveProfiles("prod");
 
     assertThatNoException().isThrownBy(() -> postProcessor.postProcessEnvironment(environment, application));
+    assertThat(environment.getProperty("spring.datasource.url")).isNull();
   }
 
   @Test
@@ -78,5 +107,6 @@ class SandboxEnvironmentPostProcessorTest {
     environment.setActiveProfiles("prod");
 
     assertThatNoException().isThrownBy(() -> postProcessor.postProcessEnvironment(environment, application));
+    assertThat(environment.getProperty("spring.datasource.url")).isNull();
   }
 }

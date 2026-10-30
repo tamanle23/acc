@@ -1,0 +1,16 @@
+spring:
+  datasource:
+    url: jdbc:pglite:file:../../tmp/db/pglite-sandbox
+    driver-class-name: io.roastedroot.pglite4j.jdbc.PgLiteDriver
+    username: postgres
+    password: postgres
+
+application:
+  sandbox:
+    enabled: true
+    mode: DEV
+    dev:
+      pristine: false
+    database:
+      embedded-pglite: true
+      dev-storage-path: ../../tmp/db/pglite-sandbox

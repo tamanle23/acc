@@ -11,18 +11,18 @@ describe('Iteration 58: Backend Sandbox Two-Tier Safeguards & PGlite WASM Parity
   const repoRoot = path.resolve(__dirname, '..');
 
   // TC-SB-01: In-Process PGlite WASM Dependency Declaration
-  test('TC-SB-01: acc-sandbox/pom.xml must declare io.roastedroot:pglite4j:0.0.3 non-optional', () => {
+  test('TC-SB-01: acc-sandbox/pom.xml must declare io.roastedroot:pglite4j-jdbc:0.0.3 non-optional', () => {
     const pomPath = path.join(repoRoot, 'apps/backend/acc-sandbox/pom.xml');
     expect(fs.existsSync(pomPath)).toBe(true);
 
     const content = fs.readFileSync(pomPath, 'utf-8');
     expect(content).toContain('io.roastedroot');
-    expect(content).toContain('pglite4j');
+    expect(content).toContain('pglite4j-jdbc');
     expect(content).toContain('0.0.3');
     // Ensure old buggy dependency is gone
     expect(content).not.toContain('pglite-spring-boot-test');
 
-    // Ensure pglite4j is not marked optional
+    // Ensure pglite4j-jdbc is not marked optional
     const pgliteDepBlock = content.match(/<dependency>[\s\S]*?io\.roastedroot[\s\S]*?<\/dependency>/);
     expect(pgliteDepBlock).not.toBeNull();
     expect(pgliteDepBlock![0]).not.toContain('<optional>true</optional>');
@@ -98,7 +98,7 @@ describe('Iteration 58: Backend Sandbox Two-Tier Safeguards & PGlite WASM Parity
   });
 
   // TC-SB-05: Production Profile Configs Explicitly Disable Sandbox
-  test('TC-SB-05: application-prod.yml, application-sit.yml, and application-uat.yml must set application.sandbox.enabled=false', () => {
+  test('TC-SB-05: application-prod.yml, application-sit.yml, and application-uat.yml must set application.sandbox.enabled=false and application-sandbox.yml must configure pglite', () => {
     const envFiles = [
       'application-prod.yml',
       'application-sit.yml',
@@ -112,6 +112,12 @@ describe('Iteration 58: Backend Sandbox Two-Tier Safeguards & PGlite WASM Parity
       const content = fs.readFileSync(filePath, 'utf-8');
       expect(content).toMatch(/sandbox:\s*\n\s*enabled:\s*false/);
     }
+
+    const sandboxYamlPath = path.join(repoRoot, 'apps/backend/acc-ms-aio/src/main/resources/application-sandbox.yml');
+    expect(fs.existsSync(sandboxYamlPath)).toBe(true);
+    const sandboxYaml = fs.readFileSync(sandboxYamlPath, 'utf-8');
+    expect(sandboxYaml).toContain('jdbc:pglite:');
+    expect(sandboxYaml).toContain('io.roastedroot.pglite4j.jdbc.PgLiteDriver');
   });
 
   // TC-SB-06: Production and Non-Sandbox Build Scripts

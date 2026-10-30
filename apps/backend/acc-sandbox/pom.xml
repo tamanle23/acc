@@ -48,7 +48,7 @@
     </dependency>
     <dependency>
       <groupId>io.roastedroot</groupId>
-      <artifactId>pglite4j</artifactId>
+      <artifactId>pglite4j-jdbc</artifactId>
       <version>0.0.3</version>
     </dependency>
   </dependencies>

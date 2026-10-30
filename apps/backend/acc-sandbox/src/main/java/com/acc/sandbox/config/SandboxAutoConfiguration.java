@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Import;
 
@@ -19,7 +20,7 @@ import org.springframework.context.annotation.Import;
  * Conditionally activated strictly when application.sandbox.enabled=true.
  * When disabled (or in production), zero beans from this module are registered.
  */
-@AutoConfiguration
+@AutoConfiguration(before = DataSourceAutoConfiguration.class)
 @ConditionalOnProperty(prefix = "application.sandbox", name = "enabled", havingValue = "true")
 @EnableConfigurationProperties(SandboxProperties.class)
 @Import({
