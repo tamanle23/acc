@@ -159,4 +159,34 @@ describe('Iteration 58: Backend Sandbox Two-Tier Safeguards & PGlite WASM Parity
     expect(backendPkg.scripts['build:no-sandbox']).toBeDefined();
     expect(backendPkg.scripts['build:no-sandbox']).toContain('-DexcludeSandbox');
   });
+
+  // TC-SB-07: AuditPartitionProvisioner Sandbox Safeguard
+  test('TC-SB-07: AuditPartitionProvisioner must check application.sandbox.enabled and skip partition creation in sandbox mode', () => {
+    const auditProvPath = path.join(
+      repoRoot,
+      'apps/backend/acc-fw/src/main/java/com/acc/service/AuditPartitionProvisioner.java'
+    );
+    expect(fs.existsSync(auditProvPath)).toBe(true);
+
+    const content = fs.readFileSync(auditProvPath, 'utf-8');
+    expect(content).toContain('@Value("${application.sandbox.enabled:false}")');
+    expect(content).toContain('private boolean sandboxEnabled;');
+    expect(content).toContain('if (sandboxEnabled) {');
+    expect(content).toContain('Audit log partition provisioning skipped in sandbox mode');
+  });
+
+  // TC-SB-08: HikariCP Connection Pool Bounds for PGlite WASM Engine
+  test('TC-SB-08: application-sandbox.yml must constrain Hikari pool bounds to prevent WASM thread exhaustion', () => {
+    const sandboxYamlPath = path.join(
+      repoRoot,
+      'apps/backend/acc-ms-aio/src/main/resources/application-sandbox.yml'
+    );
+    expect(fs.existsSync(sandboxYamlPath)).toBe(true);
+
+    const content = fs.readFileSync(sandboxYamlPath, 'utf-8');
+    expect(content).toContain('maximum-pool-size: 10');
+    expect(content).toContain('minimum-idle: 1');
+    expect(content).toContain('connection-timeout: 30000');
+    expect(content).toContain('pglite-sandbox.db');
+  });
 });
