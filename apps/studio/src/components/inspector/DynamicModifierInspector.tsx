@@ -21,6 +21,31 @@ function ensureRegistryPopulated(registry: ModifierPluginRegistry): ModifierPlug
   return registry;
 }
 
+class SafeInspectorBoundary extends React.Component<
+  { children: React.ReactNode; fallback: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode; fallback: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('[DynamicModifierInspector] Specialized inspector failed, falling back to schema:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback;
+    }
+    return this.props.children;
+  }
+}
+
 /**
  * DynamicModifierInspector:
  * Schema-driven parameter inspector engine powered by ModifierPluginRegistry.
@@ -39,17 +64,6 @@ export const DynamicModifierInspector: React.FC<DynamicModifierInspectorProps> =
   const registry = ensureRegistryPopulated(ModifierPluginRegistry.getInstance());
   const schema = registry.getSchema(modifierType);
 
-  // Dedicated Studio-Grade Color Grading & Correction Inspector
-  if (modifierType === 'vfx/color_grading') {
-    return (
-      <StudioColorGradingInspector
-        params={params}
-        onChange={onChange}
-        disabled={disabled}
-      />
-    );
-  }
-
   const handleFieldChange = (key: string, newVal: unknown) => {
     if (disabled) return;
     onChange({
@@ -58,40 +72,70 @@ export const DynamicModifierInspector: React.FC<DynamicModifierInspectorProps> =
     });
   };
 
-  if (schema && schema.fields && Object.keys(schema.fields).length > 0) {
-    const schemaEntries = Object.entries(schema.fields).filter(([, descriptor]) => {
-      if (typeof descriptor.visibleIf === 'function') {
-        return descriptor.visibleIf(params);
-      }
-      return true;
-    });
-    const extraRuntimeEntries = Object.entries(params).filter(
-      ([k]) => k !== 'enabled' && !(k in schema.fields)
-    );
+  const renderStandardControls = () => {
+    if (schema && schema.fields && Object.keys(schema.fields).length > 0) {
+      const schemaEntries = Object.entries(schema.fields).filter(([, descriptor]) => {
+        if (typeof descriptor.visibleIf === 'function') {
+          return descriptor.visibleIf(params);
+        }
+        return true;
+      });
+      const extraRuntimeEntries = Object.entries(params).filter(
+        ([k]) => k !== 'enabled' && !(k in schema.fields)
+      );
+
+      return (
+        <div className={`space-y-2.5 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
+          {schemaEntries.map(([fieldKey, descriptor]) => {
+            const ControlComponent = resolveParamControlStrategy(descriptor);
+            const currentValue =
+              descriptor.type === 'sfx_actions'
+                ? params
+                : params[fieldKey] !== undefined
+                ? params[fieldKey]
+                : descriptor.defaultValue;
+
+            return (
+              <ControlComponent
+                key={fieldKey}
+                descriptor={descriptor}
+                value={currentValue}
+                disabled={disabled}
+                onChange={(val) => handleFieldChange(fieldKey, val)}
+              />
+            );
+          })}
+          {extraRuntimeEntries.map(([key, val]) => {
+            const inferredDescriptor = inferFieldDescriptor(key, val);
+            const ControlComponent = resolveParamControlStrategy(inferredDescriptor);
+
+            return (
+              <ControlComponent
+                key={key}
+                descriptor={inferredDescriptor}
+                value={val}
+                disabled={disabled}
+                onChange={(newVal) => handleFieldChange(key, newVal)}
+              />
+            );
+          })}
+        </div>
+      );
+    }
+
+    const paramEntries = Object.entries(params).filter(([k]) => k !== 'enabled');
+    if (paramEntries.length === 0) {
+      return (
+        <p className="text-[10px] text-muted-foreground italic">
+          No configurable parameters exposed for {modifierType}.
+        </p>
+      );
+    }
 
     return (
       <div className={`space-y-2.5 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
-        {schemaEntries.map(([fieldKey, descriptor]) => {
-          const ControlComponent = resolveParamControlStrategy(descriptor);
-          const currentValue =
-            descriptor.type === 'sfx_actions'
-              ? params
-              : params[fieldKey] !== undefined
-              ? params[fieldKey]
-              : descriptor.defaultValue;
-
-          return (
-            <ControlComponent
-              key={fieldKey}
-              descriptor={descriptor}
-              value={currentValue}
-              disabled={disabled}
-              onChange={(val) => handleFieldChange(fieldKey, val)}
-            />
-          );
-        })}
-        {extraRuntimeEntries.map(([key, val]) => {
-          const inferredDescriptor = inferFieldDescriptor(key, val);
+        {paramEntries.map(([key, val]) => {
+          const inferredDescriptor: ParamFieldDescriptor = inferFieldDescriptor(key, val);
           const ControlComponent = resolveParamControlStrategy(inferredDescriptor);
 
           return (
@@ -106,37 +150,22 @@ export const DynamicModifierInspector: React.FC<DynamicModifierInspectorProps> =
         })}
       </div>
     );
-  }
+  };
 
-  // Reflective Fallback for custom / third-party modifiers without explicit schema
-  const paramEntries = Object.entries(params).filter(([k]) => k !== 'enabled');
-
-  if (paramEntries.length === 0) {
+  // Dedicated Studio-Grade Color Grading & Correction Inspector
+  if (modifierType === 'vfx/color_grading') {
     return (
-      <p className="text-[10px] text-muted-foreground italic">
-        No configurable parameters exposed for {modifierType}.
-      </p>
+      <SafeInspectorBoundary fallback={renderStandardControls()}>
+        <StudioColorGradingInspector
+          params={params}
+          onChange={onChange}
+          disabled={disabled}
+        />
+      </SafeInspectorBoundary>
     );
   }
 
-  return (
-    <div className={`space-y-2.5 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
-      {paramEntries.map(([key, val]) => {
-        const inferredDescriptor: ParamFieldDescriptor = inferFieldDescriptor(key, val);
-        const ControlComponent = resolveParamControlStrategy(inferredDescriptor);
-
-        return (
-          <ControlComponent
-            key={key}
-            descriptor={inferredDescriptor}
-            value={val}
-            disabled={disabled}
-            onChange={(newVal) => handleFieldChange(key, newVal)}
-          />
-        );
-      })}
-    </div>
-  );
+  return renderStandardControls();
 };
 
 /**
