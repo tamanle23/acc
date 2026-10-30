@@ -160,8 +160,8 @@ describe('Iteration 58: Backend Sandbox Two-Tier Safeguards & PGlite WASM Parity
     expect(backendPkg.scripts['build:no-sandbox']).toContain('-DexcludeSandbox');
   });
 
-  // TC-SB-07: AuditPartitionProvisioner Sandbox Safeguard
-  test('TC-SB-07: AuditPartitionProvisioner must check application.sandbox.enabled and skip partition creation in sandbox mode', () => {
+  // TC-SB-07: Core Logic Independence Invariant — acc-fw must NOT reference sandbox
+  test('TC-SB-07: Core logic in acc-fw (AuditPartitionProvisioner) must be completely decoupled from sandbox', () => {
     const auditProvPath = path.join(
       repoRoot,
       'apps/backend/acc-fw/src/main/java/com/acc/service/AuditPartitionProvisioner.java'
@@ -169,10 +169,10 @@ describe('Iteration 58: Backend Sandbox Two-Tier Safeguards & PGlite WASM Parity
     expect(fs.existsSync(auditProvPath)).toBe(true);
 
     const content = fs.readFileSync(auditProvPath, 'utf-8');
-    expect(content).toContain('@Value("${application.sandbox.enabled:false}")');
-    expect(content).toContain('private boolean sandboxEnabled;');
-    expect(content).toContain('if (sandboxEnabled) {');
-    expect(content).toContain('Audit log partition provisioning skipped in sandbox mode');
+    // Absolute prohibition of sandbox coupling in core logic
+    expect(content).not.toContain('application.sandbox');
+    expect(content).not.toContain('sandboxEnabled');
+    expect(content).not.toContain('com.acc.sandbox');
   });
 
   // TC-SB-08: HikariCP Connection Pool Bounds for PGlite WASM Engine
