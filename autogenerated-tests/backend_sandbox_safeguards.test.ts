@@ -46,6 +46,9 @@ describe('Iteration 58: Backend Sandbox Two-Tier Safeguards & PGlite WASM Parity
     expect(content).not.toContain('ensurePostgresDatabaseExists');
     expect(content).not.toContain('jdbc:pglite:file:');
     expect(content).toContain('jdbc:pglite:');
+    expect(content).toContain('isDirectory()');
+    expect(content).toContain('deleteRecursively');
+    expect(content).not.toContain('dbFile.mkdirs()');
 
     // SandboxProperties must not have @Component or @Primary to prevent duplicate bean clash
     const propsPath = path.join(
@@ -81,6 +84,10 @@ describe('Iteration 58: Backend Sandbox Two-Tier Safeguards & PGlite WASM Parity
     expect(javaContent).toContain('"uat"');
     expect(javaContent).toContain('jdbc:pglite:');
     expect(javaContent).not.toContain('jdbc:pglite:file:');
+    expect(javaContent).toContain('isDirectory()');
+    expect(javaContent).toContain('deleteRecursively');
+    expect(javaContent).not.toContain('storageFile.mkdirs()');
+    expect(javaContent).not.toContain('storageDir.mkdirs()');
 
     const factoriesContent = fs.readFileSync(factoriesPath, 'utf-8');
     expect(factoriesContent).toContain('org.springframework.boot.env.EnvironmentPostProcessor');

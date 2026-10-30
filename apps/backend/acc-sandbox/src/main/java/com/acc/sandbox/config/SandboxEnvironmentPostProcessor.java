@@ -86,9 +86,14 @@ public class SandboxEnvironmentPostProcessor implements EnvironmentPostProcessor
     if ("TEST".equalsIgnoreCase(mode)) {
       jdbcUrl = "jdbc:pglite:memory://";
     } else {
-      File storageDir = new File(devStorage);
-      if (!storageDir.exists()) {
-        storageDir.mkdirs();
+      File storageFile = new File(devStorage);
+      if (storageFile.exists() && storageFile.isDirectory()) {
+        log.warn("Storage path {} is a directory, but PGlite expects a file snapshot. Deleting directory.", devStorage);
+        deleteRecursively(storageFile);
+      }
+      File parentDir = storageFile.getParentFile();
+      if (parentDir != null && !parentDir.exists()) {
+        parentDir.mkdirs();
       }
       jdbcUrl = "jdbc:pglite:" + devStorage;
     }
@@ -103,5 +108,23 @@ public class SandboxEnvironmentPostProcessor implements EnvironmentPostProcessor
     environment.getPropertySources().addFirst(new MapPropertySource("sandboxEnvironmentOverrides", sandboxOverrides));
 
     log.info("SandboxEnvironmentPostProcessor: acc-sandbox active (url={}, profiles={})", jdbcUrl, activeProfiles);
+  }
+
+  private static void deleteRecursively(File file) {
+    if (file == null || !file.exists()) {
+      return;
+    }
+    if (file.isDirectory()) {
+      File[] files = file.listFiles();
+      if (files != null) {
+        for (File child : files) {
+          deleteRecursively(child);
+        }
+      }
+    }
+    try {
+      file.delete();
+    } catch (Exception ignored) {
+    }
   }
 }

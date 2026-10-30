@@ -432,15 +432,6 @@ export const complexSciFiDemoIR: VideoIRDocument = {
           },
           modifiers: [
             {
-              type: 'overlay/canvas_particles',
-              target: ['video', 'overlay'],
-              params: {
-                type: 'sci_fi_hud',
-                intensity: 0.9,
-                opacity: 0.75,
-              },
-            },
-            {
               type: 'overlay/hologram_hud',
               target: ['video', 'overlay'],
               params: {
@@ -592,6 +583,29 @@ export const complexSciFiDemoIR: VideoIRDocument = {
                 targetY: 0.1,
                 labelX: 0.25,
                 labelY: -0.2,
+              },
+            },
+          ],
+        },
+        {
+          id: 'seq-hud-particles-ambient',
+          name: 'HUD: Tactical Telemetry Particles',
+          type: 'overlay',
+          time: {
+            start: {
+              after: 'seq-lower-third-callout',
+              offsetFrames: 10,
+            },
+            duration: 180,
+          },
+          modifiers: [
+            {
+              type: 'overlay/canvas_particles',
+              target: ['video', 'overlay'],
+              params: {
+                type: 'sci_fi_hud',
+                intensity: 0.9,
+                opacity: 0.75,
               },
             },
           ],

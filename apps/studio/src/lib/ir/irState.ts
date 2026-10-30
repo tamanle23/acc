@@ -21,6 +21,9 @@ import { broadcastNewsDemoIR } from './broadcastNewsDemoIR';
 import { cyberAudioVisualizerDemoIR } from './cyberAudioVisualizerDemoIR';
 import { quantumPhysicsDemoIR } from './quantumPhysicsDemoIR';
 import { astroTelemetryDemoIR } from './astroTelemetryDemoIR';
+import { kineticTypographyDemoIR } from './kineticTypographyDemoIR';
+import { cinemaMasteringDemoIR } from './cinemaMasteringDemoIR';
+import { spatialAudioDemoIR } from './spatialAudioDemoIR';
 import { BrowserAssetMetadataProber } from './BrowserAssetMetadataProber';
 import { HistoryManager } from '../commands/HistoryManager';
 import type { ICommand } from '../commands/ICommand';
@@ -59,7 +62,16 @@ export interface IRState {
   error: string | null;
   canUndo: boolean;
   canRedo: boolean;
-  activeTemplate: 'scifi' | 'default' | 'broadcast' | 'visualizer' | 'quantum' | 'astro';
+  activeTemplate:
+    | 'scifi'
+    | 'default'
+    | 'broadcast'
+    | 'visualizer'
+    | 'quantum'
+    | 'astro'
+    | 'typography'
+    | 'mastering'
+    | 'spatial_audio';
 }
 
 export type IRStateSubscriber = (state: IRState) => void;
@@ -315,7 +327,18 @@ export class IRStateManager {
     this.notify();
   }
 
-  public async switchTemplate(template: 'scifi' | 'default' | 'broadcast' | 'visualizer' | 'quantum' | 'astro'): Promise<void> {
+  public async switchTemplate(
+    template:
+      | 'scifi'
+      | 'default'
+      | 'broadcast'
+      | 'visualizer'
+      | 'quantum'
+      | 'astro'
+      | 'typography'
+      | 'mastering'
+      | 'spatial_audio'
+  ): Promise<void> {
     this.historyManager.clear();
     let targetDoc = defaultDemoIR;
     if (template === 'scifi') {
@@ -328,6 +351,12 @@ export class IRStateManager {
       targetDoc = quantumPhysicsDemoIR;
     } else if (template === 'astro') {
       targetDoc = astroTelemetryDemoIR;
+    } else if (template === 'typography') {
+      targetDoc = kineticTypographyDemoIR;
+    } else if (template === 'mastering') {
+      targetDoc = cinemaMasteringDemoIR;
+    } else if (template === 'spatial_audio') {
+      targetDoc = spatialAudioDemoIR;
     }
     this.state = {
       ...this.state,

@@ -64,4 +64,5 @@
 | 399 | [AvailableModifierDef Plugin Inheritance, Hierarchical Inspector Modifiers and Multi-Domain Dropdown Effects](./399_modifier_catalog_plugin_inheritance_and_hierarchical_dropdowns.md) | Completed |
 | 400 | [Backend Sandbox Two-Tier Safeguards & In-Process PGlite WASM Synchronization](./400_backend_sandbox_two_tier_safeguards_and_pglite_sync.md) | Completed |
 | 401 | [Standalone Generator Invariants, Universal Transform Whitelist & Declarative Plugin Manifest](./401_standalone_generator_hierarchy_and_whitelist.md) | Completed |
+| 402 | [Fix Demo Schema Errors & Expand Multi-Domain Use-Case Demos](./402_fix_demo_schema_errors_and_expand_use_case_demos.md) | Completed |
 

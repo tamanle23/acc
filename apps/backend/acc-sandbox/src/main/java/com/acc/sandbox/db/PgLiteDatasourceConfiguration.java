@@ -50,13 +50,20 @@ public class PgLiteDatasourceConfiguration {
       log.info("Configuring PGlite in-memory datasource for TEST mode: {}", jdbcUrl);
     } else {
       String storagePath = properties.getDatabase().getDevStoragePath();
-      File dbDir = new File(storagePath);
-      if (properties.getDev().isPristine() && dbDir.exists()) {
-        log.info("DEV mode pristine flag active. Wiping persistent scratch database directory: {}", storagePath);
-        deleteRecursively(dbDir);
+      File dbFile = new File(storagePath);
+      // PGlite expects a file snapshot, NOT a directory.
+      // If an erroneous directory was previously created at storagePath, delete it to avoid AccessDeniedException.
+      if (dbFile.exists() && dbFile.isDirectory()) {
+        log.warn("Storage path {} is a directory, but PGlite expects a file snapshot. Deleting directory.", storagePath);
+        deleteRecursively(dbFile);
       }
-      if (!dbDir.exists()) {
-        dbDir.mkdirs();
+      if (properties.getDev().isPristine() && dbFile.exists()) {
+        log.info("DEV mode pristine flag active. Wiping persistent scratch database file: {}", storagePath);
+        deleteRecursively(dbFile);
+      }
+      File parentDir = dbFile.getParentFile();
+      if (parentDir != null && !parentDir.exists()) {
+        parentDir.mkdirs();
       }
       jdbcUrl = "jdbc:pglite:" + storagePath;
       log.info("Configuring PGlite persistent file-backed datasource for DEV mode (pristine={}): {}",
@@ -72,6 +79,9 @@ public class PgLiteDatasourceConfiguration {
   }
 
   private void deleteRecursively(File file) {
+    if (file == null || !file.exists()) {
+      return;
+    }
     if (file.isDirectory()) {
       File[] files = file.listFiles();
       if (files != null) {
@@ -80,6 +90,9 @@ public class PgLiteDatasourceConfiguration {
         }
       }
     }
-    file.delete();
+    try {
+      file.delete();
+    } catch (Exception ignored) {
+    }
   }
 }

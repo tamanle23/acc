@@ -130,22 +130,6 @@ export const quantumPhysicsDemoIR: VideoIRDocument = {
                 seed: 2026,
               },
             },
-            {
-              type: 'time_space/callout_leader',
-              target: ['video', 'overlay'],
-              params: {
-                text: 'CHLADNI RESONANCE // MODE (5, 7)',
-                targetX: -0.25,
-                targetY: 0.0,
-                labelX: -0.65,
-                labelY: -0.35,
-                theme: 'solar_flare',
-                speedMultiplier: 1.0,
-                scale: 0.9,
-                strokeWidth: 1.5,
-                boundary: 'loop',
-              },
-            },
           ],
         },
 
@@ -172,20 +156,6 @@ export const quantumPhysicsDemoIR: VideoIRDocument = {
                 strokeWidth: 1.2,
                 boundary: 'loop',
                 seed: 1337,
-              },
-            },
-            {
-              type: 'time_space/hud_reticle',
-              target: ['video', 'overlay'],
-              params: {
-                text: 'PHASE SPACE // LYAPUNOV EXPONENT +0.84',
-                targetX: 0.0,
-                targetY: 0.0,
-                theme: 'cyberpunk',
-                speedMultiplier: 0.8,
-                scale: 1.2,
-                strokeWidth: 1.5,
-                boundary: 'loop',
               },
             },
           ],
@@ -216,6 +186,80 @@ export const quantumPhysicsDemoIR: VideoIRDocument = {
                 seed: 42,
               },
             },
+          ],
+        },
+      ],
+    },
+
+    // Track V3: Quantum Telemetry & Annotations
+    {
+      id: 'track-v3-telemetry',
+      name: 'V3 - Quantum Telemetry & Annotations',
+      type: 'video',
+      muted: false,
+      visible: true,
+      sequences: [
+        {
+          id: 'seq-callout-chladni-resonance',
+          name: 'Callout: Chladni Mode (5, 7)',
+          type: 'overlay',
+          time: {
+            start: 0,
+            duration: 120,
+          },
+          modifiers: [
+            {
+              type: 'time_space/callout_leader',
+              target: ['video', 'overlay'],
+              params: {
+                text: 'CHLADNI RESONANCE // MODE (5, 7)',
+                targetX: -0.25,
+                targetY: 0.0,
+                labelX: -0.65,
+                labelY: -0.35,
+                theme: 'solar_flare',
+                speedMultiplier: 1.0,
+                scale: 0.9,
+                strokeWidth: 1.5,
+                boundary: 'loop',
+              },
+            },
+          ],
+        },
+        {
+          id: 'seq-hud-lyapunov-attractor',
+          name: 'HUD: Lyapunov Exponent Reticle',
+          type: 'overlay',
+          time: {
+            start: 120,
+            duration: 120,
+          },
+          modifiers: [
+            {
+              type: 'time_space/hud_reticle',
+              target: ['video', 'overlay'],
+              params: {
+                text: 'PHASE SPACE // LYAPUNOV EXPONENT +0.84',
+                targetX: 0.0,
+                targetY: 0.0,
+                theme: 'cyberpunk',
+                speedMultiplier: 0.8,
+                scale: 1.2,
+                strokeWidth: 1.5,
+                boundary: 'loop',
+              },
+            },
+          ],
+        },
+        {
+          id: 'seq-cyber-lower-third-quantum',
+          name: 'Lower Third: Harmonograph Coupling',
+          type: 'overlay',
+          time: {
+            start: 240,
+            duration: 120,
+          },
+          modifiers: [
             {
               type: 'time_space/cyber_lower_third',
               target: ['video', 'overlay'],

@@ -409,12 +409,16 @@ export class VideoIRSchemaValidator {
 
       // Dynamic registry target scope & sequence type compatibility check
       if (registry.has(mod.type)) {
+        const otherModifierTypes = modifierTypes.filter((_, idx) => idx !== i);
+        const hasOtherStandalone = otherModifierTypes.some(
+          (t) => registry.get(t)?.targetScope === 'standalone'
+        );
         const targetCtx = seqType
           ? {
               type: 'sequence' as const,
               sequenceType: seqType,
-              hasStandaloneGenerator,
-              existingModifierTypes: modifierTypes,
+              hasStandaloneGenerator: hasOtherStandalone,
+              existingModifierTypes: otherModifierTypes,
             }
           : { type: 'track' as const };
         const check = registry.isModifierAllowedOnEntity(mod.type, targetCtx);

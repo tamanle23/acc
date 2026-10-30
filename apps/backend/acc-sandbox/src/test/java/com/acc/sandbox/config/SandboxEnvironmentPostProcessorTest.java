@@ -110,4 +110,28 @@ class SandboxEnvironmentPostProcessorTest {
     assertThatNoException().isThrownBy(() -> postProcessor.postProcessEnvironment(environment, application));
     assertThat(environment.getProperty("spring.datasource.url")).isNull();
   }
+
+  @Test
+  @DisplayName("Should purge lingering directory at storage path and create parent directory")
+  void shouldPurgeLingeringDirectoryAtStoragePath() throws java.io.IOException {
+    java.nio.file.Path tempDir = java.nio.file.Files.createTempDirectory("pglite-test-");
+    java.nio.file.Path fakeDirAsFile = tempDir.resolve("target-snapshot");
+    java.nio.file.Files.createDirectories(fakeDirAsFile);
+    assertThat(java.nio.file.Files.isDirectory(fakeDirAsFile)).isTrue();
+
+    MockEnvironment environment = new MockEnvironment();
+    environment.setProperty("application.sandbox.enabled", "true");
+    environment.setProperty("application.sandbox.mode", "DEV");
+    environment.setProperty("application.sandbox.database.dev-storage-path", fakeDirAsFile.toString());
+    environment.setActiveProfiles("local");
+
+    postProcessor.postProcessEnvironment(environment, application);
+
+    // The erroneous directory should be deleted, but parent directory remains
+    assertThat(java.nio.file.Files.isDirectory(fakeDirAsFile)).isFalse();
+    assertThat(java.nio.file.Files.isDirectory(tempDir)).isTrue();
+
+    // Clean up
+    tempDir.toFile().delete();
+  }
 }

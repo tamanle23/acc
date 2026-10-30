@@ -130,20 +130,6 @@ export const astroTelemetryDemoIR: VideoIRDocument = {
                 seed: 108,
               },
             },
-            {
-              type: 'time_space/hud_reticle',
-              target: ['video', 'overlay'],
-              params: {
-                text: 'EVENT HORIZON // RS = 2GM/c²',
-                targetX: 0.0,
-                targetY: 0.0,
-                theme: 'solar_flare',
-                speedMultiplier: 0.7,
-                scale: 1.35,
-                strokeWidth: 1.5,
-                boundary: 'loop',
-              },
-            },
           ],
         },
 
@@ -170,22 +156,6 @@ export const astroTelemetryDemoIR: VideoIRDocument = {
                 strokeWidth: 1.6,
                 boundary: 'loop',
                 seed: 888,
-              },
-            },
-            {
-              type: 'time_space/callout_leader',
-              target: ['video', 'overlay'],
-              params: {
-                text: 'ELEVATION ISOLINES // EQUIDISTANCE 500M',
-                targetX: 0.2,
-                targetY: -0.1,
-                labelX: 0.65,
-                labelY: -0.35,
-                theme: 'emerald_matrix',
-                speedMultiplier: 1.0,
-                scale: 0.9,
-                strokeWidth: 1.5,
-                boundary: 'loop',
               },
             },
           ],
@@ -216,6 +186,80 @@ export const astroTelemetryDemoIR: VideoIRDocument = {
                 seed: 999,
               },
             },
+          ],
+        },
+      ],
+    },
+
+    // Track V3: Astrometric Telemetry & Annotations
+    {
+      id: 'track-v3-telemetry-hud',
+      name: 'V3 - Astrometric Telemetry & Annotations',
+      type: 'video',
+      muted: false,
+      visible: true,
+      sequences: [
+        {
+          id: 'seq-hud-reticle-event-horizon',
+          name: 'HUD: Event Horizon Reticle',
+          type: 'overlay',
+          time: {
+            start: 0,
+            duration: 120,
+          },
+          modifiers: [
+            {
+              type: 'time_space/hud_reticle',
+              target: ['video', 'overlay'],
+              params: {
+                text: 'EVENT HORIZON // RS = 2GM/c²',
+                targetX: 0.0,
+                targetY: 0.0,
+                theme: 'solar_flare',
+                speedMultiplier: 0.7,
+                scale: 1.35,
+                strokeWidth: 1.5,
+                boundary: 'loop',
+              },
+            },
+          ],
+        },
+        {
+          id: 'seq-callout-contour-telemetry',
+          name: 'Callout: Elevation Isolines',
+          type: 'overlay',
+          time: {
+            start: 120,
+            duration: 120,
+          },
+          modifiers: [
+            {
+              type: 'time_space/callout_leader',
+              target: ['video', 'overlay'],
+              params: {
+                text: 'ELEVATION ISOLINES // EQUIDISTANCE 500M',
+                targetX: 0.2,
+                targetY: -0.1,
+                labelX: 0.65,
+                labelY: -0.35,
+                theme: 'emerald_matrix',
+                speedMultiplier: 1.0,
+                scale: 0.9,
+                strokeWidth: 1.5,
+                boundary: 'loop',
+              },
+            },
+          ],
+        },
+        {
+          id: 'seq-cyber-lower-third-astro',
+          name: 'Lower Third: Poincaré Metric',
+          type: 'overlay',
+          time: {
+            start: 240,
+            duration: 120,
+          },
+          modifiers: [
             {
               type: 'time_space/cyber_lower_third',
               target: ['video', 'overlay'],

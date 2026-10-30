@@ -168,7 +168,7 @@ export const defaultDemoIR: VideoIRDocument = {
           type: 'overlay',
           time: {
             start: 30,
-            duration: 150,
+            duration: 90,
           },
           modifiers: [
             {
@@ -180,6 +180,20 @@ export const defaultDemoIR: VideoIRDocument = {
                 opacity: 0.4,
               },
             },
+          ],
+        },
+        {
+          id: 'seq-callout-overlay',
+          name: 'Nature Reserve Callout',
+          type: 'overlay',
+          time: {
+            start: {
+              after: 'seq-particle-overlay',
+              offsetFrames: 0,
+            },
+            duration: 90,
+          },
+          modifiers: [
             {
               type: 'time_space/callout_leader',
               target: ['video', 'overlay'],

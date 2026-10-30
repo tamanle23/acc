@@ -354,6 +354,14 @@ export class ModifierPluginRegistry {
       };
     }
 
+    // 4. Instance policy enforcement
+    if (plugin.instancePolicy === 'single' && existingModifierTypes?.includes(modifierType)) {
+      return {
+        allowed: false,
+        reason: `Modifier "${modifierType}" only permits a single instance per sequence`,
+      };
+    }
+
     return { allowed: true };
   }
 

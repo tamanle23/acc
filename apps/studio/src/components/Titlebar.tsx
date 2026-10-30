@@ -139,18 +139,21 @@ export function Titlebar({
         <div className="ml-4 flex items-center gap-1.5">
           <Select
             value={activeTemplate}
-            onValueChange={(val: 'scifi' | 'default' | 'broadcast' | 'visualizer' | 'quantum' | 'astro') => manager.switchTemplate(val)}
+            onValueChange={(val: any) => manager.switchTemplate(val)}
           >
-            <SelectTrigger className="h-7 text-[11px] w-64 bg-[var(--glass-bg)] border-[var(--glass-border)] text-foreground">
+            <SelectTrigger className="h-7 text-[11px] w-72 bg-[var(--glass-bg)] border-[var(--glass-border)] text-foreground">
               <SelectValue placeholder="Select Demo" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="scifi">Sci-Fi Cyberpunk (9-Track Epic)</SelectItem>
+              <SelectItem value="scifi">Sci-Fi Cyberpunk (10-Track Epic)</SelectItem>
               <SelectItem value="default">Default Cinematic Reel (5-Track)</SelectItem>
               <SelectItem value="broadcast">Broadcast News Matrix (4-Track)</SelectItem>
               <SelectItem value="visualizer">Cyber Audio Visualizer (4-Track)</SelectItem>
-              <SelectItem value="quantum">Quantum Physics & Cymatics Lab</SelectItem>
-              <SelectItem value="astro">Astroscientific Deep Space Singularity</SelectItem>
+              <SelectItem value="quantum">Quantum Physics & Cymatics Lab (5-Track)</SelectItem>
+              <SelectItem value="astro">Astroscientific Deep Space Singularity (5-Track)</SelectItem>
+              <SelectItem value="typography">Kinetic Typography & Neural Plexus (5-Track)</SelectItem>
+              <SelectItem value="mastering">Cinema Mastering & Optical Glare (6-Track)</SelectItem>
+              <SelectItem value="spatial_audio">Spatial Soundscape & Procedural Audio (6-Track)</SelectItem>
             </SelectContent>
           </Select>
         </div>
