@@ -44,6 +44,15 @@ describe('Iteration 58: Backend Sandbox Two-Tier Safeguards & PGlite WASM Parity
     // Absolute prohibition of localhost:5432/acc fallback
     expect(content).not.toContain('localhost:5432/acc');
     expect(content).not.toContain('ensurePostgresDatabaseExists');
+
+    // SandboxProperties must not have @Component or @Primary to prevent duplicate bean clash
+    const propsPath = path.join(
+      repoRoot,
+      'apps/backend/acc-sandbox/src/main/java/com/acc/sandbox/config/SandboxProperties.java'
+    );
+    const propsContent = fs.readFileSync(propsPath, 'utf-8');
+    expect(propsContent).not.toContain('@Component');
+    expect(propsContent).not.toContain('@Primary');
   });
 
   // TC-SB-03: Safeguard Level 1 — Runtime EnvironmentPostProcessor & spring.factories

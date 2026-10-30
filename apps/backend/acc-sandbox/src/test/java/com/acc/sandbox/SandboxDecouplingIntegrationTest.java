@@ -26,6 +26,7 @@ class SandboxDecouplingIntegrationTest {
                     assertThat(context).doesNotHaveBean(com.acc.sandbox.auth.SandboxPersonaRegistry.class);
                     assertThat(context).doesNotHaveBean(com.acc.sandbox.auth.SandboxTokenAspect.class);
                     assertThat(context).doesNotHaveBean(com.acc.sandbox.seed.SandboxDataPreWarmer.class);
+                    assertThat(context).doesNotHaveBean(com.acc.sandbox.config.SandboxProperties.class);
                 });
     }
 
@@ -39,6 +40,7 @@ class SandboxDecouplingIntegrationTest {
                     assertThat(context).doesNotHaveBean(com.acc.sandbox.auth.SandboxPersonaRegistry.class);
                     assertThat(context).doesNotHaveBean(com.acc.sandbox.auth.SandboxTokenAspect.class);
                     assertThat(context).doesNotHaveBean(com.acc.sandbox.seed.SandboxDataPreWarmer.class);
+                    assertThat(context).doesNotHaveBean(com.acc.sandbox.config.SandboxProperties.class);
                 });
     }
 
@@ -53,6 +55,7 @@ class SandboxDecouplingIntegrationTest {
                     assertThat(context).hasSingleBean(com.acc.sandbox.auth.SandboxPersonaRegistry.class);
                     assertThat(context).hasSingleBean(com.acc.sandbox.auth.SandboxTokenAspect.class);
                     assertThat(context).hasSingleBean(com.acc.sandbox.seed.SandboxDataPreWarmer.class);
+                    assertThat(context).hasSingleBean(com.acc.sandbox.config.SandboxProperties.class);
                 });
     }
 }

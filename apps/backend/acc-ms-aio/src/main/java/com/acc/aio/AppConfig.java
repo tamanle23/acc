@@ -7,13 +7,8 @@ import org.springframework.context.annotation.ComponentScan;
 
 import org.springframework.modulith.Modulithic;
 
-import com.acc.boot.config.BeanNameGenerator;
-
-@Modulithic(
-    systemName = "acc",
-    useFullyQualifiedModuleNames = true
-)
-@ComponentScan(basePackages = { "com.acc" }, nameGenerator = com.acc.boot.config.BeanNameGenerator.class)
+@Modulithic(systemName = "acc", useFullyQualifiedModuleNames = true)
+@ComponentScan(basePackages = { "com.acc" })
 @SpringBootConfiguration
 @EnableAutoConfiguration
 @ConfigurationPropertiesScan
