@@ -1,5 +1,7 @@
 import type { ModifierPlugin, ModifierContext } from '../ModifierPluginRegistry';
 import type { AudioProcessContext } from '../IVideoPluginStrategy';
+import type { ModifierTargetScope } from '../../types/modifiers';
+import type { SequenceType } from '../../types/VideoIR';
 
 export interface PanModifierParams {
   stereoPan: number; // -1.0 (hard left) to +1.0 (hard right), 0.0 (center)
@@ -11,7 +13,8 @@ export interface PanModifierParams {
  */
 export class PanModifierPlugin implements ModifierPlugin<PanModifierParams> {
   public readonly type = 'audio/pan';
-  public readonly targetScope = 'both';
+  public readonly targetScope: ModifierTargetScope = 'sequence';
+  public readonly allowedSequenceTypes: readonly SequenceType[] = ['audio', 'video'];
   public readonly targetPhase = 4;
   public readonly schema = {
     fields: {

@@ -1,4 +1,6 @@
 import type { ModifierPlugin, ModifierContext, AudioProcessContext } from '../ModifierPluginRegistry';
+import type { ModifierTargetScope } from '../../types/modifiers';
+import type { SequenceType } from '../../types/VideoIR';
 
 export interface DynamicDuckingParams {
   controlTrackId?: string;
@@ -18,7 +20,8 @@ export interface DynamicDuckingParams {
  */
 export class DynamicDuckingPlugin implements ModifierPlugin<DynamicDuckingParams> {
   public readonly type = 'sfx/dynamic_ducking';
-  public readonly targetScope = 'both';
+  public readonly targetScope: ModifierTargetScope = 'sequence';
+  public readonly allowedSequenceTypes: readonly SequenceType[] = ['audio'];
   public readonly targetPhase = 3;
   public readonly schema = {
     fields: {

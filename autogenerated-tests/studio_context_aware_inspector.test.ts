@@ -120,7 +120,7 @@ describe('Studio Context-Aware Inspector & Overlay VFX Architecture', () => {
       expect(modTypes).toContain('vfx/depth_relighting');
       expect(modTypes).toContain('camera/3d');
       expect(modTypes).toContain('vfx/color_grading');
-      expect(modTypes).toContain('text/style');
+      expect(modTypes).toContain('timed_text/style');
       expect(modTypes).toContain('sfx/dynamic_ducking');
       expect(modTypes).toContain('sfx/procedural');
     });
@@ -140,7 +140,7 @@ describe('Studio Context-Aware Inspector & Overlay VFX Architecture', () => {
       expect(audioTypes).not.toContain('overlay/hologram_hud');
       expect(audioTypes).not.toContain('camera/3d');
       expect(audioTypes).not.toContain('vfx/depth_relighting');
-      expect(audioTypes).not.toContain('text/style');
+      expect(audioTypes).not.toContain('timed_text/style');
     });
 
     it('should filter modifiers strictly for timed_text tracks', () => {
@@ -149,7 +149,7 @@ describe('Studio Context-Aware Inspector & Overlay VFX Architecture', () => {
       );
       const textTypes = textMods.map((m) => m.type);
 
-      expect(textTypes).toContain('text/style');
+      expect(textTypes).toContain('timed_text/style');
       expect(textTypes).toContain('transform');
 
       // Audio and 3D camera modifiers MUST NOT appear for text tracks
@@ -175,7 +175,7 @@ describe('Studio Context-Aware Inspector & Overlay VFX Architecture', () => {
       // Audio-only and subtitle-only modifiers MUST NOT appear for video tracks
       expect(videoTypes).not.toContain('sfx/dynamic_ducking');
       expect(videoTypes).not.toContain('sfx/procedural');
-      expect(videoTypes).not.toContain('text/style');
+      expect(videoTypes).not.toContain('timed_text/style');
     });
   });
 
@@ -286,13 +286,13 @@ describe('Studio Context-Aware Inspector & Overlay VFX Architecture', () => {
     });
   });
 
-  describe('5. Dual-State text/style Active-Word Karaoke Configuration', () => {
+  describe('5. Dual-State timed_text/style Active-Word Karaoke Configuration', () => {
     it('should preserve both base typography and active-word karaoke parameters', () => {
       const stateManager = IRStateManager.getInstance();
       const seqId = 'seq-dialogue-1';
 
-      // Attach dual-state text/style modifier
-      stateManager.updateModifier(seqId, 'text/style', {
+      // Attach dual-state timed_text/style modifier
+      stateManager.updateModifier(seqId, 'timed_text/style', {
         fontFamily: 'Montserrat',
         fontSize: 36,
         fontWeight: 800,
@@ -310,7 +310,7 @@ describe('Studio Context-Aware Inspector & Overlay VFX Architecture', () => {
         .flatMap((t) => t.sequences)
         .find((s) => s.id === seqId);
 
-      const styleMod = seq?.modifiers?.find((m) => m.type === 'text/style');
+      const styleMod = seq?.modifiers?.find((m) => m.type === 'timed_text/style');
       expect(styleMod).toBeDefined();
       expect(styleMod?.params?.fontFamily).toBe('Montserrat');
       expect(styleMod?.params?.fontSize).toBe(36);

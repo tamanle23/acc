@@ -1,4 +1,5 @@
 import type { IRSequence, SequenceType } from '@acc/ir';
+import { ModifierPluginRegistry } from '@acc/ir';
 import { SFX_LIBRARY_CATALOG, convertSFXToPreset, SFX_PRESETS } from './sfxBank';
 import { TYPOGRAPHY_PRESETS } from './typographyBank';
 import { SHAPE_PRESETS } from './shapesBank';
@@ -87,7 +88,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
           },
         },
         {
-          type: 'text/style',
+          type: 'timed_text/style',
           target: 'text',
           params: {
             fontFamily: 'Cinzel',
@@ -139,7 +140,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
           },
         },
         {
-          type: 'text/style',
+          type: 'timed_text/style',
           target: 'text',
           params: {
             fontFamily: 'Inter',
@@ -191,7 +192,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
           },
         },
         {
-          type: 'text/style',
+          type: 'timed_text/style',
           target: 'text',
           params: {
             fontFamily: 'Fira Code',
@@ -243,7 +244,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
           },
         },
         {
-          type: 'text/style',
+          type: 'timed_text/style',
           target: 'text',
           params: {
             fontFamily: 'Fira Code',
@@ -833,5 +834,64 @@ export const PRESET_LIBRARY = STAGING_PRESETS;
 
 export function getPresetsByCategory(category: PresetCategory): StagingPreset[] {
   return STAGING_PRESETS.filter((p) => p.category === category || (category === 'vfx' && p.category === 'overlay'));
+}
+
+export function getDynamicStagingPresets(): StagingPreset[] {
+  const dynamicGenerators = ModifierPluginRegistry.getInstance().getGeneratorsForLibrary();
+  const existingIds = new Set(STAGING_PRESETS.map((p) => p.id));
+  const dynamicPresets: StagingPreset[] = [];
+
+  for (const plugin of dynamicGenerators) {
+    const safeId = `gen_${plugin.type.replace(/[^a-zA-Z0-9_]/g, '_')}`;
+    if (existingIds.has(safeId)) continue;
+
+    const catStr = plugin.schema?.category;
+    const category: PresetCategory =
+      catStr === 'audio' ? 'audio' : catStr === 'shapes' ? 'shape' : catStr === 'typography' || catStr === 'text' ? 'text' : 'vfx';
+
+    const rawName = plugin.type.split('/').pop() || plugin.type;
+    const formattedName =
+      plugin.schema?.displayName ||
+      rawName
+        .split('_')
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(' ');
+
+    dynamicPresets.push({
+      id: safeId,
+      name: formattedName,
+      category,
+      badge: 'GENERATOR',
+      description: plugin.schema?.displayName || `Procedural ${plugin.type} generator`,
+      iconName: category === 'audio' ? 'Volume2' : category === 'shape' ? 'Square' : 'Sparkles',
+      targetTrackId: category === 'audio' ? 'track-a1' : 'track-v1',
+      targetTrackType: category === 'audio' ? 'audio' : 'video',
+      targetTrackName: category === 'audio' ? 'Audio Track' : 'VFX Overlay Track',
+      type: category === 'audio' ? 'audio' : 'overlay',
+      createSequence: (opts) => ({
+        id: `seq_${safeId}_${Date.now().toString(36)}`,
+        name: formattedName,
+        type: (category === 'audio' ? 'audio' : 'overlay') as SequenceType,
+        startFrame: opts.startFrame,
+        durationFrames: opts.durationFrames || 90,
+        timelineStartFrame: opts.startFrame,
+        time: { start: opts.startFrame, duration: opts.durationFrames || 90 },
+        modifiers: [
+          {
+            type: plugin.type,
+            target: (category === 'audio' ? 'audio' : 'overlay') as SequenceType,
+            params: { ...(plugin.schema?.resetDefaults || {}) },
+          },
+          {
+            type: 'transform',
+            target: (category === 'audio' ? 'audio' : 'overlay') as SequenceType,
+            params: { normX: opts.normX ?? 0.5, normY: opts.normY ?? 0.5 },
+          },
+        ],
+      }),
+    });
+  }
+
+  return [...STAGING_PRESETS, ...dynamicPresets];
 }
 

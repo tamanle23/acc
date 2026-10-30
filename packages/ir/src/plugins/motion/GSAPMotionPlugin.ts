@@ -4,6 +4,8 @@ import type {
   ClipRenderContext,
   StreamRenderContext,
 } from '../ModifierPluginRegistry';
+import type { ModifierTargetScope } from '../../types/modifiers';
+import type { SequenceType } from '../../types/VideoIR';
 import {
   evaluateSequenceMotion,
   type InterpolatedTransformState,
@@ -31,7 +33,8 @@ export interface GSAPMotionPluginParams {
  * - ZERO-ALLOC-FRAME-LOOP: Reusable matrix evaluation without per-frame memory churn.
  */
 export class GSAPMotionPlugin implements ModifierPlugin<GSAPMotionPluginParams> {
-  public readonly targetScope = 'both';
+  public readonly targetScope: ModifierTargetScope = 'sequence';
+  public readonly allowedSequenceTypes: readonly SequenceType[] = ['video', 'image', 'text'];
   public readonly targetPhase = 2;
 
   constructor(public readonly type: string = 'motion/gsap') {}

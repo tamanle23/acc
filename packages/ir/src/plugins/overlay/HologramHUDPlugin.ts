@@ -5,6 +5,8 @@ import type {
   StreamRenderContext,
   MasterCompositeContext,
 } from '../ModifierPluginRegistry';
+import type { ModifierTargetScope } from '../../types/modifiers';
+import type { SequenceType } from '../../types/VideoIR';
 
 export interface HologramHUDParams {
   ringRadius?: number; // Normalized radius 0..1 (default 0.35)
@@ -28,7 +30,8 @@ export interface HologramHUDParams {
  */
 export class HologramHUDPlugin implements ModifierPlugin<HologramHUDParams> {
   public readonly type = 'overlay/hologram_hud';
-  public readonly targetScope = 'both';
+  public readonly targetScope: ModifierTargetScope = 'standalone';
+  public readonly allowedSequenceTypes: readonly SequenceType[] = ['overlay', 'video', 'image'];
   public readonly targetPhase = 3;
   public readonly schema = {
     fields: {

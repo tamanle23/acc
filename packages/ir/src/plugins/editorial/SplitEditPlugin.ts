@@ -1,4 +1,5 @@
 import type { ModifierPlugin, ModifierContext } from '../ModifierPluginRegistry';
+import type { SequenceType } from '../../types/VideoIR';
 
 export interface SplitEditParams {
   mode: 'j_cut' | 'l_cut';
@@ -14,6 +15,7 @@ export interface SplitEditParams {
 export class SplitEditPlugin implements ModifierPlugin<SplitEditParams> {
   public readonly type = 'editorial/split_edit';
   public readonly targetScope = 'sequence';
+  public readonly allowedSequenceTypes: readonly SequenceType[] = ['video', 'audio'];
   public readonly schema = {
     fields: {
       mode: {

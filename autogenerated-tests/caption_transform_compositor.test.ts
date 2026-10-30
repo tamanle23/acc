@@ -51,7 +51,7 @@ describe('Caption Transform Compositor & Timed Text Stacking Suite', () => {
               params: { x: 50, y: 100, scale: 1.2 },
             },
             {
-              type: 'text/style',
+              type: 'timed_text/style',
               params: { textColor: '#38bdf8', fontSize: 32 },
             },
           ],

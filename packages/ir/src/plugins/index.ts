@@ -40,6 +40,10 @@ import {
   KineticHarmonographPlugin,
 } from './time-space';
 import { GSAPMotionPlugin } from './motion/GSAPMotionPlugin';
+import { VectorMotionBlurPlugin } from './motion/VectorMotionBlurPlugin';
+import { SolidBackdropPlugin } from './overlay/SolidBackdropPlugin';
+import { PhotometricBloomPlugin } from './timeline/PhotometricBloomPlugin';
+import { AnamorphicGlarePlugin } from './timeline/AnamorphicGlarePlugin';
 import { DepthRelightingAdapterPlugin } from './vfx/DepthRelightingAdapterPlugin';
 import { AutoReframeModifierPlugin } from './vfx/AutoReframeModifierPlugin';
 
@@ -54,6 +58,7 @@ export * from './vfx/AutoReframeModifierPlugin';
 export * from './vfx/ColorGradingPlugin';
 export * from './vfx/PartialVFXPlugin';
 export * from './motion/GSAPMotionPlugin';
+export * from './motion/VectorMotionBlurPlugin';
 export * from './text/CaptionModifierPlugin';
 export * from './shape/ShapeModifierPlugin';
 export * from './sfx/ProceduralSFXModifierPlugin';
@@ -64,6 +69,9 @@ export * from './editorial/UniversalTransitionPlugin';
 export * from './overlay/BlendModePlugin';
 export * from './overlay/CanvasParticleOverlayPlugin';
 export * from './overlay/HologramHUDPlugin';
+export * from './overlay/SolidBackdropPlugin';
+export * from './timeline/PhotometricBloomPlugin';
+export * from './timeline/AnamorphicGlarePlugin';
 
 /**
  * Initializes and registers standard core modifier plugins
@@ -124,6 +132,10 @@ export function registerCoreModifierPlugins(
   registry.register(new TopographicContourPlugin());
   registry.register(new HyperbolicPoincarePlugin());
   registry.register(new KineticHarmonographPlugin());
+  registry.register(new VectorMotionBlurPlugin());
+  registry.register(new SolidBackdropPlugin());
+  registry.register(new PhotometricBloomPlugin());
+  registry.register(new AnamorphicGlarePlugin());
   return registry;
 }
 

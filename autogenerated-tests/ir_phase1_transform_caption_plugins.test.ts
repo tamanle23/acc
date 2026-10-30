@@ -90,8 +90,8 @@ describe('Iteration 10 Phase 1: Transform & Caption Modifier Plugins', () => {
 
   it('should initialize and validate CaptionModifierPlugin', () => {
     const plugin = new CaptionModifierPlugin();
-    expect(plugin.type).toBe('text/style');
-    expect(plugin.targetScope).toBe('both');
+    expect(plugin.type).toBe('timed_text/style');
+    expect(plugin.targetScope).toBe('track');
     expect(plugin.targetPhase).toBe(2);
 
     expect(plugin.validate({})).toBe(true);
@@ -146,8 +146,8 @@ describe('Iteration 10 Phase 1: Transform & Caption Modifier Plugins', () => {
     registerCoreModifierPlugins(registry);
 
     expect(registry.has('transform')).toBe(true);
-    expect(registry.has('text/style')).toBe(true);
+    expect(registry.has('timed_text/style')).toBe(true);
     expect(registry.get('transform') instanceof TransformModifierPlugin).toBe(true);
-    expect(registry.get('text/style') instanceof CaptionModifierPlugin).toBe(true);
+    expect(registry.get('timed_text/style') instanceof CaptionModifierPlugin).toBe(true);
   });
 });

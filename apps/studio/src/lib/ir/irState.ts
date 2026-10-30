@@ -64,6 +64,33 @@ export interface IRState {
 
 export type IRStateSubscriber = (state: IRState) => void;
 
+export function migrateLegacyModifiers(doc: any): any {
+  if (!doc || typeof doc !== 'object') return doc;
+  if (Array.isArray(doc.tracks)) {
+    for (const track of doc.tracks) {
+      if (Array.isArray(track.modifiers)) {
+        for (const mod of track.modifiers) {
+          if (mod && mod.type === 'text/style') {
+            mod.type = 'timed_text/style';
+          }
+        }
+      }
+      if (Array.isArray(track.sequences)) {
+        for (const seq of track.sequences) {
+          if (Array.isArray(seq.modifiers)) {
+            for (const mod of seq.modifiers) {
+              if (mod && mod.type === 'text/style') {
+                mod.type = 'timed_text/style';
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  return doc;
+}
+
 /**
  * IRStateManager:
  * Authoritative in-memory state manager for the active VideoIRDocument.
@@ -273,9 +300,23 @@ export class IRStateManager {
     await this.recompile();
   }
 
+  public loadDocument(doc: VideoIRDocument): void {
+    const migrated = migrateLegacyModifiers(cloneIR(doc));
+    this.historyManager.clear();
+    this.state = {
+      ...this.state,
+      doc: migrated,
+      error: null,
+      canUndo: false,
+      canRedo: false,
+    };
+    this.notify();
+    this.recompile();
+  }
+
   public loadFromJSON(jsonString: string): ValidationResult {
     try {
-      const parsed = JSON.parse(jsonString);
+      const parsed = migrateLegacyModifiers(JSON.parse(jsonString));
       const val = VideoIRSchemaValidator.validate(parsed);
       if (!val.valid) {
         this.state = {
@@ -309,7 +350,7 @@ export class IRStateManager {
 
   public applyJSONEdit(jsonString: string): ValidationResult {
     try {
-      const parsed = JSON.parse(jsonString);
+      const parsed = migrateLegacyModifiers(JSON.parse(jsonString));
       const val = VideoIRSchemaValidator.validate(parsed);
       if (!val.valid) {
         return val;

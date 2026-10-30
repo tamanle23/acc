@@ -26,7 +26,7 @@ export const TYPOGRAPHY_PRESETS: StagingPreset[] = [
           params: { normX, normY, x: 0, y: -40, scale: 1.0, rotation: 0 },
         },
         {
-          type: 'text/style',
+          type: 'timed_text/style',
           target: 'text',
           params: {
             fontFamily: 'Cinzel, Georgia, serif',
@@ -65,7 +65,7 @@ export const TYPOGRAPHY_PRESETS: StagingPreset[] = [
           params: { normX, normY, x: 0, y: 0, scale: 1.0, rotation: 0 },
         },
         {
-          type: 'text/style',
+          type: 'timed_text/style',
           target: 'text',
           params: {
             fontFamily: 'JetBrains Mono, Courier New, monospace',
@@ -102,7 +102,7 @@ export const TYPOGRAPHY_PRESETS: StagingPreset[] = [
           params: { normX, normY, x: 0, y: 0, scale: 1.05, rotation: 0 },
         },
         {
-          type: 'text/style',
+          type: 'timed_text/style',
           target: 'text',
           params: {
             fontFamily: 'Impact, Arial Black, sans-serif',
@@ -141,7 +141,7 @@ export const TYPOGRAPHY_PRESETS: StagingPreset[] = [
           params: { normX, normY, x: 0, y: 0, scale: 1.0, rotation: -2 },
         },
         {
-          type: 'text/style',
+          type: 'timed_text/style',
           target: 'text',
           params: {
             fontFamily: 'Trebuchet MS, sans-serif',
@@ -182,7 +182,7 @@ export const TYPOGRAPHY_PRESETS: StagingPreset[] = [
           params: { normX, normY, x: 0, y: 0, scale: 1.0, rotation: 0 },
         },
         {
-          type: 'text/style',
+          type: 'timed_text/style',
           target: 'text',
           params: {
             fontFamily: 'Helvetica Neue, Arial, sans-serif',
@@ -220,7 +220,7 @@ export const TYPOGRAPHY_PRESETS: StagingPreset[] = [
           params: { normX, normY, x: 0, y: 0, scale: 1.0, rotation: 0 },
         },
         {
-          type: 'text/style',
+          type: 'timed_text/style',
           target: 'text',
           params: {
             fontFamily: 'Montserrat, Arial Black, sans-serif',
@@ -260,7 +260,7 @@ export const TYPOGRAPHY_PRESETS: StagingPreset[] = [
           params: { normX, normY, x: 0, y: 0, scale: 1.0, rotation: 0 },
         },
         {
-          type: 'text/style',
+          type: 'timed_text/style',
           target: 'text',
           params: {
             fontFamily: 'Didot, Bodoni MT, serif',
@@ -296,7 +296,7 @@ export const TYPOGRAPHY_PRESETS: StagingPreset[] = [
           params: { normX, normY, x: 0, y: 0, scale: 1.0, rotation: 0 },
         },
         {
-          type: 'text/style',
+          type: 'timed_text/style',
           target: 'text',
           params: {
             fontFamily: 'Inter, sans-serif',
@@ -336,7 +336,7 @@ export const TYPOGRAPHY_PRESETS: StagingPreset[] = [
           params: { normX, normY, x: 0, y: 0, scale: 1.0, rotation: 0 },
         },
         {
-          type: 'text/style',
+          type: 'timed_text/style',
           target: 'text',
           params: {
             fontFamily: 'Arial, sans-serif',
@@ -374,7 +374,7 @@ export const TYPOGRAPHY_PRESETS: StagingPreset[] = [
           params: { normX, normY, x: 0, y: 0, scale: 1.0, rotation: 0 },
         },
         {
-          type: 'text/style',
+          type: 'timed_text/style',
           target: 'text',
           params: {
             fontFamily: 'Inter, sans-serif',
@@ -426,7 +426,7 @@ export const TYPOGRAPHY_PRESETS: StagingPreset[] = [
           },
         },
         {
-          type: 'text/style',
+          type: 'timed_text/style',
           target: 'text',
           params: {
             fontFamily: 'Impact, sans-serif',
@@ -464,7 +464,7 @@ export const TYPOGRAPHY_PRESETS: StagingPreset[] = [
           params: { normX, normY, x: 0, y: 0, scale: 1.0, rotation: 0 },
         },
         {
-          type: 'text/style',
+          type: 'timed_text/style',
           target: 'text',
           params: {
             fontFamily: 'Courier New, monospace',
@@ -501,7 +501,7 @@ export const TYPOGRAPHY_PRESETS: StagingPreset[] = [
           params: { normX, normY, x: 0, y: 0, scale: 1.0, rotation: 0 },
         },
         {
-          type: 'text/style',
+          type: 'timed_text/style',
           target: 'text',
           params: {
             fontFamily: 'Arial, sans-serif',
@@ -540,7 +540,7 @@ export const TYPOGRAPHY_PRESETS: StagingPreset[] = [
           params: { normX, normY, x: 0, y: 0, scale: 1.0, rotation: 0 },
         },
         {
-          type: 'text/style',
+          type: 'timed_text/style',
           target: 'text',
           params: {
             fontFamily: 'Georgia, serif',
@@ -577,7 +577,7 @@ export const TYPOGRAPHY_PRESETS: StagingPreset[] = [
           params: { normX, normY, x: 0, y: 0, scale: 1.0, rotation: 0 },
         },
         {
-          type: 'text/style',
+          type: 'timed_text/style',
           target: 'text',
           params: {
             fontFamily: 'Inter, sans-serif',
@@ -616,7 +616,7 @@ export const TYPOGRAPHY_PRESETS: StagingPreset[] = [
           params: { normX, normY, x: 0, y: 0, scale: 1.0, rotation: 0 },
         },
         {
-          type: 'text/style',
+          type: 'timed_text/style',
           target: 'text',
           params: {
             fontFamily: 'Montserrat, sans-serif',

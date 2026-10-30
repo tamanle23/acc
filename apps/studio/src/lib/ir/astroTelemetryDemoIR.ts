@@ -254,7 +254,7 @@ export const astroTelemetryDemoIR: VideoIRDocument = {
           },
           modifiers: [
             {
-              type: 'text/style',
+              type: 'timed_text/style',
               target: 'text',
               params: {
                 fontSize: 32,
@@ -287,7 +287,7 @@ export const astroTelemetryDemoIR: VideoIRDocument = {
           },
           modifiers: [
             {
-              type: 'text/style',
+              type: 'timed_text/style',
               target: 'text',
               params: {
                 fontSize: 32,
@@ -320,7 +320,7 @@ export const astroTelemetryDemoIR: VideoIRDocument = {
           },
           modifiers: [
             {
-              type: 'text/style',
+              type: 'timed_text/style',
               target: 'text',
               params: {
                 fontSize: 32,

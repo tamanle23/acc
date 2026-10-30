@@ -1,4 +1,5 @@
 import type { ModifierPlugin, ModifierContext, ClipRenderContext } from '../ModifierPluginRegistry';
+import type { SequenceType } from '../../types/VideoIR';
 
 export interface TransitionCrossfadeParams {
   durationFrames: number;
@@ -13,6 +14,7 @@ export interface TransitionCrossfadeParams {
 export class TransitionCrossfadePlugin implements ModifierPlugin<TransitionCrossfadeParams> {
   public readonly type = 'transition/crossfade';
   public readonly targetScope = 'sequence';
+  public readonly allowedSequenceTypes: readonly SequenceType[] = ['video', 'image', 'overlay', 'audio'];
   public readonly targetPhase = 2;
   public readonly schema = {
     fields: {

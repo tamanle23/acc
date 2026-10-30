@@ -10,6 +10,7 @@ import type {
   ClipRenderContext,
   StreamRenderContext,
 } from '../ModifierPluginRegistry';
+import type { SequenceType } from '../../types/VideoIR';
 
 export type AutoReframeAspectRatio = '9:16' | '1:1' | '4:5' | '16:9';
 
@@ -37,6 +38,7 @@ export interface AutoReframePluginParams {
 export class AutoReframeModifierPlugin implements ModifierPlugin<AutoReframePluginParams> {
   public readonly type = 'vfx/auto_reframe';
   public readonly targetScope = 'sequence';
+  public readonly allowedSequenceTypes: readonly SequenceType[] = ['video', 'image'];
   public readonly targetPhase = 2;
 
   public readonly schema = {

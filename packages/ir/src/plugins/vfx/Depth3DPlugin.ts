@@ -10,6 +10,7 @@ import {
   NativeResourceManager,
 } from '@acc/core-isomorphic';
 import type { ModifierPlugin, ModifierContext, ClipRenderContext } from '../ModifierPluginRegistry';
+import type { SequenceType } from '../../types/VideoIR';
 import {
   Depth3DFactory,
   drawFrameBreakerFrame,
@@ -74,6 +75,7 @@ export interface Depth3DPluginParams {
 export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
   public readonly type = 'vfx/depth3d';
   public readonly targetScope = 'sequence';
+  public readonly allowedSequenceTypes: readonly SequenceType[] = ['video', 'image'];
   public readonly targetPhase = 2;
   public readonly schema = {
     fields: {

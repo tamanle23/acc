@@ -312,8 +312,34 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
       vignette: 0.35,
     },
   },
-  'text/style': {
+  'timed_text/style': {
     name: 'Typography & Karaoke Glow',
+    category: 'text',
+    icon: Type,
+    supportedTrackTypes: ['timed_text'],
+    defaultParams: {
+      enabled: true,
+      fontFamily: 'Inter',
+      fontSize: 28,
+      fontWeight: 600,
+      letterSpacing: 0,
+      fillColor: '#ffffff',
+      strokeColor: '#000000',
+      strokeWidth: 2,
+      shadowBlur: 6,
+      glowColor: '#00d4ff',
+      activeWordHighlight: {
+        enabled: true,
+        fillColor: '#facc15',
+        scale: 1.15,
+        glowColor: '#00d4ff',
+        glowBlur: 12,
+        animationPreset: 'pop',
+      },
+    },
+  },
+  'text/style': {
+    name: 'Typography & Karaoke Glow (Legacy)',
     category: 'text',
     icon: Type,
     supportedTrackTypes: ['timed_text'],
@@ -882,6 +908,52 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
       seed: 1337,
     },
   },
+  'motion/vector_blur': {
+    name: 'Optical Vector Motion Blur',
+    category: 'motion',
+    icon: Move,
+    supportedTrackTypes: ['video', 'image'],
+    defaultParams: {
+      shutterAngle: 180,
+      samples: 8,
+    },
+  },
+  'generator/solid_backdrop': {
+    name: 'Solid & Gradient Backdrop Generator',
+    category: 'vfx',
+    icon: Layers,
+    supportedTrackTypes: ['video', 'overlay', 'image'],
+    defaultParams: {
+      colorA: '#0b0f19',
+      colorB: '#1e293b',
+      type: 'linear_gradient',
+      angleDeg: 45,
+      dither: false,
+    },
+  },
+  'timeline/photometric_bloom': {
+    name: 'Photometric Bloom Master VFX',
+    category: 'vfx',
+    icon: Sparkles,
+    supportedTrackTypes: ['video', 'overlay', 'image'],
+    defaultParams: {
+      luminanceThreshold: 0.8,
+      intensity: 1.0,
+      tint: '#ffffff',
+    },
+  },
+  'timeline/anamorphic_glare': {
+    name: 'Anamorphic Lens Glare Flare',
+    category: 'vfx',
+    icon: Sparkles,
+    supportedTrackTypes: ['video', 'overlay', 'image'],
+    defaultParams: {
+      threshold: 0.85,
+      streakLengthPx: 120,
+      streakTint: '#38bdf8',
+      intensity: 1.2,
+    },
+  },
 };
 
 export function getAvailableModifiersFromRegistry(
@@ -1022,8 +1094,15 @@ export function getSectionIdForModifierType(type: string): string {
       return 'particles';
     case 'vfx/color_grading':
       return 'color';
+    case 'timed_text/style':
     case 'text/style':
       return 'typography';
+    case 'motion/vector_blur':
+      return 'motion';
+    case 'generator/solid_backdrop':
+    case 'timeline/photometric_bloom':
+    case 'timeline/anamorphic_glare':
+      return 'vfx';
     case 'sfx/dynamic_ducking':
     case 'audio/volume':
     case 'audio/pan':

@@ -28,7 +28,7 @@ describe('ModifierPluginRegistry Declarative Schemas & Strategy Pattern Inspecto
       'sfx/dynamic_ducking',
       'sfx/procedural',
       'transform',
-      'text/style',
+      'timed_text/style',
       'shape/draw',
       'time_space',
     ];

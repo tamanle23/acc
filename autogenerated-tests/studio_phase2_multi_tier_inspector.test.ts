@@ -216,6 +216,7 @@ describe('Studio Phase 2: Dynamic Multi-Tier Inspector & State Commands', () => 
       expect(getSectionIdForModifierType('overlay/hologram_hud')).toBe('hologram_hud');
       expect(getSectionIdForModifierType('overlay/canvas_particles')).toBe('particles');
       expect(getSectionIdForModifierType('vfx/color_grading')).toBe('color');
+      expect(getSectionIdForModifierType('timed_text/style')).toBe('typography');
       expect(getSectionIdForModifierType('text/style')).toBe('typography');
       expect(getSectionIdForModifierType('sfx/dynamic_ducking')).toBe('audio');
       expect(getSectionIdForModifierType('audio/volume')).toBe('audio');

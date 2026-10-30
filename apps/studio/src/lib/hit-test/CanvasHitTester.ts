@@ -59,7 +59,7 @@ export class CanvasHitTester {
     const modifiers = seq.modifiers || [];
     const transMod = modifiers.find((m: ModifierNode) => m.type === 'transform');
     const shapeMod = modifiers.find((m: ModifierNode) => m.type === 'shape/vector' || m.type === 'shape/draw');
-    const textMod = modifiers.find((m: ModifierNode) => m.type === 'text/style');
+    const textMod = modifiers.find((m: ModifierNode) => m.type === 'timed_text/style' || m.type === 'text/style');
 
     const tp = (transMod?.params || {}) as Record<string, unknown>;
     const normX = typeof tp.normX === 'number' && Number.isFinite(tp.normX) ? tp.normX : 0.5;

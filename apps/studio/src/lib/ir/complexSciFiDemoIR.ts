@@ -23,7 +23,7 @@ import type { VideoIRDocument } from '@acc/ir';
  *
  * Modifiers Demonstrated:
  * - vfx/color_grading, vfx/depth3d, overlay/canvas_particles, overlay/hologram_hud, vfx/partial
- * - transform, transition/crossfade, editorial/split_edit, text/style
+ * - transform, transition/crossfade, editorial/split_edit, timed_text/style
  * - sfx/dynamic_ducking, audio/volume, audio/pan, audio/filter, sfx/procedural
  */
 export const complexSciFiDemoIR: VideoIRDocument = {
@@ -843,7 +843,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
           },
           modifiers: [
             {
-              type: 'text/style',
+              type: 'timed_text/style',
               target: 'text',
               params: {
                 fontSize: 40,
@@ -876,7 +876,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
           },
           modifiers: [
             {
-              type: 'text/style',
+              type: 'timed_text/style',
               target: 'text',
               params: {
                 fontSize: 40,
@@ -908,7 +908,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
           },
           modifiers: [
             {
-              type: 'text/style',
+              type: 'timed_text/style',
               target: 'text',
               params: {
                 fontSize: 44,
@@ -954,7 +954,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
           },
           modifiers: [
             {
-              type: 'text/style',
+              type: 'timed_text/style',
               target: 'text',
               params: {
                 fontSize: 24,
@@ -982,7 +982,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
           },
           modifiers: [
             {
-              type: 'text/style',
+              type: 'timed_text/style',
               target: 'text',
               params: {
                 fontSize: 24,

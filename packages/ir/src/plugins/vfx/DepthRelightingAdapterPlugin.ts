@@ -4,6 +4,7 @@ import type {
   ClipRenderContext,
   StreamRenderContext,
 } from '../ModifierPluginRegistry';
+import type { SequenceType } from '../../types/VideoIR';
 import { Depth3DPlugin, type Depth3DPluginParams } from './Depth3DPlugin';
 
 export interface DepthRelightingAdapterParams {
@@ -34,6 +35,7 @@ export interface DepthRelightingAdapterParams {
 export class DepthRelightingAdapterPlugin implements ModifierPlugin<DepthRelightingAdapterParams> {
   public readonly type = 'vfx/depth_relighting';
   public readonly targetScope = 'sequence';
+  public readonly allowedSequenceTypes: readonly SequenceType[] = ['video', 'image'];
   public readonly targetPhase = 2;
   public readonly schema = {
     displayName: '3D Depth Relighting',

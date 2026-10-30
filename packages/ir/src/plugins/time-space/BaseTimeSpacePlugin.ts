@@ -5,6 +5,8 @@ import type {
   MasterCompositeContext,
   ModifierParameterSchema,
 } from '../ModifierPluginRegistry';
+import type { ModifierTargetScope } from '../../types/modifiers';
+import type { SequenceType } from '../../types/VideoIR';
 
 /**
  * BaseTimeSpacePlugin:
@@ -15,7 +17,8 @@ export abstract class BaseTimeSpacePlugin<TParams extends Record<string, any> = 
   implements ModifierPlugin<TParams> {
   public abstract readonly type: string;
   public abstract readonly templateId: string;
-  public readonly targetScope = 'both';
+  public readonly targetScope: ModifierTargetScope = 'standalone';
+  public readonly allowedSequenceTypes: readonly SequenceType[] = ['overlay', 'video', 'image'];
   public readonly targetPhase = 2;
   public abstract readonly schema: ModifierParameterSchema;
 

@@ -1,5 +1,7 @@
 import type { ModifierPlugin, ModifierContext } from '../ModifierPluginRegistry';
 import type { AudioProcessContext } from '../IVideoPluginStrategy';
+import type { ModifierTargetScope } from '../../types/modifiers';
+import type { SequenceType } from '../../types/VideoIR';
 
 export interface VolumeModifierParams {
   volume?: number;       // Linear volume multiplier (0.0 to 2.0, default: 1.0)
@@ -16,7 +18,8 @@ export interface VolumeModifierParams {
  */
 export class VolumeModifierPlugin implements ModifierPlugin<VolumeModifierParams> {
   public readonly type = 'audio/volume';
-  public readonly targetScope = 'both';
+  public readonly targetScope: ModifierTargetScope = 'sequence';
+  public readonly allowedSequenceTypes: readonly SequenceType[] = ['audio', 'video'];
   public readonly targetPhase = 4;
   public readonly schema = {
     fields: {

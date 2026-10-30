@@ -5,6 +5,8 @@ import type {
   StreamRenderContext,
   MasterCompositeContext,
 } from '../ModifierPluginRegistry';
+import type { ModifierTargetScope } from '../../types/modifiers';
+import type { SequenceType } from '../../types/VideoIR';
 import {
   evaluateSequenceMotion,
   type InterpolatedTransformState,
@@ -42,7 +44,8 @@ export interface TransformModifierParams {
  */
 export class TransformModifierPlugin implements ModifierPlugin<TransformModifierParams> {
   public readonly type = 'transform';
-  public readonly targetScope = 'both';
+  public readonly targetScope: ModifierTargetScope = 'sequence';
+  public readonly allowedSequenceTypes: readonly SequenceType[] = ['video', 'image', 'overlay', 'text'];
   public readonly targetPhase = 2;
   public readonly schema = {
     fields: {

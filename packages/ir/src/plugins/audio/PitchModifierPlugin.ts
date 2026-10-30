@@ -1,5 +1,7 @@
 import type { ModifierPlugin, ModifierContext } from '../ModifierPluginRegistry';
 import type { AudioProcessContext } from '../IVideoPluginStrategy';
+import type { ModifierTargetScope } from '../../types/modifiers';
+import type { SequenceType } from '../../types/VideoIR';
 
 export interface PitchModifierParams {
   playbackRate?: number; // Speed/pitch factor (e.g. 0.5 to 2.0, default: 1.0)
@@ -12,7 +14,8 @@ export interface PitchModifierParams {
  */
 export class PitchModifierPlugin implements ModifierPlugin<PitchModifierParams> {
   public readonly type = 'audio/pitch';
-  public readonly targetScope = 'both';
+  public readonly targetScope: ModifierTargetScope = 'sequence';
+  public readonly allowedSequenceTypes: readonly SequenceType[] = ['audio', 'video'];
   public readonly targetPhase = 4;
   public readonly schema = {
     fields: {

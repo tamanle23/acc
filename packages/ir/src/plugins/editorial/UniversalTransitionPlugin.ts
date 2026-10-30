@@ -1,4 +1,5 @@
 import type { ModifierPlugin, ModifierContext, ClipRenderContext } from '../ModifierPluginRegistry';
+import type { SequenceType } from '../../types/VideoIR';
 import type {
   TransitionModifierParams,
   TransitionType,
@@ -43,6 +44,7 @@ export function calculateTransitionProgress(rawProgress: number, ease?: string):
 export class UniversalTransitionPlugin implements ModifierPlugin<TransitionModifierParams> {
   public readonly type: string;
   public readonly targetScope = 'sequence' as const;
+  public readonly allowedSequenceTypes = ['video', 'image', 'overlay', 'audio'] as const;
   public readonly targetPhase = 2 as const;
 
   constructor(customType: string = 'transition/crossfade') {

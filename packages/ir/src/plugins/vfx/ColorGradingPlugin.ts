@@ -1,4 +1,6 @@
 import type { ModifierPlugin, ModifierContext, ClipRenderContext, MasterCompositeContext } from '../ModifierPluginRegistry';
+import type { ModifierTargetScope } from '../../types/modifiers';
+import type { SequenceType } from '../../types/VideoIR';
 import { ColorGradingEngine, type ColorGradingParams } from '@acc/effect-engines';
 
 /**
@@ -8,7 +10,8 @@ import { ColorGradingEngine, type ColorGradingParams } from '@acc/effect-engines
  */
 export class ColorGradingPlugin implements ModifierPlugin<ColorGradingParams> {
   public readonly type = 'vfx/color_grading';
-  public readonly targetScope = 'both';
+  public readonly targetScope: ModifierTargetScope = 'sequence';
+  public readonly allowedSequenceTypes: readonly SequenceType[] = ['video', 'image'];
   public readonly targetPhase = 2;
   public readonly schema = {
     fields: {

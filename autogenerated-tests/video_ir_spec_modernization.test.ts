@@ -97,7 +97,7 @@ describe('Video IR Spec Modernization Suite', () => {
             cues: [{ startOffsetMs: 0, endOffsetMs: 3000, text: 'Hello World' }],
             modifiers: [
               {
-                type: 'text/style',
+                type: 'timed_text/style',
                 target: 'text',
                 params: { fontSize: 32, color: '#ffffff' },
               },

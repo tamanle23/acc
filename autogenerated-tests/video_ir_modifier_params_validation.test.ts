@@ -241,10 +241,10 @@ describe('Video IR Modifier Parameters Pure TypeScript Validation Suite', () => 
   // 4. Timed Text & Typography
   // =========================================================================
   describe('4. Typography & Timed Text', () => {
-    it('validates text/style fontSize, textAlign, and activeWord', () => {
+    it('validates timed_text/style fontSize, textAlign, and activeWord', () => {
       const validDoc = createBaseDoc(
         {
-          type: 'text/style',
+          type: 'timed_text/style',
           target: 'text',
           params: {
             fontSize: 48,
@@ -261,7 +261,7 @@ describe('Video IR Modifier Parameters Pure TypeScript Validation Suite', () => 
 
       const invalidFont = createBaseDoc(
         {
-          type: 'text/style',
+          type: 'timed_text/style',
           target: 'text',
           params: { fontSize: -10 },
         },
@@ -274,7 +274,7 @@ describe('Video IR Modifier Parameters Pure TypeScript Validation Suite', () => 
 
       const invalidAlign = createBaseDoc(
         {
-          type: 'text/style',
+          type: 'timed_text/style',
           target: 'text',
           params: { textAlign: 'justify' },
         },

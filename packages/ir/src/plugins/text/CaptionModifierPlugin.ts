@@ -4,6 +4,8 @@ import type {
   ClipRenderContext,
   StreamRenderContext,
 } from '../ModifierPluginRegistry';
+import type { ModifierTargetScope } from '../../types/modifiers';
+import type { SequenceType } from '../../types/VideoIR';
 import {
   BoundedAcousticCaptionStrategy,
   drawCanvasCaptionsFromSnapshot,
@@ -23,8 +25,9 @@ import {
  * - SAFE-ZONE-COMPLIANCE: Evaluates SafeZoneManager boundaries for TikTok, Reels, Shorts, and YouTube.
  */
 export class CaptionModifierPlugin implements ModifierPlugin<CaptionSettings> {
-  public readonly type = 'text/style';
-  public readonly targetScope = 'both';
+  public readonly type = 'timed_text/style';
+  public readonly targetScope: ModifierTargetScope = 'track';
+  public readonly allowedSequenceTypes: readonly SequenceType[] = ['text'];
   public readonly targetPhase = 2;
   public readonly schema = {
     displayName: 'Typography & Karaoke Glow',

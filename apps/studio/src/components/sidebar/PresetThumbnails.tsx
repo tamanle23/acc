@@ -293,7 +293,7 @@ interface TextStyleModifierParams {
 
 export function TypographyPresetThumbnail({ preset }: { preset: StagingPreset }) {
   const seq = React.useMemo(() => preset.createSequence({ startFrame: 0 }), [preset]);
-  const textMod = seq.modifiers?.find((m) => m.type === 'text/style');
+  const textMod = seq.modifiers?.find((m) => m.type === 'timed_text/style' || m.type === 'text/style');
   const params = (textMod?.params || {}) as TextStyleModifierParams;
 
   const cueText = seq.cues?.[0]?.text || preset.name;

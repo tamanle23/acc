@@ -91,7 +91,7 @@ describe("Phase 2: Deep Collapsible Inspector Panels & 3D Numeric Suite", () => 
     const manager = IRStateManager.getInstance();
     const seqId = "seq-city-intro";
 
-    manager.updateModifier(seqId, "text/style", {
+    manager.updateModifier(seqId, "timed_text/style", {
       enabled: true,
       fontFamily: "Outfit",
       fontSize: 36,
@@ -103,7 +103,7 @@ describe("Phase 2: Deep Collapsible Inspector Panels & 3D Numeric Suite", () => 
 
     const state = manager.getState();
     const seq = state.doc.tracks[0].sequences.find((s) => s.id === seqId);
-    const textStyle = seq?.modifiers?.find((m) => m.type === "text/style");
+    const textStyle = seq?.modifiers?.find((m) => m.type === "timed_text/style");
     expect(textStyle).toBeDefined();
     expect(textStyle?.params.fontFamily).toBe("Outfit");
     expect(textStyle?.params.fontSize).toBe(36);

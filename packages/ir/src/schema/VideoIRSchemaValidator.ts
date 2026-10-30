@@ -1,11 +1,12 @@
 import type { VideoIRDocument, SequenceType, TrackType } from '../types/VideoIR';
+import { ModifierPluginRegistry } from '../plugins/ModifierPluginRegistry';
 
 export interface ValidationResult {
   valid: boolean;
   errors: string[];
 }
 
-const VALID_SEQUENCE_TYPES = new Set<string>(['video', 'image', 'audio', 'text', 'overlay']);
+const VALID_SEQUENCE_TYPES = new Set<string>(['video', 'image', 'audio', 'text', 'overlay', 'timed_text']);
 const VALID_BLEND_MODES = new Set<string>([
   'normal',
   'screen',
@@ -23,7 +24,7 @@ const VALID_BLEND_MODES = new Set<string>([
 const TRACK_COMPATIBLE_SEQUENCE_TYPES: Record<string, Set<string>> = {
   video: new Set(['video', 'image', 'overlay']),
   audio: new Set(['audio']),
-  timed_text: new Set(['text']),
+  timed_text: new Set(['text', 'timed_text']),
   data: new Set(['video', 'image', 'audio', 'text', 'overlay']),
 };
 
@@ -371,6 +372,18 @@ export class VideoIRSchemaValidator {
         }
       }
 
+      // Dynamic registry target scope & sequence type compatibility check
+      const registry = ModifierPluginRegistry.getInstance();
+      if (registry.has(mod.type)) {
+        const targetCtx = seqType
+          ? { type: 'sequence' as const, sequenceType: seqType }
+          : { type: 'track' as const };
+        const check = registry.isModifierAllowedOnEntity(mod.type, targetCtx);
+        if (!check.allowed && check.reason) {
+          errors.push(`Modifier "${mod.type}" on ${context}: ${check.reason}`);
+        }
+      }
+
       if (mod.params === undefined || typeof mod.params !== 'object' || mod.params === null) {
         errors.push(`Modifier "${mod.type || i}" on ${context} missing "params" object`);
       } else {
@@ -603,22 +616,73 @@ export class VideoIRSchemaValidator {
       }
 
       case 'text/style': {
+        errors.push(`Modifier "text/style" on ${context} is deprecated and removed. Use "timed_text/style" instead.`);
+        break;
+      }
+
+      case 'timed_text/style': {
         if (p.fontSize !== undefined && (typeof p.fontSize !== 'number' || p.fontSize <= 0)) {
-          errors.push(`Modifier "text/style" on ${context}: fontSize must be a positive number`);
+          errors.push(`Modifier "timed_text/style" on ${context}: fontSize must be a positive number`);
         }
         if (p.fontFamily !== undefined && typeof p.fontFamily !== 'string') {
-          errors.push(`Modifier "text/style" on ${context}: fontFamily must be a string`);
+          errors.push(`Modifier "timed_text/style" on ${context}: fontFamily must be a string`);
         }
         if (p.color !== undefined && typeof p.color !== 'string') {
-          errors.push(`Modifier "text/style" on ${context}: color must be a string`);
+          errors.push(`Modifier "timed_text/style" on ${context}: color must be a string`);
         }
         if (p.textAlign !== undefined && !['left', 'center', 'right'].includes(p.textAlign)) {
-          errors.push(`Modifier "text/style" on ${context}: textAlign must be 'left', 'center', or 'right'`);
+          errors.push(`Modifier "timed_text/style" on ${context}: textAlign must be 'left', 'center', or 'right'`);
         }
         if (p.activeWord !== undefined) {
           if (typeof p.activeWord !== 'object' || p.activeWord === null) {
-            errors.push(`Modifier "text/style" on ${context}: activeWord must be an object`);
+            errors.push(`Modifier "timed_text/style" on ${context}: activeWord must be an object`);
           }
+        }
+        break;
+      }
+
+      case 'motion/vector_blur': {
+        if (p.shutterAngle !== undefined && (typeof p.shutterAngle !== 'number' || p.shutterAngle < 0 || p.shutterAngle > 360)) {
+          errors.push(`Modifier "motion/vector_blur" on ${context}: shutterAngle must be a number between 0 and 360`);
+        }
+        if (p.samples !== undefined && (typeof p.samples !== 'number' || p.samples < 1)) {
+          errors.push(`Modifier "motion/vector_blur" on ${context}: samples must be an integer >= 1`);
+        }
+        break;
+      }
+
+      case 'generator/solid_backdrop': {
+        if (!p.colorA || typeof p.colorA !== 'string') {
+          errors.push(`Modifier "generator/solid_backdrop" on ${context}: colorA must be a non-empty string`);
+        }
+        if (p.colorB !== undefined && typeof p.colorB !== 'string') {
+          errors.push(`Modifier "generator/solid_backdrop" on ${context}: colorB must be a string`);
+        }
+        if (p.type !== undefined && !['solid', 'linear_gradient', 'radial_gradient'].includes(p.type)) {
+          errors.push(`Modifier "generator/solid_backdrop" on ${context}: type must be 'solid', 'linear_gradient', or 'radial_gradient'`);
+        }
+        break;
+      }
+
+      case 'timeline/photometric_bloom': {
+        if (p.luminanceThreshold !== undefined && (typeof p.luminanceThreshold !== 'number' || p.luminanceThreshold < 0 || p.luminanceThreshold > 1)) {
+          errors.push(`Modifier "timeline/photometric_bloom" on ${context}: luminanceThreshold must be a number between 0.0 and 1.0`);
+        }
+        if (p.intensity !== undefined && (typeof p.intensity !== 'number' || p.intensity < 0)) {
+          errors.push(`Modifier "timeline/photometric_bloom" on ${context}: intensity must be a non-negative number`);
+        }
+        break;
+      }
+
+      case 'timeline/anamorphic_glare': {
+        if (p.threshold !== undefined && (typeof p.threshold !== 'number' || p.threshold < 0 || p.threshold > 1)) {
+          errors.push(`Modifier "timeline/anamorphic_glare" on ${context}: threshold must be a number between 0.0 and 1.0`);
+        }
+        if (p.streakLengthPx !== undefined && (typeof p.streakLengthPx !== 'number' || p.streakLengthPx <= 0)) {
+          errors.push(`Modifier "timeline/anamorphic_glare" on ${context}: streakLengthPx must be a positive number`);
+        }
+        if (p.intensity !== undefined && (typeof p.intensity !== 'number' || p.intensity < 0)) {
+          errors.push(`Modifier "timeline/anamorphic_glare" on ${context}: intensity must be a non-negative number`);
         }
         break;
       }

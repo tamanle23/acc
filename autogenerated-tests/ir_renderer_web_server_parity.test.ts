@@ -128,7 +128,7 @@ describe('Iteration 10 Phase 4: IR Master & Preview Web/Server Visual Parity Sui
           timelineStartFrame: 5,
           modifiers: [
             {
-              type: 'text/style',
+              type: 'timed_text/style',
               params: {
                 text: 'PARITY VERIFICATION PROTOCOL ACTIVE',
                 fontFamily: 'sans-serif',

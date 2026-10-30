@@ -97,7 +97,7 @@ describe('Studio Phase 3: Library Drag-and-Drop Staging, Inline Text Editing & P
 
         if (preset.category === 'text') {
           expect(seq.cues && seq.cues.length > 0).toBe(true);
-          const textStyleMod = seq.modifiers?.find((m) => m.type === 'text/style');
+          const textStyleMod = seq.modifiers?.find((m) => m.type === 'timed_text/style' || m.type === 'text/style');
           expect(textStyleMod).toBeDefined();
         } else if (preset.category === 'shape') {
           const shapeMod = seq.modifiers?.find((m) => m.type === 'shape/vector' || m.type === 'shape/draw');

@@ -173,7 +173,11 @@ export class IRCanvasCompositor {
           continue;
         }
 
-        const trackCaptionSettings = (track.style as CaptionSettings) || {};
+        const trackMod = track.modifiers?.find((m) => m.type === 'timed_text/style' || m.type === 'text/style');
+        const trackCaptionSettings: CaptionSettings = {
+          ...((track.style as CaptionSettings) || {}),
+          ...((trackMod?.params as any) || {}),
+        };
         const platform = (trackCaptionSettings as any)?.platform as SafeZonePlatform | undefined;
 
         for (const seq of track.sequences) {
@@ -193,7 +197,7 @@ export class IRCanvasCompositor {
             const localTimeSec = (clampedFrame - seq.startFrame) / fps;
             const localFrame = clampedFrame - seq.startFrame;
 
-            const textMod = seq.modifiers?.find((m) => m.type === 'text/style');
+            const textMod = seq.modifiers?.find((m) => m.type === 'timed_text/style' || m.type === 'text/style');
             const textParams = (textMod?.params as any) || {};
             const effectiveSettings: CaptionSettings = {
               ...trackCaptionSettings,

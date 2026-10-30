@@ -3,6 +3,8 @@ import type {
   ModifierContext,
   ClipRenderContext,
 } from '../ModifierPluginRegistry';
+import type { ModifierTargetScope } from '../../types/modifiers';
+import type { SequenceType } from '../../types/VideoIR';
 
 export type ShapeGeometryType =
   | 'rect'
@@ -52,9 +54,12 @@ export interface ShapeModifierParams {
  */
 export class ShapeModifierPlugin implements ModifierPlugin<ShapeModifierParams> {
   public readonly type: string;
-  public readonly targetScope = 'sequence';
+  public readonly targetScope: ModifierTargetScope = 'standalone';
+  public readonly allowedSequenceTypes: readonly SequenceType[] = ['overlay'];
   public readonly targetPhase = 2;
   public readonly schema = {
+    displayName: 'Vector Shapes & Geometry',
+    category: 'shapes' as const,
     fields: {
       geometry: {
         key: 'geometry',

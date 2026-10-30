@@ -19,7 +19,7 @@ describe('CanvasHitTester Suite', () => {
       ],
       modifiers: [
         {
-          type: 'text/style',
+          type: 'timed_text/style',
           params: {
             fontFamily: 'Inter',
             fontSize: 44,

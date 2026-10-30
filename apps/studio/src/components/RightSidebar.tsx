@@ -25,6 +25,7 @@ import {
   DropdownMenuSubContent,
 } from './ui/dropdown-menu';
 import type { IRSequence, IRTrack, ModifierNode } from '@acc/ir';
+import { ModifierPluginRegistry } from '@acc/ir';
 import { IRStateManager } from '../lib/ir/irState';
 import { useIRState } from '../lib/ir/useStudioStore';
 import { ProjectInspector } from './inspector/ProjectInspector';
@@ -103,9 +104,17 @@ export function RightSidebar() {
     | 'timed_text'
     | 'data';
   const availableModifiers = getAvailableModifiersFromRegistry();
-  const relevantModifiers = availableModifiers.filter((mod) =>
-    mod.supportedTrackTypes.includes(trackType)
-  );
+  const relevantModifiers = availableModifiers.filter((mod) => {
+    if (!mod.supportedTrackTypes.includes(trackType)) return false;
+    if (selectedSeq) {
+      const check = ModifierPluginRegistry.getInstance().isModifierAllowedOnEntity(mod.type, {
+        type: 'sequence',
+        sequenceType: selectedSeq.type,
+      });
+      return check.allowed;
+    }
+    return true;
+  });
 
   const modifiers: ModifierNode[] = selectedSeq?.modifiers || [];
 

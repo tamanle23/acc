@@ -279,7 +279,7 @@
       "properties": {
         "type": {
           "type": "string",
-          "description": "Modifier plugin identifier (e.g., 'transform', 'vfx/camera_3d', 'audio/volume', 'text/style', 'time_space')"
+          "description": "Modifier plugin identifier (e.g., 'transform', 'vfx/camera_3d', 'audio/volume', 'timed_text/style', 'time_space')"
         },
         "target": {
           "oneOf": [

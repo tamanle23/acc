@@ -1,5 +1,7 @@
 import { UniversalCanvasProvider } from '@acc/core-isomorphic';
 import type { ModifierPlugin, ModifierContext, StreamRenderContext, ClipRenderContext } from '../ModifierPluginRegistry';
+import type { ModifierTargetScope } from '../../types/modifiers';
+import type { SequenceType } from '../../types/VideoIR';
 import {
   DeterministicParticleField,
   PostProcessingShaders,
@@ -149,7 +151,8 @@ export const PARTICLE_PRESET_DEFAULTS: Record<
  */
 export class CanvasParticleOverlayPlugin implements ModifierPlugin<CanvasParticleOverlayParams> {
   public readonly type = 'overlay/canvas_particles';
-  public readonly targetScope = 'both';
+  public readonly targetScope: ModifierTargetScope = 'standalone';
+  public readonly allowedSequenceTypes: readonly SequenceType[] = ['overlay', 'video', 'image'];
   public readonly targetPhase = 3;
   public readonly schema = {
     displayName: 'Particle VFX & Shaders',

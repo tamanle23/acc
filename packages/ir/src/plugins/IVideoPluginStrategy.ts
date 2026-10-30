@@ -1,4 +1,5 @@
 import type { ResolvedTrack, ResolvedSequence, ModifierNode } from '../types/VideoIR';
+import type { ModifierTargetScope } from '../types/modifiers';
 
 export type PluginTargetPhase = 1 | 2 | 3 | 4;
 
@@ -58,7 +59,7 @@ export interface AudioProcessContext {
 export interface IVideoPluginStrategy<TParams = Record<string, unknown>, TState = any> {
   readonly pluginId: string;
   readonly targetPhase: PluginTargetPhase;
-  readonly targetScope: 'track' | 'sequence' | 'master' | 'audio' | 'both';
+  readonly targetScope: ModifierTargetScope | 'track' | 'sequence' | 'master' | 'audio' | 'both';
 
   validate?(params: unknown): params is TParams;
 

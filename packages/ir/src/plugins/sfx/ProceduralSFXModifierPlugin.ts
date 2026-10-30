@@ -3,6 +3,8 @@ import type {
   ModifierContext,
   AudioProcessContext,
 } from '../ModifierPluginRegistry';
+import type { ModifierTargetScope } from '../../types/modifiers';
+import type { SequenceType } from '../../types/VideoIR';
 import { ProceduralAudioSynthesizer } from '../../renderer/audio/ProceduralAudioSynthesizer';
 
 export type ProceduralSFXType =
@@ -40,7 +42,8 @@ export interface ProceduralSFXModifierParams {
  */
 export class ProceduralSFXModifierPlugin implements ModifierPlugin<ProceduralSFXModifierParams> {
   public readonly type = 'sfx/procedural';
-  public readonly targetScope = 'both';
+  public readonly targetScope: ModifierTargetScope = 'standalone';
+  public readonly allowedSequenceTypes: readonly SequenceType[] = ['audio'];
   public readonly targetPhase = 2;
   public readonly schema = {
     displayName: 'Procedural Audio Synthesizer',

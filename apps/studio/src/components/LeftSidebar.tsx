@@ -15,7 +15,12 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
-import { STAGING_PRESETS, type StagingPreset, type PresetCategory } from '../lib/library/stagingPresets';
+import {
+  STAGING_PRESETS,
+  getDynamicStagingPresets,
+  type StagingPreset,
+  type PresetCategory,
+} from '../lib/library/stagingPresets';
 import { SFX_SOUND_BANKS } from '../lib/library/sfxBank';
 import { IRStateManager } from '../lib/ir/irState';
 import { useIRState } from '../lib/ir/useStudioStore';
@@ -200,7 +205,9 @@ export function LeftSidebar({
   };
   const effectiveCategory: 'all' | PresetCategory = NAV_CATEGORY_MAP[activeNav] ?? selectedCategory;
 
-  const filteredPresets = STAGING_PRESETS.filter((p) => {
+  const allStagingPresets = React.useMemo(() => getDynamicStagingPresets(), [activeNav]);
+
+  const filteredPresets = allStagingPresets.filter((p) => {
     const matchesCat = effectiveCategory === 'all' || p.category === effectiveCategory || (effectiveCategory === 'vfx' && p.category === 'overlay');
     const matchesBank = effectiveCategory !== 'sfx' || selectedSfxBank === 'all' || p.id.toLowerCase().includes(`preset_sfx_${selectedSfxBank}`) || p.id.toLowerCase().includes(`sfx_${selectedSfxBank}`);
     const matchesQuery = p.name.toLowerCase().includes(libraryFilterQuery.toLowerCase()) || p.description.toLowerCase().includes(libraryFilterQuery.toLowerCase()) || p.badge.toLowerCase().includes(libraryFilterQuery.toLowerCase());

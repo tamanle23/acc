@@ -5,6 +5,8 @@ import type {
   StreamRenderContext,
   MasterCompositeContext,
 } from '../ModifierPluginRegistry';
+import type { ModifierTargetScope } from '../../types/modifiers';
+import type { SequenceType } from '../../types/VideoIR';
 
 export type PartialVFXType = 'blur' | 'spotlight' | 'glitch' | 'point_emitter' | string;
 
@@ -35,7 +37,8 @@ export interface PartialVFXPluginParams {
  */
 export class PartialVFXPlugin implements ModifierPlugin<PartialVFXPluginParams> {
   public readonly type = 'vfx/partial';
-  public readonly targetScope = 'both';
+  public readonly targetScope: ModifierTargetScope = 'sequence';
+  public readonly allowedSequenceTypes: readonly SequenceType[] = ['video', 'image'];
   public readonly targetPhase = 3;
   public readonly schema = {
     fields: {

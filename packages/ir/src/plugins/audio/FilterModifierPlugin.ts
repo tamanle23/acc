@@ -1,5 +1,7 @@
 import type { ModifierPlugin, ModifierContext } from '../ModifierPluginRegistry';
 import type { AudioProcessContext } from '../IVideoPluginStrategy';
+import type { ModifierTargetScope } from '../../types/modifiers';
+import type { SequenceType } from '../../types/VideoIR';
 
 export type AudioFilterType = 'lowpass' | 'highpass' | 'bandpass';
 
@@ -15,7 +17,8 @@ export interface FilterModifierParams {
  */
 export class FilterModifierPlugin implements ModifierPlugin<FilterModifierParams> {
   public readonly type = 'audio/filter';
-  public readonly targetScope = 'both';
+  public readonly targetScope: ModifierTargetScope = 'sequence';
+  public readonly allowedSequenceTypes: readonly SequenceType[] = ['audio', 'video'];
   public readonly targetPhase = 4;
   public readonly schema = {
     fields: {

@@ -39,7 +39,7 @@ describe('ModifierPluginRegistry & RightSidebar Dynamic Integration', () => {
     expect(types).toContain('vfx/depth3d');
     expect(types).toContain('vfx/camera_3d');
     expect(types).toContain('vfx/color_grading');
-    expect(types).toContain('text/style');
+    expect(types).toContain('timed_text/style');
     expect(types).toContain('audio/volume');
     expect(types).toContain('audio/pan');
     expect(types).toContain('audio/filter');
@@ -109,7 +109,7 @@ describe('ModifierPluginRegistry & RightSidebar Dynamic Integration', () => {
     expect(audioOnly.some((m) => m.type === 'camera/3d')).toBe(false);
 
     const textOnly = all.filter((m) => m.supportedTrackTypes.includes('timed_text'));
-    expect(textOnly.some((m) => m.type === 'text/style')).toBe(true);
+    expect(textOnly.some((m) => m.type === 'timed_text/style' || m.type === 'text/style')).toBe(true);
     expect(textOnly.some((m) => m.type === 'transform')).toBe(true);
     expect(textOnly.some((m) => m.type === 'audio/volume')).toBe(false);
   });

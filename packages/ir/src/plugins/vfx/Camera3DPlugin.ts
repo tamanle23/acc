@@ -10,6 +10,7 @@ import type {
   ClipRenderContext,
   StreamRenderContext,
 } from '../ModifierPluginRegistry';
+import type { SequenceType } from '../../types/VideoIR';
 import {
   CameraSplineInterpolator,
   type Camera3DKeyframe,
@@ -51,6 +52,7 @@ interface FocalZoneCanvases {
 export class Camera3DPlugin implements ModifierPlugin<Camera3DPluginParams> {
   public readonly type = 'vfx/camera_3d';
   public readonly targetScope = 'sequence';
+  public readonly allowedSequenceTypes: readonly SequenceType[] = ['video', 'image'];
   public readonly targetPhase = 2;
   public readonly schema = {
     displayName: '3D Camera & Lens',

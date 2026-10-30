@@ -1,6 +1,12 @@
 import type { SequenceType } from './VideoIR';
 
 // ============================================================================
+// Core Modifier Target Scope Taxonomy
+// ============================================================================
+
+export type ModifierTargetScope = 'standalone' | 'sequence' | 'track' | 'timeline';
+
+// ============================================================================
 // Core Temporal Curve & Keyframe Models
 // ============================================================================
 
@@ -484,6 +490,34 @@ export interface TimeSpaceModifierParams extends BaseTimeSpaceModifierParams {
 }
 export type TimeSpaceModifierConfig = TimeSpaceModifierParams & { type: 'time_space' };
 
+export interface VectorMotionBlurModifierParams {
+  shutterAngle?: number; // default 180 (degrees)
+  samples?: number;      // default 8
+}
+
+export interface PhotometricBloomModifierParams {
+  luminanceThreshold?: number; // 0.0 - 1.0, default 0.8
+  intensity?: number;          // default 1.0
+  tint?: string;
+}
+
+export interface AnamorphicGlareModifierParams {
+  threshold?: number;
+  streakLengthPx?: number;
+  streakTint?: string;
+  intensity?: number;
+}
+
+export interface SolidBackdropModifierParams {
+  colorA: string;
+  colorB?: string;
+  type?: 'solid' | 'linear_gradient' | 'radial_gradient';
+  angleDeg?: number;
+  dither?: boolean;
+}
+
+export type TimedTextStyleModifierParams = TextStyleModifierParams;
+
 export type StandardModifierNode =
   | TypedModifierNode<'transform', 'video' | 'image' | 'overlay' | 'text' | SequenceType[], TransformModifierParams>
   | TypedModifierNode<'vfx/camera_3d', 'video' | 'image' | 'overlay' | SequenceType[], Camera3DModifierParams>
@@ -511,7 +545,11 @@ export type StandardModifierNode =
   | TypedModifierNode<'time_space/topographic_contour', 'video' | 'image' | 'overlay' | SequenceType[], TopographicContourModifierParams>
   | TypedModifierNode<'time_space/hyperbolic_poincare', 'video' | 'image' | 'overlay' | SequenceType[], HyperbolicPoincareModifierParams>
   | TypedModifierNode<'time_space/kinetic_harmonograph', 'video' | 'image' | 'overlay' | SequenceType[], KineticHarmonographModifierParams>
-  | TypedModifierNode<'text/style', 'text' | SequenceType[], TextStyleModifierParams>
+  | TypedModifierNode<'timed_text/style' | 'text/style', 'text' | SequenceType[], TextStyleModifierParams>
+  | TypedModifierNode<'motion/vector_blur', 'video' | 'image' | SequenceType[], VectorMotionBlurModifierParams>
+  | TypedModifierNode<'generator/solid_backdrop', 'overlay' | SequenceType[], SolidBackdropModifierParams>
+  | TypedModifierNode<'timeline/photometric_bloom', 'video' | 'overlay' | SequenceType[], PhotometricBloomModifierParams>
+  | TypedModifierNode<'timeline/anamorphic_glare', 'video' | 'overlay' | SequenceType[], AnamorphicGlareModifierParams>
   | TypedModifierNode<'audio/volume', 'audio' | SequenceType[], VolumeModifierParams>
   | TypedModifierNode<'audio/pan', 'audio' | SequenceType[], PanModifierParams>
   | TypedModifierNode<'audio/filter', 'audio' | SequenceType[], FilterModifierParams>
