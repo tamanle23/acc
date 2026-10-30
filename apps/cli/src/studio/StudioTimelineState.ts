@@ -9,8 +9,13 @@ import type {
   RelationalDuration,
   ResolvedTimeline,
   ResolvedSequence,
+  TrackType,
+  SemanticTrackRole,
+  TrackAuthoringPolicy,
+  TrackQuotaStatus,
+  CanAddTrackResult,
 } from '@acc/ir';
-import { RelationalDAGCompiler, AssetMetadataProber } from '@acc/ir';
+import { RelationalDAGCompiler, AssetMetadataProber, VideoIRAuthoringEngine } from '@acc/ir';
 import type {
   JsonPatchOperation,
   TimelinePlayheadState,
@@ -519,6 +524,58 @@ export class StudioTimelineState {
         value,
       });
     }
+
+    return await this.applyPatch(ops);
+  }
+
+  /**
+   * Returns current track quota telemetry evaluated against VideoIRAuthoringEngine policies.
+   */
+  public getTrackQuotas(policy?: TrackAuthoringPolicy): Record<SemanticTrackRole, TrackQuotaStatus> {
+    return VideoIRAuthoringEngine.evaluateTrackQuotas(this.document, policy);
+  }
+
+  /**
+   * Evaluates if adding a new track with the given role or type is permissible under current policies.
+   */
+  public checkCanAddTrack(
+    roleOrType: SemanticTrackRole | TrackType,
+    policy?: TrackAuthoringPolicy,
+    isManualOverride: boolean = false
+  ): CanAddTrackResult {
+    return VideoIRAuthoringEngine.canAddTrack(this.document, roleOrType, policy, isManualOverride);
+  }
+
+  /**
+   * Adds a new track to the document via JSON-Patch after validating authoring quotas.
+   * Throws an error if adding the track breaches hard cap and isManualOverride is false.
+   */
+  public async addTrack(
+    type: TrackType = 'video',
+    role?: SemanticTrackRole,
+    policy?: TrackAuthoringPolicy,
+    isManualOverride: boolean = false
+  ) {
+    const resolvedRole = role ?? (type === 'audio' ? 'audio' : type === 'timed_text' ? 'text' : 'overlay');
+    const check = this.checkCanAddTrack(resolvedRole, policy, isManualOverride);
+    if (!check.allowed) {
+      throw new Error(check.reason || `Cannot add track: Quota hard cap exceeded for '${resolvedRole}'.`);
+    }
+
+    const newTrackId = VideoIRAuthoringEngine.generateNextTrackId(this.document, type, resolvedRole);
+    const roleCapitalized = resolvedRole.charAt(0).toUpperCase() + resolvedRole.slice(1);
+    const trackSuffix = newTrackId.split('_').pop() || '1';
+
+    const newTrack: IRTrack = {
+      id: newTrackId,
+      type,
+      name: `${roleCapitalized} Track ${trackSuffix}`.trim(),
+      sequences: [],
+    };
+
+    const ops: JsonPatchOperation[] = [
+      { op: 'add', path: '/tracks/-', value: newTrack },
+    ];
 
     return await this.applyPatch(ops);
   }

@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Plus } from 'lucide-react';
+import { toast } from 'sonner';
 import { TimecodeRuler } from './timeline/TimecodeRuler';
 import { Toolbar } from './timeline/Toolbar';
 import { OverlayHUD } from './timeline/OverlayHUD';
 import { EmptyState } from './timeline/EmptyState';
 import { TimelineDom } from './timeline/TimelineDom';
+import { TrackQuotaModal } from './timeline/TrackQuotaModal';
 import { IRStateManager } from '../lib/ir/irState';
 import { useIRState } from '../lib/ir/useStudioStore';
 import { normalizeTracksList } from '../lib/ir/studioTypes';
@@ -16,6 +19,7 @@ import {
   RazorCutCommand,
   RippleDeleteCommand,
 } from '../lib/timeline/commands/TimelineCommands';
+import type { SemanticTrackRole, TrackType } from '@acc/ir';
 
 export interface TimelineProps {
   playhead: {
@@ -72,6 +76,47 @@ export function Timeline({
   } | null>(null);
 
   const irState = useIRState();
+
+  const [quotaModalState, setQuotaModalState] = useState<{
+    isOpen: boolean;
+    role: SemanticTrackRole;
+    currentCount: number;
+    hardCap: number;
+    softCap: number;
+    pendingType: TrackType;
+    pendingRole?: SemanticTrackRole;
+  } | null>(null);
+
+  const handleRequestAddTrack = useCallback((type: TrackType = 'video', role?: SemanticTrackRole) => {
+    const check = IRStateManager.getInstance().checkCanAddTrack(type, role);
+    if (!check.allowed) {
+      setQuotaModalState({
+        isOpen: true,
+        role: check.role,
+        currentCount: check.currentCount,
+        hardCap: check.hardCap,
+        softCap: check.softCap,
+        pendingType: type,
+        pendingRole: role,
+      });
+    } else {
+      const res = IRStateManager.getInstance().addTrack(type, role);
+      if (res.isWarning && res.reason) {
+        toast.warning(res.reason);
+      }
+    }
+  }, []);
+
+  const handleConfirmOverride = useCallback(() => {
+    if (quotaModalState) {
+      IRStateManager.getInstance().addTrack(
+        quotaModalState.pendingType,
+        quotaModalState.pendingRole,
+        true
+      );
+      setQuotaModalState(null);
+    }
+  }, [quotaModalState]);
 
   const totalFrames = irState.timeline?.totalFrames || playhead?.totalFrames || 300;
   const tracks = normalizeTracksList(irState.timeline?.tracks);
@@ -333,6 +378,7 @@ export function Timeline({
           {tracks.length === 0 ? (
             <EmptyState
               onLoadSample={() => IRStateManager.getInstance().switchTemplate('default')}
+              onAddTrack={() => handleRequestAddTrack('video', 'overlay')}
             />
           ) : (
             <TimelineDom
@@ -359,14 +405,38 @@ export function Timeline({
             />
           )}
 
-          {/* Empty timeline click target to switch to Project inspection mode */}
-          <div
-            onClick={() => IRStateManager.getInstance().setInspectorMode('project')}
-            className="sticky left-0 w-52 h-8 rounded border border-dashed border-border/30 hover:border-border/60 hover:bg-muted/10 cursor-pointer transition-colors flex items-center justify-center text-[10px] text-muted-foreground italic px-2 text-center shadow-2xs mt-1"
-            title="Click empty area to inspect Project Settings"
-          >
-            Project Settings
+          {/* Track Controls Footer */}
+          <div className="sticky left-0 w-52 flex items-center gap-1.5 mt-1.5 z-20">
+            <button
+              type="button"
+              onClick={() => handleRequestAddTrack('video', 'overlay')}
+              className="flex-1 h-7 rounded-md bg-[var(--glass-bg)] hover:bg-muted/60 border border-[var(--glass-border)] text-[11px] font-medium text-foreground/80 hover:text-foreground flex items-center justify-center gap-1.5 transition-colors shadow-2xs backdrop-blur-md cursor-pointer"
+              title="Add a new overlay video track"
+            >
+              <Plus className="w-3.5 h-3.5 text-accent-theme" />
+              <span>Add Track</span>
+            </button>
+            <div
+              onClick={() => IRStateManager.getInstance().setInspectorMode('project')}
+              className="w-20 h-7 rounded-md border border-dashed border-border/30 hover:border-border/60 hover:bg-muted/10 cursor-pointer transition-colors flex items-center justify-center text-[10px] text-muted-foreground italic px-1 text-center shadow-2xs shrink-0"
+              title="Click empty area to inspect Project Settings"
+            >
+              Project
+            </div>
           </div>
+
+          {/* Hard Cap Quota Confirmation Modal */}
+          {quotaModalState && (
+            <TrackQuotaModal
+              isOpen={quotaModalState.isOpen}
+              onClose={() => setQuotaModalState(null)}
+              onConfirmOverride={handleConfirmOverride}
+              role={quotaModalState.role}
+              currentCount={quotaModalState.currentCount}
+              hardCap={quotaModalState.hardCap}
+              softCap={quotaModalState.softCap}
+            />
+          )}
         </div>
       </div>
     </footer>

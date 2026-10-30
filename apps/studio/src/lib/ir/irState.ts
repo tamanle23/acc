@@ -3,9 +3,16 @@ import {
   type ResolvedTimeline,
   type ResolvedSequence,
   type ModifierNode,
+  type IRTrack,
+  type TrackType,
+  type SemanticTrackRole,
+  type CanAddTrackResult,
+  type TrackQuotaStatus,
   RelationalDAGCompiler,
   IntervalTreeIndex,
   VideoIRSchemaValidator,
+  VideoIRAuthoringEngine,
+  DEFAULT_TRACK_AUTHORING_POLICY,
   type ValidationResult,
 } from '@acc/ir';
 import { complexSciFiDemoIR } from './complexSciFiDemoIR';
@@ -32,6 +39,7 @@ import { RippleDeleteSequenceCommand } from '../commands/RippleDeleteSequenceCom
 import { UpdateTextCueCommand } from '../commands/UpdateTextCueCommand';
 import { UpdateSequenceTimeCommand } from '../commands/UpdateSequenceTimeCommand';
 import { UpdateTrackCommand, type UpdateTrackProperties } from '../commands/UpdateTrackCommand';
+import { AddTrackCommand } from '../commands/AddTrackCommand';
 import { ReorderTrackCommand } from '../commands/ReorderTrackCommand';
 import { UpdateSequencePropsCommand, type UpdateSequenceProperties } from '../commands/UpdateSequencePropsCommand';
 import { UpdateProjectMetaCommand, type UpdateProjectMetaProperties } from '../commands/UpdateProjectMetaCommand';
@@ -486,6 +494,70 @@ export class IRStateManager {
 
   public reorderTrack(trackId: string, direction: 'up' | 'down'): void {
     this.dispatch(new ReorderTrackCommand(trackId, direction));
+  }
+
+  /**
+   * Evaluates if adding a track is permitted under current quota policies.
+   */
+  public checkCanAddTrack(
+    type: TrackType = 'video',
+    role?: SemanticTrackRole,
+    isManualOverride: boolean = false
+  ): CanAddTrackResult {
+    const resolvedRole = role ?? (type === 'audio' ? 'audio' : type === 'timed_text' ? 'text' : 'overlay');
+    return VideoIRAuthoringEngine.canAddTrack(
+      this.state.doc,
+      resolvedRole,
+      DEFAULT_TRACK_AUTHORING_POLICY,
+      isManualOverride
+    );
+  }
+
+  /**
+   * Returns current track quota telemetry across all semantic roles.
+   */
+  public getTrackQuotas(): Record<SemanticTrackRole, TrackQuotaStatus> {
+    return VideoIRAuthoringEngine.evaluateTrackQuotas(this.state.doc);
+  }
+
+  /**
+   * Adds a new track to the document after validating authoring quotas.
+   * If a hard cap is reached and isManualOverride is false, rejects the addition.
+   */
+  public addTrack(
+    type: TrackType = 'video',
+    role?: SemanticTrackRole,
+    isManualOverride: boolean = false
+  ): CanAddTrackResult & { trackId?: string } {
+    const currentDoc = this.state.doc;
+    const resolvedRole = role ?? (type === 'audio' ? 'audio' : type === 'timed_text' ? 'text' : 'overlay');
+
+    const check = VideoIRAuthoringEngine.canAddTrack(
+      currentDoc,
+      resolvedRole,
+      DEFAULT_TRACK_AUTHORING_POLICY,
+      isManualOverride
+    );
+
+    if (!check.allowed) {
+      return { ...check };
+    }
+
+    const newTrackId = VideoIRAuthoringEngine.generateNextTrackId(currentDoc, type, resolvedRole);
+    const roleCapitalized = resolvedRole.charAt(0).toUpperCase() + resolvedRole.slice(1);
+    const trackSuffix = newTrackId.split('_').pop() || '1';
+
+    const newTrack: IRTrack = {
+      id: newTrackId,
+      type,
+      name: `${roleCapitalized} Track ${trackSuffix}`.trim(),
+      sequences: [],
+    };
+
+    this.dispatch(new AddTrackCommand(newTrack));
+    this.setSelectedTrackId(newTrackId);
+
+    return { ...check, trackId: newTrackId };
   }
 
   public updateSequenceProps(sequenceId: string, updates: UpdateSequenceProperties): void {

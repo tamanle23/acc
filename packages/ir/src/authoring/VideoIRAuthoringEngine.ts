@@ -1,4 +1,54 @@
-import type { VideoIRDocument, IRSequence, TrackType, SequenceType } from '../types/VideoIR';
+import type { VideoIRDocument, IRSequence, IRTrack, TrackType, SequenceType } from '../types/VideoIR';
+
+export type SemanticTrackRole =
+  | 'main'
+  | 'overlay'
+  | 'audio'
+  | 'text'
+  | 'effects'
+  | 'stickers';
+
+export interface TrackQuotaLimit {
+  softCap: number;
+  hardCap: number;
+}
+
+export interface TrackAuthoringPolicy {
+  limits: Record<SemanticTrackRole, TrackQuotaLimit>;
+  allowHardCapOverride: boolean;
+}
+
+export const DEFAULT_TRACK_AUTHORING_POLICY: TrackAuthoringPolicy = {
+  limits: {
+    main: { softCap: 1, hardCap: 1 },
+    overlay: { softCap: 6, hardCap: 10 },
+    text: { softCap: 3, hardCap: 6 },
+    effects: { softCap: 2, hardCap: 4 },
+    stickers: { softCap: 2, hardCap: 4 },
+    audio: { softCap: 4, hardCap: 8 },
+  },
+  allowHardCapOverride: true,
+};
+
+export interface TrackQuotaStatus {
+  role: SemanticTrackRole;
+  currentCount: number;
+  softCap: number;
+  hardCap: number;
+  isSoftCapExceeded: boolean;
+  isHardCapReached: boolean;
+  message?: string;
+}
+
+export interface CanAddTrackResult {
+  allowed: boolean;
+  isWarning: boolean;
+  role: SemanticTrackRole;
+  currentCount: number;
+  softCap: number;
+  hardCap: number;
+  reason?: string;
+}
 
 export interface AllocateSequenceIdOptions {
   type: SequenceType;
@@ -204,10 +254,53 @@ export class VideoIRAuthoringEngine {
   }
 
   /**
-   * Generates a deterministic, sequential track ID based on track type
-   * (e.g. `track_v1`, `track_v2`, `track_a1`, `track_tt1`, `track_d1`).
+   * Generates a deterministic, sequential track ID based on track type and optional semantic role.
+   * If a semantic role is provided, generates role-specific prefixes:
+   * - main -> `track_v_main_1`
+   * - overlay -> `track_v_overlay_1`
+   * - effects -> `track_v_fx_1`
+   * - stickers -> `track_v_sticker_1`
+   * - audio -> `track_a_1`
+   * - text -> `track_tt_1`
+   *
+   * If role is omitted, preserves backward compatibility with `track_v1`, `track_a1`, `track_tt1`.
    */
-  public static generateNextTrackId(doc: VideoIRDocument, type: TrackType): string {
+  public static generateNextTrackId(
+    doc: VideoIRDocument,
+    type: TrackType,
+    role?: SemanticTrackRole
+  ): string {
+    if (role) {
+      let prefix = 'track_';
+      if (role === 'main') {
+        prefix = 'track_v_main_';
+      } else if (role === 'overlay') {
+        prefix = 'track_v_overlay_';
+      } else if (role === 'effects') {
+        prefix = 'track_v_fx_';
+      } else if (role === 'stickers') {
+        prefix = 'track_v_sticker_';
+      } else if (role === 'audio') {
+        prefix = 'track_a_';
+      } else if (role === 'text') {
+        prefix = 'track_tt_';
+      }
+
+      let maxTrackNum = 0;
+      if (Array.isArray(doc.tracks)) {
+        for (const track of doc.tracks) {
+          if (track && typeof track.id === 'string' && track.id.startsWith(prefix)) {
+            const numStr = track.id.slice(prefix.length);
+            const parsed = parseInt(numStr, 10);
+            if (!isNaN(parsed) && parsed > maxTrackNum) {
+              maxTrackNum = parsed;
+            }
+          }
+        }
+      }
+      return `${prefix}${maxTrackNum + 1}`;
+    }
+
     const prefix = TRACK_PREFIX_MAP[type] || 'track_';
     let maxTrackNum = 0;
 
@@ -224,5 +317,249 @@ export class VideoIRAuthoringEngine {
     }
 
     return `${prefix}${maxTrackNum + 1}`;
+  }
+
+  /**
+   * Classifies an IRTrack into a SemanticTrackRole without mutating its schema.
+   *
+   * Dynamic Semantic Role Classification Algorithm:
+   * 1. If track.type === 'audio' -> 'audio'
+   * 2. If track.type === 'timed_text' -> 'text'
+   * 3. If name or id matches 'sticker' or 'emoji' -> 'stickers'
+   * 4. If name or id matches 'effect', 'filter', 'adjustment', or has track-level modifiers -> 'effects'
+   * 5. If index === 0, or id matches 'main'/'track_v_1'/'track-v1', or name matches 'main' -> 'main'
+   * 6. Otherwise -> 'overlay'
+   */
+  public static classifyTrackRole(track: IRTrack, index?: number): SemanticTrackRole {
+    if (!track) {
+      return 'overlay';
+    }
+
+    if (track.type === 'audio') {
+      return 'audio';
+    }
+
+    if (track.type === 'timed_text') {
+      return 'text';
+    }
+
+    const idLower = (track.id || '').toLowerCase();
+    const nameLower = (track.name || '').toLowerCase();
+
+    // 3. Stickers / emojis
+    if (
+      idLower.includes('sticker') ||
+      idLower.includes('emoji') ||
+      nameLower.includes('sticker') ||
+      nameLower.includes('emoji')
+    ) {
+      return 'stickers';
+    }
+
+    // 4. Effects / filters / adjustment
+    if (
+      idLower.includes('effect') ||
+      idLower.includes('filter') ||
+      idLower.includes('adjustment') ||
+      nameLower.includes('effect') ||
+      nameLower.includes('filter') ||
+      nameLower.includes('adjustment') ||
+      (Array.isArray(track.modifiers) && track.modifiers.length > 0)
+    ) {
+      return 'effects';
+    }
+
+    // 5. Main track check
+    if (
+      index === 0 ||
+      idLower === 'track_v_main' ||
+      idLower === 'track_v_1' ||
+      idLower === 'track-v1' ||
+      idLower.includes('main') ||
+      nameLower.includes('main')
+    ) {
+      return 'main';
+    }
+
+    // 6. Default video track role is overlay
+    return 'overlay';
+  }
+
+  /**
+   * Evaluates current track counts against configured soft and hard cap policies.
+   */
+  public static evaluateTrackQuotas(
+    doc: VideoIRDocument,
+    policy: TrackAuthoringPolicy = DEFAULT_TRACK_AUTHORING_POLICY
+  ): Record<SemanticTrackRole, TrackQuotaStatus> {
+    const counts: Record<SemanticTrackRole, number> = {
+      main: 0,
+      overlay: 0,
+      audio: 0,
+      text: 0,
+      effects: 0,
+      stickers: 0,
+    };
+
+    if (Array.isArray(doc.tracks)) {
+      doc.tracks.forEach((track, idx) => {
+        const role = this.classifyTrackRole(track, idx);
+        counts[role] = (counts[role] || 0) + 1;
+      });
+    }
+
+    const roles: SemanticTrackRole[] = ['main', 'overlay', 'audio', 'text', 'effects', 'stickers'];
+    const result = {} as Record<SemanticTrackRole, TrackQuotaStatus>;
+
+    for (const role of roles) {
+      const limit = policy.limits[role] ?? { softCap: 10, hardCap: 20 };
+      const currentCount = counts[role] || 0;
+      const isSoftCapExceeded = currentCount >= limit.softCap;
+      const isHardCapReached = currentCount >= limit.hardCap;
+
+      let message: string | undefined;
+      if (isHardCapReached) {
+        message = `Hard cap reached for ${role} tracks (${currentCount}/${limit.hardCap}). Compositing performance may degrade significantly.`;
+      } else if (isSoftCapExceeded) {
+        message = `Soft cap reached for ${role} tracks (${currentCount}/${limit.softCap}).`;
+      }
+
+      result[role] = {
+        role,
+        currentCount,
+        softCap: limit.softCap,
+        hardCap: limit.hardCap,
+        isSoftCapExceeded,
+        isHardCapReached,
+        message,
+      };
+    }
+
+    return result;
+  }
+
+  /**
+   * Evaluates whether adding a new track with the given role or type is permissible
+   * under current authoring policy limits, and whether a soft-warning or hard-block applies.
+   */
+  public static canAddTrack(
+    doc: VideoIRDocument,
+    roleOrType: SemanticTrackRole | TrackType,
+    policy: TrackAuthoringPolicy = DEFAULT_TRACK_AUTHORING_POLICY,
+    isManualOverride: boolean = false
+  ): CanAddTrackResult {
+    let targetRole: SemanticTrackRole;
+
+    const validRoles: SemanticTrackRole[] = ['main', 'overlay', 'audio', 'text', 'effects', 'stickers'];
+    if (validRoles.includes(roleOrType as SemanticTrackRole)) {
+      targetRole = roleOrType as SemanticTrackRole;
+    } else if (roleOrType === 'audio') {
+      targetRole = 'audio';
+    } else if (roleOrType === 'timed_text') {
+      targetRole = 'text';
+    } else if (roleOrType === 'video') {
+      // If doc has no main track, this will become main; otherwise overlay
+      const quotas = this.evaluateTrackQuotas(doc, policy);
+      targetRole = quotas.main.currentCount === 0 ? 'main' : 'overlay';
+    } else {
+      targetRole = 'overlay';
+    }
+
+    const quotas = this.evaluateTrackQuotas(doc, policy);
+    const quota = quotas[targetRole];
+    const nextCount = quota.currentCount + 1;
+
+    // Check hard cap
+    if (quota.currentCount >= quota.hardCap) {
+      if (isManualOverride && policy.allowHardCapOverride) {
+        return {
+          allowed: true,
+          isWarning: true,
+          role: targetRole,
+          currentCount: quota.currentCount,
+          softCap: quota.softCap,
+          hardCap: quota.hardCap,
+          reason: `Hard cap reached for role '${targetRole}' (${quota.currentCount}/${quota.hardCap}) - allowed via manual user override.`,
+        };
+      } else {
+        return {
+          allowed: false,
+          isWarning: true,
+          role: targetRole,
+          currentCount: quota.currentCount,
+          softCap: quota.softCap,
+          hardCap: quota.hardCap,
+          reason: `Cannot add track: Hard cap of ${quota.hardCap} reached for role '${targetRole}'.`,
+        };
+      }
+    }
+
+    // Check soft cap warning
+    const isWarning = nextCount >= quota.softCap;
+    return {
+      allowed: true,
+      isWarning,
+      role: targetRole,
+      currentCount: quota.currentCount,
+      softCap: quota.softCap,
+      hardCap: quota.hardCap,
+      reason: isWarning
+        ? `Soft cap reached for role '${targetRole}' (${nextCount}/${quota.softCap}).`
+        : undefined,
+    };
+  }
+
+  /**
+   * Evaluates if a candidate sequence can be placed on an existing track without overlapping
+   * any existing sequence on that track (temporal whitespace reuse).
+   */
+  public static canPlaceSequenceOnTrack(
+    track: IRTrack,
+    candidateStartFrame: number,
+    candidateDurationFrames: number
+  ): boolean {
+    if (!Array.isArray(track.sequences) || track.sequences.length === 0) {
+      return true;
+    }
+
+    const candidateEnd = candidateStartFrame + candidateDurationFrames;
+
+    for (const seq of track.sequences) {
+      if (typeof seq.time.start === 'number' && typeof seq.time.duration === 'number') {
+        const seqStart = seq.time.start;
+        const seqEnd = seqStart + seq.time.duration;
+        // Check temporal overlap: [start1, end1) overlaps [start2, end2)
+        if (Math.max(seqStart, candidateStartFrame) < Math.min(seqEnd, candidateEnd)) {
+          return false;
+        }
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Finds an existing track matching the semantic role that has temporal whitespace
+   * to accommodate the candidate sequence without overlapping, avoiding new track allocation.
+   */
+  public static findWhitespaceTrack(
+    doc: VideoIRDocument,
+    role: SemanticTrackRole,
+    candidateStartFrame: number,
+    candidateDurationFrames: number
+  ): IRTrack | null {
+    if (!Array.isArray(doc.tracks)) return null;
+
+    for (let idx = 0; idx < doc.tracks.length; idx++) {
+      const track = doc.tracks[idx];
+      const trackRole = this.classifyTrackRole(track, idx);
+      if (trackRole === role) {
+        if (this.canPlaceSequenceOnTrack(track, candidateStartFrame, candidateDurationFrames)) {
+          return track;
+        }
+      }
+    }
+
+    return null;
   }
 }

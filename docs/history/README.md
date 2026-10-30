@@ -57,3 +57,4 @@
 | 392 | [Fix Detached Image Guard and Preview Texture Lifecycle](./392_fix_detached_image_guard_and_preview_texture_lifecycle.md) | Completed |
 | 393 | [Eliminate DndContext and Infinite Update Depth in Viewport Gizmo Direct Manipulation](./393_eliminate_dnd_kit_and_infinite_update_depth_in_viewport_gizmo.md) | Completed |
 | 394 | [Advanced Spatio-Temporal Generators & Studio Multi-Domain Showcase](./394_advanced_spatio_temporal_generators_and_demos.md) | Completed |
+| 395 | [Universal Track Soft-Cap Constraints & Semantic Track Quotas](./395_track_soft_cap_constraints_and_semantic_quotas.md) | Completed |

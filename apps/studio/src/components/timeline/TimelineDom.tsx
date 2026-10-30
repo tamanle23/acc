@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   DragOverlay,
   useDndMonitor,
@@ -18,7 +18,7 @@ import {
   type StudioSequence,
   type StudioTrack,
 } from '../../lib/ir/studioTypes';
-import type { ModifierNode } from '@acc/ir';
+import { type ModifierNode, VideoIRAuthoringEngine } from '@acc/ir';
 
 export interface TimelineDomProps {
   tracks: StudioTrack[];
@@ -384,6 +384,8 @@ export function TimelineDom({
     [fps, onHoveredClipChange]
   );
 
+  const quotas = useMemo(() => IRStateManager.getInstance().getTrackQuotas(), [tracks]);
+
   return (
     <>
       <div
@@ -398,6 +400,8 @@ export function TimelineDom({
           const isVisible = track.visible !== false;
           const canMoveUp = idx > 0;
           const canMoveDown = idx < tracks.length - 1;
+          const role = VideoIRAuthoringEngine.classifyTrackRole(track, idx);
+          const quotaStatus = quotas[role];
 
           // Horizontal sequence virtualization (Preserve dragged clip & paired A/V clip)
           const visibleSequences = track.sequences.filter((seq: StudioSequence) => {
@@ -430,6 +434,7 @@ export function TimelineDom({
                 onToggleLock={onToggleLock}
                 onToggleMute={onToggleMute}
                 onToggleVisible={onToggleVisible}
+                quotaStatus={quotaStatus}
               />
 
               {/* Track Sequence Lane: Render DOM clips with CSS content-visibility optimization */}

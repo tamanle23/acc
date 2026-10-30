@@ -13,6 +13,7 @@ import {
 import { Button } from '../ui/button';
 import { IRStateManager } from '../../lib/ir/irState';
 import type { StudioTrack } from '../../lib/ir/studioTypes';
+import type { TrackQuotaStatus } from '@acc/ir';
 
 export interface TrackHeaderCardProps {
   track: StudioTrack;
@@ -24,6 +25,7 @@ export interface TrackHeaderCardProps {
   onToggleLock: (trackId: string) => void;
   onToggleMute: (trackId: string) => void;
   onToggleVisible?: (trackId: string) => void;
+  quotaStatus?: TrackQuotaStatus;
 }
 
 export function TrackHeaderCard({
@@ -36,6 +38,7 @@ export function TrackHeaderCard({
   onToggleLock,
   onToggleMute,
   onToggleVisible,
+  quotaStatus,
 }: TrackHeaderCardProps) {
   const isAudioTrack = track.type === 'audio';
   const isTextOrOverlay = track.type === 'timed_text' || track.type === 'overlay';
@@ -55,9 +58,21 @@ export function TrackHeaderCard({
     >
       <div className="flex items-center gap-1.5 min-w-0">
         <GripVertical className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0 cursor-grab" />
-        <span className="text-[11px] font-medium text-foreground truncate max-w-[85px]">
-          {track.type} - {track.id}
+        <span className="text-[11px] font-medium text-foreground truncate max-w-[80px]">
+          {track.name || `${track.type} - ${track.id}`}
         </span>
+        {quotaStatus?.isSoftCapExceeded && (
+          <span
+            className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono font-medium border shrink-0 ${
+              quotaStatus.isHardCapReached
+                ? 'bg-rose-500/20 border-rose-500/40 text-rose-300'
+                : 'bg-amber-500/20 border-amber-500/40 text-amber-300'
+            }`}
+            title={quotaStatus.message || `Track cap: ${quotaStatus.currentCount}/${quotaStatus.softCap}`}
+          >
+            {quotaStatus.currentCount}/{quotaStatus.softCap}
+          </span>
+        )}
       </div>
 
       <div className="flex items-center gap-0.5 shrink-0">
