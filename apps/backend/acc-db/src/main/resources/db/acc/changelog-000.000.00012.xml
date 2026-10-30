@@ -35,30 +35,30 @@
             ) PARTITION BY RANGE (created_at);
 
             -- Initial Default and Rolling Monthly Partitions
-            CREATE TABLE IF NOT EXISTS acc_record_audit_log_default 
+            CREATE TABLE IF NOT EXISTS acc_record_audit_log_default
                 PARTITION OF UNIPOST_RECORD_AUDIT_LOG DEFAULT;
 
-            CREATE TABLE IF NOT EXISTS acc_record_audit_log_2026_10 
-                PARTITION OF UNIPOST_RECORD_AUDIT_LOG 
+            CREATE TABLE IF NOT EXISTS acc_record_audit_log_2026_10
+                PARTITION OF UNIPOST_RECORD_AUDIT_LOG
                 FOR VALUES FROM ('2026-10-01 00:00:00+00') TO ('2026-11-01 00:00:00+00');
 
-            CREATE TABLE IF NOT EXISTS acc_record_audit_log_2026_11 
-                PARTITION OF UNIPOST_RECORD_AUDIT_LOG 
+            CREATE TABLE IF NOT EXISTS acc_record_audit_log_2026_11
+                PARTITION OF UNIPOST_RECORD_AUDIT_LOG
                 FOR VALUES FROM ('2026-11-01 00:00:00+00') TO ('2026-12-01 00:00:00+00');
 
-            CREATE TABLE IF NOT EXISTS acc_record_audit_log_2026_12 
-                PARTITION OF UNIPOST_RECORD_AUDIT_LOG 
+            CREATE TABLE IF NOT EXISTS acc_record_audit_log_2026_12
+                PARTITION OF UNIPOST_RECORD_AUDIT_LOG
                 FOR VALUES FROM ('2026-12-01 00:00:00+00') TO ('2027-01-01 00:00:00+00');
 
-            CREATE TABLE IF NOT EXISTS acc_record_audit_log_2027_01 
-                PARTITION OF UNIPOST_RECORD_AUDIT_LOG 
+            CREATE TABLE IF NOT EXISTS acc_record_audit_log_2027_01
+                PARTITION OF UNIPOST_RECORD_AUDIT_LOG
                 FOR VALUES FROM ('2027-01-01 00:00:00+00') TO ('2027-02-01 00:00:00+00');
 
             -- Composite Lookup Index
-            CREATE INDEX IF NOT EXISTS idx_record_audit_lookup 
+            CREATE INDEX IF NOT EXISTS idx_record_audit_lookup
                 ON UNIPOST_RECORD_AUDIT_LOG (tenant_id, record_id, created_at DESC);
 
-            -- RLS Enablement & Tenant Isolation Policy
+            -- RLS Enablement &amp; Tenant Isolation Policy
             ALTER TABLE UNIPOST_RECORD_AUDIT_LOG ENABLE ROW LEVEL SECURITY;
             ALTER TABLE UNIPOST_RECORD_AUDIT_LOG FORCE ROW LEVEL SECURITY;
 

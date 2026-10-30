@@ -34,10 +34,10 @@
         </sql>
     </changeSet>
 
-    <!-- 2. Schema Evolution for Roles & UserRoles -->
+    <!-- 2. Schema Evolution for Roles &amp; UserRoles -->
     <changeSet id="sovereign-rbac-schema-evolution-16" author="antigravity">
         <comment>Add role_scope, min_plan_tier to ROLE and tenant_id to USERROLE</comment>
-        
+
         <addColumn tableName="${table_prefix}ROLE">
             <column name="role_scope" type="VARCHAR(20)" defaultValue="TENANT">
                 <constraints nullable="false"/>
@@ -104,19 +104,19 @@
     <changeSet id="deactivate-legacy-identities-16" author="antigravity">
         <comment>Deactivate and lock legacy default admin and anonymous accounts</comment>
         <sql>
-            UPDATE ${table_prefix}USER 
-            SET status = 0, nonLocked = false, credentialsNonExpired = false 
+            UPDATE ${table_prefix}USER
+            SET status = 0, nonLocked = false, credentialsNonExpired = false
             WHERE username IN ('admin', 'anonymous');
         </sql>
     </changeSet>
 
-    <!-- 5. Seed Canonical Sovereign Roles & Tenant Roles -->
+    <!-- 5. Seed Canonical Sovereign Roles &amp; Tenant Roles -->
     <changeSet id="seed-sovereign-and-tenant-roles-16" author="antigravity">
         <comment>Seed the 4 Sovereign platform tiers and 4 system-wide commercial tenant roles</comment>
         <sql dbms="postgresql">
             -- 1. Sovereign Platform Roles
             INSERT INTO ${table_prefix}ROLE (uid, code, description, role_scope, min_plan_tier, status, version)
-            VALUES 
+            VALUES
                 ('role-system-root', 'ROLE_SYSTEM_ROOT', 'Supreme platform owner with full infrastructure and schema control', 'SYSTEM', 'ENTERPRISE', 1, 0),
                 ('role-system-support', 'ROLE_SYSTEM_SUPPORT', 'Customer operations, Assume-Tenant support, and billing reconciliation', 'SYSTEM', 'ENTERPRISE', 1, 0),
                 ('role-system-verifier', 'ROLE_SYSTEM_VERIFIER', 'System governance, audit trail verification, and commercial KYC review', 'SYSTEM', 'ENTERPRISE', 1, 0),
@@ -125,7 +125,7 @@
 
             -- 2. Commercial Tenant Roles
             INSERT INTO ${table_prefix}ROLE (uid, code, description, role_scope, min_plan_tier, status, version)
-            VALUES 
+            VALUES
                 ('role-workspace-owner', 'ROLE_WORKSPACE_OWNER', 'Workspace Owner with full administrative authority over tenant workspace', 'TENANT', 'COMMUNITY', 1, 0),
                 ('role-operations-manager', 'ROLE_OPERATIONS_MANAGER', 'Operations manager over business entities, dispatching, and approvals', 'TENANT', 'STANDARD', 1, 0),
                 ('role-standard-member', 'ROLE_STANDARD_MEMBER', 'Standard team member with data record read and write access', 'TENANT', 'COMMUNITY', 1, 0),
@@ -288,7 +288,7 @@
                 'usr-custodian-root', 'custodian.root', 'custodian@platform.acc.internal',
                 'Chief Platform', 'Custodian', '${custodian_hash}',
                 true, true, false, 1, 'SOVEREIGN', 0, CURRENT_TIMESTAMP
-            ) ON CONFLICT (username) DO UPDATE 
+            ) ON CONFLICT (username) DO UPDATE
             SET password = '${custodian_hash}', credentialsnonexpired = false, nonlocked = true;
 
             -- 2. Customer Operations Lead
@@ -299,7 +299,7 @@
                 'usr-support-ops', 'ops.support', 'support-ops@platform.acc.internal',
                 'Customer Operations', 'Lead', '${support_hash}',
                 true, true, false, 1, 'SOVEREIGN', 0, CURRENT_TIMESTAMP
-            ) ON CONFLICT (username) DO UPDATE 
+            ) ON CONFLICT (username) DO UPDATE
             SET password = '${support_hash}', credentialsnonexpired = false, nonlocked = true;
 
             -- 3. Lead Governance, Audit & KYC Verifier
@@ -310,7 +310,7 @@
                 'usr-system-verifier', 'verifier.system', 'verifier@platform.acc.internal',
                 'Platform Governance', 'Verifier', '${verifier_hash}',
                 true, true, false, 1, 'SOVEREIGN', 0, CURRENT_TIMESTAMP
-            ) ON CONFLICT (username) DO UPDATE 
+            ) ON CONFLICT (username) DO UPDATE
             SET password = '${verifier_hash}', credentialsnonexpired = false, nonlocked = true;
 
             -- 4. Lead Quorum & Governance Approver
@@ -321,12 +321,12 @@
                 'usr-system-approver', 'approver.system', 'approver@platform.acc.internal',
                 'Four-Eyes Quorum', 'Approver', '${approver_hash}',
                 true, true, false, 1, 'SOVEREIGN', 0, CURRENT_TIMESTAMP
-            ) ON CONFLICT (username) DO UPDATE 
+            ) ON CONFLICT (username) DO UPDATE
             SET password = '${approver_hash}', credentialsnonexpired = false, nonlocked = true;
 
             -- Bind personas to roles in USERROLE stamped with tenant_id = 'SYSTEM'
             INSERT INTO ${table_prefix}USERROLE (user_uid, role_uid, tenant_id)
-            VALUES 
+            VALUES
                 ('usr-custodian-root', 'role-system-root', 'SYSTEM'),
                 ('usr-support-ops', 'role-system-support', 'SYSTEM'),
                 ('usr-system-verifier', 'role-system-verifier', 'SYSTEM'),

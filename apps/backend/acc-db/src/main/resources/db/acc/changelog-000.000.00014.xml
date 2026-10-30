@@ -31,7 +31,7 @@
       <column name="owner_user_uid" type="VARCHAR(255)"/>
       <column name="region" type="VARCHAR(50)" defaultValue="ap-southeast-1"/>
       <column name="metadata" type="JSONB" defaultValue="{}"/>
-      
+
       <column name="createdBy_uid" type="VARCHAR(255)"/>
       <column name="createdDate" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
       <column name="lastUpdatedBy_uid" type="VARCHAR(255)"/>
@@ -40,7 +40,7 @@
       <column name="deletedDate" type="TIMESTAMP"/>
     </createTable>
 
-    <!-- 2. Backfill Existing Tenants & Ensure SYSTEM Root Exists -->
+    <!-- 2. Backfill Existing Tenants &amp; Ensure SYSTEM Root Exists -->
     <sql dbms="postgresql">
       -- Seed SYSTEM root custodian tenant if missing
       INSERT INTO UNIPOST_TENANTS (uid, code, name, status, plan_tier)
@@ -49,7 +49,7 @@
 
       -- Backfill distinct tenants from UNIPOST_WORKSPACES
       INSERT INTO UNIPOST_TENANTS (uid, code, name, status, plan_tier)
-      SELECT 
+      SELECT
         'tenant-' || substr(md5(random()::text), 1, 16),
         w.tenant_id,
         INITCAP(REPLACE(w.tenant_id, '-', ' ')) || ' Org',
@@ -61,7 +61,7 @@
       ON CONFLICT (code) DO NOTHING;
     </sql>
 
-    <!-- 3. Add tenant_ref_id to UNIPOST_WORKSPACES & backfill FK -->
+    <!-- 3. Add tenant_ref_id to UNIPOST_WORKSPACES &amp; backfill FK -->
     <addColumn tableName="UNIPOST_WORKSPACES">
       <column name="tenant_ref_id" type="BIGINT">
         <constraints foreignKeyName="fk_workspaces_tenant" referencedTableName="UNIPOST_TENANTS" referencedColumnNames="id"/>
@@ -75,8 +75,8 @@
       WHERE w.tenant_id = t.code;
 
       -- Create partial index on active tenants
-      CREATE INDEX IF NOT EXISTS idx_tenants_code_active 
-      ON UNIPOST_TENANTS (code) 
+      CREATE INDEX IF NOT EXISTS idx_tenants_code_active
+      ON UNIPOST_TENANTS (code)
       WHERE "deletedDate" IS NULL;
 
       -- Enable and Force Row-Level Security on UNIPOST_TENANTS
