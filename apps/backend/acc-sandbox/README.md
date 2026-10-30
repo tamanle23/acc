@@ -19,7 +19,7 @@ The **Backend Unified Sandbox Platform** provides a completely offline, zero-dep
 │    production classes, filters, and engines. Synthetic mocks/stubs     │
 │    for RLS, multi-tenancy, or cryptographic tokens are PROHIBITED.     │
 │                                                                        │
-│ 2. EMBEDDED POSTGRESQL ENGINE: Powered by `pglite-spring-boot-test`,    │
+│ 2. EMBEDDED POSTGRESQL ENGINE: Powered by `io.zonky.test:embedded-postgres`│
 │    executing authentic PostgreSQL Row-Level Security (RLS) policies,   │
 │    `SET LOCAL app.current_tenant_id` session settings, and Liquibase.  │
 │                                                                        │
@@ -70,8 +70,8 @@ The sandbox module is packaged as an independent Maven submodule (`apps/backend/
 │                       Embedded PostgreSQL Engine (PGlite)                                  │
 │     - True PostgreSQL Engine Running In-Process                                            │
 │     - Real Row-Level Security (RLS) Policies Enforced on UNIPOST_ENTITIES                  │
-│     - DEV Mode: `jdbc:pglite:file:tmp/db/pglite-sandbox` (Persistent)                      │
-│     - TEST Mode: `jdbc:pglite:memory://` (Ephemeral In-Memory)                             │
+│     - DEV Mode: `jdbc:postgresql://localhost:54329/postgres` (Persistent)                 │
+│     - TEST Mode: `jdbc:postgresql://localhost:54329/postgres` (Ephemeral In-Memory)       │
 └────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 

@@ -1,12 +1,10 @@
 import React, { useState, useRef, useCallback } from 'react';
 import {
-  Palette,
   RotateCcw,
   Sparkles,
   Sun,
   Aperture,
 } from 'lucide-react';
-import { Card } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Slider } from '../ui/slider';
@@ -213,33 +211,6 @@ export const StudioColorGradingInspector: React.FC<StudioColorGradingInspectorPr
     });
   };
 
-  const resetAll = () => {
-    if (disabled) return;
-    onChange({
-      enabled: params.enabled ?? true,
-      exposure: 0.0,
-      temperature: 0,
-      tint: 0,
-      contrast: 1.0,
-      pivot: 0.435,
-      highlights: 0,
-      shadows: 0,
-      whites: 0,
-      blacks: 0,
-      lift: { r: 0, g: 0, b: 0, y: 0 },
-      gamma: { r: 0, g: 0, b: 0, y: 0 },
-      gain: { r: 0, g: 0, b: 0, y: 0 },
-      offset: { r: 0, g: 0, b: 0, y: 0 },
-      lut: '',
-      lutIntensity: 1.0,
-      saturation: 1.0,
-      vibrance: 0,
-      vignetteAmount: 0.0,
-      vignetteMidpoint: 0.5,
-      vignetteFeather: 0.5,
-    });
-  };
-
   const getNum = (val: unknown, fallback: number): number => {
     return typeof val === 'number' && Number.isFinite(val) ? val : fallback;
   };
@@ -247,26 +218,7 @@ export const StudioColorGradingInspector: React.FC<StudioColorGradingInspectorPr
   const currentLutValue = typeof p.lut === 'string' && p.lut.length > 0 ? p.lut : '__none__';
 
   return (
-    <Card className="p-3 bg-glass-surface/40 backdrop-blur-md border-glass-border space-y-3">
-      {/* Header bar with Master Reset */}
-      <div className="flex items-center justify-between pb-2 border-b border-glass-border">
-        <div className="flex items-center gap-1.5">
-          <Palette className="w-3.5 h-3.5 text-accent-theme" />
-          <span className="text-xs font-bold text-foreground">Studio Color Suite</span>
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={disabled}
-          onClick={resetAll}
-          className="h-5 px-2 text-[10px] text-muted-foreground hover:text-foreground cursor-pointer gap-1"
-          title="Reset all color correction and grading parameters"
-        >
-          <RotateCcw className="w-2.5 h-2.5" />
-          Reset All
-        </Button>
-      </div>
-
+    <div className="space-y-3">
       {/* Segmented Sub-Navigation Tabs */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
         <TabsList className="grid grid-cols-4 w-full h-7 p-0.5 bg-glass-surface/60 border border-glass-border rounded-md text-[10px]">
@@ -686,6 +638,6 @@ export const StudioColorGradingInspector: React.FC<StudioColorGradingInspectorPr
           </div>
         </TabsContent>
       </Tabs>
-    </Card>
+    </div>
   );
 };

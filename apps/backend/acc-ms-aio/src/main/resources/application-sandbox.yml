@@ -1,12 +1,12 @@
 spring:
   datasource:
-    url: jdbc:pglite:../../tmp/db/pglite-sandbox.db
-    driver-class-name: io.roastedroot.pglite4j.jdbc.PgLiteDriver
+    url: jdbc:postgresql://localhost:54329/postgres
+    driver-class-name: org.postgresql.Driver
     username: postgres
     password: postgres
     hikari:
       maximum-pool-size: 10
-      minimum-idle: 1
+      minimum-idle: 2
       connection-timeout: 30000
   liquibase:
     enabled: true
@@ -20,5 +20,6 @@ application:
     dev:
       pristine: false
     database:
-      embedded-pglite: true
-      dev-storage-path: ../../tmp/db/pglite-sandbox.db
+      embedded-postgres: true
+      port: 54329
+      dev-storage-path: ../../tmp/db/embedded-postgres

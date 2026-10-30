@@ -5,7 +5,7 @@ import {
   type ParamFieldDescriptor,
 } from '@acc/ir';
 import { resolveParamControlStrategy } from './ModifierControlStrategies';
-import { StudioColorGradingInspector } from './StudioColorGradingInspector';
+import { getCustomModifierInspector } from './customModifierRegistry';
 
 export interface DynamicModifierInspectorProps {
   modifierType: string;
@@ -152,11 +152,12 @@ export const DynamicModifierInspector: React.FC<DynamicModifierInspectorProps> =
     );
   };
 
-  // Dedicated Studio-Grade Color Grading & Correction Inspector
-  if (modifierType === 'vfx/color_grading') {
+  // Check if a dedicated custom studio inspector is registered dynamically
+  const CustomInspector = getCustomModifierInspector(modifierType);
+  if (CustomInspector) {
     return (
       <SafeInspectorBoundary fallback={renderStandardControls()}>
-        <StudioColorGradingInspector
+        <CustomInspector
           params={params}
           onChange={onChange}
           disabled={disabled}

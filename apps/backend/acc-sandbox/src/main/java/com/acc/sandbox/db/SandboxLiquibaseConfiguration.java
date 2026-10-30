@@ -13,8 +13,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Executes authoritative Liquibase changelogs against embedded PGlite WASM upon boot.
- * Activated strictly when application.sandbox.enabled=true and application.sandbox.database.embedded-pglite=true.
+ * Executes authoritative Liquibase changelogs against embedded native PostgreSQL upon boot.
+ * Activated strictly when application.sandbox.enabled=true.
  * Guarantees 100% schema and baseline seed parity with production database without external Docker/Postgres.
  */
 @Configuration
@@ -26,7 +26,7 @@ public class SandboxLiquibaseConfiguration {
     @Bean
     public SpringLiquibase sandboxLiquibase(@Qualifier("sandboxDataSource") DataSource dataSource) {
         log.info("================================================================");
-        log.info("  🔄 Executing Authoritative Liquibase Migrations on PGlite...   ");
+        log.info("  🔄 Executing Authoritative Liquibase on Embedded PostgreSQL... ");
         log.info("================================================================");
         SpringLiquibase liquibase = new SpringLiquibase();
         liquibase.setDataSource(dataSource);

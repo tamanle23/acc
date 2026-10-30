@@ -1,6 +1,6 @@
 package com.acc.sandbox.config;
 
-import com.acc.sandbox.db.PgLiteDatasourceConfiguration;
+import com.acc.sandbox.db.EmbeddedPostgresDatasourceConfiguration;
 import com.acc.sandbox.registry.BackendSandboxRegistry;
 import com.acc.sandbox.simulators.InMemoryStorageSimulator;
 import com.acc.sandbox.simulators.InMemoryStorageConnector;
@@ -28,7 +28,7 @@ import org.springframework.context.annotation.Import;
         PayOsSimulator.class,
         InMemoryStorageSimulator.class,
         MockWebhookDispatcher.class,
-        PgLiteDatasourceConfiguration.class,
+        EmbeddedPostgresDatasourceConfiguration.class,
         com.acc.sandbox.aspect.PayOsCheckoutInterceptorAspect.class,
         InMemoryStorageConnector.class,
         MockWebhookDeliveryService.class,

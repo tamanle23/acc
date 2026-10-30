@@ -10,13 +10,19 @@ Furthermore, when `spring.jpa.hibernate.ddl-auto: update` was tested, Hibernate 
 ## 2. Plan & Architecture
 1. **Pristine Core Decoupling**:
    - Reverted `apps/backend/acc-fw/src/main/java/com/acc/service/AuditPartitionProvisioner.java` to its original clean state with zero references or dependencies on `application.sandbox`.
-2. **Authoritative Liquibase Migrations via `acc-db` (Approach A)**:
+2. **Native Embedded PostgreSQL via Zonky (`io.zonky.test:embedded-postgres`)**:
+   - Replaced experimental single-threaded WASM PGlite (`io.roastedroot:pglite4j-jdbc`) with battle-tested Zonky Native Embedded PostgreSQL (`io.zonky.test:embedded-postgres:2.1.0` with `embedded-postgres-binaries-bom:17.11.0`).
+   - Binaries included for Windows AMD64, Linux AMD64, Darwin AMD64, and Darwin ARM64.
+   - 100% production-parity PostgreSQL engine natively supporting PL/pgSQL, partitioned tables (`UNIPOST_RECORD_AUDIT_LOG`), sequences, `information_schema`, and standard `org.postgresql.Driver` (`jdbc:postgresql://localhost:54329/postgres`).
+   - Implemented [`EmbeddedPostgresDatasourceConfiguration.java`](file:///mnt/c/Users/Admin/workspace/git/acc/apps/backend/acc-sandbox/src/main/java/com/acc/sandbox/db/EmbeddedPostgresDatasourceConfiguration.java) managing cluster lifecycle and multi-connection HikariCP pooling.
+   - Removed experimental `PgLiteDatasourceConfiguration.java`.
+3. **Authoritative Liquibase Migrations via `acc-db` (Approach A)**:
    - Added `acc-db` and `spring-boot-starter-liquibase` as dependencies of `apps/backend/acc-sandbox/pom.xml`.
    - Created [`db/sandbox/changelog-master.xml`](file:///mnt/c/Users/Admin/workspace/git/acc/apps/backend/acc-sandbox/src/main/resources/db/sandbox/changelog-master.xml) inside `acc-sandbox`, eliminating schema validation errors (`cvc-complex-type.3.2.2: Attribute 'context' is not allowed to appear in element 'include'`) by removing invalid context attributes on `<include>` tags while retaining changeset-level contexts.
    - Created [`SandboxLiquibaseConfiguration`](file:///mnt/c/Users/Admin/workspace/git/acc/apps/backend/acc-sandbox/src/main/java/com/acc/sandbox/db/SandboxLiquibaseConfiguration.java), which registers a `SpringLiquibase` bean bound to `sandboxDataSource`.
-   - On sandbox boot, Liquibase runs `db/sandbox/changelog-master.xml` against PGlite with contexts `dev,test,local`, migrating all authoritative tables (`UNIPOST_IDENTITY_*`, `UNIPOST_ENTITY_TYPES`, `UNIPOST_RECORD_AUDIT_LOG`, `UNIPOST_FS_*`) and baseline mock data.
+   - On sandbox boot, Liquibase runs `db/sandbox/changelog-master.xml` against Embedded PostgreSQL with contexts `dev,test,local`, migrating all authoritative tables (`UNIPOST_IDENTITY_*`, `UNIPOST_ENTITY_TYPES`, `UNIPOST_RECORD_AUDIT_LOG`, `UNIPOST_FS_*`) and baseline mock data.
    - Spring Data JPA (`EntityManagerFactory`) and MyBatis (`SqlSessionFactory`) automatically wait for `SpringLiquibase` to complete before initializing.
-   - `spring.jpa.hibernate.ddl-auto` remains `none`, eliminating Hibernate's invalid catalog introspection query on `information_schema.sequences`.
+   - `spring.jpa.hibernate.ddl-auto` remains `none`.
 3. **Defensive Snapshot Integrity**:
    - In both `PgLiteDatasourceConfiguration.java` and `SandboxEnvironmentPostProcessor.java`, guard against empty or truncated files (`length() < 100`) from previous interrupted boots, purging invalid snapshots so PGlite always boots clean.
 4. **Formal Verification Parity**:
@@ -28,8 +34,9 @@ Furthermore, when `spring.jpa.hibernate.ddl-auto: update` was tested, Hibernate 
 - [`db/sandbox/changelog-master.xml`](file:///mnt/c/Users/Admin/workspace/git/acc/apps/backend/acc-sandbox/src/main/resources/db/sandbox/changelog-master.xml): Master changelog for sandbox execution eliminating invalid attribute on `<include>`.
 - [`SandboxLiquibaseConfiguration.java`](file:///mnt/c/Users/Admin/workspace/git/acc/apps/backend/acc-sandbox/src/main/java/com/acc/sandbox/db/SandboxLiquibaseConfiguration.java): Implemented self-contained `SpringLiquibase` runner targeting `sandboxDataSource`.
 - [`SandboxAutoConfiguration.java`](file:///mnt/c/Users/Admin/workspace/git/acc/apps/backend/acc-sandbox/src/main/java/com/acc/sandbox/config/SandboxAutoConfiguration.java): Registered `SandboxLiquibaseConfiguration`.
-- [`PgLiteDatasourceConfiguration.java`](file:///mnt/c/Users/Admin/workspace/git/acc/apps/backend/acc-sandbox/src/main/java/com/acc/sandbox/db/PgLiteDatasourceConfiguration.java): Pure connection pool factory; removed ad-hoc DDL.
-- [`SandboxEnvironmentPostProcessor.java`](file:///mnt/c/Users/Admin/workspace/git/acc/apps/backend/acc-sandbox/src/main/java/com/acc/sandbox/config/SandboxEnvironmentPostProcessor.java): Purged corrupted snapshots on boot; ensured `ddl-auto: none`.
+- [`EmbeddedPostgresDatasourceConfiguration.java`](file:///mnt/c/Users/Admin/workspace/git/acc/apps/backend/acc-sandbox/src/main/java/com/acc/sandbox/db/EmbeddedPostgresDatasourceConfiguration.java): Pure native PostgreSQL connection pool factory; manages Zonky cluster lifecycle.
+- Removed deprecated `PgLiteDatasourceConfiguration.java`.
+- [`SandboxEnvironmentPostProcessor.java`](file:///mnt/c/Users/Admin/workspace/git/acc/apps/backend/acc-sandbox/src/main/java/com/acc/sandbox/config/SandboxEnvironmentPostProcessor.java): Injects `org.postgresql.Driver` and `jdbc:postgresql://localhost:54329/postgres`.
 - [`backend_sandbox_safeguards.test.ts`](file:///mnt/c/Users/Admin/workspace/git/acc/autogenerated-tests/backend_sandbox_safeguards.test.ts): Added TC-SB-07 and TC-SB-09 for decoupling and Liquibase parity.
 
 ## 4. Verification

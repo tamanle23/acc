@@ -32,7 +32,8 @@ public class SandboxEnvironmentPostProcessor implements EnvironmentPostProcessor
   private static final Logger log = LoggerFactory.getLogger(SandboxEnvironmentPostProcessor.class);
 
   public static final Set<String> RESTRICTED_PROFILES = Set.of("prod", "production", "sit", "uat");
-  public static final String PGLITE_DRIVER = "io.roastedroot.pglite4j.jdbc.PgLiteDriver";
+  public static final String POSTGRES_DRIVER = "org.postgresql.Driver";
+  public static final int DEFAULT_PORT = 54329;
 
   @Override
   public int getOrder() {
@@ -78,39 +79,27 @@ public class SandboxEnvironmentPostProcessor implements EnvironmentPostProcessor
     }
 
     // Inject sandbox properties at highest precedence so DataSourceAutoConfiguration and MyBatis
-    // connect seamlessly to embedded PGlite WASM with zero external PostgreSQL dependencies
-    String mode = environment.getProperty("application.sandbox.mode", "DEV");
-    String devStorage = environment.getProperty("application.sandbox.database.dev-storage-path", "../../tmp/db/pglite-sandbox.db");
-
-    String jdbcUrl;
-    if ("TEST".equalsIgnoreCase(mode)) {
-      jdbcUrl = "jdbc:pglite:memory://";
-    } else {
-      File storageFile = new File(devStorage);
-      if (storageFile.exists()) {
-        if (storageFile.isDirectory()) {
-          log.warn("Storage path {} is a directory, but PGlite expects a file snapshot. Deleting directory.", devStorage);
-          deleteRecursively(storageFile);
-        } else if (storageFile.length() < 100) {
-          log.warn("Storage file {} is empty or invalid (length={}). Removing to allow clean initialization.", devStorage, storageFile.length());
-          storageFile.delete();
-        }
+    // connect seamlessly to Zonky Embedded PostgreSQL with zero external PostgreSQL dependencies
+    int port = DEFAULT_PORT;
+    try {
+      String portStr = environment.getProperty("application.sandbox.database.port");
+      if (portStr != null && !portStr.isBlank()) {
+        port = Integer.parseInt(portStr.trim());
       }
-      File parentDir = storageFile.getParentFile();
-      if (parentDir != null && !parentDir.exists()) {
-        parentDir.mkdirs();
-      }
-      jdbcUrl = "jdbc:pglite:" + devStorage;
+    } catch (NumberFormatException e) {
+      log.warn("Invalid application.sandbox.database.port configured, falling back to {}", DEFAULT_PORT);
     }
+
+    String jdbcUrl = "jdbc:postgresql://localhost:" + port + "/postgres";
 
     Map<String, Object> sandboxOverrides = new HashMap<>();
     sandboxOverrides.put("application.sandbox.enabled", "true");
     sandboxOverrides.put("spring.datasource.url", jdbcUrl);
-    sandboxOverrides.put("spring.datasource.driver-class-name", PGLITE_DRIVER);
+    sandboxOverrides.put("spring.datasource.driver-class-name", POSTGRES_DRIVER);
     sandboxOverrides.put("spring.datasource.username", "postgres");
     sandboxOverrides.put("spring.datasource.password", "postgres");
     sandboxOverrides.put("spring.datasource.hikari.maximum-pool-size", 10);
-    sandboxOverrides.put("spring.datasource.hikari.minimum-idle", 1);
+    sandboxOverrides.put("spring.datasource.hikari.minimum-idle", 2);
     sandboxOverrides.put("spring.datasource.hikari.connection-timeout", 30000);
 
     environment.getPropertySources().addFirst(new MapPropertySource("sandboxEnvironmentOverrides", sandboxOverrides));

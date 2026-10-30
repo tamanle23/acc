@@ -66,8 +66,14 @@ public class SandboxProperties {
     @Getter
     @Setter
     public static class DatabaseSimulationProperties {
+        private boolean embeddedPostgres = true;
         private boolean embeddedPglite = true;
-        private String devStoragePath = "tmp/db/pglite-sandbox.db";
+        private int port = 54329;
+        private String devStoragePath = "../../tmp/db/embedded-postgres";
+
+        public boolean isEmbeddedPostgres() {
+            return embeddedPostgres || embeddedPglite;
+        }
     }
 
     @Getter

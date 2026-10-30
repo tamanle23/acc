@@ -10,45 +10,42 @@ import * as path from 'path';
 describe('Iteration 58: Backend Sandbox Two-Tier Safeguards & PGlite WASM Parity', () => {
   const repoRoot = path.resolve(__dirname, '..');
 
-  // TC-SB-01: In-Process PGlite WASM Dependency Declaration
-  test('TC-SB-01: acc-sandbox/pom.xml must declare io.roastedroot:pglite4j-jdbc:0.0.3 non-optional', () => {
+  // TC-SB-01: Zonky Native Embedded PostgreSQL Dependency Declaration
+  test('TC-SB-01: acc-sandbox/pom.xml must declare io.zonky.test:embedded-postgres non-optional', () => {
     const pomPath = path.join(repoRoot, 'apps/backend/acc-sandbox/pom.xml');
     expect(fs.existsSync(pomPath)).toBe(true);
 
     const content = fs.readFileSync(pomPath, 'utf-8');
-    expect(content).toContain('io.roastedroot');
-    expect(content).toContain('pglite4j-jdbc');
-    expect(content).toContain('0.0.3');
-    // Ensure old buggy dependency is gone
+    expect(content).toContain('io.zonky.test');
+    expect(content).toContain('embedded-postgres');
+    expect(content).toContain('embedded-postgres-binaries-bom');
+    // Ensure old buggy dependencies are gone
     expect(content).not.toContain('pglite-spring-boot-test');
+    expect(content).not.toContain('pglite4j-jdbc');
 
-    // Ensure pglite4j-jdbc is not marked optional
-    const pgliteDepBlock = content.match(/<dependency>[\s\S]*?io\.roastedroot[\s\S]*?<\/dependency>/);
-    expect(pgliteDepBlock).not.toBeNull();
-    expect(pgliteDepBlock![0]).not.toContain('<optional>true</optional>');
+    // Ensure embedded-postgres is not marked optional
+    const zonkyDepBlock = content.match(/<dependency>[\s\S]*?io\.zonky\.test[\s\S]*?<\/dependency>/);
+    expect(zonkyDepBlock).not.toBeNull();
+    expect(zonkyDepBlock![0]).not.toContain('<optional>true</optional>');
   });
 
-  // TC-SB-02: Pure In-Process WebAssembly Configuration & Zero External Fallback
-  test('TC-SB-02: PgLiteDatasourceConfiguration must strictly enforce driver with zero external postgres fallback', () => {
+  // TC-SB-02: Native Embedded PostgreSQL Configuration & Zero External Fallback
+  test('TC-SB-02: EmbeddedPostgresDatasourceConfiguration must strictly enforce postgres driver with zero external postgres fallback', () => {
     const configPath = path.join(
       repoRoot,
-      'apps/backend/acc-sandbox/src/main/java/com/acc/sandbox/db/PgLiteDatasourceConfiguration.java'
+      'apps/backend/acc-sandbox/src/main/java/com/acc/sandbox/db/EmbeddedPostgresDatasourceConfiguration.java'
     );
     expect(fs.existsSync(configPath)).toBe(true);
 
     const content = fs.readFileSync(configPath, 'utf-8');
-    expect(content).toContain('io.roastedroot.pglite4j.jdbc.PgLiteDriver');
-    expect(content).toContain('Class.forName(PGLITE_DRIVER)');
-    expect(content).toContain('throw new IllegalStateException');
+    expect(content).toContain('io.zonky.test.db.postgres.embedded.EmbeddedPostgres');
+    expect(content).toContain('org.postgresql.Driver');
+    expect(content).toContain('embeddedPostgres');
+    expect(content).toContain('sandboxDataSource');
 
-    // Absolute prohibition of localhost:5432/acc fallback
+    // Absolute prohibition of external localhost:5432/acc fallback
     expect(content).not.toContain('localhost:5432/acc');
     expect(content).not.toContain('ensurePostgresDatabaseExists');
-    expect(content).not.toContain('jdbc:pglite:file:');
-    expect(content).toContain('jdbc:pglite:');
-    expect(content).toContain('isDirectory()');
-    expect(content).toContain('deleteRecursively');
-    expect(content).not.toContain('dbFile.mkdirs()');
 
     // SandboxProperties must not have @Component or @Primary to prevent duplicate bean clash
     const propsPath = path.join(
@@ -82,12 +79,8 @@ describe('Iteration 58: Backend Sandbox Two-Tier Safeguards & PGlite WASM Parity
     expect(javaContent).toContain('"production"');
     expect(javaContent).toContain('"sit"');
     expect(javaContent).toContain('"uat"');
-    expect(javaContent).toContain('jdbc:pglite:');
-    expect(javaContent).not.toContain('jdbc:pglite:file:');
-    expect(javaContent).toContain('isDirectory()');
-    expect(javaContent).toContain('deleteRecursively');
-    expect(javaContent).not.toContain('storageFile.mkdirs()');
-    expect(javaContent).not.toContain('storageDir.mkdirs()');
+    expect(javaContent).toContain('jdbc:postgresql:');
+    expect(javaContent).toContain('org.postgresql.Driver');
 
     const factoriesContent = fs.readFileSync(factoriesPath, 'utf-8');
     expect(factoriesContent).toContain('org.springframework.boot.env.EnvironmentPostProcessor');
@@ -175,8 +168,8 @@ describe('Iteration 58: Backend Sandbox Two-Tier Safeguards & PGlite WASM Parity
     expect(content).not.toContain('com.acc.sandbox');
   });
 
-  // TC-SB-08: HikariCP Connection Pool Bounds for PGlite WASM Engine
-  test('TC-SB-08: application-sandbox.yml must constrain Hikari pool bounds to prevent WASM thread exhaustion', () => {
+  // TC-SB-08: HikariCP Connection Pool Bounds & Driver for Embedded PostgreSQL
+  test('TC-SB-08: application-sandbox.yml must configure embedded PostgreSQL with org.postgresql.Driver', () => {
     const sandboxYamlPath = path.join(
       repoRoot,
       'apps/backend/acc-ms-aio/src/main/resources/application-sandbox.yml'
@@ -185,9 +178,11 @@ describe('Iteration 58: Backend Sandbox Two-Tier Safeguards & PGlite WASM Parity
 
     const content = fs.readFileSync(sandboxYamlPath, 'utf-8');
     expect(content).toContain('maximum-pool-size: 10');
-    expect(content).toContain('minimum-idle: 1');
+    expect(content).toContain('minimum-idle: 2');
     expect(content).toContain('connection-timeout: 30000');
-    expect(content).toContain('pglite-sandbox.db');
+    expect(content).toContain('org.postgresql.Driver');
+    expect(content).toContain('jdbc:postgresql://localhost:54329/postgres');
+    expect(content).toContain('embedded-postgres: true');
   });
 
   // TC-SB-09: Authoritative Liquibase Schema Migration on PGlite in Sandbox Mode

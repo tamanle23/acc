@@ -52,7 +52,7 @@ class SandboxEnvironmentPostProcessorTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"dev", "local", "test", "docker"})
-  @DisplayName("Should permit sandbox enabled under safe non-production profiles and inject PGlite properties")
+  @DisplayName("Should permit sandbox enabled under safe non-production profiles and inject PostgreSQL properties")
   void shouldAllowSandboxUnderSafeProfiles(String profile) {
     MockEnvironment environment = new MockEnvironment();
     environment.setProperty("application.sandbox.enabled", "true");
@@ -60,12 +60,12 @@ class SandboxEnvironmentPostProcessorTest {
 
     assertThatNoException().isThrownBy(() -> postProcessor.postProcessEnvironment(environment, application));
 
-    assertThat(environment.getProperty("spring.datasource.url")).startsWith("jdbc:pglite:");
-    assertThat(environment.getProperty("spring.datasource.driver-class-name")).isEqualTo(SandboxEnvironmentPostProcessor.PGLITE_DRIVER);
+    assertThat(environment.getProperty("spring.datasource.url")).startsWith("jdbc:postgresql://");
+    assertThat(environment.getProperty("spring.datasource.driver-class-name")).isEqualTo(SandboxEnvironmentPostProcessor.POSTGRES_DRIVER);
   }
 
   @Test
-  @DisplayName("Should activate and inject PGlite datasource when 'sandbox' profile is active")
+  @DisplayName("Should activate and inject PostgreSQL datasource when 'sandbox' profile is active")
   void shouldActivateWhenSandboxProfileActive() {
     MockEnvironment environment = new MockEnvironment();
     environment.setActiveProfiles("local", "sandbox");
@@ -73,21 +73,20 @@ class SandboxEnvironmentPostProcessorTest {
     postProcessor.postProcessEnvironment(environment, application);
 
     assertThat(environment.getProperty("application.sandbox.enabled")).isEqualTo("true");
-    assertThat(environment.getProperty("spring.datasource.url")).startsWith("jdbc:pglite:");
-    assertThat(environment.getProperty("spring.datasource.url")).doesNotContain("memory:");
-    assertThat(environment.getProperty("spring.datasource.driver-class-name")).isEqualTo(SandboxEnvironmentPostProcessor.PGLITE_DRIVER);
+    assertThat(environment.getProperty("spring.datasource.url")).startsWith("jdbc:postgresql://");
+    assertThat(environment.getProperty("spring.datasource.driver-class-name")).isEqualTo(SandboxEnvironmentPostProcessor.POSTGRES_DRIVER);
   }
 
   @Test
-  @DisplayName("Should configure in-memory PGlite in TEST mode")
-  void shouldConfigureInMemoryInTestMode() {
+  @DisplayName("Should configure custom port when configured")
+  void shouldConfigureCustomPortWhenConfigured() {
     MockEnvironment environment = new MockEnvironment();
     environment.setProperty("application.sandbox.enabled", "true");
-    environment.setProperty("application.sandbox.mode", "TEST");
+    environment.setProperty("application.sandbox.database.port", "54330");
 
     postProcessor.postProcessEnvironment(environment, application);
 
-    assertThat(environment.getProperty("spring.datasource.url")).isEqualTo("jdbc:pglite:memory://");
+    assertThat(environment.getProperty("spring.datasource.url")).isEqualTo("jdbc:postgresql://localhost:54330/postgres");
   }
 
   @Test
@@ -112,26 +111,14 @@ class SandboxEnvironmentPostProcessorTest {
   }
 
   @Test
-  @DisplayName("Should purge lingering directory at storage path and create parent directory")
-  void shouldPurgeLingeringDirectoryAtStoragePath() throws java.io.IOException {
-    java.nio.file.Path tempDir = java.nio.file.Files.createTempDirectory("pglite-test-");
-    java.nio.file.Path fakeDirAsFile = tempDir.resolve("target-snapshot");
-    java.nio.file.Files.createDirectories(fakeDirAsFile);
-    assertThat(java.nio.file.Files.isDirectory(fakeDirAsFile)).isTrue();
-
+  @DisplayName("Should fallback to DEFAULT_PORT when database port is invalid string")
+  void shouldFallbackToDefaultPortOnInvalidPort() {
     MockEnvironment environment = new MockEnvironment();
     environment.setProperty("application.sandbox.enabled", "true");
-    environment.setProperty("application.sandbox.mode", "DEV");
-    environment.setProperty("application.sandbox.database.dev-storage-path", fakeDirAsFile.toString());
-    environment.setActiveProfiles("local");
+    environment.setProperty("application.sandbox.database.port", "not-a-number");
 
     postProcessor.postProcessEnvironment(environment, application);
 
-    // The erroneous directory should be deleted, but parent directory remains
-    assertThat(java.nio.file.Files.isDirectory(fakeDirAsFile)).isFalse();
-    assertThat(java.nio.file.Files.isDirectory(tempDir)).isTrue();
-
-    // Clean up
-    tempDir.toFile().delete();
+    assertThat(environment.getProperty("spring.datasource.url")).isEqualTo("jdbc:postgresql://localhost:" + SandboxEnvironmentPostProcessor.DEFAULT_PORT + "/postgres");
   }
 }
