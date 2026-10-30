@@ -2,12 +2,16 @@ import type { ModifierPlugin, ModifierContext, ClipRenderContext, MasterComposit
 import type { ModifierTargetScope } from '../../types/modifiers';
 import type { SequenceType } from '../../types/VideoIR';
 import { ColorGradingEngine, type ColorGradingParams } from '@acc/effect-engines';
-import { resolveLutPreset, LUT_PRESET_KEYS } from '../lut';
+import { resolveLutPreset, applyLutToImageData, LUT_PRESET_KEYS } from '../lut';
 
 /**
  * ColorGradingPlugin:
  * Implements in-memory LUT and contrast/saturation adjustment ('vfx/color_grading').
  * Applies during Phase 2 (clip space) or Phase 4 (master composite).
+ *
+ * Fully isomorphic within @acc/ir:
+ * Evaluates 3D tetrahedral LUT transformations directly on Canvas / OffscreenCanvas
+ * using the unified LutApplicator and LutPresetRegistry without external native dependencies.
  */
 export class ColorGradingPlugin implements ModifierPlugin<ColorGradingParams> {
   public readonly type = 'vfx/color_grading';
@@ -107,6 +111,25 @@ export class ColorGradingPlugin implements ModifierPlugin<ColorGradingParams> {
     context.state.colorGrading = params;
   }
 
+  /**
+   * Applies pre-baked 3D LUT to every pixel on the canvas via isomorphic
+   * getImageData -> applyLutToImageData (tetrahedral) -> putImageData.
+   */
+  public applyLutToCanvas(
+    ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+    lutData: Float32Array,
+    size: number
+  ): void {
+    const canvas = ctx.canvas;
+    const w = canvas.width;
+    const h = canvas.height;
+    if (w === 0 || h === 0) return;
+
+    const imageData = ctx.getImageData(0, 0, w, h);
+    applyLutToImageData(imageData, lutData, size);
+    ctx.putImageData(imageData, 0, 0);
+  }
+
   public async renderClipSpace(ctx: ClipRenderContext, params: ColorGradingParams): Promise<void> {
     const { ctx: canvasCtx } = ctx;
     this.engine.applyCanvasTransform(canvasCtx, params);
@@ -115,7 +138,7 @@ export class ColorGradingPlugin implements ModifierPlugin<ColorGradingParams> {
       try {
         const resolved = await resolveLutPreset(params.lut, 17);
         if (resolved) {
-          this.engine.applyLutToCanvas(canvasCtx, resolved.data, resolved.size);
+          this.applyLutToCanvas(canvasCtx, resolved.data, resolved.size);
         }
       } catch {
         // Graceful degradation: LUT not available, continue without pixel-level grading
@@ -131,7 +154,7 @@ export class ColorGradingPlugin implements ModifierPlugin<ColorGradingParams> {
       try {
         const resolved = await resolveLutPreset(params.lut, 17);
         if (resolved) {
-          this.engine.applyLutToCanvas(canvasCtx, resolved.data, resolved.size);
+          this.applyLutToCanvas(canvasCtx, resolved.data, resolved.size);
         }
       } catch {
         // Graceful degradation

@@ -60,12 +60,11 @@ sequenceDiagram
 - Caches baked LUT buffers into `ContentCacheRegistry.namespace(CacheNamespace.VFX)` as Blobs.
 
 ### 3. `packages/effect-engines/src/styles/ColorGradingEngine.ts`
-- Added `applyLutToCanvas(ctx, lutData, size)`.
-- Internalized tetrahedral interpolation to avoid circular package dependency on `@acc/ir`.
-- Maintained `generateFFmpegFilter` with `lut3d=file='...':interp=tetrahedral` export option.
+- Cleanly decoupled from `@acc/ir`, focused purely on CSS canvas filters and FFmpeg filter generation (`lut3d=file='...':interp=tetrahedral`).
 
 ### 4. `packages/ir/src/plugins/vfx/ColorGradingPlugin.ts`
 - Schema field `lut`: `type: 'select'` with dropdown options for all presets.
+- Self-contained isomorphic `applyLutToCanvas` executing `applyLutToImageData` on canvas framebuffers.
 - Asynchronous `renderClipSpace` and `renderMasterComposite` pipeline applying tone mapping first, then resolving and applying 3D LUT.
 
 ### 5. `apps/studio/src/components/inspector/modifierCatalog.ts`

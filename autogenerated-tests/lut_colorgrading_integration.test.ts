@@ -259,8 +259,8 @@ describe('LUT ↔ ColorGrading Integration Suite', () => {
       expect(optionValues).toContain('');
     });
 
-    it('ColorGradingEngine applyLutToCanvas safely performs pixel grading on Canvas context', () => {
-      const engine = new ColorGradingEngine();
+    it('ColorGradingPlugin applyLutToCanvas safely performs pixel grading on Canvas context', () => {
+      const plugin = new ColorGradingPlugin();
       const pixelBuffer = new Uint8ClampedArray(4 * 4 * 4); // 4x4 RGBA
       pixelBuffer.fill(128);
 
@@ -283,7 +283,7 @@ describe('LUT ↔ ColorGrading Integration Suite', () => {
 
       // Should run without throwing
       expect(() => {
-        engine.applyLutToCanvas(mockCtx, dummyLut, 9);
+        plugin.applyLutToCanvas(mockCtx, dummyLut, 9);
       }).not.toThrow();
     });
 
