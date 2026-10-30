@@ -12,14 +12,21 @@ import {
   LayoutPanelTop,
   ScanEye,
   Activity,
+  Sliders,
 } from 'lucide-react';
 import { Tooltip } from '../ui/tooltip';
 import { SnappingGuide } from '../../lib/gizmo';
 import { StudioPlayheadController } from '../../lib/playhead/StudioPlayheadController';
 
+export type PreviewResolutionMode = 'auto' | 1.0 | 0.5 | 0.25;
+
 export interface ViewportControlBarProps {
   width: number;
   height: number;
+  virtualWidth?: number;
+  virtualHeight?: number;
+  previewResolution?: PreviewResolutionMode;
+  onSetPreviewResolution?: (res: PreviewResolutionMode) => void;
   fps?: number;
   isPlaying: boolean;
   currentFrame: number;
@@ -51,6 +58,10 @@ export interface ViewportControlBarProps {
 export const ViewportControlBar: React.FC<ViewportControlBarProps> = ({
   width,
   height,
+  virtualWidth,
+  virtualHeight,
+  previewResolution = 'auto',
+  onSetPreviewResolution,
   fps = 30,
   isPlaying,
   currentFrame,
@@ -97,10 +108,40 @@ export const ViewportControlBar: React.FC<ViewportControlBarProps> = ({
   return (
     <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10 pointer-events-none">
       <div className="flex items-center gap-2">
-        <div className="glass-card px-2.5 py-1 rounded-full text-foreground/80 font-mono text-[10px] flex items-center gap-1.5 shadow-xs border border-glass-border">
+        <div
+          className="glass-card px-2.5 py-1 rounded-full text-foreground/80 font-mono text-[10px] flex items-center gap-1.5 shadow-xs border border-glass-border"
+          title={`Active Preview Canvas Buffer: ${virtualWidth ?? width}×${virtualHeight ?? height} (Document Baseline: ${width}×${height})`}
+        >
           <Monitor className="w-3 h-3 text-accent-theme" />
-          {width}×{height}
+          {virtualWidth && virtualWidth !== width
+            ? `${virtualWidth}×${virtualHeight} (${width}×${height})`
+            : `${width}×${height}`}
         </div>
+
+        {/* Configurable Virtual Preview Resolution Selector */}
+        {onSetPreviewResolution && (
+          <button
+            onClick={() => {
+              const modes: PreviewResolutionMode[] = ['auto', 1.0, 0.5, 0.25];
+              const currentIndex = modes.indexOf(previewResolution);
+              const nextIndex = (currentIndex + 1) % modes.length;
+              onSetPreviewResolution(modes[nextIndex]!);
+            }}
+            className="pointer-events-auto glass-card px-2.5 py-1 rounded-full font-mono text-[10px] flex items-center gap-1.5 shadow-xs border border-glass-border hover:border-accent-theme/50 transition-colors text-foreground/80 cursor-pointer"
+            title="Toggle Playback Virtual Buffer Resolution: Auto (Dynamic) -> Full (1/1) -> Half (1/2) -> Quarter (1/4)"
+          >
+            <Sliders className="w-2.5 h-2.5 text-accent-theme" />
+            <span className="font-semibold">
+              {previewResolution === 'auto'
+                ? `Auto (${virtualHeight ? `${virtualHeight}p` : '540p'})`
+                : previewResolution === 1.0
+                ? `Full (${height}p)`
+                : previewResolution === 0.5
+                ? `Half (${Math.round(height * 0.5)}p)`
+                : `Quarter (${Math.round(height * 0.25)}p)`}
+            </span>
+          </button>
+        )}
 
         <div className="glass-card px-2.5 py-1 rounded-full text-foreground/80 font-mono text-[10px] flex items-center gap-1.5 shadow-xs border border-glass-border">
           <Sparkles className="w-2.5 h-2.5 text-accent-theme animate-pulse" />

@@ -5,6 +5,7 @@ import { useIRState } from '../lib/ir/useStudioStore';
 import { STAGING_PRESETS } from '../lib/library/stagingPresets';
 import {
   ViewportControlBar,
+  type PreviewResolutionMode,
   ViewportSafeGuides,
   TelemetryCompanionCard,
   InlineTextEditorModal,
@@ -80,6 +81,20 @@ export function Preview({
   const [isTelemetryCompanionOpen, setIsTelemetryCompanionOpen] = useState(false);
   const [editingCue, setEditingCue] = useState<{ sequenceId: string; cueIndex: number; text: string } | null>(null);
 
+  // Configurable Virtual Preview Buffer Resolution
+  const [previewResolution, setPreviewResolution] = useState<PreviewResolutionMode>('auto');
+
+  // Calculate active virtual resolution scale
+  const activeScale = useMemo(() => {
+    if (previewResolution === 'auto') {
+      return isPlaying ? 0.5 : 1.0;
+    }
+    return previewResolution;
+  }, [previewResolution, isPlaying]);
+
+  const virtualWidth = Math.max(320, Math.round(width * activeScale));
+  const virtualHeight = Math.max(180, Math.round(height * activeScale));
+
   // Staging Drag-and-Drop States
   const [isDragOver, setIsDragOver] = useState(false);
   const [dragCoords, setDragCoords] = useState<{ normX: number; normY: number } | null>(null);
@@ -108,8 +123,10 @@ export function Preview({
     overlayCanvasRef,
     timeline: irState.timeline,
     assetsMap: irState.doc?.assets || EMPTY_ASSETS,
-    width,
-    height,
+    width: virtualWidth,
+    height: virtualHeight,
+    timelineWidth: width,
+    timelineHeight: height,
     fps,
     totalFrames,
     currentFrame,
@@ -242,6 +259,10 @@ export function Preview({
       <ViewportControlBar
         width={width}
         height={height}
+        virtualWidth={virtualWidth}
+        virtualHeight={virtualHeight}
+        previewResolution={previewResolution}
+        onSetPreviewResolution={setPreviewResolution}
         fps={fps}
         isPlaying={isPlaying}
         currentFrame={currentFrame}

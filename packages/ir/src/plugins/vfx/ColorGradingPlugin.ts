@@ -373,14 +373,13 @@ export class ColorGradingPlugin implements ModifierPlugin<ColorGradingParams> {
 
   /**
    * Applies unified studio-grade Color Correction and Color Grading directly onto canvas context.
-   * Incorporates dynamic LOD downsampling for 60fps playback and pristine 1.0x for paused/export frames.
+   * Naturally scales with physical canvas resolution (e.g. preview virtual resolution vs native 4K master).
    */
   public applyColorCorrectionAndGradingToCanvas(
     ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
     params: ColorGradingParams,
     lutData?: Float32Array,
-    lutSize: number = 17,
-    lod: number = 1.0
+    lutSize: number = 17
   ): void {
     if (ColorGradingPlugin.isNoOp(params)) return;
 
@@ -393,42 +392,6 @@ export class ColorGradingPlugin implements ModifierPlugin<ColorGradingParams> {
     if (!ColorGradingPlugin.requiresPixelTraversal(params) && !lutData) {
       this.applyGpuCompositeFilter(ctx, w, h, params);
       return;
-    }
-
-    // Dynamic LOD downsampling during playback / scrub:
-    // If lod < 1.0 or canvas is HD/4K, downsample to scratch canvas,
-    // execute zero-alloc pixel traversal, and upscale via GPU bilinear interpolation in < 3ms.
-    if (lod < 1.0 && w > 480) {
-      const targetW = Math.max(320, Math.round(w * lod));
-      const targetH = Math.max(180, Math.round(h * lod));
-
-      const scratch = UniversalCanvasProvider.acquireScratchCanvas(targetW, targetH);
-      const scratchCanvas = scratch.getRawCanvas ? scratch.getRawCanvas() : scratch;
-      const scratchCtx = scratchCanvas.getContext('2d');
-
-      if (scratchCtx) {
-        scratchCtx.setTransform(1, 0, 0, 1, 0, 0);
-        scratchCtx.imageSmoothingEnabled = true;
-        scratchCtx.imageSmoothingQuality = 'medium';
-        scratchCtx.clearRect(0, 0, targetW, targetH);
-        scratchCtx.drawImage(canvas, 0, 0, targetW, targetH);
-
-        const lowResData = scratchCtx.getImageData(0, 0, targetW, targetH);
-        applyColorCorrectionAndGrading(lowResData, params, lutData, lutSize);
-        scratchCtx.putImageData(lowResData, 0, 0);
-
-        ctx.save();
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        (ctx as CanvasRenderingContext2D).imageSmoothingEnabled = true;
-        (ctx as CanvasRenderingContext2D).imageSmoothingQuality = 'medium';
-        ctx.clearRect(0, 0, w, h);
-        ctx.drawImage(scratchCanvas, 0, 0, targetW, targetH, 0, 0, w, h);
-        ctx.restore();
-
-        UniversalCanvasProvider.releaseScratchCanvas(scratch);
-        return;
-      }
-      UniversalCanvasProvider.releaseScratchCanvas(scratch);
     }
 
     const imageData = ctx.getImageData(0, 0, w, h);

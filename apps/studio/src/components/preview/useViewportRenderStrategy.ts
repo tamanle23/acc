@@ -16,6 +16,8 @@ export interface UseViewportRenderStrategyOptions {
   assetsMap: Record<string, AssetDefinition>;
   width: number;
   height: number;
+  timelineWidth?: number;
+  timelineHeight?: number;
   fps: number;
   totalFrames: number;
   currentFrame: number;
@@ -32,6 +34,8 @@ export function useViewportRenderStrategy({
   assetsMap,
   width,
   height,
+  timelineWidth,
+  timelineHeight,
   fps,
   totalFrames,
   currentFrame,
@@ -70,8 +74,8 @@ export function useViewportRenderStrategy({
       baseCanvas.height = height;
     }
     if (overlayCanvas) {
-      overlayCanvas.width = width;
-      overlayCanvas.height = height;
+      overlayCanvas.width = timelineWidth || width;
+      overlayCanvas.height = timelineHeight || height;
     }
 
     strategy.resize(width, height);
@@ -130,7 +134,7 @@ export function useViewportRenderStrategy({
       .catch(() => {
         strategy.renderFrame(currentFrame, renderOptions);
       });
-  }, [currentFrame, fps, isPlaying, clearColor, debugMode, activeSeqs, assetsMap, assetTick]);
+  }, [currentFrame, fps, isPlaying, clearColor, debugMode, activeSeqs, assetsMap, assetTick, width, height]);
 
   // High-frequency subscription for smooth 60fps playhead animation without React rerenders
   useEffect(() => {

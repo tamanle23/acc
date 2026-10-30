@@ -142,23 +142,30 @@ export class IRCanvasCompositor {
 
     const totalFrames = timeline.totalFrames;
     const clampedFrame = Math.max(0, Math.min(totalFrames, Math.round(frame)));
-    const { w: width, h: height } = timeline.meta.canvasSize;
-    const fps = timeline.meta.globalFps || 30;
+    const width = timeline?.meta?.canvasSize?.w || 1920;
+    const height = timeline?.meta?.canvasSize?.h || 1080;
+    const fps = timeline?.meta?.globalFps || 30;
     const registry = options.pluginRegistry;
     const assets = options.assetResolver;
     const popOutIntensity = options.popOutIntensity;
     const canvas = canvasCtx.canvas || canvasCtx;
+    const bufferW = canvas.width || width;
+    const bufferH = canvas.height || height;
+    const scaleX = bufferW / width;
+    const scaleY = bufferH / height;
+    const isVirtualScaled = Math.abs(scaleX - 1.0) > 0.0001 || Math.abs(scaleY - 1.0) > 0.0001;
     const profile = options.executionProfile || 'preview';
 
-    // 1. Clear Viewport (Standardized background or transparent for checkerboard)
+    // 1. Clear Physical Viewport
     canvasCtx.save();
+    canvasCtx.setTransform(1, 0, 0, 1, 0, 0);
     canvasCtx.globalCompositeOperation = 'source-over';
     canvasCtx.globalAlpha = 1.0;
     if (options.clearColor === 'transparent') {
-      canvasCtx.clearRect(0, 0, width, height);
+      canvasCtx.clearRect(0, 0, bufferW, bufferH);
     } else {
       canvasCtx.fillStyle = options.clearColor || '#000000';
-      canvasCtx.fillRect(0, 0, width, height);
+      canvasCtx.fillRect(0, 0, bufferW, bufferH);
     }
     canvasCtx.restore();
 
@@ -168,6 +175,9 @@ export class IRCanvasCompositor {
       .sort((a, b) => (a.groupOrder ?? 0) - (b.groupOrder ?? 0));
 
     const finalizePostVisualTracks = (): void => {
+      // 1. Restore root visual scale so master composite modifiers operate directly on physical buffer pixels
+      canvasCtx.restore();
+
       // 3. Master Canvas Composite Modifiers across visual plates
       for (const track of visualTracksList) {
         if (track.modifiers) {
@@ -179,8 +189,8 @@ export class IRCanvasCompositor {
                   canvas,
                   ctx: canvasCtx,
                   frame: clampedFrame,
-                  width,
-                  height,
+                  width: bufferW,
+                  height: bufferH,
                   pixelBuffer: options.generatePixelBuffer || new Uint8Array(0),
                 },
                 {
@@ -202,8 +212,8 @@ export class IRCanvasCompositor {
                 canvas,
                 ctx: canvasCtx,
                 frame: clampedFrame,
-                width,
-                height,
+                width: bufferW,
+                height: bufferH,
                 pixelBuffer: options.generatePixelBuffer || new Uint8Array(0),
               },
               {
@@ -213,6 +223,13 @@ export class IRCanvasCompositor {
             );
           }
         }
+      }
+
+      // 4. Supreme Timed-Text Flat Stack Pass
+      // Re-apply timeline coordinate scale so captions draw with canonical font sizes and layout
+      canvasCtx.save();
+      if (isVirtualScaled) {
+        canvasCtx.scale(scaleX, scaleY);
       }
 
       // 4. Supreme Timed-Text Flat Stack Pass
@@ -321,12 +338,15 @@ export class IRCanvasCompositor {
         }
       }
 
+      // Restore timed text scale
+      canvasCtx.restore();
+
       // 5. Populate pre-allocated pixel buffer if requested (preserving ZERO-ALLOC-FRAME-LOOP)
       if (options.generatePixelBuffer) {
         if (typeof canvas.data === 'function') {
           options.generatePixelBuffer.set(canvas.data());
         } else if (typeof canvasCtx.getImageData === 'function') {
-          const imgData = canvasCtx.getImageData(0, 0, width, height);
+          const imgData = canvasCtx.getImageData(0, 0, bufferW, bufferH);
           options.generatePixelBuffer.set(imgData.data);
         }
       }
@@ -461,6 +481,10 @@ export class IRCanvasCompositor {
     };
 
     try {
+      canvasCtx.save();
+      if (isVirtualScaled) {
+        canvasCtx.scale(scaleX, scaleY);
+      }
       const maybePromise = processTracksFrom(0);
       if (maybePromise instanceof Promise) {
         return maybePromise.finally(() => {
@@ -474,6 +498,7 @@ export class IRCanvasCompositor {
       }
       return Promise.resolve();
     } catch (err) {
+      canvasCtx.restore();
       if (ownsFrameScope) {
         frameScope.dispose();
       }
