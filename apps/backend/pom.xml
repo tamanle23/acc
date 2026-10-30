@@ -277,6 +277,9 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-maven-plugin</artifactId>
             <version>${springboot.version}</version>
+            <configuration>
+                <skip>true</skip>
+            </configuration>
         </plugin>
       </plugins>
     </pluginManagement>

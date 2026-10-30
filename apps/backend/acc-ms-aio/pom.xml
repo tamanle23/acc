@@ -80,6 +80,7 @@
         <artifactId>spring-boot-maven-plugin</artifactId>
         <version>${springboot.version}</version>
         <configuration>
+          <skip>false</skip>
           <mainClass>com.acc.aio.Application</mainClass>
           <outputDirectory>../dist/acc-ms-aio/</outputDirectory>
           <outputFile>../dist/acc-ms-aio/acc-ms-aio-${project.version}-build-info.properties</outputFile>
