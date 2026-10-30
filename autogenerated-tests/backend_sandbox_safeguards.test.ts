@@ -189,4 +189,24 @@ describe('Iteration 58: Backend Sandbox Two-Tier Safeguards & PGlite WASM Parity
     expect(content).toContain('connection-timeout: 30000');
     expect(content).toContain('pglite-sandbox.db');
   });
+
+  // TC-SB-09: Authoritative Liquibase Schema Migration on PGlite in Sandbox Mode
+  test('TC-SB-09: acc-sandbox must include acc-db and declare SandboxLiquibaseConfiguration for schema migrations', () => {
+    const sandboxPomPath = path.join(repoRoot, 'apps/backend/acc-sandbox/pom.xml');
+    expect(fs.existsSync(sandboxPomPath)).toBe(true);
+    const pomContent = fs.readFileSync(sandboxPomPath, 'utf-8');
+    expect(pomContent).toContain('<artifactId>acc-db</artifactId>');
+    expect(pomContent).toContain('<artifactId>spring-boot-starter-liquibase</artifactId>');
+
+    const liquibaseConfigPath = path.join(
+      repoRoot,
+      'apps/backend/acc-sandbox/src/main/java/com/acc/sandbox/db/SandboxLiquibaseConfiguration.java'
+    );
+    expect(fs.existsSync(liquibaseConfigPath)).toBe(true);
+    const configContent = fs.readFileSync(liquibaseConfigPath, 'utf-8');
+    expect(configContent).toContain('class SandboxLiquibaseConfiguration');
+    expect(configContent).toContain('SpringLiquibase');
+    expect(configContent).toContain('classpath:db/changelog-master.xml');
+    expect(configContent).toContain('sandboxLiquibase');
+  });
 });
