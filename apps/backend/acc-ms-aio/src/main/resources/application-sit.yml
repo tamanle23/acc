@@ -1,1 +1,5 @@
-spring: 
+spring:
+
+application:
+  sandbox:
+    enabled: false

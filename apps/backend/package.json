@@ -5,6 +5,8 @@
   "description": "Acc Java Spring Modulith backend with acc-ms-aio wrapper application",
   "scripts": {
     "build": "node mvnw.cjs clean install -DskipTests",
+    "build:prod": "node mvnw.cjs clean package -DskipTests -Pprod -DexcludeSandbox",
+    "build:no-sandbox": "node mvnw.cjs clean package -DskipTests -DexcludeSandbox",
     "dev": "node mvnw.cjs -pl acc-ms-aio spring-boot:run -Dspring-boot.run.profiles=local -Djava.net.preferIPv4Stack=true",
     "dev:sandbox": "node mvnw.cjs -pl acc-ms-aio spring-boot:run -Dspring-boot.run.profiles=local -Dapplication.sandbox.enabled=true -Dapplication.sandbox.mode=DEV -Dapplication.sandbox.dev.pristine=false -Djava.net.preferIPv4Stack=true",
     "dev:sandbox:persistent": "node mvnw.cjs -pl acc-ms-aio spring-boot:run -Dspring-boot.run.profiles=local -Dapplication.sandbox.enabled=true -Dapplication.sandbox.mode=DEV -Dapplication.sandbox.dev.pristine=false -Djava.net.preferIPv4Stack=true",

@@ -14,95 +14,72 @@ import java.io.File;
 
 /**
  * Datasource configuration for embedded PGlite.
- * Activated strictly when application.sandbox.enabled=true and application.sandbox.database.embedded-pglite=true.
- * Provides ephemeral in-memory database for TEST mode and file-backed database for DEV mode.
+ * Activated strictly when application.sandbox.enabled=true and
+ * application.sandbox.database.embedded-pglite=true.
+ * Provides ephemeral in-memory database for TEST mode and file-backed database
+ * for DEV mode.
  */
 @Configuration
 @ConditionalOnProperty(prefix = "application.sandbox", name = "enabled", havingValue = "true")
 public class PgLiteDatasourceConfiguration {
 
-    private static final Logger log = LoggerFactory.getLogger(PgLiteDatasourceConfiguration.class);
+  private static final Logger log = LoggerFactory.getLogger(PgLiteDatasourceConfiguration.class);
+  public static final String PGLITE_DRIVER = "io.roastedroot.pglite4j.jdbc.PgLiteDriver";
 
-    private final SandboxProperties properties;
+  private final SandboxProperties properties;
 
-    public PgLiteDatasourceConfiguration(SandboxProperties properties) {
-        this.properties = properties;
+  public PgLiteDatasourceConfiguration(SandboxProperties properties) {
+    this.properties = properties;
+  }
+
+  @Bean
+  @Primary
+  public DataSource sandboxDataSource() {
+    try {
+      Class.forName(PGLITE_DRIVER);
+    } catch (ClassNotFoundException e) {
+      throw new IllegalStateException(
+          "Failed to initialize embedded PGlite WASM driver (" + PGLITE_DRIVER + "): " + e.getMessage(), e);
     }
 
-    @Bean
-    @Primary
-    public DataSource sandboxDataSource() {
-        boolean isTestMode = properties.getMode() == SandboxProperties.SandboxMode.TEST;
-        String jdbcUrl;
+    boolean isTestMode = properties.getMode() == SandboxProperties.SandboxMode.TEST;
+    String jdbcUrl;
 
-        if (isTestMode) {
-            jdbcUrl = "jdbc:pglite:memory://";
-            log.info("Configuring PGlite in-memory datasource for TEST mode: {}", jdbcUrl);
-        } else {
-            String storagePath = properties.getDatabase().getDevStoragePath();
-            File dbDir = new File(storagePath);
-            if (properties.getDev().isPristine() && dbDir.exists()) {
-                log.info("DEV mode pristine flag active. Wiping persistent scratch database directory: {}", storagePath);
-                deleteRecursively(dbDir);
-            }
-            if (!dbDir.exists()) {
-                dbDir.mkdirs();
-            }
-            jdbcUrl = "jdbc:pglite:file:" + storagePath;
-            log.info("Configuring PGlite persistent file-backed datasource for DEV mode (pristine={}): {}", 
-                    properties.getDev().isPristine(), jdbcUrl);
-        }
-
-        try {
-            // Check if PGlite driver is available on classpath
-            Class.forName("io.roastedroot.pglite4j.jdbc.PgLiteDriver");
-            return DataSourceBuilder.create()
-                    .driverClassName("io.roastedroot.pglite4j.jdbc.PgLiteDriver")
-                    .url(jdbcUrl)
-                    .username("postgres")
-                    .password("postgres")
-                    .build();
-        } catch (ClassNotFoundException e) {
-            log.warn("PGlite driver not found on classpath. Falling back to local PostgreSQL URL (localhost:5432/acc).");
-            ensurePostgresDatabaseExists("localhost", 5432, "acc", "postgres", "postgres");
-            return DataSourceBuilder.create()
-                    .driverClassName("org.postgresql.Driver")
-                    .url("jdbc:postgresql://localhost:5432/acc?charSet=UTF-8")
-                    .username("postgres")
-                    .password("postgres")
-                    .build();
-        }
+    if (isTestMode) {
+      jdbcUrl = "jdbc:pglite:memory://";
+      log.info("Configuring PGlite in-memory datasource for TEST mode: {}", jdbcUrl);
+    } else {
+      String storagePath = properties.getDatabase().getDevStoragePath();
+      File dbDir = new File(storagePath);
+      if (properties.getDev().isPristine() && dbDir.exists()) {
+        log.info("DEV mode pristine flag active. Wiping persistent scratch database directory: {}", storagePath);
+        deleteRecursively(dbDir);
+      }
+      if (!dbDir.exists()) {
+        dbDir.mkdirs();
+      }
+      jdbcUrl = "jdbc:pglite:file:" + storagePath;
+      log.info("Configuring PGlite persistent file-backed datasource for DEV mode (pristine={}): {}",
+          properties.getDev().isPristine(), jdbcUrl);
     }
 
-    private void ensurePostgresDatabaseExists(String host, int port, String dbName, String user, String pass) {
-        String adminUrl = "jdbc:postgresql://" + host + ":" + port + "/postgres?charSet=UTF-8";
-        try (java.sql.Connection conn = java.sql.DriverManager.getConnection(adminUrl, user, pass)) {
-            try (java.sql.PreparedStatement checkStmt = conn.prepareStatement("SELECT 1 FROM pg_database WHERE datname = ?")) {
-                checkStmt.setString(1, dbName);
-                try (java.sql.ResultSet rs = checkStmt.executeQuery()) {
-                    if (!rs.next()) {
-                        log.info("PostgreSQL database '{}' does not exist on {}:{}. Creating database automatically...", dbName, host, port);
-                        try (java.sql.Statement createStmt = conn.createStatement()) {
-                            createStmt.executeUpdate("CREATE DATABASE \"" + dbName + "\"");
-                            log.info("Successfully created database '{}'.", dbName);
-                        }
-                    }
-                }
-            }
-        } catch (Exception e) {
-            log.debug("Unable to auto-create database '{}' via admin connection ({}). Proceeding with standard datasource bootstrap.", dbName, e.getMessage());
-        }
-    }
+    return DataSourceBuilder.create()
+        .driverClassName(PGLITE_DRIVER)
+        .url(jdbcUrl)
+        .username("postgres")
+        .password("postgres")
+        .build();
+  }
 
-    private void deleteRecursively(File file) {
-        if (file.isDirectory()) {
-            File[] files = file.listFiles();
-            if (files != null) {
-                for (File child : files) {
-                    deleteRecursively(child);
-                }
-            }
+  private void deleteRecursively(File file) {
+    if (file.isDirectory()) {
+      File[] files = file.listFiles();
+      if (files != null) {
+        for (File child : files) {
+          deleteRecursively(child);
         }
-        file.delete();
+      }
     }
+    file.delete();
+  }
 }

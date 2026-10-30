@@ -3,6 +3,8 @@
   "private": true,
   "scripts": {
     "build": "turbo build",
+    "build:prod": "pnpm --filter @acc/backend build:prod",
+    "build:no-sandbox": "pnpm --filter @acc/backend build:no-sandbox",
     "dev": "turbo dev",
 
     "dev:sandbox": "turbo dev --filter=@acc/backend --filter=@acc/console",

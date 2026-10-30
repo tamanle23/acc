@@ -1,5 +1,9 @@
 spring: 
 
+application:
+  sandbox:
+    enabled: false
+
 hazelcast:
   cluster:
     enabled: true

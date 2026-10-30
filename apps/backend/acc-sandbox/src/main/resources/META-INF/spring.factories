@@ -1,0 +1,3 @@
+# Spring Boot 3 EnvironmentPostProcessor Registration
+org.springframework.boot.env.EnvironmentPostProcessor=\
+  com.acc.sandbox.config.SandboxEnvironmentPostProcessor
