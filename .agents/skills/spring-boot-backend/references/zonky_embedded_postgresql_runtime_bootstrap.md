@@ -43,7 +43,7 @@ Import the PostgreSQL binary BOM to manage architecture-specific native packages
   </dependency>
   <dependency>
     <groupId>io.zonky.test.postgres</groupId>
-    <artifactId>embedded-postgres-binaries-darwin-arm64</artifactId>
+    <artifactId>embedded-postgres-binaries-darwin-arm64v8</artifactId>
   </dependency>
 </dependencies>
 ```
