@@ -332,7 +332,32 @@ export class VideoIRSchemaValidator {
       return;
     }
 
+    const registry = ModifierPluginRegistry.getInstance();
     const compatibleTrackSeqTypes = trackType ? TRACK_COMPATIBLE_SEQUENCE_TYPES[trackType] : undefined;
+
+    // Standalone generator single-source audit for sequence-level scopes
+    let hasStandaloneGenerator = false;
+    const standaloneGenerators: string[] = [];
+    const modifierTypes: string[] = [];
+
+    if (seqType) {
+      for (const m of modifiers) {
+        if (m && typeof m === 'object' && typeof (m as any).type === 'string') {
+          const mType = (m as any).type;
+          modifierTypes.push(mType);
+          const p = registry.get(mType);
+          if (p?.targetScope === 'standalone') {
+            standaloneGenerators.push(mType);
+          }
+        }
+      }
+      hasStandaloneGenerator = standaloneGenerators.length > 0;
+      if (standaloneGenerators.length > 1) {
+        errors.push(
+          `Sequence ${context} contains ${standaloneGenerators.length} standalone generators (${standaloneGenerators.join(', ')}). A sequence can host at most one primary standalone generator.`
+        );
+      }
+    }
 
     for (let i = 0; i < modifiers.length; i++) {
       const mod = modifiers[i];
@@ -383,10 +408,14 @@ export class VideoIRSchemaValidator {
       }
 
       // Dynamic registry target scope & sequence type compatibility check
-      const registry = ModifierPluginRegistry.getInstance();
       if (registry.has(mod.type)) {
         const targetCtx = seqType
-          ? { type: 'sequence' as const, sequenceType: seqType }
+          ? {
+              type: 'sequence' as const,
+              sequenceType: seqType,
+              hasStandaloneGenerator,
+              existingModifierTypes: modifierTypes,
+            }
           : { type: 'track' as const };
         const check = registry.isModifierAllowedOnEntity(mod.type, targetCtx);
         if (!check.allowed && check.reason) {

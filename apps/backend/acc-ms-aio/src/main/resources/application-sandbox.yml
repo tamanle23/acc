@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:pglite:file:../../tmp/db/pglite-sandbox
+    url: jdbc:pglite:../../tmp/db/pglite-sandbox
     driver-class-name: io.roastedroot.pglite4j.jdbc.PgLiteDriver
     username: postgres
     password: postgres

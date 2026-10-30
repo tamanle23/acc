@@ -106,12 +106,19 @@ export function RightSidebar() {
   const availableModifiers = getAvailableModifiersFromRegistry();
   const registry = ModifierPluginRegistry.getInstance();
 
+  const hasStandaloneGenerator = Boolean(
+    selectedSeq?.modifiers?.some((m) => registry.get(m.type)?.targetScope === 'standalone')
+  );
+  const existingModifierTypes = selectedSeq?.modifiers?.map((m) => m.type) || [];
+
   const relevantModifiers = availableModifiers.filter((mod) => {
     if (currentMode === 'sequence' && selectedSeq) {
       if (selectedTrack && !mod.supportedTrackTypes.includes(trackType)) return false;
       return registry.isModifierAllowedOnEntity(mod.type, {
         type: 'sequence',
         sequenceType: selectedSeq.type,
+        hasStandaloneGenerator,
+        existingModifierTypes,
       }).allowed;
     }
     if (currentMode === 'track' && selectedTrack) {

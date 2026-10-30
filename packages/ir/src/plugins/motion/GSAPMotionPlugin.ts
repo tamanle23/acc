@@ -5,7 +5,7 @@ import type {
   StreamRenderContext,
 } from '../ModifierPluginRegistry';
 import type { ModifierTargetScope } from '../../types/modifiers';
-import type { SequenceType } from '../../types/VideoIR';
+import type { SequenceType, TrackType } from '../../types/VideoIR';
 import {
   evaluateSequenceMotion,
   type InterpolatedTransformState,
@@ -34,7 +34,10 @@ export interface GSAPMotionPluginParams {
  */
 export class GSAPMotionPlugin implements ModifierPlugin<GSAPMotionPluginParams> {
   public readonly targetScope: ModifierTargetScope = 'sequence';
-  public readonly allowedSequenceTypes: readonly SequenceType[] = ['video', 'image', 'text'];
+  public readonly allowedSequenceTypes: readonly SequenceType[] = ['video', 'image', 'overlay', 'text'];
+  public readonly isUniversal = true;
+  public readonly supportedTrackTypes: readonly TrackType[] = ['video', 'timed_text'];
+  public readonly instancePolicy = 'single' as const;
   public readonly targetPhase = 2;
 
   constructor(public readonly type: string = 'motion/gsap') {}

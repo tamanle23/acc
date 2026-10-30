@@ -593,7 +593,14 @@ export class IRCanvasCompositor {
         }
 
         if (seq.modifiers) {
-          const mods = seq.modifiers;
+          // Sort clip-space modifiers so spatial transforms and motion apply to canvas matrix before generator/VFX drawing
+          const mods = [...seq.modifiers].sort((a, b) => {
+            const isATransform = a.type === 'transform' || a.type === 'motion/gsap';
+            const isBTransform = b.type === 'transform' || b.type === 'motion/gsap';
+            if (isATransform && !isBTransform) return -1;
+            if (!isATransform && isBTransform) return 1;
+            return 0;
+          });
           const runModsFrom = (modIdx: number): void | Promise<void> => {
             for (let m = modIdx; m < mods.length; m++) {
               const mod = mods[m];

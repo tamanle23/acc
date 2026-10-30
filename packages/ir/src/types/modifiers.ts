@@ -1,10 +1,25 @@
-import type { SequenceType } from './VideoIR';
+import type { SequenceType, TrackType } from './VideoIR';
 
 // ============================================================================
 // Core Modifier Target Scope Taxonomy
 // ============================================================================
 
 export type ModifierTargetScope = 'standalone' | 'sequence' | 'track' | 'timeline';
+
+export interface EntityModifierContext {
+  target?: 'sequence' | 'track' | 'timeline';
+  type?: 'sequence' | 'track' | 'timeline';
+  sequenceType?: SequenceType;
+  /** True if the target sequence currently contains a standalone generator */
+  hasStandaloneGenerator?: boolean;
+  /** List of modifier types currently attached to the target entity */
+  existingModifierTypes?: readonly string[];
+}
+
+export interface EntityModifierCheckResult {
+  allowed: boolean;
+  reason?: string;
+}
 
 // ============================================================================
 // Core Temporal Curve & Keyframe Models

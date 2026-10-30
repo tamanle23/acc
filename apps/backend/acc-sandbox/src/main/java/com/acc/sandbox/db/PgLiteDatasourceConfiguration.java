@@ -58,7 +58,7 @@ public class PgLiteDatasourceConfiguration {
       if (!dbDir.exists()) {
         dbDir.mkdirs();
       }
-      jdbcUrl = "jdbc:pglite:file:" + storagePath;
+      jdbcUrl = "jdbc:pglite:" + storagePath;
       log.info("Configuring PGlite persistent file-backed datasource for DEV mode (pristine={}): {}",
           properties.getDev().isPristine(), jdbcUrl);
     }

@@ -26,8 +26,37 @@ export interface ModifierContext {
   state?: Record<string, unknown>;
 }
 
-import type { ModifierNode, ResolvedSequence, ResolvedTrack, SequenceType } from '../types/VideoIR';
-import type { ModifierTargetScope } from '../types/modifiers';
+import type { ModifierNode, ResolvedSequence, ResolvedTrack, SequenceType, TrackType } from '../types/VideoIR';
+import type { ModifierTargetScope, EntityModifierContext, EntityModifierCheckResult } from '../types/modifiers';
+
+export const STANDALONE_SEQUENCE_ALLOWED_MODIFIERS: ReadonlySet<string> = new Set([
+  'transform',
+  'motion/gsap',
+  'overlay/blend_mode',
+  'transition/crossfade',
+  'transition/wipe',
+  'transition/push',
+  'transition/zoom',
+  'transition/dip',
+  'transition/glitch',
+  'transition/light_leak',
+  'transition/radial_wipe',
+  'transition/iris',
+  'editorial/transition',
+  'transition',
+]);
+
+export interface ModifierMatrixEntry {
+  type: string;
+  name: string;
+  category: string;
+  targetScope: ModifierTargetScope;
+  allowedSequenceTypes?: readonly SequenceType[];
+  isUniversal: boolean;
+  supportedTrackTypes: readonly TrackType[];
+  instancePolicy: 'single' | 'multiple';
+  targetPhase?: PluginTargetPhase;
+}
 
 export type ParamFieldType =
   | 'number'
@@ -87,6 +116,22 @@ export interface ModifierPlugin<TParams = Record<string, unknown>> {
   readonly defaultTarget?: SequenceType | SequenceType[];
   readonly targetScope: ModifierTargetScope;
   readonly allowedSequenceTypes?: readonly SequenceType[];
+  /**
+   * Universal Canvas Primitive Flag:
+   * When true, indicates that this modifier is an in-canvas geometric/compositing primitive
+   * (e.g. transform, motion/gsap, overlay/blend_mode, transitions) universally allowed across
+   * ANY visual sequence, including standalone procedural generator clips.
+   * When omitted or false, the modifier is forbidden on standalone generator sequences.
+   */
+  readonly isUniversal?: boolean;
+  /**
+   * Supported track modalities: e.g. ['video'], ['audio'], ['timed_text']
+   */
+  readonly supportedTrackTypes?: readonly TrackType[];
+  /**
+   * Maximum allowed instances on a single entity ('single' | 'multiple'). Default: 'single'.
+   */
+  readonly instancePolicy?: 'single' | 'multiple';
   readonly targetPhase?: PluginTargetPhase;
   readonly schema?: ModifierParameterSchema;
   validate?(params: unknown): params is TParams;
@@ -155,9 +200,11 @@ export class ModifierPluginRegistry {
    */
   public getAvailableModifiersForTarget(
     targetScope: 'sequence' | 'track' | 'timeline',
-    sequenceType?: SequenceType
+    sequenceType?: SequenceType,
+    options?: { hasStandaloneGenerator?: boolean }
   ): ModifierPlugin<any>[] {
-    const cacheKey = `${targetScope}_${sequenceType ?? 'all'}`;
+    const hasGen = Boolean(options?.hasStandaloneGenerator);
+    const cacheKey = `${targetScope}_${sequenceType ?? 'all'}_gen${hasGen}`;
     const cached = this.targetCache.get(cacheKey);
     if (cached) return cached;
 
@@ -170,10 +217,22 @@ export class ModifierPluginRegistry {
       results = allPlugins.filter((p) => p.targetScope === 'track');
     } else if (targetScope === 'sequence') {
       results = allPlugins.filter((p) => {
-        if (p.targetScope !== 'sequence') return false;
-        if (sequenceType === 'overlay') {
-          return Boolean(p.allowedSequenceTypes && p.allowedSequenceTypes.includes('overlay'));
+        if (p.targetScope === 'standalone') {
+          if (hasGen) return false;
+          if (sequenceType === 'overlay' || (sequenceType === 'audio' && p.schema?.category === 'audio')) {
+            return true;
+          }
+          return false;
         }
+
+        if (p.targetScope !== 'sequence') return false;
+
+        // If sequence has a standalone generator, ONLY allow universal modifiers
+        if (hasGen) {
+          const isUniversal = Boolean(p.isUniversal || STANDALONE_SEQUENCE_ALLOWED_MODIFIERS.has(p.type));
+          if (!isUniversal) return false;
+        }
+
         if (sequenceType) {
           return !p.allowedSequenceTypes || p.allowedSequenceTypes.includes(sequenceType);
         }
@@ -183,6 +242,23 @@ export class ModifierPluginRegistry {
 
     this.targetCache.set(cacheKey, results);
     return results;
+  }
+
+  /**
+   * Returns the dynamic, self-describing capability matrix for all registered plugins.
+   */
+  public getCapabilityMatrix(): ModifierMatrixEntry[] {
+    return this.listPlugins().map((p) => ({
+      type: p.type,
+      name: p.schema?.displayName || p.type,
+      category: p.schema?.category || 'custom',
+      targetScope: p.targetScope,
+      allowedSequenceTypes: p.allowedSequenceTypes,
+      isUniversal: Boolean(p.isUniversal || STANDALONE_SEQUENCE_ALLOWED_MODIFIERS.has(p.type)),
+      supportedTrackTypes: p.supportedTrackTypes || (p.targetScope === 'track' ? ['timed_text'] : ['video']),
+      instancePolicy: p.instancePolicy || 'single',
+      targetPhase: p.targetPhase,
+    }));
   }
 
   /**
@@ -204,14 +280,16 @@ export class ModifierPluginRegistry {
    */
   public isModifierAllowedOnEntity(
     modifierType: string,
-    targetContext: { type: 'track' | 'timeline' } | { type: 'sequence'; sequenceType: SequenceType }
+    targetContext: EntityModifierContext | { type: 'track' | 'timeline' } | { type: 'sequence'; sequenceType: SequenceType }
   ): { allowed: boolean; reason?: string } {
     const plugin = this.get(modifierType);
     if (!plugin) {
       return { allowed: false, reason: `Unknown modifier "${modifierType}"` };
     }
 
-    if (targetContext.type === 'timeline') {
+    const targetType = (targetContext as any).target || (targetContext as any).type;
+
+    if (targetType === 'timeline') {
       if (plugin.targetScope === 'timeline') return { allowed: true };
       return {
         allowed: false,
@@ -219,7 +297,7 @@ export class ModifierPluginRegistry {
       };
     }
 
-    if (targetContext.type === 'track') {
+    if (targetType === 'track') {
       if (plugin.targetScope === 'track') return { allowed: true };
       return {
         allowed: false,
@@ -228,8 +306,19 @@ export class ModifierPluginRegistry {
     }
 
     // Sequence targetContext
-    const seqType = targetContext.sequenceType;
+    const seqType = (targetContext as any).sequenceType;
+    const hasStandaloneGenerator = Boolean((targetContext as any).hasStandaloneGenerator);
+    const existingModifierTypes = (targetContext as any).existingModifierTypes as readonly string[] | undefined;
+
     if (plugin.targetScope === 'standalone') {
+      // 1. Cannot attach a standalone generator if the sequence already has one
+      if (hasStandaloneGenerator || existingModifierTypes?.some((t) => this.get(t)?.targetScope === 'standalone')) {
+        return {
+          allowed: false,
+          reason: `Sequence already contains a standalone generator. A sequence cannot host multiple standalone generators.`,
+        };
+      }
+
       if (seqType === 'overlay' || (seqType === 'audio' && plugin.schema?.category === 'audio')) {
         return { allowed: true };
       }
@@ -246,6 +335,18 @@ export class ModifierPluginRegistry {
       };
     }
 
+    // 2. If the sequence is a standalone generator sequence, ONLY universal modifiers are permitted!
+    if (hasStandaloneGenerator || existingModifierTypes?.some((t) => this.get(t)?.targetScope === 'standalone')) {
+      const isUniversal = Boolean(plugin.isUniversal || STANDALONE_SEQUENCE_ALLOWED_MODIFIERS.has(modifierType));
+      if (!isUniversal) {
+        return {
+          allowed: false,
+          reason: `Modifier "${modifierType}" cannot be applied to a standalone generator sequence. Standalone generator sequences only accept universal spatial/compositing modifiers (${Array.from(STANDALONE_SEQUENCE_ALLOWED_MODIFIERS).join(', ')}).`,
+        };
+      }
+    }
+
+    // 3. Check allowed sequence types
     if (plugin.allowedSequenceTypes && !plugin.allowedSequenceTypes.includes(seqType)) {
       return {
         allowed: false,

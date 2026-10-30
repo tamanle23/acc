@@ -73,7 +73,8 @@ class SandboxEnvironmentPostProcessorTest {
     postProcessor.postProcessEnvironment(environment, application);
 
     assertThat(environment.getProperty("application.sandbox.enabled")).isEqualTo("true");
-    assertThat(environment.getProperty("spring.datasource.url")).startsWith("jdbc:pglite:file:");
+    assertThat(environment.getProperty("spring.datasource.url")).startsWith("jdbc:pglite:");
+    assertThat(environment.getProperty("spring.datasource.url")).doesNotContain("memory:");
     assertThat(environment.getProperty("spring.datasource.driver-class-name")).isEqualTo(SandboxEnvironmentPostProcessor.PGLITE_DRIVER);
   }
 

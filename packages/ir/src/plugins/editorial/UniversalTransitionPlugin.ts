@@ -1,5 +1,5 @@
 import type { ModifierPlugin, ModifierContext, ClipRenderContext } from '../ModifierPluginRegistry';
-import type { SequenceType } from '../../types/VideoIR';
+import type { SequenceType, TrackType } from '../../types/VideoIR';
 import type {
   TransitionModifierParams,
   TransitionType,
@@ -45,6 +45,9 @@ export class UniversalTransitionPlugin implements ModifierPlugin<TransitionModif
   public readonly type: string;
   public readonly targetScope = 'sequence' as const;
   public readonly allowedSequenceTypes = ['video', 'image', 'overlay', 'audio'] as const;
+  public readonly isUniversal = true;
+  public readonly supportedTrackTypes: readonly TrackType[] = ['video', 'audio'];
+  public readonly instancePolicy = 'multiple' as const;
   public readonly targetPhase = 2 as const;
 
   constructor(customType: string = 'transition/crossfade') {

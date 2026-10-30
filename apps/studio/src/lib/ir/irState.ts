@@ -107,6 +107,23 @@ export function migrateLegacyModifiers(doc: any): any {
                 }
               }
             }
+
+            // Defensively guard standalone sequences: ensure at most one standalone generator
+            let standaloneFound = false;
+            const reg = ModifierPluginRegistry.getInstance();
+            for (let i = 0; i < seq.modifiers.length; i++) {
+              const mod = seq.modifiers[i];
+              if (!mod) continue;
+              const p = reg.get(mod.type);
+              if (p?.targetScope === 'standalone') {
+                if (standaloneFound) {
+                  seq.modifiers.splice(i, 1);
+                  i--;
+                } else {
+                  standaloneFound = true;
+                }
+              }
+            }
           }
         }
       }

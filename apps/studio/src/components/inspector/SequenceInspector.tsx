@@ -34,7 +34,7 @@ import {
 } from './modifierCatalog';
 import { IRStateManager } from '../../lib/ir/irState';
 import type { StudioSequence, StudioTrack } from '../../lib/ir/studioTypes';
-import type { ModifierNode } from '@acc/ir';
+import { ModifierPluginRegistry, type ModifierNode } from '@acc/ir';
 import { CueTimelineDialog } from './CueTimelineDialog';
 
 export interface SequenceInspectorProps {
@@ -118,6 +118,7 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
 
   const selectedSeqId = selectedSeq.id;
   const modifiers: ModifierNode[] = selectedSeq.modifiers || [];
+  const standaloneMod = modifiers.find((m) => ModifierPluginRegistry.getInstance().get(m.type)?.targetScope === 'standalone');
 
   const handleCopyId = () => {
     navigator.clipboard?.writeText(selectedSeqId);
@@ -242,9 +243,16 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
               )}
             </Button>
           </div>
-          <Badge variant="secondary" className="font-mono text-[9px] uppercase">
-            {selectedSeq?.type || selectedTrack?.type || 'track'}
-          </Badge>
+          <div className="flex items-center gap-1 shrink-0">
+            {standaloneMod && (
+              <Badge variant="outline" className="font-mono text-[9px] uppercase border-purple-500/40 text-purple-400 bg-purple-500/10">
+                Standalone Generator
+              </Badge>
+            )}
+            <Badge variant="secondary" className="font-mono text-[9px] uppercase">
+              {selectedSeq?.type || selectedTrack?.type || 'track'}
+            </Badge>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-2 text-[11px] pt-1 border-t border-border/40">

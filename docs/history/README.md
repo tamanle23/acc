@@ -63,3 +63,5 @@
 | 398 | [Universal Track Type Grouping, groupOrder, and Supreme Timed-Text Flat Rendering Stack](./398_track_grouping_and_timed_text_flat_stack.md) | Completed |
 | 399 | [AvailableModifierDef Plugin Inheritance, Hierarchical Inspector Modifiers and Multi-Domain Dropdown Effects](./399_modifier_catalog_plugin_inheritance_and_hierarchical_dropdowns.md) | Completed |
 | 400 | [Backend Sandbox Two-Tier Safeguards & In-Process PGlite WASM Synchronization](./400_backend_sandbox_two_tier_safeguards_and_pglite_sync.md) | Completed |
+| 401 | [Standalone Generator Invariants, Universal Transform Whitelist & Declarative Plugin Manifest](./401_standalone_generator_hierarchy_and_whitelist.md) | Completed |
+

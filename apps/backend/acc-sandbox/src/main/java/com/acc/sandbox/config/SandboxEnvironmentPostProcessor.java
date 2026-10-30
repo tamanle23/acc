@@ -90,7 +90,7 @@ public class SandboxEnvironmentPostProcessor implements EnvironmentPostProcessor
       if (!storageDir.exists()) {
         storageDir.mkdirs();
       }
-      jdbcUrl = "jdbc:pglite:file:" + devStorage;
+      jdbcUrl = "jdbc:pglite:" + devStorage;
     }
 
     Map<String, Object> sandboxOverrides = new HashMap<>();

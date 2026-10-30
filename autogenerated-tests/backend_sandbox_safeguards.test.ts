@@ -44,6 +44,8 @@ describe('Iteration 58: Backend Sandbox Two-Tier Safeguards & PGlite WASM Parity
     // Absolute prohibition of localhost:5432/acc fallback
     expect(content).not.toContain('localhost:5432/acc');
     expect(content).not.toContain('ensurePostgresDatabaseExists');
+    expect(content).not.toContain('jdbc:pglite:file:');
+    expect(content).toContain('jdbc:pglite:');
 
     // SandboxProperties must not have @Component or @Primary to prevent duplicate bean clash
     const propsPath = path.join(
@@ -77,6 +79,8 @@ describe('Iteration 58: Backend Sandbox Two-Tier Safeguards & PGlite WASM Parity
     expect(javaContent).toContain('"production"');
     expect(javaContent).toContain('"sit"');
     expect(javaContent).toContain('"uat"');
+    expect(javaContent).toContain('jdbc:pglite:');
+    expect(javaContent).not.toContain('jdbc:pglite:file:');
 
     const factoriesContent = fs.readFileSync(factoriesPath, 'utf-8');
     expect(factoriesContent).toContain('org.springframework.boot.env.EnvironmentPostProcessor');
@@ -125,7 +129,8 @@ describe('Iteration 58: Backend Sandbox Two-Tier Safeguards & PGlite WASM Parity
     const sandboxYamlPath = path.join(repoRoot, 'apps/backend/acc-ms-aio/src/main/resources/application-sandbox.yml');
     expect(fs.existsSync(sandboxYamlPath)).toBe(true);
     const sandboxYaml = fs.readFileSync(sandboxYamlPath, 'utf-8');
-    expect(sandboxYaml).toContain('jdbc:pglite:');
+    expect(sandboxYaml).toContain('jdbc:pglite:../../tmp/db/pglite-sandbox');
+    expect(sandboxYaml).not.toContain('jdbc:pglite:file:');
     expect(sandboxYaml).toContain('io.roastedroot.pglite4j.jdbc.PgLiteDriver');
   });
 

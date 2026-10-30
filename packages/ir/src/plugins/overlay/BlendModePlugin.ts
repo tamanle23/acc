@@ -1,6 +1,6 @@
 import type { ModifierPlugin, ModifierContext, MasterCompositeContext } from '../ModifierPluginRegistry';
 import type { ModifierTargetScope } from '../../types/modifiers';
-import type { SequenceType } from '../../types/VideoIR';
+import type { SequenceType, TrackType } from '../../types/VideoIR';
 
 export interface BlendModeParams {
   mode: 'multiply' | 'screen' | 'overlay' | 'color_dodge' | 'soft_light';
@@ -16,6 +16,9 @@ export class BlendModePlugin implements ModifierPlugin<BlendModeParams> {
   public readonly type = 'overlay/blend_mode';
   public readonly targetScope: ModifierTargetScope = 'sequence';
   public readonly allowedSequenceTypes: readonly SequenceType[] = ['video', 'image', 'overlay'];
+  public readonly isUniversal = true;
+  public readonly supportedTrackTypes: readonly TrackType[] = ['video'];
+  public readonly instancePolicy = 'single' as const;
   public readonly targetPhase = 4;
   public readonly schema = {
     fields: {
