@@ -96,7 +96,7 @@ export function RightSidebar() {
   const fps = irState.doc.meta?.globalFps || 30;
   const currentMode =
     irState.inspectorMode ||
-    (selectedSeq ? 'sequence' : selectedTrack ? 'track' : 'project');
+    (selectedSeq ? 'sequence' : selectedTrack ? 'track' : 'timeline');
 
   const trackType = (selectedTrack?.type || 'video') as
     | 'video'
@@ -208,16 +208,16 @@ export function RightSidebar() {
           {/* Project Tier Pill */}
           <button
             type="button"
-            aria-current={currentMode === 'project' ? 'page' : undefined}
-            onClick={() => IRStateManager.getInstance().setInspectorMode('project')}
-            className={`px-1.5 py-0.5 rounded font-medium transition-colors flex items-center gap-1 truncate max-w-[90px] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${currentMode === 'project'
+            aria-current={currentMode === 'timeline' ? 'page' : undefined}
+            onClick={() => IRStateManager.getInstance().setInspectorMode('timeline')}
+            className={`px-1.5 py-0.5 rounded font-medium transition-colors flex items-center gap-1 truncate max-w-[90px] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${currentMode === 'timeline'
               ? 'bg-accent-theme text-primary-foreground shadow-2xs'
               : 'bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground'
               }`}
-            title="Inspect Project Master Settings"
+            title="Inspect Timeline Master Settings"
           >
             <Settings className="w-2.5 h-2.5 shrink-0" />
-            <span className="truncate">{irState.doc.meta?.contentId || 'Project'}</span>
+            <span className="truncate">{irState.doc.meta?.contentId || 'Timeline'}</span>
           </button>
 
           <ChevronRight className="w-3 h-3 text-muted-foreground shrink-0" aria-hidden="true" />
@@ -277,7 +277,7 @@ export function RightSidebar() {
       <div className="flex-1 p-3 overflow-y-auto">
         {currentMode === 'track' && selectedTrack ? (
           <TrackInspector selectedTrack={selectedTrack} irState={irState} />
-        ) : currentMode === 'project' || !selectedSeq ? (
+        ) : currentMode === 'timeline' || !selectedSeq ? (
           <ProjectInspector irState={irState} />
         ) : (
           <SequenceInspector

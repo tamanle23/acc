@@ -47,7 +47,7 @@ import { ReplaceDocumentCommand } from '../commands/ReplaceDocumentCommand';
 import type { IRSequence, SequenceTime } from '@acc/ir';
 import { cloneIR, getErrorMessage, type StudioAssetRecord } from './studioTypes';
 
-export type InspectorMode = 'sequence' | 'track' | 'project';
+export type InspectorMode = 'sequence' | 'track' | 'timeline';
 
 export interface IRState {
   doc: VideoIRDocument;

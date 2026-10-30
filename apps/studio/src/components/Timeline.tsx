@@ -417,7 +417,7 @@ export function Timeline({
               <span>Add Track</span>
             </button>
             <div
-              onClick={() => IRStateManager.getInstance().setInspectorMode('project')}
+              onClick={() => IRStateManager.getInstance().setInspectorMode('timeline')}
               className="w-20 h-7 rounded-md border border-dashed border-border/30 hover:border-border/60 hover:bg-muted/10 cursor-pointer transition-colors flex items-center justify-center text-[10px] text-muted-foreground italic px-1 text-center shadow-2xs shrink-0"
               title="Click empty area to inspect Project Settings"
             >
