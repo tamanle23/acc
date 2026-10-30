@@ -315,6 +315,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
     supportedTrackTypes: ['video'],
     defaultParams: {
       enabled: true,
+      lut: '',
       contrast: 1.0,
       saturation: 1.0,
       exposure: 0.0,

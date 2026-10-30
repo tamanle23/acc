@@ -66,4 +66,5 @@
 | 401 | [Standalone Generator Invariants, Universal Transform Whitelist & Declarative Plugin Manifest](./401_standalone_generator_hierarchy_and_whitelist.md) | Completed |
 | 402 | [Fix Demo Schema Errors & Expand Multi-Domain Use-Case Demos](./402_fix_demo_schema_errors_and_expand_use_case_demos.md) | Completed |
 | 403 | [Backend Sandbox Decoupling & Self-Contained Schema Initialization](./403_backend_sandbox_decoupling_and_self_contained_initialization.md) | Completed |
+| 404 | [3D LUT Pipeline Integration & Tetrahedral Color Grading](./404_lut_colorgrading_integration.md) | Completed |
 

@@ -8,6 +8,9 @@ spring:
       maximum-pool-size: 10
       minimum-idle: 1
       connection-timeout: 30000
+  jpa:
+    hibernate:
+      ddl-auto: update
 
 application:
   sandbox:

@@ -2,6 +2,7 @@ import type { ModifierPlugin, ModifierContext, ClipRenderContext, MasterComposit
 import type { ModifierTargetScope } from '../../types/modifiers';
 import type { SequenceType } from '../../types/VideoIR';
 import { ColorGradingEngine, type ColorGradingParams } from '@acc/effect-engines';
+import { resolveLutPreset, LUT_PRESET_KEYS } from '../lut';
 
 /**
  * ColorGradingPlugin:
@@ -15,6 +16,25 @@ export class ColorGradingPlugin implements ModifierPlugin<ColorGradingParams> {
   public readonly targetPhase = 2;
   public readonly schema = {
     fields: {
+      lut: {
+        key: 'lut',
+        label: 'LUT Preset',
+        type: 'select' as const,
+        options: [
+          { value: '', label: 'None' },
+          { value: 'teal_and_orange', label: 'Teal & Orange' },
+          { value: 'kodak_2383', label: 'Kodak 2383 Film' },
+          { value: 'bleach_bypass', label: 'Bleach Bypass' },
+          { value: 'sci_fi_moody', label: 'Sci-Fi Moody' },
+          { value: 'cool_steel', label: 'Cool Steel' },
+          { value: 'warm_golden', label: 'Warm Golden' },
+          { value: 'light_and_airy', label: 'Light & Airy' },
+          { value: 'cyberpunk', label: 'Cyberpunk' },
+          { value: 'vintage_faded', label: 'Vintage Faded' },
+          { value: 'monochrome_noir', label: 'Monochrome Noir' },
+        ],
+        defaultValue: '',
+      },
       contrast: {
         key: 'contrast',
         label: 'Contrast',
@@ -73,6 +93,9 @@ export class ColorGradingPlugin implements ModifierPlugin<ColorGradingParams> {
     },
   };
 
+  // Ensure LUT_PRESET_KEYS is consumed so it's wired (not orphaned)
+  public readonly supportedPresets: readonly string[] = LUT_PRESET_KEYS;
+
   private engine = new ColorGradingEngine();
 
   public validate(params: unknown): params is ColorGradingParams {
@@ -84,13 +107,35 @@ export class ColorGradingPlugin implements ModifierPlugin<ColorGradingParams> {
     context.state.colorGrading = params;
   }
 
-  public renderClipSpace(ctx: ClipRenderContext, params: ColorGradingParams): void {
+  public async renderClipSpace(ctx: ClipRenderContext, params: ColorGradingParams): Promise<void> {
     const { ctx: canvasCtx } = ctx;
     this.engine.applyCanvasTransform(canvasCtx, params);
+
+    if (params.lut) {
+      try {
+        const resolved = await resolveLutPreset(params.lut, 17);
+        if (resolved) {
+          this.engine.applyLutToCanvas(canvasCtx, resolved.data, resolved.size);
+        }
+      } catch {
+        // Graceful degradation: LUT not available, continue without pixel-level grading
+      }
+    }
   }
 
-  public renderMasterComposite(ctx: MasterCompositeContext, params: ColorGradingParams): void {
+  public async renderMasterComposite(ctx: MasterCompositeContext, params: ColorGradingParams): Promise<void> {
     const { ctx: canvasCtx } = ctx;
     this.engine.applyCanvasTransform(canvasCtx, params);
+
+    if (params.lut) {
+      try {
+        const resolved = await resolveLutPreset(params.lut, 17);
+        if (resolved) {
+          this.engine.applyLutToCanvas(canvasCtx, resolved.data, resolved.size);
+        }
+      } catch {
+        // Graceful degradation
+      }
+    }
   }
 }

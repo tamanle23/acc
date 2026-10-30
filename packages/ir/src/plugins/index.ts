@@ -72,6 +72,7 @@ export * from './overlay/HologramHUDPlugin';
 export * from './overlay/SolidBackdropPlugin';
 export * from './timeline/PhotometricBloomPlugin';
 export * from './timeline/AnamorphicGlarePlugin';
+export * from './lut';
 
 /**
  * Initializes and registers standard core modifier plugins
