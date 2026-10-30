@@ -13,7 +13,7 @@ import com.acc.boot.config.BeanNameGenerator;
     systemName = "acc",
     useFullyQualifiedModuleNames = true
 )
-@ComponentScan(basePackages = { "com.acc" }, nameGenerator = BeanNameGenerator.class)
+@ComponentScan(basePackages = { "com.acc" }, nameGenerator = com.acc.boot.config.BeanNameGenerator.class)
 @SpringBootConfiguration
 @EnableAutoConfiguration
 @ConfigurationPropertiesScan
