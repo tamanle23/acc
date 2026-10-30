@@ -259,6 +259,66 @@ export class ColorGradingPlugin implements ModifierPlugin<ColorGradingParams> {
     return filters.length > 0 ? filters.join(',') : 'null';
   }
 
+  private lutMemoryCache = new Map<string, { data: Float32Array; size: number }>();
+
+  public static requiresPixelTraversal(params: ColorGradingParams): boolean {
+    if (Boolean(params.lut)) return true;
+    if (params.temperature !== undefined && params.temperature !== 0) return true;
+    if (params.tint !== undefined && params.tint !== 0) return true;
+    if (params.highlights !== undefined && params.highlights !== 0) return true;
+    if (params.shadows !== undefined && params.shadows !== 0) return true;
+    if (params.whites !== undefined && params.whites !== 0) return true;
+    if (params.blacks !== undefined && params.blacks !== 0) return true;
+    if (params.vibrance !== undefined && params.vibrance !== 0) return true;
+    if (params.vignetteAmount !== undefined && params.vignetteAmount !== 0) return true;
+    if (params.vignette !== undefined && params.vignette !== 0) return true;
+    if (params.pivot !== undefined && params.pivot !== 0.435) return true;
+    if (params.lift && (params.lift.r || params.lift.g || params.lift.b || params.lift.y)) return true;
+    if (params.gamma && (params.gamma.r || params.gamma.g || params.gamma.b || params.gamma.y)) return true;
+    if (params.gain && (params.gain.r || params.gain.g || params.gain.b || params.gain.y)) return true;
+    if (params.offset && (params.offset.r || params.offset.g || params.offset.b || params.offset.y)) return true;
+    return false;
+  }
+
+  public static isNoOp(params: ColorGradingParams): boolean {
+    if (params.enabled === false) return true;
+    const isBasicNoOp =
+      (params.contrast ?? 1.0) === 1.0 &&
+      (params.saturation ?? 1.0) === 1.0 &&
+      (params.exposure ?? 0.0) === 0.0 &&
+      !params.hueShift;
+    return isBasicNoOp && !ColorGradingPlugin.requiresPixelTraversal(params);
+  }
+
+  /**
+   * Hardware-accelerated GPU filter application via native CanvasRenderingContext2D.filter.
+   * Runs directly inside the browser compositing engine with 0ms CPU readback overhead.
+   */
+  public applyCanvasFilter(
+    ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+    params: ColorGradingParams
+  ): void {
+    if (typeof (ctx as CanvasRenderingContext2D).filter !== 'string') return;
+
+    const contrastPct = Math.round((params.contrast ?? 1.0) * 100);
+    const saturatePct = Math.round((params.saturation ?? 1.0) * 100);
+    const brightnessPct = Math.round((1.0 + (params.exposure ?? 0.0)) * 100);
+
+    const filterParts: string[] = [];
+    if (contrastPct !== 100) filterParts.push(`contrast(${contrastPct}%)`);
+    if (saturatePct !== 100) filterParts.push(`saturate(${saturatePct}%)`);
+    if (brightnessPct !== 100) filterParts.push(`brightness(${brightnessPct}%)`);
+    if (params.hueShift) filterParts.push(`hue-rotate(${params.hueShift}deg)`);
+
+    if (filterParts.length === 0) return;
+
+    const filterString = filterParts.join(' ');
+    const typedCtx = ctx as CanvasRenderingContext2D;
+    typedCtx.filter = typedCtx.filter && typedCtx.filter !== 'none'
+      ? `${typedCtx.filter} ${filterString}`
+      : filterString;
+  }
+
   /**
    * Applies unified studio-grade Color Correction and Color Grading directly onto canvas context.
    */
@@ -268,10 +328,18 @@ export class ColorGradingPlugin implements ModifierPlugin<ColorGradingParams> {
     lutData?: Float32Array,
     lutSize: number = 17
   ): void {
+    if (ColorGradingPlugin.isNoOp(params)) return;
+
     const canvas = ctx.canvas;
     const w = canvas.width;
     const h = canvas.height;
     if (w === 0 || h === 0) return;
+
+    // Fast-path GPU filter if pixel-level traversal (LUT/wheels/curves) is not strictly required
+    if (!ColorGradingPlugin.requiresPixelTraversal(params) && !lutData) {
+      this.applyCanvasFilter(ctx, params);
+      return;
+    }
 
     const imageData = ctx.getImageData(0, 0, w, h);
     applyColorCorrectionAndGrading(imageData, params, lutData, lutSize);
@@ -291,13 +359,29 @@ export class ColorGradingPlugin implements ModifierPlugin<ColorGradingParams> {
 
   public async renderClipSpace(ctx: ClipRenderContext, params: ColorGradingParams): Promise<void> {
     const { ctx: canvasCtx } = ctx;
-    let resolvedLut: { data: Float32Array; size: number } | null = null;
+    if (ColorGradingPlugin.isNoOp(params)) return;
 
+    // Fast-path GPU hardware filter for contrast, saturation, exposure, and hueShift
+    this.applyCanvasFilter(canvasCtx, params);
+
+    // Skip heavy CPU pixel traversal if no pixel-level operations (LUT, wheels, vignette) are active
+    if (!ColorGradingPlugin.requiresPixelTraversal(params)) {
+      return;
+    }
+
+    let resolvedLut: { data: Float32Array; size: number } | null = null;
     if (params.lut) {
-      try {
-        resolvedLut = await resolveLutPreset(params.lut, 17);
-      } catch {
-        // Graceful degradation
+      if (this.lutMemoryCache.has(params.lut)) {
+        resolvedLut = this.lutMemoryCache.get(params.lut)!;
+      } else {
+        try {
+          resolvedLut = await resolveLutPreset(params.lut, 17);
+          if (resolvedLut) {
+            this.lutMemoryCache.set(params.lut, resolvedLut);
+          }
+        } catch {
+          // Graceful degradation
+        }
       }
     }
 
@@ -311,13 +395,27 @@ export class ColorGradingPlugin implements ModifierPlugin<ColorGradingParams> {
 
   public async renderMasterComposite(ctx: MasterCompositeContext, params: ColorGradingParams): Promise<void> {
     const { ctx: canvasCtx } = ctx;
-    let resolvedLut: { data: Float32Array; size: number } | null = null;
+    if (ColorGradingPlugin.isNoOp(params)) return;
 
+    this.applyCanvasFilter(canvasCtx, params);
+
+    if (!ColorGradingPlugin.requiresPixelTraversal(params)) {
+      return;
+    }
+
+    let resolvedLut: { data: Float32Array; size: number } | null = null;
     if (params.lut) {
-      try {
-        resolvedLut = await resolveLutPreset(params.lut, 17);
-      } catch {
-        // Graceful degradation
+      if (this.lutMemoryCache.has(params.lut)) {
+        resolvedLut = this.lutMemoryCache.get(params.lut)!;
+      } else {
+        try {
+          resolvedLut = await resolveLutPreset(params.lut, 17);
+          if (resolvedLut) {
+            this.lutMemoryCache.set(params.lut, resolvedLut);
+          }
+        } catch {
+          // Graceful degradation
+        }
       }
     }
 

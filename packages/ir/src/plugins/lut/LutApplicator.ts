@@ -137,6 +137,68 @@ export function applyColorCorrectionAndGrading(
   const invHalfW = 1.0 / halfW;
   const invHalfH = 1.0 / halfH;
 
+  // Precomputed Vignette distance arrays
+  const dx2 = hasVignette ? new Float32Array(width) : null;
+  if (dx2) {
+    for (let x = 0; x < width; x++) {
+      const dx = (x - halfW) * invHalfW;
+      dx2[x] = dx * dx;
+    }
+  }
+
+  // Precomputed 256-entry channel lookup tables when rolloff is inactive
+  const hasRolloff = highFactor !== 0 || shadFactor !== 0 || whitesFactor !== 0 || blacksFactor !== 0;
+  let lutR256: Float32Array | null = null;
+  let lutG256: Float32Array | null = null;
+  let lutB256: Float32Array | null = null;
+
+  if (!hasRolloff) {
+    lutR256 = new Float32Array(256);
+    lutG256 = new Float32Array(256);
+    lutB256 = new Float32Array(256);
+
+    for (let i = 0; i < 256; i++) {
+      const v = i / 255;
+      let r = ColorMath.clamp(v * (1.0 + tempR + tintR));
+      let g = ColorMath.clamp(v * (1.0 + tintG));
+      let b = ColorMath.clamp(v * (1.0 + tempB + tintB));
+
+      if (expFactor !== 1.0) {
+        r *= expFactor;
+        g *= expFactor;
+        b *= expFactor;
+      }
+
+      if (hasWheels) {
+        r += offsetR;
+        g += offsetG;
+        b += offsetB;
+
+        r += liftR * (1.0 - ColorMath.clamp(r));
+        g += liftG * (1.0 - ColorMath.clamp(g));
+        b += liftB * (1.0 - ColorMath.clamp(b));
+
+        r *= (1.0 + gainR);
+        g *= (1.0 + gainG);
+        b *= (1.0 + gainB);
+
+        if (gammaR !== 1.0 && r > 0) r = Math.pow(r, gammaR);
+        if (gammaG !== 1.0 && g > 0) g = Math.pow(g, gammaG);
+        if (gammaB !== 1.0 && b > 0) b = Math.pow(b, gammaB);
+      }
+
+      if (contrast !== 1.0) {
+        r = pivot + (r - pivot) * contrast;
+        g = pivot + (g - pivot) * contrast;
+        b = pivot + (b - pivot) * contrast;
+      }
+
+      lutR256[i] = ColorMath.clamp(r);
+      lutG256[i] = ColorMath.clamp(g);
+      lutB256[i] = ColorMath.clamp(b);
+    }
+  }
+
   // --- Pixel Traversal Loop ---
   let pIdx = 0;
   for (let y = 0; y < height; y++) {
@@ -144,79 +206,84 @@ export function applyColorCorrectionAndGrading(
     const dy2 = dy * dy;
 
     for (let x = 0; x < width; x++) {
-      const rIn = pixels[pIdx]! / 255;
-      const gIn = pixels[pIdx + 1]! / 255;
-      const bIn = pixels[pIdx + 2]! / 255;
+      let r: number;
+      let g: number;
+      let b: number;
 
-      // 1. White Balance (Temperature & Tint)
-      let r = ColorMath.clamp(rIn * (1.0 + tempR + tintR));
-      let g = ColorMath.clamp(gIn * (1.0 + tintG));
-      let b = ColorMath.clamp(bIn * (1.0 + tempB + tintB));
-
-      // 2. Photometric Exposure (EV)
-      if (expFactor !== 1.0) {
-        r *= expFactor;
-        g *= expFactor;
-        b *= expFactor;
-      }
-
-      // 3. 3-Way Color Wheels
-      if (hasWheels) {
-        // Offset
-        r += offsetR;
-        g += offsetG;
-        b += offsetB;
-
-        // Lift (affects shadows predominantly)
-        r += liftR * (1.0 - ColorMath.clamp(r));
-        g += liftG * (1.0 - ColorMath.clamp(g));
-        b += liftB * (1.0 - ColorMath.clamp(b));
-
-        // Gain (multiplies highlights)
-        r *= (1.0 + gainR);
-        g *= (1.0 + gainG);
-        b *= (1.0 + gainB);
-
-        // Gamma (midtones power curve)
-        if (gammaR !== 1.0 && r > 0) r = Math.pow(r, gammaR);
-        if (gammaG !== 1.0 && g > 0) g = Math.pow(g, gammaG);
-        if (gammaB !== 1.0 && b > 0) b = Math.pow(b, gammaB);
-      }
-
-      // 4. Highlights / Shadows Rolloff & Whites / Blacks
-      const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-      if (luma > 0.5) {
-        const wHigh = (luma - 0.5) * 2.0;
-        const delta = highFactor * wHigh;
-        r += delta;
-        g += delta;
-        b += delta;
+      if (lutR256 && lutG256 && lutB256) {
+        r = lutR256[pixels[pIdx]!]!;
+        g = lutG256[pixels[pIdx + 1]!]!;
+        b = lutB256[pixels[pIdx + 2]!]!;
       } else {
-        const wShad = (0.5 - luma) * 2.0;
-        const delta = shadFactor * wShad;
-        r += delta;
-        g += delta;
-        b += delta;
-      }
+        const rIn = pixels[pIdx]! / 255;
+        const gIn = pixels[pIdx + 1]! / 255;
+        const bIn = pixels[pIdx + 2]! / 255;
 
-      if (whitesFactor !== 0 || blacksFactor !== 0) {
-        const wbDelta = whitesFactor * luma + blacksFactor * (1.0 - luma);
-        r += wbDelta;
-        g += wbDelta;
-        b += wbDelta;
-      }
+        // 1. White Balance (Temperature & Tint)
+        r = ColorMath.clamp(rIn * (1.0 + tempR + tintR));
+        g = ColorMath.clamp(gIn * (1.0 + tintG));
+        b = ColorMath.clamp(bIn * (1.0 + tempB + tintB));
 
-      // 5. Contrast with 18% Mid-Gray Pivot
-      if (contrast !== 1.0) {
-        r = pivot + (r - pivot) * contrast;
-        g = pivot + (g - pivot) * contrast;
-        b = pivot + (b - pivot) * contrast;
-      }
+        // 2. Photometric Exposure (EV)
+        if (expFactor !== 1.0) {
+          r *= expFactor;
+          g *= expFactor;
+          b *= expFactor;
+        }
 
-      // Clamp before passing into 3D LUT stage
-      r = ColorMath.clamp(r);
-      g = ColorMath.clamp(g);
-      b = ColorMath.clamp(b);
+        // 3. 3-Way Color Wheels
+        if (hasWheels) {
+          r += offsetR;
+          g += offsetG;
+          b += offsetB;
+
+          r += liftR * (1.0 - ColorMath.clamp(r));
+          g += liftG * (1.0 - ColorMath.clamp(g));
+          b += liftB * (1.0 - ColorMath.clamp(b));
+
+          r *= (1.0 + gainR);
+          g *= (1.0 + gainG);
+          b *= (1.0 + gainB);
+
+          if (gammaR !== 1.0 && r > 0) r = Math.pow(r, gammaR);
+          if (gammaG !== 1.0 && g > 0) g = Math.pow(g, gammaG);
+          if (gammaB !== 1.0 && b > 0) b = Math.pow(b, gammaB);
+        }
+
+        // 4. Highlights / Shadows Rolloff & Whites / Blacks
+        const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        if (luma > 0.5) {
+          const wHigh = (luma - 0.5) * 2.0;
+          const delta = highFactor * wHigh;
+          r += delta;
+          g += delta;
+          b += delta;
+        } else {
+          const wShad = (0.5 - luma) * 2.0;
+          const delta = shadFactor * wShad;
+          r += delta;
+          g += delta;
+          b += delta;
+        }
+
+        if (whitesFactor !== 0 || blacksFactor !== 0) {
+          const wbDelta = whitesFactor * luma + blacksFactor * (1.0 - luma);
+          r += wbDelta;
+          g += wbDelta;
+          b += wbDelta;
+        }
+
+        // 5. Contrast with 18% Mid-Gray Pivot
+        if (contrast !== 1.0) {
+          r = pivot + (r - pivot) * contrast;
+          g = pivot + (g - pivot) * contrast;
+          b = pivot + (b - pivot) * contrast;
+        }
+
+        r = ColorMath.clamp(r);
+        g = ColorMath.clamp(g);
+        b = ColorMath.clamp(b);
+      }
 
       // 6. Creative 3D LUT Tetrahedral Interpolation with Intensity Blend
       if (hasLut && lutData) {
@@ -268,9 +335,8 @@ export function applyColorCorrectionAndGrading(
       }
 
       // 8. Radial Vignette
-      if (hasVignette) {
-        const dx = (x - halfW) * invHalfW;
-        const dist = Math.sqrt(dx * dx + dy2);
+      if (hasVignette && dx2) {
+        const dist = Math.sqrt(dx2[x]! + dy2);
         const falloff = smoothstep(vigMid, vigMid + vigFeath, dist);
         const vMask = Math.max(0, 1.0 - vigAmt * falloff);
         r *= vMask;
@@ -278,9 +344,9 @@ export function applyColorCorrectionAndGrading(
         b *= vMask;
       }
 
-      pixels[pIdx] = Math.round(ColorMath.clamp(r) * 255);
-      pixels[pIdx + 1] = Math.round(ColorMath.clamp(g) * 255);
-      pixels[pIdx + 2] = Math.round(ColorMath.clamp(b) * 255);
+      pixels[pIdx] = r <= 0 ? 0 : r >= 1 ? 255 : (r * 255 + 0.5) | 0;
+      pixels[pIdx + 1] = g <= 0 ? 0 : g >= 1 ? 255 : (g * 255 + 0.5) | 0;
+      pixels[pIdx + 2] = b <= 0 ? 0 : b >= 1 ? 255 : (b * 255 + 0.5) | 0;
       // Alpha remains untouched at pixels[pIdx + 3]
 
       pIdx += 4;
