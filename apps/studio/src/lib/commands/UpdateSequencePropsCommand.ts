@@ -33,18 +33,10 @@ export class UpdateSequencePropsCommand implements ICommand {
       for (const seq of track.sequences) {
         if (seq.id === this.sequenceId) {
           if (this.previousSnapshot === null) {
-            this.previousSnapshot = {
-              blendMode: seq.blendMode,
-              assetId: seq.assetId,
-              activeStreams: seq.activeStreams ? [...seq.activeStreams] : undefined,
-              cues: seq.cues ? JSON.parse(JSON.stringify(seq.cues)) : undefined,
-            };
+            this.previousSnapshot = JSON.parse(JSON.stringify(seq));
           }
 
-          if (this.updates.blendMode !== undefined) seq.blendMode = this.updates.blendMode;
-          if (this.updates.assetId !== undefined) seq.assetId = this.updates.assetId;
-          if (this.updates.activeStreams !== undefined) seq.activeStreams = [...this.updates.activeStreams];
-          if (this.updates.cues !== undefined) seq.cues = JSON.parse(JSON.stringify(this.updates.cues));
+          Object.assign(seq, this.updates);
 
           return copy;
         }
@@ -61,18 +53,7 @@ export class UpdateSequencePropsCommand implements ICommand {
     for (const track of copy.tracks) {
       for (const seq of track.sequences) {
         if (seq.id === this.sequenceId) {
-          if (this.previousSnapshot.blendMode !== undefined) seq.blendMode = this.previousSnapshot.blendMode;
-          else delete seq.blendMode;
-
-          if (this.previousSnapshot.assetId !== undefined) seq.assetId = this.previousSnapshot.assetId;
-          else delete seq.assetId;
-
-          if (this.previousSnapshot.activeStreams !== undefined) seq.activeStreams = [...this.previousSnapshot.activeStreams];
-          else delete seq.activeStreams;
-
-          if (this.previousSnapshot.cues !== undefined) seq.cues = JSON.parse(JSON.stringify(this.previousSnapshot.cues));
-          else delete seq.cues;
-
+          Object.assign(seq, this.previousSnapshot);
           return copy;
         }
       }

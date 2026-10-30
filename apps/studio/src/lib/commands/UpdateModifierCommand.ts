@@ -42,7 +42,7 @@ export class UpdateModifierCommand implements ICommand {
           this.wasPreviouslyExisting = true;
         }
         if (!existingMod.id) {
-          existingMod.id = `mod_${this.modifierType.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`;
+          existingMod.id = `${this.modifierType}_${copy.modifiers.indexOf(existingMod)}`;
         }
         if (this.target && !existingMod.target) {
           existingMod.target = this.target;
@@ -75,7 +75,7 @@ export class UpdateModifierCommand implements ICommand {
             this.wasPreviouslyExisting = true;
           }
           if (!existingMod.id) {
-            existingMod.id = `mod_${this.modifierType.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`;
+            existingMod.id = `${this.modifierType}_${track.modifiers.indexOf(existingMod)}`;
           }
           if (this.target && !existingMod.target) {
             existingMod.target = this.target;
@@ -107,7 +107,7 @@ export class UpdateModifierCommand implements ICommand {
               this.wasPreviouslyExisting = true;
             }
             if (!existingMod.id) {
-              existingMod.id = `mod_${this.modifierType.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`;
+              existingMod.id = `${this.modifierType}_${seq.modifiers.indexOf(existingMod)}`;
             }
             if (this.target && !existingMod.target) {
               existingMod.target = this.target;

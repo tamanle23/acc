@@ -35,10 +35,13 @@ function AccordionItem({
 function AccordionTrigger({
   className,
   children,
+  actions,
   ...props
-}: React.ComponentProps<typeof AccordionPrimitive.Trigger>) {
+}: React.ComponentProps<typeof AccordionPrimitive.Trigger> & {
+  actions?: React.ReactNode;
+}) {
   return (
-    <AccordionPrimitive.Header className="flex">
+    <AccordionPrimitive.Header className="flex items-center justify-between">
       <AccordionPrimitive.Trigger
         data-slot="accordion-trigger"
         className={cn(
@@ -51,6 +54,15 @@ function AccordionTrigger({
         <ChevronDownIcon data-slot="accordion-trigger-icon" className="pointer-events-none shrink-0 group-aria-expanded/accordion-trigger:hidden" />
         <ChevronUpIcon data-slot="accordion-trigger-icon" className="pointer-events-none hidden shrink-0 group-aria-expanded/accordion-trigger:inline" />
       </AccordionPrimitive.Trigger>
+      {actions && (
+        <div
+          className="flex items-center gap-1 pr-3 shrink-0"
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          {actions}
+        </div>
+      )}
     </AccordionPrimitive.Header>
   )
 }

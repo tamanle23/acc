@@ -219,7 +219,7 @@ export const StudioColorGradingInspector: React.FC<StudioColorGradingInspectorPr
   return (
     <>
       {/* Segmented Sub-Navigation Tabs */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full" orientation="vertical">
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
         <TabsList className="grid grid-cols-4 w-full h-7 p-0.5 bg-glass-surface/60 border border-glass-border rounded-md text-[10px]">
           <TabsTrigger value="correction" className="h-6 text-[10px] px-1 data-[state=active]:bg-accent-theme/20 data-[state=active]:text-accent-theme font-semibold">
             Correction
