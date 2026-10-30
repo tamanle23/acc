@@ -96,19 +96,19 @@ class WorkflowSagaPolyglotIntegrationTest {
             .build();
 
         // Register definition
-        definitionController.registerDefinition(definition, TENANT_ID);
+        definitionController.registerDefinition(definition);
 
         // Start execution
         Map<String, Object> input = Map.of("sku", "IPHONE-16-PRO", "qty", 1);
         var startReq = new WorkflowExecutionController.StartWorkflowRequest("polyglot-order-fulfillment", input);
-        ResponseEntity<?> startResp = executionController.startExecution(startReq, TENANT_ID, WORKSPACE_ID);
+        ResponseEntity<?> startResp = executionController.startExecution(startReq, WORKSPACE_ID);
         assertThat(startResp.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         WorkflowSnapshot initialSnap = (WorkflowSnapshot) startResp.getBody();
         String workflowId = initialSnap.workflowId();
 
         // 2. Java Worker executes step 1 (reserve inventory)
         ResponseEntity<List<TaskSnapshot>> poll1 = workerController.pollTasks(
-            "SIMPLE", "inventory", "java-worker-1", 1, TENANT_ID
+            "SIMPLE", "inventory", "java-worker-1", 1
         );
         assertThat(poll1.getBody()).hasSize(1);
         TaskSnapshot task1 = poll1.getBody().get(0);
@@ -116,13 +116,12 @@ class WorkflowSagaPolyglotIntegrationTest {
 
         workerController.reportResult(
             task1.taskId(),
-            new TaskWorkerController.TaskResultRequest(true, Map.of("reservationId", "RES-5501"), null, 0),
-            TENANT_ID
+            new TaskWorkerController.TaskResultRequest(true, Map.of("reservationId", "RES-5501"), null, 0)
         );
 
         // 3. TypeScript Worker executes step 2 (dispatch package)
         ResponseEntity<List<TaskSnapshot>> poll2 = workerController.pollTasks(
-            "SIMPLE", "logistics", "ts-worker-1", 1, TENANT_ID
+            "SIMPLE", "logistics", "ts-worker-1", 1
         );
         assertThat(poll2.getBody()).hasSize(1);
         TaskSnapshot task2 = poll2.getBody().get(0);
@@ -130,13 +129,12 @@ class WorkflowSagaPolyglotIntegrationTest {
 
         workerController.reportResult(
             task2.taskId(),
-            new TaskWorkerController.TaskResultRequest(true, Map.of("trackingNumber", "TRK-9902"), null, 0),
-            TENANT_ID
+            new TaskWorkerController.TaskResultRequest(true, Map.of("trackingNumber", "TRK-9902"), null, 0)
         );
 
         // 4. Billing Worker executes step 3 (capture payment) with FAULT INJECTION (failure)
         ResponseEntity<List<TaskSnapshot>> poll3 = workerController.pollTasks(
-            "SIMPLE", "billing", "payment-worker-1", 1, TENANT_ID
+            "SIMPLE", "billing", "payment-worker-1", 1
         );
         assertThat(poll3.getBody()).hasSize(1);
         TaskSnapshot task3 = poll3.getBody().get(0);
@@ -145,19 +143,18 @@ class WorkflowSagaPolyglotIntegrationTest {
         // Report permanent failure (Card declined)
         workerController.reportResult(
             task3.taskId(),
-            new TaskWorkerController.TaskResultRequest(false, Collections.emptyMap(), "PaymentDeclinedException: Card issuer rejected charge", 0),
-            TENANT_ID
+            new TaskWorkerController.TaskResultRequest(false, Collections.emptyMap(), "PaymentDeclinedException: Card issuer rejected charge", 0)
         );
 
         // 5. Verify Workflow transitions to COMPENSATED_FAILED
-        ResponseEntity<?> execResp = executionController.getExecution(workflowId, TENANT_ID);
+        ResponseEntity<?> execResp = executionController.getExecution(workflowId);
         WorkflowSnapshot compensatedSnap = (WorkflowSnapshot) execResp.getBody();
         assertThat(compensatedSnap.status()).isEqualTo(WorkflowStatus.COMPENSATED_FAILED);
 
         // 6. Verify Saga reverse topological compensation scheduled the tasks in exact reverse order:
         // Reverse order: first cancel-packing-worker (Step 2), then release-inventory-worker (Step 1)
         ResponseEntity<List<TaskSnapshot>> pollCompLogistics = workerController.pollTasks(
-            "cancel-packing-worker", "logistics", "ts-worker-1", 1, TENANT_ID
+            "cancel-packing-worker", "logistics", "ts-worker-1", 1
         );
         assertThat(pollCompLogistics.getBody()).hasSize(1);
         TaskSnapshot compStep2 = pollCompLogistics.getBody().get(0);
@@ -166,12 +163,11 @@ class WorkflowSagaPolyglotIntegrationTest {
         // Acknowledge step 2 compensation
         workerController.reportResult(
             compStep2.taskId(),
-            new TaskWorkerController.TaskResultRequest(true, Map.of("cancelled", true), null, 0),
-            TENANT_ID
+            new TaskWorkerController.TaskResultRequest(true, Map.of("cancelled", true), null, 0)
         );
 
         ResponseEntity<List<TaskSnapshot>> pollCompInventory = workerController.pollTasks(
-            "release-inventory-worker", "inventory", "java-worker-1", 1, TENANT_ID
+            "release-inventory-worker", "inventory", "java-worker-1", 1
         );
         assertThat(pollCompInventory.getBody()).hasSize(1);
         TaskSnapshot compStep1 = pollCompInventory.getBody().get(0);
@@ -180,8 +176,7 @@ class WorkflowSagaPolyglotIntegrationTest {
         // Acknowledge step 1 compensation
         workerController.reportResult(
             compStep1.taskId(),
-            new TaskWorkerController.TaskResultRequest(true, Map.of("released", true), null, 0),
-            TENANT_ID
+            new TaskWorkerController.TaskResultRequest(true, Map.of("released", true), null, 0)
         );
     }
 }

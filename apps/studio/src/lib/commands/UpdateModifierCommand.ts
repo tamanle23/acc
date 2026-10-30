@@ -32,6 +32,37 @@ export class UpdateModifierCommand implements ICommand {
     const copy = JSON.parse(JSON.stringify(doc)) as VideoIRDocument;
 
     for (const track of copy.tracks) {
+      if (track.id === this.sequenceId) {
+        if (!track.modifiers) track.modifiers = [];
+        const existingMod = track.modifiers.find((m) => m.type === this.modifierType);
+
+        if (existingMod) {
+          if (this.previousParamsSnapshot === null) {
+            this.previousParamsSnapshot = JSON.parse(JSON.stringify(existingMod.params));
+            this.wasPreviouslyExisting = true;
+          }
+          if (!existingMod.id) {
+            existingMod.id = `mod_${this.modifierType.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`;
+          }
+          if (this.target && !existingMod.target) {
+            existingMod.target = this.target;
+          }
+          existingMod.params = { ...existingMod.params, ...this.params };
+        } else {
+          if (this.previousParamsSnapshot === null) {
+            this.previousParamsSnapshot = null;
+            this.wasPreviouslyExisting = false;
+          }
+          track.modifiers.push({
+            id: `mod_${this.modifierType.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`,
+            type: this.modifierType,
+            target: this.target || (track.type === 'timed_text' ? 'text' : 'video'),
+            params: { ...this.params },
+          });
+        }
+        return copy;
+      }
+
       for (const seq of track.sequences) {
         if (seq.id === this.sequenceId) {
           if (!seq.modifiers) seq.modifiers = [];
@@ -73,6 +104,18 @@ export class UpdateModifierCommand implements ICommand {
     const copy = JSON.parse(JSON.stringify(doc)) as VideoIRDocument;
 
     for (const track of copy.tracks) {
+      if (track.id === this.sequenceId && track.modifiers) {
+        if (!this.wasPreviouslyExisting) {
+          track.modifiers = track.modifiers.filter((m) => m.type !== this.modifierType);
+        } else if (this.previousParamsSnapshot !== null) {
+          const existingMod = track.modifiers.find((m) => m.type === this.modifierType);
+          if (existingMod) {
+            existingMod.params = { ...this.previousParamsSnapshot };
+          }
+        }
+        return copy;
+      }
+
       for (const seq of track.sequences) {
         if (seq.id === this.sequenceId && seq.modifiers) {
           if (!this.wasPreviouslyExisting) {

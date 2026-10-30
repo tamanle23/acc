@@ -243,6 +243,18 @@ export const astroTelemetryDemoIR: VideoIRDocument = {
       type: 'timed_text',
       muted: false,
       visible: true,
+      modifiers: [
+        {
+          type: 'timed_text/style',
+          target: 'text',
+          params: {
+            fontSize: 32,
+            fontFamily: 'Inter, system-ui, sans-serif',
+            color: '#ffaa00',
+            textAlign: 'center',
+          },
+        },
+      ],
       sequences: [
         {
           id: 'seq-astro-caption-p1',
@@ -252,16 +264,16 @@ export const astroTelemetryDemoIR: VideoIRDocument = {
             start: 0,
             duration: 120,
           },
-          modifiers: [
+          cues: [
             {
-              type: 'timed_text/style',
-              target: 'text',
-              params: {
-                fontSize: 32,
-                fontFamily: 'Inter, system-ui, sans-serif',
-                color: '#ffaa00',
-                textAlign: 'center',
-              },
+              startOffsetMs: 0,
+              endOffsetMs: 2000,
+              text: 'KERR BLACK HOLE: ASYMMETRIC DOPPLER ACCRETION & EINSTEIN RING',
+            },
+            {
+              startOffsetMs: 2000,
+              endOffsetMs: 4000,
+              text: 'GEODESIC PHOTON DEFLECTION THROUGH EXTREME SPACETIME CURVATURE',
             },
           ],
           timedTextCues: [
@@ -285,16 +297,16 @@ export const astroTelemetryDemoIR: VideoIRDocument = {
             start: 120,
             duration: 120,
           },
-          modifiers: [
+          cues: [
             {
-              type: 'timed_text/style',
-              target: 'text',
-              params: {
-                fontSize: 32,
-                fontFamily: 'Inter, system-ui, sans-serif',
-                color: '#00ff88',
-                textAlign: 'center',
-              },
+              startOffsetMs: 0,
+              endOffsetMs: 2000,
+              text: 'MULTI-OCTAVE CURL TURBULENCE TOPOGRAPHIC CONTOUR EXTRACTION',
+            },
+            {
+              startOffsetMs: 2000,
+              endOffsetMs: 4000,
+              text: 'SYNCHRONIZED EQUIDISTANT ISOLINES DERIVED FROM NOISE POTENTIALS',
             },
           ],
           timedTextCues: [
@@ -318,16 +330,16 @@ export const astroTelemetryDemoIR: VideoIRDocument = {
             start: 240,
             duration: 120,
           },
-          modifiers: [
+          cues: [
             {
-              type: 'timed_text/style',
-              target: 'text',
-              params: {
-                fontSize: 32,
-                fontFamily: 'Inter, system-ui, sans-serif',
-                color: '#ff007f',
-                textAlign: 'center',
-              },
+              startOffsetMs: 0,
+              endOffsetMs: 2000,
+              text: 'HYPERBOLIC TESSELLATION WITHIN POINCARÉ CONFORMAL DISK',
+            },
+            {
+              startOffsetMs: 2000,
+              endOffsetMs: 4000,
+              text: 'MÖBIUS ISOMETRIES PRESERVING NON-EUCLIDEAN CONFORMAL ANGLES',
             },
           ],
           timedTextCues: [

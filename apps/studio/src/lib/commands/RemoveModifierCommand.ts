@@ -23,6 +23,16 @@ export class RemoveModifierCommand implements ICommand {
     const copy = JSON.parse(JSON.stringify(doc)) as VideoIRDocument;
 
     for (const track of copy.tracks) {
+      if (track.id === this.sequenceId && track.modifiers) {
+        const idx = track.modifiers.findIndex((m: ModifierNode) => m.type === this.modifierType);
+        if (idx !== -1) {
+          this.removedModifier = track.modifiers[idx];
+          this.removedIndex = idx;
+          track.modifiers.splice(idx, 1);
+        }
+        return copy;
+      }
+
       for (const seq of track.sequences) {
         if (seq.id === this.sequenceId && seq.modifiers) {
           const idx = seq.modifiers.findIndex((m: ModifierNode) => m.type === this.modifierType);
@@ -45,6 +55,16 @@ export class RemoveModifierCommand implements ICommand {
     const copy = JSON.parse(JSON.stringify(doc)) as VideoIRDocument;
 
     for (const track of copy.tracks) {
+      if (track.id === this.sequenceId) {
+        if (!track.modifiers) track.modifiers = [];
+        if (this.removedIndex >= 0 && this.removedIndex <= track.modifiers.length) {
+          track.modifiers.splice(this.removedIndex, 0, this.removedModifier);
+        } else {
+          track.modifiers.push(this.removedModifier);
+        }
+        return copy;
+      }
+
       for (const seq of track.sequences) {
         if (seq.id === this.sequenceId) {
           if (!seq.modifiers) seq.modifiers = [];

@@ -289,10 +289,10 @@ describe('Studio Context-Aware Inspector & Overlay VFX Architecture', () => {
   describe('5. Dual-State timed_text/style Active-Word Karaoke Configuration', () => {
     it('should preserve both base typography and active-word karaoke parameters', () => {
       const stateManager = IRStateManager.getInstance();
-      const seqId = 'seq-dialogue-1';
+      const trackId = 'track-subtitles';
 
-      // Attach dual-state timed_text/style modifier
-      stateManager.updateModifier(seqId, 'timed_text/style', {
+      // Attach dual-state timed_text/style modifier on track
+      stateManager.updateModifier(trackId, 'timed_text/style', {
         fontFamily: 'Montserrat',
         fontSize: 36,
         fontWeight: 800,
@@ -306,11 +306,8 @@ describe('Studio Context-Aware Inspector & Overlay VFX Architecture', () => {
         },
       });
 
-      const seq = stateManager.getState().doc.tracks
-        .flatMap((t) => t.sequences)
-        .find((s) => s.id === seqId);
-
-      const styleMod = seq?.modifiers?.find((m) => m.type === 'timed_text/style');
+      const track = stateManager.getState().doc.tracks.find((t) => t.id === trackId);
+      const styleMod = track?.modifiers?.find((m) => m.type === 'timed_text/style');
       expect(styleMod).toBeDefined();
       expect(styleMod?.params?.fontFamily).toBe('Montserrat');
       expect(styleMod?.params?.fontSize).toBe(36);

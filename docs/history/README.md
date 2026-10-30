@@ -59,3 +59,4 @@
 | 394 | [Advanced Spatio-Temporal Generators & Studio Multi-Domain Showcase](./394_advanced_spatio_temporal_generators_and_demos.md) | Completed |
 | 395 | [Universal Track Soft-Cap Constraints & Semantic Track Quotas](./395_track_soft_cap_constraints_and_semantic_quotas.md) | Completed |
 | 396 | [Unified Modifier Target Model, Dynamic Registry Validation & 7-Package Synchronization](./396_unified_modifier_target_model_and_sync.md) | Completed |
+| 397 | [Fix Video IR Demos Modifier Targets & Track-Level Subtitle Dispatch](./397_fix_video_ir_demos_modifier_targets_and_track_dispatch.md) | Completed |

@@ -489,7 +489,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
         {
           id: 'seq-cyber-spotlight',
           name: 'VFX: Cyber Spotlight',
-          type: 'overlay',
+          type: 'video',
           time: {
             start: 35,
             duration: 160,
@@ -497,7 +497,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
           modifiers: [
             {
               type: 'vfx/partial',
-              target: ['video', 'overlay'],
+              target: 'video',
               params: {
                 regions: [
                   {
@@ -516,7 +516,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
         {
           id: 'seq-chromatic-burst',
           name: 'VFX: Chromatic Glitch Burst',
-          type: 'overlay',
+          type: 'video',
           time: {
             start: 220,
             duration: 90,
@@ -524,7 +524,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
           modifiers: [
             {
               type: 'vfx/partial',
-              target: ['video', 'overlay'],
+              target: 'video',
               params: {
                 regions: [
                   {
@@ -832,6 +832,23 @@ export const complexSciFiDemoIR: VideoIRDocument = {
         fontWeight: 'bold',
         color: '#ffffff',
       },
+      modifiers: [
+        {
+          type: 'timed_text/style',
+          target: 'text',
+          params: {
+            fontSize: 40,
+            color: '#ffffff',
+            textAlign: 'center',
+            activeWord: {
+              color: '#00ffff',
+              glowColor: 'rgba(0, 255, 255, 0.8)',
+              glowRadius: 16,
+              scale: 1.08,
+            },
+          },
+        },
+      ],
       sequences: [
         {
           id: 'seq-dialogue-1',
@@ -841,23 +858,6 @@ export const complexSciFiDemoIR: VideoIRDocument = {
             start: 20,
             duration: 70,
           },
-          modifiers: [
-            {
-              type: 'timed_text/style',
-              target: 'text',
-              params: {
-                fontSize: 40,
-                color: '#ffffff',
-                textAlign: 'center',
-                activeWord: {
-                  color: '#00ffff',
-                  glowColor: 'rgba(0, 255, 255, 0.8)',
-                  glowRadius: 16,
-                  scale: 1.08,
-                },
-              },
-            },
-          ],
           cues: [
             {
               startOffsetMs: 0,
@@ -874,22 +874,6 @@ export const complexSciFiDemoIR: VideoIRDocument = {
             start: 95,
             duration: 75,
           },
-          modifiers: [
-            {
-              type: 'timed_text/style',
-              target: 'text',
-              params: {
-                fontSize: 40,
-                color: '#ffffff',
-                textAlign: 'center',
-                activeWord: {
-                  color: '#00ffff',
-                  glowColor: 'rgba(0, 255, 255, 0.8)',
-                  glowRadius: 16,
-                },
-              },
-            },
-          ],
           cues: [
             {
               startOffsetMs: 0,
@@ -906,23 +890,6 @@ export const complexSciFiDemoIR: VideoIRDocument = {
             start: 210,
             duration: 110,
           },
-          modifiers: [
-            {
-              type: 'timed_text/style',
-              target: 'text',
-              params: {
-                fontSize: 44,
-                color: '#ff3366',
-                textAlign: 'center',
-                activeWord: {
-                  color: '#ffff00',
-                  glowColor: 'rgba(255, 51, 102, 0.9)',
-                  glowRadius: 20,
-                  scale: 1.12,
-                },
-              },
-            },
-          ],
           cues: [
             {
               startOffsetMs: 0,
@@ -943,6 +910,18 @@ export const complexSciFiDemoIR: VideoIRDocument = {
         fontWeight: 'bold',
         color: '#00ffff',
       },
+      modifiers: [
+        {
+          type: 'timed_text/style',
+          target: 'text',
+          params: {
+            fontSize: 24,
+            fontFamily: 'monospace',
+            color: '#00ffff',
+            textAlign: 'left',
+          },
+        },
+      ],
       sequences: [
         {
           id: 'seq-hud-callout',
@@ -952,18 +931,6 @@ export const complexSciFiDemoIR: VideoIRDocument = {
             start: 45,
             duration: 150,
           },
-          modifiers: [
-            {
-              type: 'timed_text/style',
-              target: 'text',
-              params: {
-                fontSize: 24,
-                fontFamily: 'monospace',
-                color: '#00ffff',
-                textAlign: 'left',
-              },
-            },
-          ],
           cues: [
             {
               startOffsetMs: 0,
@@ -980,18 +947,6 @@ export const complexSciFiDemoIR: VideoIRDocument = {
             start: 215,
             duration: 110,
           },
-          modifiers: [
-            {
-              type: 'timed_text/style',
-              target: 'text',
-              params: {
-                fontSize: 24,
-                fontFamily: 'monospace',
-                color: '#ff0055',
-                textAlign: 'right',
-              },
-            },
-          ],
           cues: [
             {
               startOffsetMs: 0,

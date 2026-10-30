@@ -77,10 +77,34 @@ export function migrateLegacyModifiers(doc: any): any {
       }
       if (Array.isArray(track.sequences)) {
         for (const seq of track.sequences) {
+          // Auto-repair vfx/partial on overlay sequences in video tracks
+          if (track.type === 'video' && seq.type === 'overlay' && Array.isArray(seq.modifiers)) {
+            if (seq.modifiers.some((m: any) => m && m.type === 'vfx/partial')) {
+              seq.type = 'video';
+              for (const mod of seq.modifiers) {
+                if (mod && mod.type === 'vfx/partial') {
+                  mod.target = 'video';
+                }
+              }
+            }
+          }
+
           if (Array.isArray(seq.modifiers)) {
-            for (const mod of seq.modifiers) {
-              if (mod && mod.type === 'text/style') {
+            for (let i = seq.modifiers.length - 1; i >= 0; i--) {
+              const mod = seq.modifiers[i];
+              if (!mod) continue;
+              if (mod.type === 'text/style') {
                 mod.type = 'timed_text/style';
+              }
+              // If timed_text/style is on a sequence inside a timed_text track, migrate it to the track
+              if (track.type === 'timed_text' && mod.type === 'timed_text/style') {
+                seq.modifiers.splice(i, 1);
+                if (!Array.isArray(track.modifiers)) {
+                  track.modifiers = [];
+                }
+                if (!track.modifiers.some((m: any) => m.type === 'timed_text/style')) {
+                  track.modifiers.push(mod);
+                }
               }
             }
           }

@@ -1,5 +1,5 @@
 import type { ICommand } from './ICommand';
-import type { VideoIRDocument, IRTrack, BlendMode } from '@acc/ir';
+import type { VideoIRDocument, IRTrack, BlendMode, ModifierNode } from '@acc/ir';
 
 export interface UpdateTrackProperties {
   name?: string;
@@ -7,6 +7,7 @@ export interface UpdateTrackProperties {
   routeTo?: string;
   parentTrack?: string;
   style?: Record<string, unknown>;
+  modifiers?: ModifierNode[];
   [key: string]: unknown;
 }
 
@@ -39,6 +40,7 @@ export class UpdateTrackCommand implements ICommand {
           routeTo: targetTrack.routeTo,
           parentTrack: targetTrack.parentTrack,
           style: targetTrack.style ? JSON.parse(JSON.stringify(targetTrack.style)) : undefined,
+          modifiers: targetTrack.modifiers ? JSON.parse(JSON.stringify(targetTrack.modifiers)) : undefined,
         };
       }
 
@@ -48,6 +50,9 @@ export class UpdateTrackCommand implements ICommand {
       if (this.updates.parentTrack !== undefined) targetTrack.parentTrack = this.updates.parentTrack;
       if (this.updates.style !== undefined) {
         targetTrack.style = { ...(targetTrack.style || {}), ...this.updates.style };
+      }
+      if (this.updates.modifiers !== undefined) {
+        targetTrack.modifiers = JSON.parse(JSON.stringify(this.updates.modifiers));
       }
     }
 
@@ -74,6 +79,9 @@ export class UpdateTrackCommand implements ICommand {
 
       if (this.previousSnapshot.style !== undefined) targetTrack.style = JSON.parse(JSON.stringify(this.previousSnapshot.style));
       else delete targetTrack.style;
+
+      if (this.previousSnapshot.modifiers !== undefined) targetTrack.modifiers = JSON.parse(JSON.stringify(this.previousSnapshot.modifiers));
+      else delete targetTrack.modifiers;
     }
 
     return copy;

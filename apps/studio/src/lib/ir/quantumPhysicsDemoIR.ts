@@ -243,6 +243,18 @@ export const quantumPhysicsDemoIR: VideoIRDocument = {
       type: 'timed_text',
       muted: false,
       visible: true,
+      modifiers: [
+        {
+          type: 'timed_text/style',
+          target: 'text',
+          params: {
+            fontSize: 32,
+            fontFamily: 'Inter, system-ui, sans-serif',
+            color: '#ffffff',
+            textAlign: 'center',
+          },
+        },
+      ],
       sequences: [
         {
           id: 'seq-caption-part1',
@@ -252,16 +264,16 @@ export const quantumPhysicsDemoIR: VideoIRDocument = {
             start: 0,
             duration: 120,
           },
-          modifiers: [
+          cues: [
             {
-              type: 'timed_text/style',
-              target: 'text',
-              params: {
-                fontSize: 32,
-                fontFamily: 'Inter, system-ui, sans-serif',
-                color: '#ffffff',
-                textAlign: 'center',
-              },
+              startOffsetMs: 0,
+              endOffsetMs: 1800,
+              text: 'ACOUSTIC LEVITATION & STANDING NODAL WAVES',
+            },
+            {
+              startOffsetMs: 1800,
+              endOffsetMs: 4000,
+              text: 'PARTICLES CONGREGATE ALONG 2D NODAL CURVATURE ZERO-CROSSINGS',
             },
           ],
           timedTextCues: [
@@ -285,16 +297,16 @@ export const quantumPhysicsDemoIR: VideoIRDocument = {
             start: 120,
             duration: 120,
           },
-          modifiers: [
+          cues: [
             {
-              type: 'timed_text/style',
-              target: 'text',
-              params: {
-                fontSize: 32,
-                fontFamily: 'Inter, system-ui, sans-serif',
-                color: '#00f0ff',
-                textAlign: 'center',
-              },
+              startOffsetMs: 0,
+              endOffsetMs: 2000,
+              text: 'DETERMINISTIC CHAOS: CLIFFORD-DE JONG STRANGE ATTRACTORS',
+            },
+            {
+              startOffsetMs: 2000,
+              endOffsetMs: 4000,
+              text: 'FRACTAL RECURSION IN CONTINUOUS FOUR-DIMENSIONAL PARAMETER SPACE',
             },
           ],
           timedTextCues: [
@@ -318,16 +330,16 @@ export const quantumPhysicsDemoIR: VideoIRDocument = {
             start: 240,
             duration: 120,
           },
-          modifiers: [
+          cues: [
             {
-              type: 'timed_text/style',
-              target: 'text',
-              params: {
-                fontSize: 32,
-                fontFamily: 'Inter, system-ui, sans-serif',
-                color: '#e2e8f0',
-                textAlign: 'center',
-              },
+              startOffsetMs: 0,
+              endOffsetMs: 2000,
+              text: 'QUAD-PENDULUM ROTATIONAL HARMONOGRAPH DYNAMICS',
+            },
+            {
+              startOffsetMs: 2000,
+              endOffsetMs: 4000,
+              text: 'DAMPED HARMONIC RESONANCE FORMING ORTHOGONAL EPICYCLES',
             },
           ],
           timedTextCues: [

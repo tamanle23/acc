@@ -7,6 +7,12 @@ import {
   type VideoIRDocument,
   type ModifierTargetScope,
 } from '@acc/ir';
+import { complexSciFiDemoIR } from '../apps/studio/src/lib/ir/complexSciFiDemoIR';
+import { astroTelemetryDemoIR } from '../apps/studio/src/lib/ir/astroTelemetryDemoIR';
+import { quantumPhysicsDemoIR } from '../apps/studio/src/lib/ir/quantumPhysicsDemoIR';
+import { defaultDemoIR } from '../apps/studio/src/lib/ir/defaultDemoIR';
+import { broadcastNewsDemoIR } from '../apps/studio/src/lib/ir/broadcastNewsDemoIR';
+import { cyberAudioVisualizerDemoIR } from '../apps/studio/src/lib/ir/cyberAudioVisualizerDemoIR';
 
 describe('Iteration 55: Unified Modifier Target Model, Dynamic Registry Validation & 7-Package Sync', () => {
   let registry: ModifierPluginRegistry;
@@ -312,5 +318,26 @@ describe('Iteration 55: Unified Modifier Target Model, Dynamic Registry Validati
       type: 'track',
     });
     expect(checkTrackStyleOnTrack.allowed).toBe(true);
+  });
+
+  // Test Vector 7: All 6 Production Studio Demos Pass Schema Validation
+  it('should validate all 6 studio demo documents with zero schema errors', () => {
+    const demos = [
+      { name: 'complexSciFiDemoIR', doc: complexSciFiDemoIR },
+      { name: 'astroTelemetryDemoIR', doc: astroTelemetryDemoIR },
+      { name: 'quantumPhysicsDemoIR', doc: quantumPhysicsDemoIR },
+      { name: 'defaultDemoIR', doc: defaultDemoIR },
+      { name: 'broadcastNewsDemoIR', doc: broadcastNewsDemoIR },
+      { name: 'cyberAudioVisualizerDemoIR', doc: cyberAudioVisualizerDemoIR },
+    ];
+
+    for (const { name, doc } of demos) {
+      const result = VideoIRSchemaValidator.validate(doc as any);
+      if (!result.valid) {
+        console.error(`Validation errors in ${name}:`, result.errors);
+      }
+      expect(result.valid).toBe(true);
+      expect(result.errors).toEqual([]);
+    }
   });
 });
