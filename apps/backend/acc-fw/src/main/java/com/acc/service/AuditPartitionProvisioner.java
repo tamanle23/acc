@@ -2,7 +2,6 @@ package com.acc.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -22,15 +21,8 @@ public class AuditPartitionProvisioner {
 
     private final JdbcTemplate jdbcTemplate;
 
-    @Value("${application.sandbox.enabled:false}")
-    private boolean sandboxEnabled;
-
     @PostConstruct
     public void init() {
-        if (sandboxEnabled) {
-            log.info("Audit log partition provisioning skipped in sandbox mode.");
-            return;
-        }
         try {
             ensurePartitionsForNextMonths(3);
         } catch (Exception e) {
@@ -43,9 +35,6 @@ public class AuditPartitionProvisioner {
      */
     @Scheduled(cron = "0 0 2 * * *")
     public void scheduledPartitionCheck() {
-        if (sandboxEnabled) {
-            return;
-        }
         try {
             ensurePartitionsForNextMonths(3);
         } catch (Exception e) {
@@ -85,7 +74,7 @@ public class AuditPartitionProvisioner {
             jdbcTemplate.execute(ddl);
             log.debug("Verified audit log partition: {}", partitionName);
         } catch (Exception e) {
-            log.debug("Partition creation query skipped for {} (non-fatal): {}", partitionName, e.getMessage());
+            log.debug("Partition creation query skipped for {}: {}", partitionName, e.getMessage());
         }
     }
 }
