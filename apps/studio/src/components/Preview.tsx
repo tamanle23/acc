@@ -242,6 +242,7 @@ export function Preview({
       <ViewportControlBar
         width={width}
         height={height}
+        fps={fps}
         isPlaying={isPlaying}
         currentFrame={currentFrame}
         totalFrames={totalFrames}

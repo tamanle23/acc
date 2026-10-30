@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Monitor,
   Sparkles,
@@ -11,6 +11,7 @@ import {
   Layers,
   LayoutPanelTop,
   ScanEye,
+  Activity,
 } from 'lucide-react';
 import { Tooltip } from '../ui/tooltip';
 import { SnappingGuide } from '../../lib/gizmo';
@@ -18,6 +19,7 @@ import { SnappingGuide } from '../../lib/gizmo';
 export interface ViewportControlBarProps {
   width: number;
   height: number;
+  fps?: number;
   isPlaying: boolean;
   currentFrame: number;
   totalFrames: number;
@@ -48,6 +50,7 @@ export interface ViewportControlBarProps {
 export const ViewportControlBar: React.FC<ViewportControlBarProps> = ({
   width,
   height,
+  fps = 30,
   isPlaying,
   currentFrame,
   totalFrames,
@@ -74,6 +77,38 @@ export const ViewportControlBar: React.FC<ViewportControlBarProps> = ({
   isTelemetryCompanionOpen,
   onToggleTelemetryCompanion,
 }) => {
+  // Live render FPS & latency measurement
+  const [liveFps, setLiveFps] = useState<number>(fps);
+  const [frameLatency, setFrameLatency] = useState<number>(Math.round(1000 / fps * 10) / 10);
+
+  useEffect(() => {
+    if (!isPlaying) {
+      setLiveFps(fps);
+      setFrameLatency(Math.round(1000 / fps * 10) / 10);
+      return;
+    }
+
+    let frameCount = 0;
+    let lastTime = performance.now();
+    let animId: number;
+
+    const measure = (now: number) => {
+      frameCount++;
+      const elapsed = now - lastTime;
+      if (elapsed >= 400) {
+        const measuredFps = (frameCount * 1000) / elapsed;
+        const latency = elapsed / frameCount;
+        setLiveFps(Math.round(measuredFps * 10) / 10);
+        setFrameLatency(Math.round(latency * 10) / 10);
+        frameCount = 0;
+        lastTime = now;
+      }
+      animId = requestAnimationFrame(measure);
+    };
+
+    animId = requestAnimationFrame(measure);
+    return () => cancelAnimationFrame(animId);
+  }, [isPlaying, fps]);
   return (
     <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10 pointer-events-none">
       <div className="flex items-center gap-2">
@@ -98,6 +133,28 @@ export const ViewportControlBar: React.FC<ViewportControlBarProps> = ({
               }`}
           />
           {isPlaying ? 'PLAYING' : 'IDLE'} [{currentFrame}/{totalFrames}]
+        </div>
+
+        {/* Live Hardware Render FPS Badge */}
+        <div
+          className="glass-card px-2.5 py-1 rounded-full font-mono text-[10px] flex items-center gap-1.5 border border-glass-border shadow-xs text-foreground/90"
+          title={`Measured Viewport Render FPS (${frameLatency}ms interval)`}
+        >
+          <Activity className="w-2.5 h-2.5 text-accent-theme" />
+          <span
+            className={`font-bold ${
+              liveFps >= fps * 0.95
+                ? 'text-emerald-400'
+                : liveFps >= fps * 0.75
+                ? 'text-amber-400'
+                : 'text-rose-400'
+            }`}
+          >
+            {isPlaying ? `${liveFps.toFixed(1)} FPS` : `${fps} FPS`}
+          </span>
+          <span className="text-[9px] text-muted-foreground font-mono">
+            ({frameLatency.toFixed(1)}ms)
+          </span>
         </div>
 
         {onTogglePlay && (
