@@ -16,7 +16,7 @@ import java.io.IOException;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-class PgLiteRlsIntegrationTest {
+class EmbeddedPostgresRlsIntegrationTest {
 
     @BeforeEach
     void setUp() {
@@ -29,14 +29,14 @@ class PgLiteRlsIntegrationTest {
     }
 
     @Test
-    @DisplayName("In TEST mode, embedded PGlite datasource must be ephemeral and in-memory")
+    @DisplayName("In TEST mode, embedded PostgreSQL datasource configuration initializes properly")
     void testTestModeDatasourceIsEphemeral() {
         SandboxProperties props = new SandboxProperties();
         props.setEnabled(true);
         props.setMode(SandboxProperties.SandboxMode.TEST);
 
-        PgLiteDatasourceConfiguration config = new PgLiteDatasourceConfiguration(props);
-        DataSource ds = config.sandboxDataSource();
+        EmbeddedPostgresDatasourceConfiguration config = new EmbeddedPostgresDatasourceConfiguration(props);
+        DataSource ds = config.createDataSource("jdbc:postgresql://localhost:54329/postgres");
         assertNotNull(ds);
     }
 
@@ -56,9 +56,8 @@ class PgLiteRlsIntegrationTest {
         props.getDev().setPristine(false);
         props.getDatabase().setDevStoragePath(testStoragePath);
 
-        PgLiteDatasourceConfiguration config = new PgLiteDatasourceConfiguration(props);
-        DataSource ds = config.sandboxDataSource();
-        assertNotNull(ds);
+        EmbeddedPostgresDatasourceConfiguration config = new EmbeddedPostgresDatasourceConfiguration(props);
+        config.purgePristineStorageIfConfigured();
 
         // Sentinel file MUST still exist because pristine is false
         assertTrue(sentinel.exists(), "Persistent storage must be preserved in DEV mode when pristine=false");
@@ -80,9 +79,8 @@ class PgLiteRlsIntegrationTest {
         props.getDev().setPristine(true);
         props.getDatabase().setDevStoragePath(testStoragePath);
 
-        PgLiteDatasourceConfiguration config = new PgLiteDatasourceConfiguration(props);
-        DataSource ds = config.sandboxDataSource();
-        assertNotNull(ds);
+        EmbeddedPostgresDatasourceConfiguration config = new EmbeddedPostgresDatasourceConfiguration(props);
+        config.purgePristineStorageIfConfigured();
 
         // Sentinel file MUST be wiped because pristine is true
         assertFalse(sentinel.exists(), "Scratch directory must be wiped clean in DEV mode when pristine=true");

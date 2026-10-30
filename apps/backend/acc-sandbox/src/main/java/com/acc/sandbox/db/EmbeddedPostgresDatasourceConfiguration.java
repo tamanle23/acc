@@ -55,12 +55,9 @@ public class EmbeddedPostgresDatasourceConfiguration {
         builder.setPort(desiredPort);
 
         if (properties.getMode() == SandboxProperties.SandboxMode.DEV) {
+            purgePristineStorageIfConfigured();
             String storagePath = properties.getDatabase().getDevStoragePath();
             File dataDir = new File(storagePath);
-            if (properties.getDev().isPristine() && dataDir.exists()) {
-                log.info("Pristine DEV mode active: purging existing database at {}", storagePath);
-                deleteRecursively(dataDir);
-            }
             if (!dataDir.exists()) {
                 dataDir.mkdirs();
             }
@@ -76,12 +73,18 @@ public class EmbeddedPostgresDatasourceConfiguration {
         return instance;
     }
 
-    @Bean
-    @Primary
-    public DataSource sandboxDataSource(EmbeddedPostgres embeddedPostgres) {
-        String jdbcUrl = embeddedPostgres.getJdbcUrl("postgres", "postgres");
-        log.info("Initializing HikariCP connection pool for Embedded PostgreSQL: {}", jdbcUrl);
+    public void purgePristineStorageIfConfigured() {
+        if (properties.getMode() == SandboxProperties.SandboxMode.DEV && properties.getDev().isPristine()) {
+            String storagePath = properties.getDatabase().getDevStoragePath();
+            File dataDir = new File(storagePath);
+            if (dataDir.exists()) {
+                log.info("Pristine DEV mode active: purging existing database at {}", storagePath);
+                deleteRecursively(dataDir);
+            }
+        }
+    }
 
+    public DataSource createDataSource(String jdbcUrl) {
         HikariConfig config = new HikariConfig();
         config.setJdbcUrl(jdbcUrl);
         config.setDriverClassName(POSTGRES_DRIVER);
@@ -91,8 +94,15 @@ public class EmbeddedPostgresDatasourceConfiguration {
         config.setMinimumIdle(2);
         config.setConnectionTimeout(30000);
         config.setPoolName("SandboxEmbeddedPgHikariPool");
-
         return new HikariDataSource(config);
+    }
+
+    @Bean
+    @Primary
+    public DataSource sandboxDataSource(EmbeddedPostgres embeddedPostgres) {
+        String jdbcUrl = embeddedPostgres.getJdbcUrl("postgres", "postgres");
+        log.info("Initializing HikariCP connection pool for Embedded PostgreSQL: {}", jdbcUrl);
+        return createDataSource(jdbcUrl);
     }
 
     private static void deleteRecursively(File file) {
