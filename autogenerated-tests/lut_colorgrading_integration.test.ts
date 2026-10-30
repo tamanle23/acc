@@ -15,8 +15,7 @@ import {
   CubeLUTParser,
   type RGB,
 } from '../packages/ir/src/plugins/lut';
-import { ColorGradingEngine, type ColorGradingParams } from '../packages/effect-engines/src/styles/ColorGradingEngine';
-import { ColorGradingPlugin } from '../packages/ir/src/plugins/vfx/ColorGradingPlugin';
+import { ColorGradingPlugin, type ColorGradingParams } from '../packages/ir/src/plugins/vfx/ColorGradingPlugin';
 
 class MockMemoryCacheStrategy implements IContentCacheStrategy {
   public readonly id = 'mock-memory-cache';
@@ -224,11 +223,11 @@ describe('LUT ↔ ColorGrading Integration Suite', () => {
     });
   });
 
-  describe('3. ColorGradingEngine & Plugin Architectural Parity', () => {
+  describe('3. ColorGradingPlugin Isomorphic Execution & FFmpeg Parity', () => {
     it('generates correct FFmpeg filters with and without lutPath', () => {
-      const engine = new ColorGradingEngine();
+      const plugin = new ColorGradingPlugin();
 
-      const filterNoLut = engine.generateFFmpegFilter({
+      const filterNoLut = plugin.generateFFmpegFilter({
         contrast: 1.2,
         saturation: 1.1,
         exposure: 0.1,
@@ -236,7 +235,7 @@ describe('LUT ↔ ColorGrading Integration Suite', () => {
       expect(filterNoLut).toContain('eq=contrast=1.20:saturation=1.10:brightness=0.10');
       expect(filterNoLut).not.toContain('lut3d');
 
-      const filterWithLut = engine.generateFFmpegFilter({
+      const filterWithLut = plugin.generateFFmpegFilter({
         contrast: 1.0,
         saturation: 1.0,
         exposure: 0.0,

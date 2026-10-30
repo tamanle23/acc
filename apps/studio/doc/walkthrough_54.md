@@ -16,16 +16,15 @@ sequenceDiagram
     autonumber
     actor User as Studio Inspector
     participant Inspector as DynamicModifierInspector
-    participant Plugin as ColorGradingPlugin
+    participant Plugin as ColorGradingPlugin (@acc/ir)
     participant Registry as LutPresetRegistry
     participant Cache as ContentCacheRegistry (VFX)
     participant Generator as CubeLUTGenerator / Parser
-    participant Engine as ColorGradingEngine
     participant Canvas as Canvas2D Framebuffer
 
     User->>Inspector: Select LUT Preset (e.g. "cool_steel")
     Inspector->>Plugin: renderClipSpace(ctx, params)
-    Plugin->>Engine: applyCanvasTransform(ctx, params) [CSS filter tone map]
+    Plugin->>Plugin: applyCanvasTransform(ctx, params) [Isomorphic CSS filter tone map]
     Plugin->>Registry: resolveLutPreset('cool_steel', size=17)
     Registry->>Cache: get("lut-preset/cool_steel/17")
     alt Cache Miss
@@ -36,10 +35,10 @@ sequenceDiagram
         Cache-->>Registry: Blob -> Float32Array
     end
     Registry-->>Plugin: { data: Float32Array, size: 17 }
-    Plugin->>Engine: applyLutToCanvas(ctx, data, size=17)
-    Engine->>Canvas: getImageData(0, 0, w, h)
-    Note over Engine: Sakamoto Tetrahedral Interpolation (6 tetrahedra)
-    Engine->>Canvas: putImageData(gradedPixels, 0, 0)
+    Plugin->>Plugin: applyLutToCanvas(ctx, data, size=17)
+    Plugin->>Canvas: getImageData(0, 0, w, h)
+    Note over Plugin: Sakamoto Tetrahedral Interpolation (6 tetrahedra)
+    Plugin->>Canvas: putImageData(gradedPixels, 0, 0)
 ```
 
 ---
@@ -59,12 +58,10 @@ sequenceDiagram
   - `cool_steel` $\to$ `sci_fi_moody`
 - Caches baked LUT buffers into `ContentCacheRegistry.namespace(CacheNamespace.VFX)` as Blobs.
 
-### 3. `packages/effect-engines/src/styles/ColorGradingEngine.ts`
-- Cleanly decoupled from `@acc/ir`, focused purely on CSS canvas filters and FFmpeg filter generation (`lut3d=file='...':interp=tetrahedral`).
-
-### 4. `packages/ir/src/plugins/vfx/ColorGradingPlugin.ts`
+### 3. `packages/ir/src/plugins/vfx/ColorGradingPlugin.ts`
 - Schema field `lut`: `type: 'select'` with dropdown options for all presets.
-- Self-contained isomorphic `applyLutToCanvas` executing `applyLutToImageData` on canvas framebuffers.
+- 100% self-contained and isomorphic: zero imports from `@acc/effect-engines`.
+- Contains `ColorGradingParams`, `applyCanvasTransform` (CSS tone map), `generateFFmpegFilter` (FFmpeg export), and `applyLutToCanvas` (3D LUT).
 - Asynchronous `renderClipSpace` and `renderMasterComposite` pipeline applying tone mapping first, then resolving and applying 3D LUT.
 
 ### 5. `apps/studio/src/components/inspector/modifierCatalog.ts`

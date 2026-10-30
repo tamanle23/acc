@@ -14,9 +14,10 @@ The monorepo contained initial standalone implementations of `.cube` parsing and
 2. **Preset Resolution & Persistent Caching (`LutPresetRegistry.ts`)**:
    - Map all 8 canonical LUT presets (`teal_and_orange`, `kodak_2383`, `bleach_bypass`, `sci_fi_moody`, `light_and_airy`, `cyberpunk`, `vintage_faded`, `monochrome_noir`) plus studio aliases (`warm_golden`, `cool_steel`).
    - Integrate with `ContentCacheRegistry.namespace(CacheNamespace.VFX)` to cache baked `Float32Array` buffers as Blobs, amortizing generation costs to $O(1)$ across sequential frames.
-3. **Self-Contained & Isomorphic Plugin Integration (`ColorGradingPlugin.ts`)**:
-   - Centralize 3D tetrahedral LUT application directly within `ColorGradingPlugin` in `@acc/ir` via `applyLutToCanvas` and `applyLutToImageData`.
-   - Keep `@acc/effect-engines` completely decoupled from `@acc/ir` and focused on CSS transforms and FFmpeg filter generation.
+3. **Complete Elimination of `@acc/effect-engines` Dependency from `ColorGradingPlugin.ts`**:
+   - Migrated all color engine capabilities (`ColorGradingParams`, `applyCanvasTransform`, `generateFFmpegFilter`, and `applyLutToCanvas`) directly into `ColorGradingPlugin.ts` in `@acc/ir`.
+   - Removed `ColorGradingEngine` imports from `ColorGradingPlugin.ts` entirely.
+   - Preserves complete isomorphism and standalone portability for `@acc/ir`.
 4. **Declarative Schema & Inspector Binding (`ColorGradingPlugin.ts` & `modifierCatalog.ts`)**:
    - Update `ColorGradingPlugin.schema.fields.lut` with type `'select'` populated with all presets.
    - Upgrade `renderClipSpace` and `renderMasterComposite` to asynchronous pipelines that resolve LUT presets and execute `applyLutToCanvas`.
