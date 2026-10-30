@@ -12,14 +12,7 @@
   <include file="db/acc/changelog-identity-00.xml"/>
   <include file="db/acc/changelog-identity-tokens.xml"/>
   <include file="db/acc/changelog-identity-master_data.xml"/>
-
-  <!-- Pre-requisite unique indexes on code for ON CONFLICT (code) compatibility in PostgreSQL -->
-  <changeSet id="sandbox-unique-role-permission-code-constraint" author="sandbox">
-    <sql dbms="postgresql">
-      CREATE UNIQUE INDEX IF NOT EXISTS uk_unipost_identity_role_code ON ${table_prefix}ROLE (code);
-      CREATE UNIQUE INDEX IF NOT EXISTS uk_unipost_identity_permission_code ON ${table_prefix}PERMISSION (code);
-    </sql>
-  </changeSet>
+  <include file="db/acc/changelog-identity-mock_data.xml"/>
 
   <!-- 2. Dynamic Metadata Plane & Multi-Tenancy Core -->
   <include file="db/acc/changelog-000.000.00001.xml"/>

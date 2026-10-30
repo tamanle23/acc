@@ -110,26 +110,37 @@
         </sql>
     </changeSet>
 
+    <!-- 4b. Enforce Unique Constraints on Natural Keys for ON CONFLICT Compatibility -->
+    <changeSet id="sovereign-rbac-unique-code-constraints-16" author="antigravity">
+        <comment>Enforce unique constraints on ROLE.code, PERMISSION.code, ROLEPERMISSION, and USERROLE for PostgreSQL ON CONFLICT support</comment>
+        <sql dbms="postgresql">
+            CREATE UNIQUE INDEX IF NOT EXISTS uk_role_code ON ${table_prefix}ROLE (code);
+            CREATE UNIQUE INDEX IF NOT EXISTS uk_permission_code ON ${table_prefix}PERMISSION (code);
+            CREATE UNIQUE INDEX IF NOT EXISTS uk_rolepermission_role_perm ON ${table_prefix}ROLEPERMISSION (role_uid, permission_uid);
+            CREATE UNIQUE INDEX IF NOT EXISTS uk_userrole_user_role_tenant ON ${table_prefix}USERROLE (user_uid, role_uid, tenant_id);
+        </sql>
+    </changeSet>
+
     <!-- 5. Seed Canonical Sovereign Roles &amp; Tenant Roles -->
     <changeSet id="seed-sovereign-and-tenant-roles-16" author="antigravity">
         <comment>Seed the 4 Sovereign platform tiers and 4 system-wide commercial tenant roles</comment>
         <sql dbms="postgresql">
             -- 1. Sovereign Platform Roles
-            INSERT INTO ${table_prefix}ROLE (uid, code, description, role_scope, min_plan_tier, status, version)
+            INSERT INTO ${table_prefix}ROLE (uid, code, description, role_scope, min_plan_tier, version)
             VALUES
-                ('role-system-root', 'ROLE_SYSTEM_ROOT', 'Supreme platform owner with full infrastructure and schema control', 'SYSTEM', 'ENTERPRISE', 1, 0),
-                ('role-system-support', 'ROLE_SYSTEM_SUPPORT', 'Customer operations, Assume-Tenant support, and billing reconciliation', 'SYSTEM', 'ENTERPRISE', 1, 0),
-                ('role-system-verifier', 'ROLE_SYSTEM_VERIFIER', 'System governance, audit trail verification, and commercial KYC review', 'SYSTEM', 'ENTERPRISE', 1, 0),
-                ('role-system-approver', 'ROLE_SYSTEM_APPROVER', 'Four-eyes quorum approver for high-risk fleet and operational gates', 'SYSTEM', 'ENTERPRISE', 1, 0)
+                ('role-system-root', 'ROLE_SYSTEM_ROOT', 'Supreme platform owner with full infrastructure and schema control', 'SYSTEM', 'ENTERPRISE', 0),
+                ('role-system-support', 'ROLE_SYSTEM_SUPPORT', 'Customer operations, Assume-Tenant support, and billing reconciliation', 'SYSTEM', 'ENTERPRISE', 0),
+                ('role-system-verifier', 'ROLE_SYSTEM_VERIFIER', 'System governance, audit trail verification, and commercial KYC review', 'SYSTEM', 'ENTERPRISE', 0),
+                ('role-system-approver', 'ROLE_SYSTEM_APPROVER', 'Four-eyes quorum approver for high-risk fleet and operational gates', 'SYSTEM', 'ENTERPRISE', 0)
             ON CONFLICT (code) DO NOTHING;
 
             -- 2. Commercial Tenant Roles
-            INSERT INTO ${table_prefix}ROLE (uid, code, description, role_scope, min_plan_tier, status, version)
+            INSERT INTO ${table_prefix}ROLE (uid, code, description, role_scope, min_plan_tier, version)
             VALUES
-                ('role-workspace-owner', 'ROLE_WORKSPACE_OWNER', 'Workspace Owner with full administrative authority over tenant workspace', 'TENANT', 'COMMUNITY', 1, 0),
-                ('role-operations-manager', 'ROLE_OPERATIONS_MANAGER', 'Operations manager over business entities, dispatching, and approvals', 'TENANT', 'STANDARD', 1, 0),
-                ('role-standard-member', 'ROLE_STANDARD_MEMBER', 'Standard team member with data record read and write access', 'TENANT', 'COMMUNITY', 1, 0),
-                ('role-auditor', 'ROLE_AUDITOR', 'Tenant compliance and read-only auditor', 'TENANT', 'PRO', 1, 0)
+                ('role-workspace-owner', 'ROLE_WORKSPACE_OWNER', 'Workspace Owner with full administrative authority over tenant workspace', 'TENANT', 'COMMUNITY', 0),
+                ('role-operations-manager', 'ROLE_OPERATIONS_MANAGER', 'Operations manager over business entities, dispatching, and approvals', 'TENANT', 'STANDARD', 0),
+                ('role-standard-member', 'ROLE_STANDARD_MEMBER', 'Standard team member with data record read and write access', 'TENANT', 'COMMUNITY', 0),
+                ('role-auditor', 'ROLE_AUDITOR', 'Tenant compliance and read-only auditor', 'TENANT', 'PRO', 0)
             ON CONFLICT (code) DO NOTHING;
         </sql>
     </changeSet>
@@ -161,7 +172,7 @@
                 ('perm-meta-evict', 'metadata:cache:evict', 'Force invalidate schema cache partitions', 'METADATA', 'SYSTEM', 0)
             ON CONFLICT (code) DO NOTHING;
 
-            -- Security & Audit
+            -- Security &amp; Audit
             INSERT INTO ${table_prefix}PERMISSION (uid, code, description, type, level, version) VALUES
                 ('perm-sec-inspect', 'platform:security:inspect', 'Inspect real-time security events and RLS alerts', 'SECURITY', 'SYSTEM', 0),
                 ('perm-audit-verify', 'platform:audit:verify', 'Verify cryptographic audit trail forward hashes', 'SECURITY', 'SYSTEM', 0),
@@ -169,7 +180,7 @@
                 ('perm-dlq-manage', 'platform:dlq:manage', 'Inspect and replay mutation dead-letter queue records', 'SECURITY', 'SYSTEM', 0)
             ON CONFLICT (code) DO NOTHING;
 
-            -- Commercial Billing & KYC
+            -- Commercial Billing &amp; KYC
             INSERT INTO ${table_prefix}PERMISSION (uid, code, description, type, level, version) VALUES
                 ('perm-bill-override', 'billing:tier:override', 'Manually override tenant subscription tier', 'COMMERCIAL', 'SYSTEM', 0),
                 ('perm-bill-invoice', 'billing:manual:invoice', 'Issue manual billing credits and dispute adjustments', 'COMMERCIAL', 'SYSTEM', 0),
@@ -179,7 +190,7 @@
                 ('perm-kyc-approve', 'platform:kyc:approve', 'Approve commercial account credit lines and limits', 'COMMERCIAL', 'SYSTEM', 0)
             ON CONFLICT (code) DO NOTHING;
 
-            -- System Quorum & Human-in-the-Loop
+            -- System Quorum &amp; Human-in-the-Loop
             INSERT INTO ${table_prefix}PERMISSION (uid, code, description, type, level, version) VALUES
                 ('perm-wf-submit', 'platform:workflow:submit', 'Submit high-risk task to quorum queue', 'WORKFLOW', 'SYSTEM', 0),
                 ('perm-wf-verify', 'platform:workflow:verify', 'Verify and pre-flight proposed system task', 'WORKFLOW', 'SYSTEM', 0),
@@ -302,7 +313,7 @@
             ) ON CONFLICT (username) DO UPDATE
             SET password = '${support_hash}', credentialsnonexpired = false, nonlocked = true;
 
-            -- 3. Lead Governance, Audit & KYC Verifier
+            -- 3. Lead Governance, Audit &amp; KYC Verifier
             INSERT INTO ${table_prefix}USER (
                 uid, username, email, firstname, lastname, password,
                 nonexpired, nonlocked, credentialsnonexpired, status, type, version, createddate
@@ -313,7 +324,7 @@
             ) ON CONFLICT (username) DO UPDATE
             SET password = '${verifier_hash}', credentialsnonexpired = false, nonlocked = true;
 
-            -- 4. Lead Quorum & Governance Approver
+            -- 4. Lead Quorum &amp; Governance Approver
             INSERT INTO ${table_prefix}USER (
                 uid, username, email, firstname, lastname, password,
                 nonexpired, nonlocked, credentialsnonexpired, status, type, version, createddate
