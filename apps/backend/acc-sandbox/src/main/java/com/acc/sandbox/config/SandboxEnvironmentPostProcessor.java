@@ -87,9 +87,14 @@ public class SandboxEnvironmentPostProcessor implements EnvironmentPostProcessor
       jdbcUrl = "jdbc:pglite:memory://";
     } else {
       File storageFile = new File(devStorage);
-      if (storageFile.exists() && storageFile.isDirectory()) {
-        log.warn("Storage path {} is a directory, but PGlite expects a file snapshot. Deleting directory.", devStorage);
-        deleteRecursively(storageFile);
+      if (storageFile.exists()) {
+        if (storageFile.isDirectory()) {
+          log.warn("Storage path {} is a directory, but PGlite expects a file snapshot. Deleting directory.", devStorage);
+          deleteRecursively(storageFile);
+        } else if (storageFile.length() < 100) {
+          log.warn("Storage file {} is empty or invalid (length={}). Removing to allow clean initialization.", devStorage, storageFile.length());
+          storageFile.delete();
+        }
       }
       File parentDir = storageFile.getParentFile();
       if (parentDir != null && !parentDir.exists()) {

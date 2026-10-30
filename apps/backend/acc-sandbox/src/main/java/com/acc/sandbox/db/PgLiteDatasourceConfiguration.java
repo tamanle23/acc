@@ -12,6 +12,8 @@ import org.springframework.context.annotation.Primary;
 
 import javax.sql.DataSource;
 import java.io.File;
+import java.sql.Connection;
+import java.sql.Statement;
 
 /**
  * Datasource configuration for embedded PGlite.
@@ -54,9 +56,14 @@ public class PgLiteDatasourceConfiguration {
       File dbFile = new File(storagePath);
       // PGlite expects a file snapshot, NOT a directory.
       // If an erroneous directory was previously created at storagePath, delete it to avoid AccessDeniedException.
-      if (dbFile.exists() && dbFile.isDirectory()) {
-        log.warn("Storage path {} is a directory, but PGlite expects a file snapshot. Deleting directory.", storagePath);
-        deleteRecursively(dbFile);
+      if (dbFile.exists()) {
+        if (dbFile.isDirectory()) {
+          log.warn("Storage path {} is a directory, but PGlite expects a file snapshot. Deleting directory.", storagePath);
+          deleteRecursively(dbFile);
+        } else if (dbFile.length() < 100) {
+          log.warn("Storage file {} is empty or invalid (length={}). Removing to allow clean initialization.", storagePath, dbFile.length());
+          dbFile.delete();
+        }
       }
       if (properties.getDev().isPristine() && dbFile.exists()) {
         log.info("DEV mode pristine flag active. Wiping persistent scratch database file: {}", storagePath);
@@ -81,6 +88,30 @@ public class PgLiteDatasourceConfiguration {
     ds.setMaximumPoolSize(10);
     ds.setMinimumIdle(1);
     ds.setConnectionTimeout(30000);
+
+    // Self-contained Sandbox schema initialization: pre-provision base audit table
+    // so downstream core components (like AuditPartitionProvisioner) find the table
+    // ready in embedded PGlite without requiring any modifications to core code.
+    try (Connection conn = ds.getConnection();
+         Statement stmt = conn.createStatement()) {
+      stmt.execute("CREATE TABLE IF NOT EXISTS UNIPOST_RECORD_AUDIT_LOG (" +
+          "id BIGSERIAL, " +
+          "tenant_id VARCHAR(64) NOT NULL, " +
+          "record_id VARCHAR(128) NOT NULL, " +
+          "entity_type_id VARCHAR(64) NOT NULL, " +
+          "actor_id VARCHAR(64) NOT NULL, " +
+          "action VARCHAR(32) NOT NULL, " +
+          "payload JSONB, " +
+          "created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), " +
+          "PRIMARY KEY (id, created_at)" +
+          ") PARTITION BY RANGE (created_at)");
+      stmt.execute("CREATE TABLE IF NOT EXISTS UNIPOST_RECORD_AUDIT_LOG_DEFAULT " +
+          "PARTITION OF UNIPOST_RECORD_AUDIT_LOG DEFAULT");
+      log.info("PGlite: UNIPOST_RECORD_AUDIT_LOG base partition table verified/initialized.");
+    } catch (Exception e) {
+      log.warn("PGlite: Base partition table setup skipped (will be created by Liquibase/runtime): {}", e.getMessage());
+    }
+
     return ds;
   }
 
