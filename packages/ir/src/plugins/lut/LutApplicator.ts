@@ -303,12 +303,74 @@ export function applyColorCorrectionAndGrading(
         const fg = gx - g0;
         const fb = bx - b0;
 
-        const [rLut, gLut, bLut] = tetrahedralInterpolate(
-          lutData, lutSize,
-          r0, g0, b0,
-          r1, g1, b1,
-          fr, fg, fb
-        );
+        const strideG = lutSize * 3;
+        const strideB = lutSize * lutSize * 3;
+        const b0Offset = b0 * strideB;
+        const b1Offset = b1 * strideB;
+        const g0b0 = b0Offset + g0 * strideG;
+        const g1b0 = b0Offset + g1 * strideG;
+        const g0b1 = b1Offset + g0 * strideG;
+        const g1b1 = b1Offset + g1 * strideG;
+
+        const i000 = g0b0 + r0 * 3;
+        const i100 = g0b0 + r1 * 3;
+        const i010 = g1b0 + r0 * 3;
+        const i110 = g1b0 + r1 * 3;
+        const i001 = g0b1 + r0 * 3;
+        const i101 = g0b1 + r1 * 3;
+        const i011 = g1b1 + r0 * 3;
+        const i111 = g1b1 + r1 * 3;
+
+        let rLut: number, gLut: number, bLut: number;
+        if (fr >= fg && fg >= fb) {
+          const w000 = 1 - fr;
+          const w100 = fr - fg;
+          const w110 = fg - fb;
+          const w111 = fb;
+          rLut = w000 * lutData[i000]! + w100 * lutData[i100]! + w110 * lutData[i110]! + w111 * lutData[i111]!;
+          gLut = w000 * lutData[i000 + 1]! + w100 * lutData[i100 + 1]! + w110 * lutData[i110 + 1]! + w111 * lutData[i111 + 1]!;
+          bLut = w000 * lutData[i000 + 2]! + w100 * lutData[i100 + 2]! + w110 * lutData[i110 + 2]! + w111 * lutData[i111 + 2]!;
+        } else if (fr >= fb && fb >= fg) {
+          const w000 = 1 - fr;
+          const w100 = fr - fb;
+          const w101 = fb - fg;
+          const w111 = fg;
+          rLut = w000 * lutData[i000]! + w100 * lutData[i100]! + w101 * lutData[i101]! + w111 * lutData[i111]!;
+          gLut = w000 * lutData[i000 + 1]! + w100 * lutData[i100 + 1]! + w101 * lutData[i101 + 1]! + w111 * lutData[i111 + 1]!;
+          bLut = w000 * lutData[i000 + 2]! + w100 * lutData[i100 + 2]! + w101 * lutData[i101 + 2]! + w111 * lutData[i111 + 2]!;
+        } else if (fg >= fr && fr >= fb) {
+          const w000 = 1 - fg;
+          const w010 = fg - fr;
+          const w110 = fr - fb;
+          const w111 = fb;
+          rLut = w000 * lutData[i000]! + w010 * lutData[i010]! + w110 * lutData[i110]! + w111 * lutData[i111]!;
+          gLut = w000 * lutData[i000 + 1]! + w010 * lutData[i010 + 1]! + w110 * lutData[i110 + 1]! + w111 * lutData[i111 + 1]!;
+          bLut = w000 * lutData[i000 + 2]! + w010 * lutData[i010 + 2]! + w110 * lutData[i110 + 2]! + w111 * lutData[i111 + 2]!;
+        } else if (fg >= fb && fb >= fr) {
+          const w000 = 1 - fg;
+          const w010 = fg - fb;
+          const w011 = fb - fr;
+          const w111 = fr;
+          rLut = w000 * lutData[i000]! + w010 * lutData[i010]! + w011 * lutData[i011]! + w111 * lutData[i111]!;
+          gLut = w000 * lutData[i000 + 1]! + w010 * lutData[i010 + 1]! + w011 * lutData[i011 + 1]! + w111 * lutData[i111 + 1]!;
+          bLut = w000 * lutData[i000 + 2]! + w010 * lutData[i010 + 2]! + w011 * lutData[i011 + 2]! + w111 * lutData[i111 + 2]!;
+        } else if (fb >= fr && fr >= fg) {
+          const w000 = 1 - fb;
+          const w001 = fb - fr;
+          const w101 = fr - fg;
+          const w111 = fg;
+          rLut = w000 * lutData[i000]! + w001 * lutData[i001]! + w101 * lutData[i101]! + w111 * lutData[i111]!;
+          gLut = w000 * lutData[i000 + 1]! + w001 * lutData[i001 + 1]! + w101 * lutData[i101 + 1]! + w111 * lutData[i111 + 1]!;
+          bLut = w000 * lutData[i000 + 2]! + w001 * lutData[i001 + 2]! + w101 * lutData[i101 + 2]! + w111 * lutData[i111 + 2]!;
+        } else {
+          const w000 = 1 - fb;
+          const w001 = fb - fg;
+          const w011 = fg - fr;
+          const w111 = fr;
+          rLut = w000 * lutData[i000]! + w001 * lutData[i001]! + w011 * lutData[i011]! + w111 * lutData[i111]!;
+          gLut = w000 * lutData[i000 + 1]! + w001 * lutData[i001 + 1]! + w011 * lutData[i011 + 1]! + w111 * lutData[i111 + 1]!;
+          bLut = w000 * lutData[i000 + 2]! + w001 * lutData[i001 + 2]! + w011 * lutData[i011 + 2]! + w111 * lutData[i111 + 2]!;
+        }
 
         if (lutIntensity >= 0.999) {
           r = rLut;

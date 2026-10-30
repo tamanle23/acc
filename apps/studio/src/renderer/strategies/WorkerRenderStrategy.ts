@@ -156,6 +156,10 @@ export class WorkerRenderStrategy implements IPreviewRenderStrategy {
     this.bridge.onReady(callback);
   }
 
+  public onFrameRendered(callback: (frame: number, latencyMs: number) => void): () => void {
+    return this.bridge.onFrameRendered(callback);
+  }
+
   public dispose(): void {
     this.syncedSources.clear();
     this.bridge.destroy();

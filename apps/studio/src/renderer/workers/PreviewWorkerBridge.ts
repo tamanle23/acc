@@ -233,7 +233,17 @@ export class PreviewWorkerBridge implements Disposable {
   private isReady: boolean = false;
   private isPlaying: boolean = false;
   private onFrameUpdateCallback: ((frame: number, ended?: boolean) => void) | null = null;
+  private onFrameRenderedCallback: ((frame: number, latencyMs: number) => void) | null = null;
   private onReadyCallback: (() => void) | null = null;
+
+  public onFrameRendered(callback: (frame: number, latencyMs: number) => void): () => void {
+    this.onFrameRenderedCallback = callback;
+    return () => {
+      if (this.onFrameRenderedCallback === callback) {
+        this.onFrameRenderedCallback = null;
+      }
+    };
+  }
 
   constructor() {
     this.isSupported =
@@ -296,6 +306,10 @@ export class PreviewWorkerBridge implements Disposable {
           }
           if (this.onFrameUpdateCallback) {
             this.onFrameUpdateCallback(data.frame, data.ended);
+          }
+        } else if (data.type === 'frameRendered') {
+          if (this.onFrameRenderedCallback) {
+            this.onFrameRenderedCallback(data.frame, data.renderLatencyMs ?? 0);
           }
         }
       };

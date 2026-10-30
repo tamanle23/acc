@@ -26,6 +26,29 @@ export interface ResolvedLut {
 /** All supported preset key names for schema select options */
 export const LUT_PRESET_KEYS = Object.keys(PRESET_MAP);
 
+const SYNC_LUT_CACHE = new Map<string, ResolvedLut>();
+
+/**
+ * Synchronously resolves a named LUT preset key to baked Float32Array data.
+ * Zero async microtask overhead for real-time 60fps canvas compositing.
+ */
+export function resolveLutPresetSync(
+  key: string,
+  size: number = 17
+): ResolvedLut | null {
+  const pipeline = PRESET_MAP[key];
+  if (!pipeline) return null;
+
+  const cacheKey = `${key}/${size}`;
+  const existing = SYNC_LUT_CACHE.get(cacheKey);
+  if (existing) return existing;
+
+  const data = CubeLUTGenerator.generateFloat32Array(pipeline, size);
+  const resolved: ResolvedLut = { data, size };
+  SYNC_LUT_CACHE.set(cacheKey, resolved);
+  return resolved;
+}
+
 /**
  * Resolves a named LUT preset key to baked Float32Array data.
  * Results are cached in ContentCacheRegistry(VFX namespace) as Blob bytes

@@ -50,6 +50,11 @@ export interface IPreviewRenderStrategy {
   resize(width: number, height: number): void;
 
   /**
+   * Subscribes to real hardware frame render completions with actual latency in ms.
+   */
+  onFrameRendered?(callback: (frame: number, latencyMs: number) => void): () => void;
+
+  /**
    * Optional direct engine access if running on main thread.
    */
   getEngine?(): any;

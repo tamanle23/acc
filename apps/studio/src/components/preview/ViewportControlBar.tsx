@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { Tooltip } from '../ui/tooltip';
 import { SnappingGuide } from '../../lib/gizmo';
+import { StudioPlayheadController } from '../../lib/playhead/StudioPlayheadController';
 
 export interface ViewportControlBarProps {
   width: number;
@@ -77,7 +78,7 @@ export const ViewportControlBar: React.FC<ViewportControlBarProps> = ({
   isTelemetryCompanionOpen,
   onToggleTelemetryCompanion,
 }) => {
-  // Live render FPS & latency measurement
+  // Real hardware render FPS & latency telemetry from actual canvas completions
   const [liveFps, setLiveFps] = useState<number>(fps);
   const [frameLatency, setFrameLatency] = useState<number>(Math.round(1000 / fps * 10) / 10);
 
@@ -88,26 +89,10 @@ export const ViewportControlBar: React.FC<ViewportControlBarProps> = ({
       return;
     }
 
-    let frameCount = 0;
-    let lastTime = performance.now();
-    let animId: number;
-
-    const measure = (now: number) => {
-      frameCount++;
-      const elapsed = now - lastTime;
-      if (elapsed >= 400) {
-        const measuredFps = (frameCount * 1000) / elapsed;
-        const latency = elapsed / frameCount;
-        setLiveFps(Math.round(measuredFps * 10) / 10);
-        setFrameLatency(Math.round(latency * 10) / 10);
-        frameCount = 0;
-        lastTime = now;
-      }
-      animId = requestAnimationFrame(measure);
-    };
-
-    animId = requestAnimationFrame(measure);
-    return () => cancelAnimationFrame(animId);
+    return StudioPlayheadController.getInstance().subscribeTelemetry((measuredFps, latencyMs) => {
+      setLiveFps(measuredFps);
+      setFrameLatency(latencyMs);
+    });
   }, [isPlaying, fps]);
   return (
     <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10 pointer-events-none">

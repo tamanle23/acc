@@ -107,6 +107,34 @@ export class CubeLUTGenerator {
 
     return { ok: true, value: stream };
   }
+
+  /**
+   * Fast synchronous direct-to-Float32Array generator for zero-overhead in-memory LUT baking.
+   * Eliminates string parsing, TextEncoder overhead, and Blob/Stream serialization.
+   */
+  static generateFloat32Array(
+    pipeline: ColorPipeline,
+    size: number = 17
+  ): Float32Array {
+    const totalEntries = size * size * size;
+    const data = new Float32Array(totalEntries * 3);
+    const sizeM1 = size - 1;
+    let ptr = 0;
+
+    for (let b = 0; b < size; b++) {
+      for (let g = 0; g < size; g++) {
+        for (let r = 0; r < size; r++) {
+          const colorIn: RGB = [r / sizeM1, g / sizeM1, b / sizeM1];
+          const [rOut, gOut, bOut] = pipeline.apply(colorIn);
+          data[ptr++] = ColorMath.clamp(rOut);
+          data[ptr++] = ColorMath.clamp(gOut);
+          data[ptr++] = ColorMath.clamp(bOut);
+        }
+      }
+    }
+
+    return data;
+  }
 }
 
 

@@ -104,6 +104,15 @@ export class MainThreadRenderStrategy implements IPreviewRenderStrategy {
     }
   }
 
+  private frameRenderedListeners = new Set<(frame: number, latencyMs: number) => void>();
+
+  public onFrameRendered(callback: (frame: number, latencyMs: number) => void): () => void {
+    this.frameRenderedListeners.add(callback);
+    return () => {
+      this.frameRenderedListeners.delete(callback);
+    };
+  }
+
   public renderFrame(frame: number, options?: WorkerRenderOptions): void {
     if (!this.canvas || !this.engine) return;
     const ctx = this.canvas.getContext('2d');
@@ -117,12 +126,17 @@ export class MainThreadRenderStrategy implements IPreviewRenderStrategy {
       ctx.fillRect(0, 0, this.width, this.height);
     }
 
-    this.engine.renderFrame(frame, ctx, {
+    const start = performance.now();
+    const res = this.engine.renderFrame(frame, ctx, {
       textureCache: this.engine.getTextureCache(),
       lodScale: options?.lod ?? 1.0,
       clearColor,
       debugMode: options?.debugMode,
     });
+    const latency = res?.latencyMs ?? (performance.now() - start);
+    for (const listener of this.frameRenderedListeners) {
+      listener(frame, latency);
+    }
   }
 
   public resize(width: number, height: number): void {

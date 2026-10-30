@@ -146,6 +146,15 @@ export function useViewportRenderStrategy({
     });
   }, []);
 
+  // Subscribe to real hardware frame render completions to feed live telemetry
+  useEffect(() => {
+    const strategy = strategyRef.current;
+    if (!strategy?.onFrameRendered) return;
+    return strategy.onFrameRendered((frame, latencyMs) => {
+      StudioPlayheadController.getInstance().recordFrameRendered(frame, latencyMs);
+    });
+  }, [isReady]);
+
   return {
     strategy: strategyRef.current,
     previewEngine: strategyRef.current?.getEngine?.() ?? null,

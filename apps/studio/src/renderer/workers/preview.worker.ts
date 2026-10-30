@@ -157,6 +157,7 @@ async function renderCurrentFrame(
   }
 
   isRendering = true;
+  const renderStart = performance.now();
   const w = currentWidth;
   const h = currentHeight;
   const frameScope = NativeResourceManager.getInstance().createFrameScope();
@@ -279,6 +280,13 @@ async function renderCurrentFrame(
   lastRenderedFrame = frame;
   lastRenderedLOD = lod;
   lastDebugMode = debugMode ?? null;
+
+  // Post back actual frameRendered telemetry with real hardware render latency
+  self.postMessage({
+    type: 'frameRendered',
+    frame,
+    renderLatencyMs: Math.round((performance.now() - renderStart) * 10) / 10,
+  });
 
   if (pendingRender) {
     const next = pendingRender;

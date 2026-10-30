@@ -47,10 +47,55 @@ export class StudioPlayheadController {
   public setIsPlaying(playing: boolean) {
     if (this.isPlaying !== playing) {
       this.isPlaying = playing;
+      if (!playing) {
+        this.renderTimestamps = [];
+        this.renderLatencies = [];
+      }
       // On play state changes, immediately force a low-frequency sync so UI updates
       this.notifyLowFreq(true);
     }
   }
+
+  // Real Hardware Render Telemetry (Moving Average over 1s)
+  private telemetrySubscribers = new Set<(fps: number, latencyMs: number) => void>();
+  private renderTimestamps: number[] = [];
+  private renderLatencies: number[] = [];
+  private lastTelemetryBroadcast = 0;
+
+  public recordFrameRendered = (_frame: number, latencyMs: number): void => {
+    const now = performance.now();
+    this.renderTimestamps.push(now);
+    this.renderLatencies.push(latencyMs);
+
+    while (this.renderTimestamps.length > 0 && now - this.renderTimestamps[0]! > 1000) {
+      this.renderTimestamps.shift();
+      this.renderLatencies.shift();
+    }
+
+    if (now - this.lastTelemetryBroadcast >= 250) {
+      this.lastTelemetryBroadcast = now;
+      const count = this.renderTimestamps.length;
+      const measuredFps = count > 1
+        ? (count * 1000) / (now - this.renderTimestamps[0]!)
+        : (count > 0 ? 1000 / Math.max(16.6, latencyMs) : 0);
+      const avgLatency = this.renderLatencies.length > 0
+        ? this.renderLatencies.reduce((a, b) => a + b, 0) / this.renderLatencies.length
+        : latencyMs;
+
+      const roundedFps = Math.round(measuredFps * 10) / 10;
+      const roundedLat = Math.round(avgLatency * 10) / 10;
+      for (const sub of this.telemetrySubscribers) {
+        sub(roundedFps, roundedLat);
+      }
+    }
+  };
+
+  public subscribeTelemetry = (subscriber: (fps: number, latencyMs: number) => void): (() => void) => {
+    this.telemetrySubscribers.add(subscriber);
+    return () => {
+      this.telemetrySubscribers.delete(subscriber);
+    };
+  };
 
   /**
    * Subscribes to high-frequency frame ticks (called on every RAF / discrete step).
