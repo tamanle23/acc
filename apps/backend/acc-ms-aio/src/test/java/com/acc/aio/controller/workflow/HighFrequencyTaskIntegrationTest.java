@@ -1,6 +1,7 @@
 package com.acc.aio.controller.workflow;
 
 import com.acc.aio.config.WorkflowEngineConfiguration.WorkflowDefinitionRegistry;
+import com.acc.fw.tenancy.TenantContextHolder;
 import com.acc.workflow.adapters.storage.InMemoryPersistenceAdapter;
 import com.acc.workflow.application.WorkflowEngineService;
 import com.acc.workflow.core.decider.PureDecider;
@@ -11,6 +12,7 @@ import com.acc.workflow.core.model.WorkflowDefinition;
 import com.acc.workflow.core.model.WorkflowSnapshot;
 import com.acc.workflow.core.model.WorkflowStatus;
 import com.acc.workflow.ports.PersistencePort;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,6 +41,7 @@ class HighFrequencyTaskIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        TenantContextHolder.setTenantId(TENANT_ID);
         persistencePort = new InMemoryPersistenceAdapter();
         pureDecider = new PureDecider();
         engineService = new WorkflowEngineService(persistencePort, pureDecider);
@@ -48,6 +51,11 @@ class HighFrequencyTaskIntegrationTest {
         definitionController = new WorkflowDefinitionController(registry);
         executionController = new WorkflowExecutionController(engineService, persistencePort, registry, broadcaster);
         workerController = new TaskWorkerController(engineService, persistencePort, registry, broadcaster);
+    }
+
+    @AfterEach
+    void tearDown() {
+        TenantContextHolder.clear();
     }
 
     @Test
@@ -87,7 +95,7 @@ class HighFrequencyTaskIntegrationTest {
             .build();
 
         // 1. Register definition
-        definitionController.registerDefinition(definition, TENANT_ID);
+        definitionController.registerDefinition(definition);
 
         // 2. Start execution
         Map<String, Object> input = Map.of(
@@ -96,7 +104,7 @@ class HighFrequencyTaskIntegrationTest {
 
         var startReq = new WorkflowExecutionController.StartWorkflowRequest("hf-pipeline-test", input);
         ResponseEntity<?> startResponse = executionController.startExecution(
-            startReq, TENANT_ID, WORKSPACE_ID
+            startReq, WORKSPACE_ID
         );
 
         assertThat(startResponse.getStatusCode()).isEqualTo(HttpStatus.CREATED);
@@ -108,7 +116,7 @@ class HighFrequencyTaskIntegrationTest {
         // Note: set-defaults, compute-total, and extract-customer should all evaluate in-engine instantly!
         // The worker should directly receive process-payment with resolved amounts and recipient email.
         ResponseEntity<List<TaskSnapshot>> pollResponse = workerController.pollTasks(
-            "SIMPLE", "default", "worker-node-1", 1, TENANT_ID
+            "SIMPLE", "default", "worker-node-1", 1
         );
 
         assertThat(pollResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -124,12 +132,12 @@ class HighFrequencyTaskIntegrationTest {
             true, Map.of("receiptId", "REC-8821"), null, 0
         );
         ResponseEntity<?> ackResponse = workerController.reportResult(
-            task.taskId(), resultReq, TENANT_ID
+            task.taskId(), resultReq
         );
         assertThat(ackResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
 
         // 5. Verify workflow execution is now COMPLETED
-        ResponseEntity<?> execResponse = executionController.getExecution(workflowId, TENANT_ID);
+        ResponseEntity<?> execResponse = executionController.getExecution(workflowId);
         assertThat(execResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
         WorkflowSnapshot finalSnapshot = (WorkflowSnapshot) execResponse.getBody();
         assertThat(finalSnapshot.status()).isEqualTo(WorkflowStatus.COMPLETED);

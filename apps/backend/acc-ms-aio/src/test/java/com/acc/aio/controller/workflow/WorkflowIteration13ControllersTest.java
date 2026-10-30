@@ -1,6 +1,7 @@
 package com.acc.aio.controller.workflow;
 
 import com.acc.aio.config.WorkflowEngineConfiguration.WorkflowDefinitionRegistry;
+import com.acc.fw.tenancy.TenantContextHolder;
 import com.acc.workflow.adapters.storage.InMemoryPersistenceAdapter;
 import com.acc.workflow.application.WorkflowEngineService;
 import com.acc.workflow.core.decider.PureDecider;
@@ -11,6 +12,7 @@ import com.acc.workflow.core.model.WorkflowSnapshot;
 import com.acc.workflow.core.model.WorkflowStatus;
 import com.acc.workflow.ports.PersistencePort;
 import com.acc.workflow.worker.TaskWorkerDescriptor;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.ResponseEntity;
@@ -34,6 +36,7 @@ class WorkflowIteration13ControllersTest {
 
     @BeforeEach
     void setUp() {
+        TenantContextHolder.setTenantId("system");
         persistencePort = new InMemoryPersistenceAdapter();
         engineService = new WorkflowEngineService(persistencePort, new PureDecider());
         definitionRegistry = new WorkflowDefinitionRegistry(persistencePort);
@@ -44,6 +47,11 @@ class WorkflowIteration13ControllersTest {
         executionController = new WorkflowExecutionController(engineService, persistencePort, definitionRegistry, broadcaster, approvalsController);
         workerRegistrar = new SimpleTaskWorkerRegistrar(workerRegistry, persistencePort, engineService, definitionRegistry, broadcaster);
         workerRegistrar.init();
+    }
+
+    @AfterEach
+    void tearDown() {
+        TenantContextHolder.clear();
     }
 
     @Test
@@ -107,7 +115,6 @@ class WorkflowIteration13ControllersTest {
                 Map.of("orderId", "ORD-500"),
                 List.of("checkInventory")
             ),
-            "system",
             "default"
         );
         assertEquals(201, startRes.getStatusCode().value());
@@ -115,7 +122,7 @@ class WorkflowIteration13ControllersTest {
         assertNotNull(started);
 
         // Verify approval task was registered in WorkflowApprovalsController
-        List<WorkflowApprovalsController.ApprovalTaskDto> pendingApprovals = approvalsController.listApprovals("PENDING", "system").getBody();
+        List<WorkflowApprovalsController.ApprovalTaskDto> pendingApprovals = approvalsController.listApprovals("PENDING").getBody();
         assertNotNull(pendingApprovals);
         String approvalTaskId = started.workflowId() + "_managerApproval";
         assertTrue(pendingApprovals.stream().anyMatch(a -> approvalTaskId.equals(a.id())));
@@ -123,17 +130,16 @@ class WorkflowIteration13ControllersTest {
         // Resolve the HUMAN approval task -> should advance and pause at checkInventory breakpoint!
         ResponseEntity<?> resolveRes = approvalsController.resolveApproval(
             approvalTaskId,
-            new WorkflowApprovalsController.ResolveApprovalRequest("APPROVED", "Looks good", "director@acc.io"),
-            "system"
+            new WorkflowApprovalsController.ResolveApprovalRequest("APPROVED", "Looks good", "director@acc.io")
         );
         assertEquals(200, resolveRes.getStatusCode().value());
 
-        WorkflowSnapshot pausedAtBp = (WorkflowSnapshot) executionController.getExecution(started.workflowId(), "system").getBody();
+        WorkflowSnapshot pausedAtBp = (WorkflowSnapshot) executionController.getExecution(started.workflowId()).getBody();
         assertNotNull(pausedAtBp);
         assertEquals(WorkflowStatus.PAUSED_AT_BREAKPOINT, pausedAtBp.status());
 
         // Step over checkInventory
-        ResponseEntity<?> stepRes = executionController.stepOverExecution(started.workflowId(), "system");
+        ResponseEntity<?> stepRes = executionController.stepOverExecution(started.workflowId());
         assertEquals(200, stepRes.getStatusCode().value());
         WorkflowSnapshot stepped = (WorkflowSnapshot) stepRes.getBody();
         assertNotNull(stepped);

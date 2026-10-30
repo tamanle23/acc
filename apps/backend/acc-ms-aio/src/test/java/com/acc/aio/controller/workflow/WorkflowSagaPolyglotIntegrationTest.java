@@ -1,6 +1,7 @@
 package com.acc.aio.controller.workflow;
 
 import com.acc.aio.config.WorkflowEngineConfiguration.WorkflowDefinitionRegistry;
+import com.acc.fw.tenancy.TenantContextHolder;
 import com.acc.workflow.adapters.storage.InMemoryPersistenceAdapter;
 import com.acc.workflow.application.WorkflowEngineService;
 import com.acc.workflow.core.decider.PureDecider;
@@ -12,6 +13,7 @@ import com.acc.workflow.core.model.WorkflowDefinition;
 import com.acc.workflow.core.model.WorkflowSnapshot;
 import com.acc.workflow.core.model.WorkflowStatus;
 import com.acc.workflow.ports.PersistencePort;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -41,6 +43,7 @@ class WorkflowSagaPolyglotIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        TenantContextHolder.setTenantId(TENANT_ID);
         persistencePort = new InMemoryPersistenceAdapter();
         pureDecider = new PureDecider();
         engineService = new WorkflowEngineService(persistencePort, pureDecider);
@@ -50,6 +53,11 @@ class WorkflowSagaPolyglotIntegrationTest {
         definitionController = new WorkflowDefinitionController(registry);
         executionController = new WorkflowExecutionController(engineService, persistencePort, registry, broadcaster);
         workerController = new TaskWorkerController(engineService, persistencePort, registry, broadcaster);
+    }
+
+    @AfterEach
+    void tearDown() {
+        TenantContextHolder.clear();
     }
 
     @Test

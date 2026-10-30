@@ -1,6 +1,7 @@
 package com.acc.aio.controller.workflow;
 
 import com.acc.aio.config.WorkflowEngineConfiguration.WorkflowDefinitionRegistry;
+import com.acc.fw.tenancy.TenantContextHolder;
 import com.acc.workflow.adapters.storage.InMemoryPersistenceAdapter;
 import com.acc.workflow.application.WorkflowEngineService;
 import com.acc.workflow.core.decider.PureDecider;
@@ -10,6 +11,7 @@ import com.acc.workflow.core.model.WorkflowDefinition;
 import com.acc.workflow.core.model.WorkflowSnapshot;
 import com.acc.workflow.core.model.WorkflowStatus;
 import com.acc.workflow.ports.PersistencePort;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,6 +41,7 @@ class WorkflowEngineRestApiTest {
 
     @BeforeEach
     void setUp() {
+        TenantContextHolder.setTenantId(TENANT_ID);
         persistencePort = new InMemoryPersistenceAdapter();
         pureDecider = new PureDecider();
         engineService = new WorkflowEngineService(persistencePort, pureDecider);
@@ -48,6 +51,11 @@ class WorkflowEngineRestApiTest {
         definitionController = new WorkflowDefinitionController(registry);
         executionController = new WorkflowExecutionController(engineService, persistencePort, registry, broadcaster);
         workerController = new TaskWorkerController(engineService, persistencePort, registry, broadcaster);
+    }
+
+    @AfterEach
+    void tearDown() {
+        TenantContextHolder.clear();
     }
 
     @Test
@@ -64,19 +72,19 @@ class WorkflowEngineRestApiTest {
             .layoutMetadata(Map.of("step1-validate", Map.of("x", 100, "y", 200)))
             .build();
 
-        ResponseEntity<?> regResp = definitionController.registerDefinition(definition, TENANT_ID);
+        ResponseEntity<?> regResp = definitionController.registerDefinition(definition);
         assertThat(regResp.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(regResp.getBody()).isInstanceOf(WorkflowDefinition.class);
         WorkflowDefinition savedDef = (WorkflowDefinition) regResp.getBody();
         assertThat(savedDef.workflowKey()).isEqualTo("order-pipeline-test");
 
         // 2. Query definition by key
-        ResponseEntity<?> getDefResp = definitionController.getDefinition("order-pipeline-test", TENANT_ID);
+        ResponseEntity<?> getDefResp = definitionController.getDefinition("order-pipeline-test");
         assertThat(getDefResp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(((WorkflowDefinition) getDefResp.getBody()).name()).isEqualTo("Order Pipeline");
 
         // 3. List definitions
-        ResponseEntity<Collection<WorkflowDefinition>> listResp = definitionController.listDefinitions(TENANT_ID);
+        ResponseEntity<Collection<WorkflowDefinition>> listResp = definitionController.listDefinitions();
         assertThat(listResp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(listResp.getBody()).hasSize(1);
 
@@ -86,7 +94,7 @@ class WorkflowEngineRestApiTest {
             Map.of("orderId", "ORD-12345", "amount", 150.0)
         );
 
-        ResponseEntity<?> startResp = executionController.startExecution(startRequest, TENANT_ID, WORKSPACE_ID);
+        ResponseEntity<?> startResp = executionController.startExecution(startRequest, WORKSPACE_ID);
         assertThat(startResp.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(startResp.getBody()).isInstanceOf(WorkflowSnapshot.class);
         WorkflowSnapshot initialSnap = (WorkflowSnapshot) startResp.getBody();
@@ -95,7 +103,7 @@ class WorkflowEngineRestApiTest {
 
         // 5. Worker polls for step1-validate task
         ResponseEntity<List<TaskSnapshot>> pollResp = workerController.pollTasks(
-            "SIMPLE", "order", "worker-node-1", 1, TENANT_ID
+            "SIMPLE", "order", "worker-node-1", 1
         );
         assertThat(pollResp.getStatusCode()).isEqualTo(HttpStatus.OK);
         List<TaskSnapshot> tasks = pollResp.getBody();
@@ -130,11 +138,11 @@ class WorkflowEngineRestApiTest {
             null,
             0
         );
-        ResponseEntity<?> resultResp = workerController.reportResult(taskId, resultReq, TENANT_ID);
+        ResponseEntity<?> resultResp = workerController.reportResult(taskId, resultReq);
         assertThat(resultResp.getStatusCode()).isEqualTo(HttpStatus.OK);
 
         // 8. Query execution status to assert step 1 completed and step 2 scheduled
-        ResponseEntity<?> getExecResp = executionController.getExecution(workflowId, TENANT_ID);
+        ResponseEntity<?> getExecResp = executionController.getExecution(workflowId);
         assertThat(getExecResp.getStatusCode()).isEqualTo(HttpStatus.OK);
         WorkflowSnapshot progressSnap = (WorkflowSnapshot) getExecResp.getBody();
         assertThat(progressSnap.workflowId()).isEqualTo(workflowId);
@@ -142,7 +150,7 @@ class WorkflowEngineRestApiTest {
 
         // 9. Worker polls for step2-charge
         ResponseEntity<List<TaskSnapshot>> poll2Resp = workerController.pollTasks(
-            "SIMPLE", "payment", "worker-node-2", 1, TENANT_ID
+            "SIMPLE", "payment", "worker-node-2", 1
         );
         assertThat(poll2Resp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(poll2Resp.getBody()).hasSize(1);
@@ -152,11 +160,10 @@ class WorkflowEngineRestApiTest {
         // 10. Complete step2-charge -> workflow should transition to COMPLETED
         workerController.reportResult(
             task2.taskId(),
-            new TaskWorkerController.TaskResultRequest(true, Map.of("paid", true), null, 0),
-            TENANT_ID
+            new TaskWorkerController.TaskResultRequest(true, Map.of("paid", true), null, 0)
         );
 
-        ResponseEntity<?> finalExecResp = executionController.getExecution(workflowId, TENANT_ID);
+        ResponseEntity<?> finalExecResp = executionController.getExecution(workflowId);
         assertThat(finalExecResp.getStatusCode()).isEqualTo(HttpStatus.OK);
         WorkflowSnapshot finalSnap = (WorkflowSnapshot) finalExecResp.getBody();
         assertThat(finalSnap.status()).isEqualTo(WorkflowStatus.COMPLETED);

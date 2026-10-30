@@ -1,6 +1,7 @@
 package com.acc.aio.controller.workflow;
 
 import com.acc.aio.config.WorkflowEngineConfiguration.WorkflowDefinitionRegistry;
+import com.acc.fw.tenancy.TenantContextHolder;
 import com.acc.workflow.adapters.storage.InMemoryPersistenceAdapter;
 import com.acc.workflow.application.WorkflowEngineService;
 import com.acc.workflow.core.decider.PureDecider;
@@ -11,6 +12,7 @@ import com.acc.workflow.core.model.WorkflowDefinition;
 import com.acc.workflow.core.model.WorkflowSnapshot;
 import com.acc.workflow.core.model.WorkflowStatus;
 import com.acc.workflow.ports.PersistencePort;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -40,6 +42,7 @@ class WorkflowDlqRestApiTest {
 
     @BeforeEach
     void setUp() {
+        TenantContextHolder.setTenantId(TENANT_ID);
         persistencePort = new InMemoryPersistenceAdapter();
         pureDecider = new PureDecider();
         engineService = new WorkflowEngineService(persistencePort, pureDecider);
@@ -48,6 +51,11 @@ class WorkflowDlqRestApiTest {
 
         dlqController = new WorkflowDlqController(engineService, persistencePort);
         workerController = new TaskWorkerController(engineService, persistencePort, registry, broadcaster);
+    }
+
+    @AfterEach
+    void tearDown() {
+        TenantContextHolder.clear();
     }
 
     @Test
@@ -74,13 +82,13 @@ class WorkflowDlqRestApiTest {
         persistencePort.quarantineTaskToDlq(record);
 
         // 1. List DLQ tasks with explicit tenant filter
-        ResponseEntity<List<TaskDlqRecord>> listResp = dlqController.listDlqTasks("ISOLATED", TENANT_ID, 10, null);
+        ResponseEntity<List<TaskDlqRecord>> listResp = dlqController.listDlqTasks("ISOLATED", TENANT_ID, 10);
         assertThat(listResp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(listResp.getBody()).hasSize(1);
         assertThat(listResp.getBody().get(0).dlqId()).isEqualTo("dlq-rec-1");
 
         // 2. Sovereign Fleet-wide query (without tenant filter)
-        ResponseEntity<List<TaskDlqRecord>> fleetResp = dlqController.listDlqTasks(null, null, 10, null);
+        ResponseEntity<List<TaskDlqRecord>> fleetResp = dlqController.listDlqTasks(null, null, 10);
         assertThat(fleetResp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(fleetResp.getBody()).hasSize(1);
 
@@ -117,7 +125,7 @@ class WorkflowDlqRestApiTest {
         engineService.startWorkflow("wf-fail-1", TENANT_ID, "default", def, Map.of("param", "init"), now);
 
         // 1. Worker polls and claims task
-        ResponseEntity<List<TaskSnapshot>> pollResp = workerController.pollTasks("SIMPLE", "default", "worker-1", 1, TENANT_ID);
+        ResponseEntity<List<TaskSnapshot>> pollResp = workerController.pollTasks("SIMPLE", "default", "worker-1", 1);
         assertThat(pollResp.getBody()).hasSize(1);
         String taskId = pollResp.getBody().get(0).taskId();
 
@@ -125,14 +133,14 @@ class WorkflowDlqRestApiTest {
         TaskWorkerController.TaskResultRequest failReq = new TaskWorkerController.TaskResultRequest(
             false, Collections.emptyMap(), "Fatal JVM Crash", 0
         );
-        workerController.reportResult(taskId, failReq, TENANT_ID);
+        workerController.reportResult(taskId, failReq);
 
         // Assert workflow is FAILED or COMPENSATED_FAILED
         WorkflowSnapshot wfSnap = persistencePort.getWorkflowSnapshot("wf-fail-1").orElseThrow();
         assertThat(wfSnap.status()).isIn(WorkflowStatus.FAILED, WorkflowStatus.COMPENSATED_FAILED);
 
         // Assert task is quarantined into DLQ
-        ResponseEntity<List<TaskDlqRecord>> dlqListResp = dlqController.listDlqTasks(null, TENANT_ID, 10, null);
+        ResponseEntity<List<TaskDlqRecord>> dlqListResp = dlqController.listDlqTasks(null, TENANT_ID, 10);
         assertThat(dlqListResp.getBody()).hasSize(1);
         String dlqId = dlqListResp.getBody().get(0).dlqId();
 
@@ -147,7 +155,7 @@ class WorkflowDlqRestApiTest {
         assertThat(resumedWf.status()).isEqualTo(WorkflowStatus.RUNNING);
 
         // 5. Worker polls again and successfully picks up the re-enqueued task with overridden input
-        ResponseEntity<List<TaskSnapshot>> rePollResp = workerController.pollTasks("SIMPLE", "default", "worker-2", 1, TENANT_ID);
+        ResponseEntity<List<TaskSnapshot>> rePollResp = workerController.pollTasks("SIMPLE", "default", "worker-2", 1);
         assertThat(rePollResp.getBody()).hasSize(1);
         TaskSnapshot rePolled = rePollResp.getBody().get(0);
         assertThat(rePolled.attempt()).isEqualTo(1);

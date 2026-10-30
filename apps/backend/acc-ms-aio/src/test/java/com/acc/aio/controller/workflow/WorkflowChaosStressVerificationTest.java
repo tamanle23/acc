@@ -1,6 +1,7 @@
 package com.acc.aio.controller.workflow;
 
 import com.acc.aio.config.WorkflowEngineConfiguration.WorkflowDefinitionRegistry;
+import com.acc.fw.tenancy.TenantContextHolder;
 import com.acc.workflow.adapters.storage.InMemoryPersistenceAdapter;
 import com.acc.workflow.application.WorkflowEngineService;
 import com.acc.workflow.core.decider.PureDecider;
@@ -11,6 +12,7 @@ import com.acc.workflow.core.model.WorkflowDefinition;
 import com.acc.workflow.core.model.WorkflowSnapshot;
 import com.acc.workflow.core.model.WorkflowStatus;
 import com.acc.workflow.ports.PersistencePort;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -43,12 +45,18 @@ class WorkflowChaosStressVerificationTest {
 
     @BeforeEach
     void setUp() {
+        TenantContextHolder.setTenantId(TENANT_ID);
         persistencePort = new InMemoryPersistenceAdapter();
         pureDecider = new PureDecider();
         engineService = new WorkflowEngineService(persistencePort, pureDecider);
         registry = new WorkflowDefinitionRegistry();
         broadcaster = new ExecutionStreamBroadcaster();
         workerController = new TaskWorkerController(engineService, persistencePort, registry, broadcaster);
+    }
+
+    @AfterEach
+    void tearDown() {
+        TenantContextHolder.clear();
     }
 
     @Test
@@ -127,8 +135,7 @@ class WorkflowChaosStressVerificationTest {
         for (TaskSnapshot task : reclaimedAndRemaining) {
             workerController.reportResult(
                 task.taskId(),
-                new TaskWorkerController.TaskResultRequest(true, Map.of("validated", true), null, 0),
-                TENANT_ID
+                new TaskWorkerController.TaskResultRequest(true, Map.of("validated", true), null, 0)
             );
         }
 
@@ -141,8 +148,7 @@ class WorkflowChaosStressVerificationTest {
         for (TaskSnapshot task : step2Tasks) {
             workerController.reportResult(
                 task.taskId(),
-                new TaskWorkerController.TaskResultRequest(true, Map.of("fulfilled", true), null, 0),
-                TENANT_ID
+                new TaskWorkerController.TaskResultRequest(true, Map.of("fulfilled", true), null, 0)
             );
         }
 
@@ -207,8 +213,7 @@ class WorkflowChaosStressVerificationTest {
         for (TaskSnapshot t : step1Tasks) {
             workerController.reportResult(
                 t.taskId(),
-                new TaskWorkerController.TaskResultRequest(true, Map.of("reserved", true), null, 0),
-                TENANT_ID
+                new TaskWorkerController.TaskResultRequest(true, Map.of("reserved", true), null, 0)
             );
         }
 
@@ -219,8 +224,7 @@ class WorkflowChaosStressVerificationTest {
         for (TaskSnapshot t : step2Tasks) {
             workerController.reportResult(
                 t.taskId(),
-                new TaskWorkerController.TaskResultRequest(true, Map.of("charged", true), null, 0),
-                TENANT_ID
+                new TaskWorkerController.TaskResultRequest(true, Map.of("charged", true), null, 0)
             );
         }
 
@@ -231,8 +235,7 @@ class WorkflowChaosStressVerificationTest {
         for (TaskSnapshot t : step3Tasks) {
             workerController.reportResult(
                 t.taskId(),
-                new TaskWorkerController.TaskResultRequest(false, Collections.emptyMap(), "Carrier Connection Refused", 0),
-                TENANT_ID
+                new TaskWorkerController.TaskResultRequest(false, Collections.emptyMap(), "Carrier Connection Refused", 0)
             );
         }
 
