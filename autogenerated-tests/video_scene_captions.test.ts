@@ -2,7 +2,7 @@ import { describe, expect, it, beforeAll } from 'bun:test';
 import path from 'path';
 import fs from 'fs';
 import { FFmpegManager } from '../packages/core/src/FFmpegManager';
-import { FFISceneEngine } from '../packages/core/src/ffmpeg-ffi/FFISceneEngine';
+import { FFISceneEngine } from '../apps/legacy-story-renderer/src/FFISceneEngine';
 import { getMediaDurationFFI } from '../packages/core/src/ffmpeg-ffi';
 
 describe('Video Scene Captions & B-Roll Burning', () => {

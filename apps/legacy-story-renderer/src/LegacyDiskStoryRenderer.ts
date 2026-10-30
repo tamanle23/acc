@@ -6,7 +6,6 @@ import {
   Logger,
   AssetContext,
   FFmpegFilterGraph,
-  FFISceneEngine,
   FFmpegExecutor,
   getMediaDuration,
   type RenderContext,
@@ -20,6 +19,7 @@ import {
   renderDepth3DScene,
 } from '@acc/effect-engines';
 import { buildFfmpegEncodingFlags } from './encodingFlags';
+import { FFISceneEngine } from './FFISceneEngine';
 
 const ffmpeg = FFmpegExecutor;
 
@@ -182,7 +182,7 @@ export class LegacyDiskStoryRenderer {
     const freeRamGB = os.freemem() / (1024 * 1024 * 1024);
     const totalRamGB = os.totalmem() / (1024 * 1024 * 1024);
     const cpuCount = os.cpus().length || 4;
-    
+
     // If system has >= 8GB total RAM or running on Darwin, allocate minimum 2-4 workers safely unless RAM is critically low (< 50MB)
     const isDarwin = process.platform === 'darwin';
     let memoryBoundWorkers = Math.max(1, Math.floor(freeRamGB / 1.5));
@@ -762,7 +762,7 @@ export class LegacyDiskStoryRenderer {
     } finally {
       try {
         await fs.promises.rm(tempDir, { recursive: true, force: true });
-      } catch {}
+      } catch { }
     }
   }
 }

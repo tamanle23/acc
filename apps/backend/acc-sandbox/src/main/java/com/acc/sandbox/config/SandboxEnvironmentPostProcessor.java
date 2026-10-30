@@ -112,7 +112,6 @@ public class SandboxEnvironmentPostProcessor implements EnvironmentPostProcessor
     sandboxOverrides.put("spring.datasource.hikari.maximum-pool-size", 10);
     sandboxOverrides.put("spring.datasource.hikari.minimum-idle", 1);
     sandboxOverrides.put("spring.datasource.hikari.connection-timeout", 30000);
-    sandboxOverrides.put("spring.jpa.hibernate.ddl-auto", "update");
 
     environment.getPropertySources().addFirst(new MapPropertySource("sandboxEnvironmentOverrides", sandboxOverrides));
 

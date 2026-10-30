@@ -1,4 +1,4 @@
-import { FFmpegCommand } from './FFmpegExecutor';
+import { FFmpegCommand } from '../../../apps/legacy-story-renderer/src/FFmpegExecutor';
 import { PassThrough } from 'stream';
 import fs from 'fs';
 import path from 'path';
@@ -70,10 +70,10 @@ export abstract class BaseEffectEngine {
           cmd.outputOptions(opts);
           cmd.output(outputPath);
           await cmd.run();
-          try { fs.unlinkSync(tempRawPath); } catch {}
+          try { fs.unlinkSync(tempRawPath); } catch { }
           resolve();
         } catch (err) {
-          try { fs.unlinkSync(tempRawPath); } catch {}
+          try { fs.unlinkSync(tempRawPath); } catch { }
           reject(err);
         }
       });

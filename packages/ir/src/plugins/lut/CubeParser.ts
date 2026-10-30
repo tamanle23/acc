@@ -102,7 +102,7 @@ export class CubeLUTParser {
       .pipeThrough(createTextLineStream(), { signal });
 
     // Kích hoạt Explicit Resource Management (await using)
-    await using reader = new DisposableStreamReader(lineStream.getReader());
+    await using reader = new DisposableStreamReader<string>(lineStream.getReader());
 
     let title: string | null = null;
     let size = 0;

@@ -1,6 +1,6 @@
 import fs from 'fs';
 
-import { getMediaDurationFFI } from './ffmpeg-ffi';
+import { getMediaDurationFFI } from '../../../packages/core/src/ffmpeg-ffi';
 
 export function getMediaDurationSync(filePath: string): number {
   if (!fs.existsSync(filePath)) return 0;
@@ -175,11 +175,11 @@ export class FFmpegCommand {
     for (const fn of this.startListeners) {
       try {
         fn(`[FFI Native Muxer] Inputs: ${inputPaths.join(', ')} -> Output: ${outputFile}`);
-      } catch {}
+      } catch { }
     }
 
     try {
-      const { MediaEngineRegistry } = await import('./media-engine');
+      const { MediaEngineRegistry } = await import('../../../packages/core/src/media-engine');
       const activeStrategy = MediaEngineRegistry.get();
 
       if (activeStrategy.capabilities.supportsComplexFilters && typeof activeStrategy.executeCommand === 'function') {
@@ -194,7 +194,7 @@ export class FFmpegCommand {
           p.endsWith('.mp4') || p.endsWith('.mov') || p.endsWith('.webm') || p.endsWith('.mkv')
         );
         if (isAllVideoContainers) {
-          const { FFIConcatMuxer } = await import('./ffmpeg-ffi/FFIConcatMuxer');
+          const { FFIConcatMuxer } = await import('../../../packages/core/src/ffmpeg-ffi/FFIConcatMuxer');
           await FFIConcatMuxer.concatenate(inputPaths, outputFile);
         } else if (inputPaths.length >= 1 && fs.existsSync(inputPaths[0])) {
           // Mixed media types (e.g. video + audio file): fallback safely to primary input
@@ -203,7 +203,7 @@ export class FFmpegCommand {
       }
       // 2. Single Scene Video/Image rendering
       else if (inputPaths.length === 1) {
-        const { FFISceneEngine } = await import('./ffmpeg-ffi/FFISceneEngine');
+        const { FFISceneEngine } = await import('./FFISceneEngine');
         const primaryInput = inputPaths[0];
 
         if (
@@ -232,13 +232,13 @@ export class FFmpegCommand {
       for (const fn of this.endListeners) {
         try {
           fn();
-        } catch {}
+        } catch { }
       }
     } catch (err: any) {
       for (const fn of this.errorListeners) {
         try {
           fn(err, '', err.message);
-        } catch {}
+        } catch { }
       }
       throw err;
     }
