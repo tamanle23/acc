@@ -1,5 +1,5 @@
 import type { ICommand } from './ICommand';
-import type { VideoIRDocument, IRTrack } from '@acc/ir';
+import { type VideoIRDocument, type IRTrack, VideoIRAuthoringEngine } from '@acc/ir';
 
 /**
  * AddTrackCommand:
@@ -33,14 +33,23 @@ export class AddTrackCommand implements ICommand {
       return copy;
     }
 
+    const trackToAdd = JSON.parse(JSON.stringify(this.newTrack)) as IRTrack;
+    if (trackToAdd.groupOrder === undefined) {
+      const modality = VideoIRAuthoringEngine.getTrackModalityGroup(trackToAdd.type);
+      const sameGroupTracks = copy.tracks.filter(
+        (t) => VideoIRAuthoringEngine.getTrackModalityGroup(t.type) === modality
+      );
+      trackToAdd.groupOrder = sameGroupTracks.length;
+    }
+
     if (
       this.insertIndex !== undefined &&
       this.insertIndex >= 0 &&
       this.insertIndex <= copy.tracks.length
     ) {
-      copy.tracks.splice(this.insertIndex, 0, JSON.parse(JSON.stringify(this.newTrack)));
+      copy.tracks.splice(this.insertIndex, 0, trackToAdd);
     } else {
-      copy.tracks.push(JSON.parse(JSON.stringify(this.newTrack)));
+      copy.tracks.push(trackToAdd);
     }
 
     return copy;

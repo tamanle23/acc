@@ -406,22 +406,40 @@ export function Timeline({
           )}
 
           {/* Track Controls Footer */}
-          <div className="sticky left-0 w-52 flex items-center gap-1.5 mt-1.5 z-20">
+          <div className="sticky left-0 w-52 flex items-center gap-1 mt-1.5 z-20">
             <button
               type="button"
               onClick={() => handleRequestAddTrack('video', 'overlay')}
-              className="flex-1 h-7 rounded-md bg-[var(--glass-bg)] hover:bg-muted/60 border border-[var(--glass-border)] text-[11px] font-medium text-foreground/80 hover:text-foreground flex items-center justify-center gap-1.5 transition-colors shadow-2xs backdrop-blur-md cursor-pointer"
-              title="Add a new overlay video track"
+              className="flex-1 h-7 rounded-md bg-[var(--glass-bg)] hover:bg-muted/60 border border-[var(--glass-border)] text-[10px] font-medium text-foreground/80 hover:text-foreground flex items-center justify-center gap-1 transition-colors shadow-2xs backdrop-blur-md cursor-pointer"
+              title="Add a new video overlay track"
             >
-              <Plus className="w-3.5 h-3.5 text-accent-theme" />
-              <span>Add Track</span>
+              <Plus className="w-3 h-3 text-sky-400" />
+              <span>Video</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleRequestAddTrack('timed_text', 'text')}
+              className="h-7 px-2 rounded-md bg-[var(--glass-bg)] hover:bg-muted/60 border border-[var(--glass-border)] text-[10px] font-medium text-foreground/80 hover:text-foreground flex items-center justify-center gap-1 transition-colors shadow-2xs backdrop-blur-md cursor-pointer"
+              title="Add a new subtitle / caption text track"
+            >
+              <Plus className="w-3 h-3 text-violet-400" />
+              <span>Text</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleRequestAddTrack('audio', 'audio')}
+              className="h-7 px-2 rounded-md bg-[var(--glass-bg)] hover:bg-muted/60 border border-[var(--glass-border)] text-[10px] font-medium text-foreground/80 hover:text-foreground flex items-center justify-center gap-1 transition-colors shadow-2xs backdrop-blur-md cursor-pointer"
+              title="Add a new audio track"
+            >
+              <Plus className="w-3 h-3 text-emerald-400" />
+              <span>Audio</span>
             </button>
             <div
               onClick={() => IRStateManager.getInstance().setInspectorMode('timeline')}
-              className="w-20 h-7 rounded-md border border-dashed border-border/30 hover:border-border/60 hover:bg-muted/10 cursor-pointer transition-colors flex items-center justify-center text-[10px] text-muted-foreground italic px-1 text-center shadow-2xs shrink-0"
+              className="w-12 h-7 rounded-md border border-dashed border-border/30 hover:border-border/60 hover:bg-muted/10 cursor-pointer transition-colors flex items-center justify-center text-[10px] text-muted-foreground italic text-center shadow-2xs shrink-0"
               title="Click empty area to inspect Project Settings"
             >
-              Project
+              Meta
             </div>
           </div>
 

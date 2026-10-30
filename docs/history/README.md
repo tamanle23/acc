@@ -60,3 +60,4 @@
 | 395 | [Universal Track Soft-Cap Constraints & Semantic Track Quotas](./395_track_soft_cap_constraints_and_semantic_quotas.md) | Completed |
 | 396 | [Unified Modifier Target Model, Dynamic Registry Validation & 7-Package Synchronization](./396_unified_modifier_target_model_and_sync.md) | Completed |
 | 397 | [Fix Video IR Demos Modifier Targets & Track-Level Subtitle Dispatch](./397_fix_video_ir_demos_modifier_targets_and_track_dispatch.md) | Completed |
+| 398 | [Universal Track Type Grouping, groupOrder, and Supreme Timed-Text Flat Rendering Stack](./398_track_grouping_and_timed_text_flat_stack.md) | Completed |

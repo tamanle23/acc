@@ -153,6 +153,16 @@ export class VideoIRSchemaValidator {
           errors.push(`Track "${track.id || tIdx}" "routeTo" must be a string`);
         }
 
+        if (track.groupOrder !== undefined) {
+          if (
+            typeof track.groupOrder !== 'number' ||
+            !Number.isInteger(track.groupOrder) ||
+            track.groupOrder < 0
+          ) {
+            errors.push(`Track "${track.id || tIdx}" "groupOrder" must be a non-negative integer`);
+          }
+        }
+
         if (track.modifiers !== undefined) {
           this.validateModifiers(track.modifiers, `track "${track.id || tIdx}"`, errors, track.type);
         }

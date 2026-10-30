@@ -69,12 +69,16 @@ export function drawCanvasCaptionsFromSnapshot(
     }
   }
 
+  const slotIndex = settings?.slotIndex ?? 0;
+  const slotSpacing = settings?.slotSpacing ?? Math.round((fontSize * 1.25 + 8) * scale);
+  const slotOffset = slotIndex * slotSpacing;
+
   const marginV = Math.round(rawMarginV * scale);
-  let y = height - marginV;
+  let y = height - marginV - slotOffset;
   if (settings?.position === 'top' || settings?.position === 'top-center') {
-    y = marginV + fontSize;
+    y = marginV + fontSize + slotOffset;
   } else if (settings?.position === 'center' || settings?.position === 'middle') {
-    y = height / 2;
+    y = height / 2 - slotOffset;
   }
 
   // Measure word dimensions

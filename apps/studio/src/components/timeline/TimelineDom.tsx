@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { Type, Video, Music, Layers } from 'lucide-react';
 import {
   DragOverlay,
   useDndMonitor,
@@ -386,6 +387,63 @@ export function TimelineDom({
 
   const quotas = useMemo(() => IRStateManager.getInstance().getTrackQuotas(), [tracks]);
 
+  const groupedSections = useMemo(() => {
+    const grouped = VideoIRAuthoringEngine.groupTracksByType(tracks);
+    const sections: {
+      id: string;
+      title: string;
+      icon: React.ReactNode;
+      tracks: StudioTrack[];
+    }[] = [];
+
+    if (grouped.timed_text.length > 0) {
+      sections.push({
+        id: 'section_timed_text',
+        title: 'Text & Captions',
+        icon: <Type className="w-3 h-3 text-violet-400" />,
+        tracks: grouped.timed_text,
+      });
+    }
+
+    if (grouped.video.length > 0) {
+      sections.push({
+        id: 'section_video',
+        title: 'Video & Overlays',
+        icon: <Video className="w-3 h-3 text-sky-400" />,
+        tracks: grouped.video,
+      });
+    }
+
+    if (grouped.audio.length > 0) {
+      sections.push({
+        id: 'section_audio',
+        title: 'Audio Tracks',
+        icon: <Music className="w-3 h-3 text-emerald-400" />,
+        tracks: grouped.audio,
+      });
+    }
+
+    if (grouped.data.length > 0) {
+      sections.push({
+        id: 'section_data',
+        title: 'Data Tracks',
+        icon: <Layers className="w-3 h-3 text-amber-400" />,
+        tracks: grouped.data,
+      });
+    }
+
+    if (sections.length === 0 && tracks.length > 0) {
+      sections.push({
+        id: 'section_default',
+        title: 'Tracks',
+        icon: <Video className="w-3 h-3 text-muted-foreground" />,
+        tracks,
+      });
+    }
+
+    return sections;
+  }, [tracks]);
+
   return (
     <>
       <div
@@ -394,89 +452,110 @@ export function TimelineDom({
         }}
         className="flex flex-col gap-1 relative"
       >
-        {tracks.map((track: StudioTrack, idx: number) => {
-          const isLocked = lockedTracks[track.id] ?? track.locked ?? false;
-          const isMuted = mutedTracks[track.id] ?? track.muted ?? false;
-          const isVisible = track.visible !== false;
-          const canMoveUp = idx > 0;
-          const canMoveDown = idx < tracks.length - 1;
-          const role = VideoIRAuthoringEngine.classifyTrackRole(track, idx);
-          const quotaStatus = quotas[role];
-
-          // Horizontal sequence virtualization (Preserve dragged clip & paired A/V clip)
-          const visibleSequences = track.sequences.filter((seq: StudioSequence) => {
-            if (activeDragState?.seqId === seq.id || activeDragState?.pairedSeqId === seq.id) return true;
-            const seqStart = getSequenceStartFrame(seq);
-            const seqEnd = seqStart + getSequenceDurationFrames(seq, 30);
-            return seqEnd >= visibleStartFrame && seqStart <= visibleEndFrame;
-          });
-
-          const isInvalidDropOverThisTrack =
-            Boolean(activeDragState?.isInvalidDrop && activeDragState.targetTrackId === track.id);
-
-          return (
+        {groupedSections.map((section) => (
+          <div key={section.id} className="flex flex-col gap-1">
+            {/* Liquid Glass Modality Group Header Divider */}
             <div
-              key={track.id}
-              style={{
-                width: `${timelineWidth + 208}px`,
-                height: '40px',
-              }}
-              className="h-10 flex items-center gap-2 bg-[var(--glass-bg)] shrink-0"
+              style={{ width: `${timelineWidth + 208}px` }}
+              className="h-6 flex items-center bg-[var(--glass-bg)]/80 border-y border-[var(--glass-border)] shrink-0 px-2 mt-1 first:mt-0 select-none shadow-2xs"
             >
-              {/* Sticky Track Header Card */}
-              <TrackHeaderCard
-                track={track}
-                isLocked={isLocked}
-                isMuted={isMuted}
-                isVisible={isVisible}
-                canMoveUp={canMoveUp}
-                canMoveDown={canMoveDown}
-                onToggleLock={onToggleLock}
-                onToggleMute={onToggleMute}
-                onToggleVisible={onToggleVisible}
-                quotaStatus={quotaStatus}
-              />
-
-              {/* Track Sequence Lane: Render DOM clips with CSS content-visibility optimization */}
-              <div style={{ width: `${timelineWidth}px` }} className="h-full shrink-0">
-                <DroppableTrackLane
-                  track={track}
-                  isLocked={isLocked}
-                  isInvalidDrop={isInvalidDropOverThisTrack}
-                  scrollLeft={scrollLeft}
-                  viewportWidth={clientWidth}
-                  pixelsPerFrame={pixelsPerFrame}
-                  fps={fps}
-                >
-                  {visibleSequences.map((seq: StudioSequence) => {
-                    const isSeqDragged = activeDragState?.seqId === seq.id;
-                    const isSeqPairedDrag = activeDragState?.pairedSeqId === seq.id;
-                    return (
-                      <ClipItem
-                        key={seq.id}
-                        seq={seq}
-                        track={track}
-                        fps={fps}
-                        pixelsPerFrame={pixelsPerFrame}
-                        isSelected={selectedSeqId === seq.id}
-                        activeTool={activeTool}
-                        getTrackBadgeStyle={getTrackBadgeStyle}
-                        onClipClick={handleClipClick}
-                        onClipHover={handleClipHover}
-                        isBeingDragged={isSeqDragged}
-                        isPairedDrag={isSeqPairedDrag}
-                        dragType={isSeqDragged ? activeDragState?.type ?? null : null}
-                        trimHandle={isSeqDragged ? activeDragState?.handle : undefined}
-                        trimDeltaFrames={isSeqDragged ? activeDragState?.deltaFrames ?? 0 : 0}
-                        isAnyDragActive={Boolean(activeDragState)}
-                      />
-                    );
-                  })}
-                </DroppableTrackLane>
+              <div className="sticky left-0 flex items-center justify-between w-52 pr-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  {section.icon}
+                  <span className="truncate">{section.title}</span>
+                </div>
+                <span className="font-mono text-[9px] text-muted-foreground/60 shrink-0">
+                  {section.tracks.length}
+                </span>
               </div>
             </div>
-          );
-        })}
+
+            {/* Tracks in this Modality Group */}
+            {section.tracks.map((track: StudioTrack, idxInGroup: number) => {
+              const isLocked = lockedTracks[track.id] ?? track.locked ?? false;
+              const isMuted = mutedTracks[track.id] ?? track.muted ?? false;
+              const isVisible = track.visible !== false;
+              const canMoveUp = idxInGroup > 0;
+              const canMoveDown = idxInGroup < section.tracks.length - 1;
+              const role = VideoIRAuthoringEngine.classifyTrackRole(track, track.groupOrder ?? idxInGroup);
+              const quotaStatus = quotas[role];
+
+              // Horizontal sequence virtualization (Preserve dragged clip & paired A/V clip)
+              const visibleSequences = track.sequences.filter((seq: StudioSequence) => {
+                if (activeDragState?.seqId === seq.id || activeDragState?.pairedSeqId === seq.id) return true;
+                const seqStart = getSequenceStartFrame(seq);
+                const seqEnd = seqStart + getSequenceDurationFrames(seq, 30);
+                return seqEnd >= visibleStartFrame && seqStart <= visibleEndFrame;
+              });
+
+              const isInvalidDropOverThisTrack =
+                Boolean(activeDragState?.isInvalidDrop && activeDragState.targetTrackId === track.id);
+
+              return (
+                <div
+                  key={track.id}
+                  style={{
+                    width: `${timelineWidth + 208}px`,
+                    height: '40px',
+                  }}
+                  className="h-10 flex items-center gap-2 bg-[var(--glass-bg)] shrink-0"
+                >
+                  {/* Sticky Track Header Card */}
+                  <TrackHeaderCard
+                    track={track}
+                    isLocked={isLocked}
+                    isMuted={isMuted}
+                    isVisible={isVisible}
+                    canMoveUp={canMoveUp}
+                    canMoveDown={canMoveDown}
+                    onToggleLock={onToggleLock}
+                    onToggleMute={onToggleMute}
+                    onToggleVisible={onToggleVisible}
+                    quotaStatus={quotaStatus}
+                  />
+
+                  {/* Track Sequence Lane: Render DOM clips with CSS content-visibility optimization */}
+                  <div style={{ width: `${timelineWidth}px` }} className="h-full shrink-0">
+                    <DroppableTrackLane
+                      track={track}
+                      isLocked={isLocked}
+                      isInvalidDrop={isInvalidDropOverThisTrack}
+                      scrollLeft={scrollLeft}
+                      viewportWidth={clientWidth}
+                      pixelsPerFrame={pixelsPerFrame}
+                      fps={fps}
+                    >
+                      {visibleSequences.map((seq: StudioSequence) => {
+                        const isSeqDragged = activeDragState?.seqId === seq.id;
+                        const isSeqPairedDrag = activeDragState?.pairedSeqId === seq.id;
+                        return (
+                          <ClipItem
+                            key={seq.id}
+                            seq={seq}
+                            track={track}
+                            fps={fps}
+                            pixelsPerFrame={pixelsPerFrame}
+                            isSelected={selectedSeqId === seq.id}
+                            activeTool={activeTool}
+                            getTrackBadgeStyle={getTrackBadgeStyle}
+                            onClipClick={handleClipClick}
+                            onClipHover={handleClipHover}
+                            isBeingDragged={isSeqDragged}
+                            isPairedDrag={isSeqPairedDrag}
+                            dragType={isSeqDragged ? activeDragState?.type ?? null : null}
+                            trimHandle={isSeqDragged ? activeDragState?.handle : undefined}
+                            trimDeltaFrames={isSeqDragged ? activeDragState?.deltaFrames ?? 0 : 0}
+                            isAnyDragActive={Boolean(activeDragState)}
+                          />
+                        );
+                      })}
+                    </DroppableTrackLane>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ))}
       </div>
 
       {/* Elevated Portal Drag Proxy: Unclipped, follows pointer with grab offset */}

@@ -101,6 +101,7 @@ export interface IRTrack {
   locked?: boolean;      // Protects track clips from edits, trims, cuts, deletes
   style?: TrackStyle;
   modifiers?: ModifierNode[];
+  groupOrder?: number;   // Optional intra-group ordering index (0 = bottom/first in group)
   sequences: IRSequence[];
 }
 
@@ -147,6 +148,7 @@ export interface ResolvedTrack {
   routeTo?: string;
   style?: TrackStyle;
   modifiers?: ModifierNode[];
+  groupOrder?: number;
   sequences: ResolvedSequence[];
 }
 

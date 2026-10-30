@@ -429,11 +429,19 @@ export class IRStateManager {
   ): void {
     let resolvedTarget = target;
     if (!resolvedTarget) {
-      for (const track of this.state.doc.tracks) {
-        const found = track.sequences.find((s) => s.id === sequenceId);
-        if (found) {
-          resolvedTarget = found.type;
-          break;
+      if (sequenceId === 'timeline' || sequenceId === this.state.doc.meta?.contentId) {
+        resolvedTarget = 'video';
+      } else {
+        for (const track of this.state.doc.tracks) {
+          if (track.id === sequenceId) {
+            resolvedTarget = track.type === 'timed_text' ? 'text' : 'video';
+            break;
+          }
+          const found = track.sequences.find((s) => s.id === sequenceId);
+          if (found) {
+            resolvedTarget = found.type;
+            break;
+          }
         }
       }
     }
@@ -612,10 +620,16 @@ export class IRStateManager {
     const roleCapitalized = resolvedRole.charAt(0).toUpperCase() + resolvedRole.slice(1);
     const trackSuffix = newTrackId.split('_').pop() || '1';
 
+    const modality = VideoIRAuthoringEngine.getTrackModalityGroup(type);
+    const sameGroupTracks = Array.isArray(currentDoc.tracks)
+      ? currentDoc.tracks.filter((t) => VideoIRAuthoringEngine.getTrackModalityGroup(t.type) === modality)
+      : [];
+
     const newTrack: IRTrack = {
       id: newTrackId,
       type,
       name: `${roleCapitalized} Track ${trackSuffix}`.trim(),
+      groupOrder: sameGroupTracks.length,
       sequences: [],
     };
 

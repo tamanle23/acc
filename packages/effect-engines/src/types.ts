@@ -187,6 +187,8 @@ export interface CaptionSettings {
   marginH?: number; // horizontal margin from edges in pixels
   marginL?: number; // left margin in pixels
   marginR?: number; // right margin in pixels
+  slotIndex?: number; // Stack slot index for anti-collision when multiple caption tracks render concurrently
+  slotSpacing?: number; // Custom vertical spacing between slots in pixels (default: fontSize * 1.25 + 8)
   borderStyle?: number; // 1 = Outline+Shadow, 3 = Opaque Box
 
   // Karaoke & Subtitle Highlight settings

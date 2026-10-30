@@ -414,6 +414,11 @@
             "$ref": "#/definitions/ModifierNode"
           }
         },
+        "groupOrder": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optional intra-group ordering index (0 = bottom/first in group)"
+        },
         "sequences": {
           "type": "array",
           "description": "Sequences executed within this track",

@@ -163,12 +163,67 @@ export class IRCanvasCompositor {
     canvasCtx.restore();
 
     const tracksList = Array.from(timeline.tracks.values());
+    const visualTracksList = tracksList
+      .filter((t) => t.type === 'video' || t.type === 'image' || t.type === 'overlay')
+      .sort((a, b) => (a.groupOrder ?? 0) - (b.groupOrder ?? 0));
 
     const finalizePostVisualTracks = (): void => {
-      // 3. Timed-Text Tracks (Subtitles) Strictly Rendered on Top of Visual Tracks
-      for (const track of tracksList) {
-        if (track.type !== 'timed_text') continue;
+      // 3. Master Canvas Composite Modifiers across visual plates
+      for (const track of visualTracksList) {
+        if (track.modifiers) {
+          for (const mod of track.modifiers) {
+            const plugin = registry.get(mod.type);
+            if (plugin && plugin.renderMasterComposite) {
+              plugin.renderMasterComposite(
+                {
+                  canvas,
+                  ctx: canvasCtx,
+                  frame: clampedFrame,
+                  width,
+                  height,
+                  pixelBuffer: options.generatePixelBuffer || new Uint8Array(0),
+                },
+                {
+                  ...(popOutIntensity !== undefined ? { popOutIntensity } : {}),
+                  ...mod.params,
+                }
+              );
+            }
+          }
+        }
+      }
 
+      if (timeline.modifiers) {
+        for (const mod of timeline.modifiers) {
+          const plugin = registry.get(mod.type);
+          if (plugin && plugin.renderMasterComposite) {
+            plugin.renderMasterComposite(
+              {
+                canvas,
+                ctx: canvasCtx,
+                frame: clampedFrame,
+                width,
+                height,
+                pixelBuffer: options.generatePixelBuffer || new Uint8Array(0),
+              },
+              {
+                ...(popOutIntensity !== undefined ? { popOutIntensity } : {}),
+                ...mod.params,
+              }
+            );
+          }
+        }
+      }
+
+      // 4. Supreme Timed-Text Flat Stack Pass
+      // Promotes all timed_text tracks strictly on top of all visual and post-processed layers
+      const timedTextTracks = tracksList
+        .filter((t) => t.type === 'timed_text')
+        .sort((a, b) => (a.groupOrder ?? 0) - (b.groupOrder ?? 0));
+
+      const slotCounters: Record<string, number> = {};
+
+      for (const track of timedTextTracks) {
         if ((track as any).muted === true || (track as any).visible === false || (track.style as any)?.visible === false) {
           continue;
         }
@@ -199,9 +254,13 @@ export class IRCanvasCompositor {
 
             const textMod = seq.modifiers?.find((m) => m.type === 'timed_text/style' || m.type === 'text/style');
             const textParams = (textMod?.params as any) || {};
+            const posKey = textParams.position || trackCaptionSettings.position || 'bottom';
+            const currentSlot = slotCounters[posKey] || 0;
+
             const effectiveSettings: CaptionSettings = {
               ...trackCaptionSettings,
               ...textParams,
+              slotIndex: currentSlot,
               fillColor: textParams.fillColor || textParams.textColor || (trackCaptionSettings as any)?.fillColor || (trackCaptionSettings as any)?.textColor,
             };
 
@@ -212,6 +271,7 @@ export class IRCanvasCompositor {
             );
 
             if (snapshot.shouldRender) {
+              slotCounters[posKey] = currentSlot + 1;
               canvasCtx.save();
 
               // Evaluate spatial/motion modifiers on timed_text sequence (e.g. transform, motion/gsap)
@@ -257,53 +317,6 @@ export class IRCanvasCompositor {
 
               canvasCtx.restore();
             }
-          }
-        }
-      }
-
-      // 4. Master Canvas Composite Modifiers (Phase 4 Master Pass)
-      for (const track of tracksList) {
-        if (track.modifiers) {
-          for (const mod of track.modifiers) {
-            const plugin = registry.get(mod.type);
-            if (plugin && plugin.renderMasterComposite) {
-              plugin.renderMasterComposite(
-                {
-                  canvas,
-                  ctx: canvasCtx,
-                  frame: clampedFrame,
-                  width,
-                  height,
-                  pixelBuffer: options.generatePixelBuffer || new Uint8Array(0),
-                },
-                {
-                  ...(popOutIntensity !== undefined ? { popOutIntensity } : {}),
-                  ...mod.params,
-                }
-              );
-            }
-          }
-        }
-      }
-
-      if (timeline.modifiers) {
-        for (const mod of timeline.modifiers) {
-          const plugin = registry.get(mod.type);
-          if (plugin && plugin.renderMasterComposite) {
-            plugin.renderMasterComposite(
-              {
-                canvas,
-                ctx: canvasCtx,
-                frame: clampedFrame,
-                width,
-                height,
-                pixelBuffer: options.generatePixelBuffer || new Uint8Array(0),
-              },
-              {
-                ...(popOutIntensity !== undefined ? { popOutIntensity } : {}),
-                ...mod.params,
-              }
-            );
           }
         }
       }
@@ -363,14 +376,10 @@ export class IRCanvasCompositor {
     };
 
     const processTracksFrom = (startIndex: number): void | Promise<void> => {
-      for (let tIdx = startIndex; tIdx < tracksList.length; tIdx++) {
-        const track = tracksList[tIdx];
+      for (let tIdx = startIndex; tIdx < visualTracksList.length; tIdx++) {
+        const track = visualTracksList[tIdx];
 
         if ((track as any).muted === true || (track as any).visible === false || (track.style as any)?.visible === false) {
-          continue;
-        }
-
-        if (track.type !== 'video' && track.type !== 'image' && track.type !== 'overlay') {
           continue;
         }
 

@@ -1,5 +1,5 @@
 import type { ICommand } from './ICommand';
-import type { VideoIRDocument } from '@acc/ir';
+import { type VideoIRDocument, type IRTrack, VideoIRAuthoringEngine } from '@acc/ir';
 
 export class ReorderTrackCommand implements ICommand {
   public readonly id: string;
@@ -8,8 +8,7 @@ export class ReorderTrackCommand implements ICommand {
 
   private trackId: string;
   private direction: 'up' | 'down';
-  private fromIndex: number = -1;
-  private toIndex: number = -1;
+  private previousTracksSnapshot: IRTrack[] | null = null;
 
   constructor(trackId: string, direction: 'up' | 'down') {
     this.id = `reorder_track_${trackId}_${direction}_${Date.now()}`;
@@ -20,35 +19,16 @@ export class ReorderTrackCommand implements ICommand {
   }
 
   public execute(doc: VideoIRDocument): VideoIRDocument {
-    const copy = JSON.parse(JSON.stringify(doc)) as VideoIRDocument;
-    const curIdx = copy.tracks.findIndex((t) => t.id === this.trackId);
-
-    if (curIdx === -1) return copy;
-    this.fromIndex = curIdx;
-
-    if (this.direction === 'up' && curIdx > 0) {
-      this.toIndex = curIdx - 1;
-      const [moved] = copy.tracks.splice(curIdx, 1);
-      copy.tracks.splice(this.toIndex, 0, moved);
-    } else if (this.direction === 'down' && curIdx < copy.tracks.length - 1) {
-      this.toIndex = curIdx + 1;
-      const [moved] = copy.tracks.splice(curIdx, 1);
-      copy.tracks.splice(this.toIndex, 0, moved);
+    if (this.previousTracksSnapshot === null && Array.isArray(doc.tracks)) {
+      this.previousTracksSnapshot = JSON.parse(JSON.stringify(doc.tracks));
     }
-
-    return copy;
+    return VideoIRAuthoringEngine.reorderTrackInGroup(doc, this.trackId, this.direction);
   }
 
   public undo(doc: VideoIRDocument): VideoIRDocument {
-    if (this.fromIndex === -1 || this.toIndex === -1) return doc;
+    if (!this.previousTracksSnapshot) return doc;
     const copy = JSON.parse(JSON.stringify(doc)) as VideoIRDocument;
-
-    const curIdx = copy.tracks.findIndex((t) => t.id === this.trackId);
-    if (curIdx !== -1) {
-      const [moved] = copy.tracks.splice(curIdx, 1);
-      copy.tracks.splice(this.fromIndex, 0, moved);
-    }
-
+    copy.tracks = JSON.parse(JSON.stringify(this.previousTracksSnapshot));
     return copy;
   }
 

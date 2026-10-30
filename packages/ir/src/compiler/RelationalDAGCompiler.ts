@@ -52,6 +52,7 @@ export class RelationalDAGCompiler {
         visible: track.visible !== false,
         locked: track.locked ?? false,
         routeTo: track.routeTo || 'master',
+        groupOrder: track.groupOrder,
         sequences: [],
       });
 

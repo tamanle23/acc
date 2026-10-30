@@ -8,6 +8,15 @@ export type SemanticTrackRole =
   | 'effects'
   | 'stickers';
 
+export type TrackModalityGroup = 'timed_text' | 'video' | 'audio' | 'data';
+
+export interface GroupedTracks<T extends IRTrack = IRTrack> {
+  timed_text: T[];
+  video: T[];
+  audio: T[];
+  data: T[];
+}
+
 export interface TrackQuotaLimit {
   softCap: number;
   hardCap: number;
@@ -561,5 +570,109 @@ export class VideoIRAuthoringEngine {
     }
 
     return null;
+  }
+
+  /**
+   * Resolves the primary modality group for a track type.
+   */
+  public static getTrackModalityGroup(type: TrackType): TrackModalityGroup {
+    if (type === 'timed_text') return 'timed_text';
+    if (type === 'audio') return 'audio';
+    if (type === 'data') return 'data';
+    return 'video';
+  }
+
+  /**
+   * Groups a collection of tracks by their modality (timed_text, video, audio, data)
+   * while preserving custom intra-group ordering via groupOrder (with document index fallback).
+   */
+  public static groupTracksByType<T extends IRTrack = IRTrack>(tracks: T[]): GroupedTracks<T> {
+    const grouped: GroupedTracks<T> = {
+      timed_text: [],
+      video: [],
+      audio: [],
+      data: [],
+    };
+
+    if (!Array.isArray(tracks)) return grouped;
+
+    tracks.forEach((track, originalIndex) => {
+      const modality = this.getTrackModalityGroup(track.type);
+      grouped[modality].push({
+        ...track,
+        __originalIndex: originalIndex,
+      } as any);
+    });
+
+    const sortGroup = (list: (T & { __originalIndex?: number })[]) => {
+      list.sort((a, b) => {
+        const orderA = typeof a.groupOrder === 'number' ? a.groupOrder : (a.__originalIndex ?? 0);
+        const orderB = typeof b.groupOrder === 'number' ? b.groupOrder : (b.__originalIndex ?? 0);
+        return orderA - orderB;
+      });
+      list.forEach((t, idx) => {
+        delete t.__originalIndex;
+        t.groupOrder = idx;
+      });
+    };
+
+    sortGroup(grouped.timed_text as any);
+    sortGroup(grouped.video as any);
+    sortGroup(grouped.audio as any);
+    sortGroup(grouped.data as any);
+
+    return grouped;
+  }
+
+  /**
+   * Reorders a track strictly within its own modality group (e.g. moving a video track
+   * never crosses into timed_text or audio). Normalizes groupOrders and maintains
+   * clean document track structure.
+   */
+  public static reorderTrackInGroup(
+    doc: VideoIRDocument,
+    trackId: string,
+    direction: 'up' | 'down'
+  ): VideoIRDocument {
+    const copy = JSON.parse(JSON.stringify(doc)) as VideoIRDocument;
+    if (!Array.isArray(copy.tracks)) return copy;
+
+    const targetTrack = copy.tracks.find((t) => t.id === trackId);
+    if (!targetTrack) return copy;
+
+    const modality = this.getTrackModalityGroup(targetTrack.type);
+    const grouped = this.groupTracksByType(copy.tracks);
+    const list = grouped[modality];
+    const currentIndex = list.findIndex((t) => t.id === trackId);
+
+    if (currentIndex === -1) return copy;
+
+    if (direction === 'up' && currentIndex > 0) {
+      const targetIndex = currentIndex - 1;
+      const [moved] = list.splice(currentIndex, 1);
+      list.splice(targetIndex, 0, moved);
+    } else if (direction === 'down' && currentIndex < list.length - 1) {
+      const targetIndex = currentIndex + 1;
+      const [moved] = list.splice(currentIndex, 1);
+      list.splice(targetIndex, 0, moved);
+    } else {
+      // Cannot move beyond group boundaries
+      return copy;
+    }
+
+    // Normalize groupOrder on the reordered group
+    list.forEach((t, idx) => {
+      t.groupOrder = idx;
+    });
+
+    // Reconstruct canonical track layout: timed_text -> video -> audio -> data
+    copy.tracks = [
+      ...grouped.timed_text,
+      ...grouped.video,
+      ...grouped.audio,
+      ...grouped.data,
+    ];
+
+    return copy;
   }
 }
