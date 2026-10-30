@@ -143,9 +143,8 @@ const ColorWheel: React.FC<ColorWheelProps> = ({
         onPointerMove={isDragging ? handlePointerMove : undefined}
         onPointerUp={handlePointerUp}
         onDoubleClick={handleReset}
-        className={`relative w-[76px] h-[76px] rounded-full cursor-crosshair select-none touch-none shadow-inner border border-glass-border/60 ${
-          disabled ? 'opacity-50 pointer-events-none' : ''
-        }`}
+        className={`relative w-[76px] h-[76px] rounded-full cursor-crosshair select-none touch-none shadow-inner border border-glass-border/60 ${disabled ? 'opacity-50 pointer-events-none' : ''
+          }`}
         style={{
           background:
             'radial-gradient(circle, #2d3748 0%, #1a202c 100%), conic-gradient(from 0deg, #ef4444, #eab308, #22c55e, #06b6d4, #3b82f6, #ec4899, #ef4444)',
@@ -218,9 +217,9 @@ export const StudioColorGradingInspector: React.FC<StudioColorGradingInspectorPr
   const currentLutValue = typeof p.lut === 'string' && p.lut.length > 0 ? p.lut : '__none__';
 
   return (
-    <div className="space-y-3">
+    <>
       {/* Segmented Sub-Navigation Tabs */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full" orientation="vertical">
         <TabsList className="grid grid-cols-4 w-full h-7 p-0.5 bg-glass-surface/60 border border-glass-border rounded-md text-[10px]">
           <TabsTrigger value="correction" className="h-6 text-[10px] px-1 data-[state=active]:bg-accent-theme/20 data-[state=active]:text-accent-theme font-semibold">
             Correction
@@ -638,6 +637,6 @@ export const StudioColorGradingInspector: React.FC<StudioColorGradingInspectorPr
           </div>
         </TabsContent>
       </Tabs>
-    </div>
+    </>
   );
 };
