@@ -13,6 +13,9 @@ import { quantumPhysicsDemoIR } from '../apps/studio/src/lib/ir/quantumPhysicsDe
 import { defaultDemoIR } from '../apps/studio/src/lib/ir/defaultDemoIR';
 import { broadcastNewsDemoIR } from '../apps/studio/src/lib/ir/broadcastNewsDemoIR';
 import { cyberAudioVisualizerDemoIR } from '../apps/studio/src/lib/ir/cyberAudioVisualizerDemoIR';
+import { getAvailableModifiersFromRegistry } from '../apps/studio/src/components/inspector/modifierCatalog';
+import { UpdateModifierCommand } from '../apps/studio/src/lib/commands/UpdateModifierCommand';
+import { RemoveModifierCommand } from '../apps/studio/src/lib/commands/RemoveModifierCommand';
 
 describe('Iteration 55: Unified Modifier Target Model, Dynamic Registry Validation & 7-Package Sync', () => {
   let registry: ModifierPluginRegistry;
@@ -339,5 +342,84 @@ describe('Iteration 55: Unified Modifier Target Model, Dynamic Registry Validati
       expect(result.valid).toBe(true);
       expect(result.errors).toEqual([]);
     }
+  });
+
+  // Test Vector 8: AvailableModifierDef Inherits ModifierPlugin & Hierarchical Dropdown Context Filtering
+  it('should verify AvailableModifierDef plugin inheritance and entity-aware dropdown filtering', () => {
+    const available = getAvailableModifiersFromRegistry(registry);
+    expect(available.length).toBeGreaterThan(0);
+
+    // Verify AvailableModifierDef implements ModifierPlugin
+    for (const mod of available) {
+      expect(typeof mod.type).toBe('string');
+      expect(typeof mod.name).toBe('string');
+      expect(typeof mod.category).toBe('string');
+      expect(['standalone', 'sequence', 'track', 'timeline']).toContain(mod.targetScope);
+      expect(Array.isArray(mod.supportedTrackTypes)).toBe(true);
+      expect(typeof mod.defaultParams).toBe('object');
+    }
+
+    // Timeline Mode Filtering: only timeline plugins should be allowed
+    const timelineAllowed = available.filter((m) =>
+      registry.isModifierAllowedOnEntity(m.type, { type: 'timeline' }).allowed
+    );
+    expect(timelineAllowed.map((m) => m.type)).toContain('timeline/photometric_bloom');
+    expect(timelineAllowed.map((m) => m.type)).toContain('timeline/anamorphic_glare');
+    expect(timelineAllowed.map((m) => m.type)).not.toContain('transform');
+    expect(timelineAllowed.map((m) => m.type)).not.toContain('timed_text/style');
+
+    // Track Mode Filtering: only track plugins should be allowed
+    const trackAllowed = available.filter((m) =>
+      registry.isModifierAllowedOnEntity(m.type, { type: 'track' }).allowed
+    );
+    expect(trackAllowed.map((m) => m.type)).toContain('timed_text/style');
+    expect(trackAllowed.map((m) => m.type)).not.toContain('timeline/photometric_bloom');
+    expect(trackAllowed.map((m) => m.type)).not.toContain('vfx/camera_3d');
+
+    // Sequence Mode Filtering on 'video':
+    const videoSeqAllowed = available.filter((m) =>
+      registry.isModifierAllowedOnEntity(m.type, { type: 'sequence', sequenceType: 'video' }).allowed
+    );
+    expect(videoSeqAllowed.map((m) => m.type)).toContain('transform');
+    expect(videoSeqAllowed.map((m) => m.type)).toContain('vfx/camera_3d');
+    expect(videoSeqAllowed.map((m) => m.type)).not.toContain('timeline/photometric_bloom');
+    expect(videoSeqAllowed.map((m) => m.type)).not.toContain('timed_text/style');
+
+    // Verify Timeline Command Dispatch & Undo/Redo
+    const baseDoc: VideoIRDocument = {
+      schemaVersion: '2.0.0',
+      meta: {
+        id: 'test_timeline_commands',
+        title: 'Timeline Commands Test',
+        durationSec: 10,
+        globalFps: 30,
+        resolution: { width: 1920, height: 1080 },
+      },
+      tracks: [],
+    };
+
+    const addTimelineCmd = new UpdateModifierCommand(
+      'timeline',
+      'timeline/photometric_bloom',
+      { luminanceThreshold: 0.75, intensity: 1.8 },
+      'video'
+    );
+
+    const docWithMod = addTimelineCmd.execute(baseDoc);
+    expect(docWithMod.modifiers).toBeDefined();
+    expect(docWithMod.modifiers!.length).toBe(1);
+    expect(docWithMod.modifiers![0].type).toBe('timeline/photometric_bloom');
+    expect(docWithMod.modifiers![0].params.intensity).toBe(1.8);
+
+    const undoneDoc = addTimelineCmd.undo(docWithMod);
+    expect(undoneDoc.modifiers?.length || 0).toBe(0);
+
+    const remTimelineCmd = new RemoveModifierCommand('timeline', 'timeline/photometric_bloom');
+    const docRemoved = remTimelineCmd.execute(docWithMod);
+    expect(docRemoved.modifiers?.length).toBe(0);
+
+    const docRestored = remTimelineCmd.undo(docRemoved);
+    expect(docRestored.modifiers?.length).toBe(1);
+    expect(docRestored.modifiers![0].type).toBe('timeline/photometric_bloom');
   });
 });

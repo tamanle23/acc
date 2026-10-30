@@ -12,7 +12,14 @@ import {
   Clock,
   Monitor,
 } from 'lucide-react';
-import { ModifierPluginRegistry } from '@acc/ir';
+import {
+  ModifierPluginRegistry,
+  registerCoreModifierPlugins,
+  type ModifierPlugin,
+  type ModifierTargetScope,
+  type SequenceType,
+  type TrackType,
+} from '@acc/ir';
 export * from './ParameterControls';
 
 export const PARTICLE_PRESET_DEFAULTS: Record<
@@ -130,13 +137,15 @@ export type ModifierCategory =
 
 export type ModifierIconComponent = React.ComponentType<{ className?: string }>;
 
-export interface AvailableModifierDef {
+export interface AvailableModifierDef extends ModifierPlugin<Record<string, unknown>> {
   type: string;
   name: string;
   category: ModifierCategory;
   icon: ModifierIconComponent;
   supportedTrackTypes: Array<'video' | 'audio' | 'timed_text' | 'data'>;
   defaultParams: Record<string, unknown>;
+  targetScope: ModifierTargetScope;
+  allowedSequenceTypes?: readonly SequenceType[];
 }
 
 export const MODIFIER_PRESENTATION_CATALOG: Record<
@@ -959,6 +968,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
 export function getAvailableModifiersFromRegistry(
   registry: ModifierPluginRegistry = ModifierPluginRegistry.getInstance()
 ): AvailableModifierDef[] {
+  registerCoreModifierPlugins(registry);
   const registeredPlugins = registry.listPlugins();
   const result: AvailableModifierDef[] = [];
   const processedTypes = new Set<string>();
@@ -969,19 +979,22 @@ export function getAvailableModifiersFromRegistry(
 
     if (catalogEntry) {
       result.push({
+        ...plugin,
         type: plugin.type,
         name: catalogEntry.name,
-        category: catalogEntry.category || 'vfx',
+        category: catalogEntry.category || (plugin.schema?.category as ModifierCategory) || 'vfx',
         icon: catalogEntry.icon,
         supportedTrackTypes: catalogEntry.supportedTrackTypes,
         defaultParams: { ...catalogEntry.defaultParams },
+        targetScope: plugin.targetScope,
+        allowedSequenceTypes: plugin.allowedSequenceTypes,
       });
     } else {
-      const isAudio = plugin.targetScope === 'audio';
+      const isAudio = plugin.targetScope === 'sequence' && plugin.schema?.category === 'audio';
       const defaultSupportedTrackTypes: Array<'video' | 'audio' | 'timed_text' | 'data'> = isAudio
         ? ['audio']
-        : plugin.targetScope === 'both'
-        ? ['video', 'audio', 'timed_text']
+        : plugin.targetScope === 'track'
+        ? ['timed_text']
         : ['video'];
 
       const rawName = plugin.type.split('/').pop() || plugin.type;
@@ -991,26 +1004,41 @@ export function getAvailableModifiersFromRegistry(
         .join(' ');
 
       result.push({
+        ...plugin,
         type: plugin.type,
         name: formattedName,
-        category: 'custom',
+        category: (plugin.schema?.category as ModifierCategory) || 'custom',
         icon: isAudio ? Volume2 : Sparkles,
         supportedTrackTypes: defaultSupportedTrackTypes,
         defaultParams: { enabled: true },
+        targetScope: plugin.targetScope,
+        allowedSequenceTypes: plugin.allowedSequenceTypes,
       });
     }
   }
 
   for (const [type, entry] of Object.entries(MODIFIER_PRESENTATION_CATALOG)) {
     if (!processedTypes.has(type)) {
+      const plugin = registry.get(type);
+      const targetScope: ModifierTargetScope = plugin?.targetScope || (
+        entry.supportedTrackTypes.includes('timed_text') && !entry.supportedTrackTypes.includes('video')
+          ? 'track'
+          : type.startsWith('timeline/')
+          ? 'timeline'
+          : 'sequence'
+      );
+
       result.push({
+        ...(plugin || {}),
         type,
         name: entry.name,
         category: entry.category || 'custom',
         icon: entry.icon,
         supportedTrackTypes: entry.supportedTrackTypes,
         defaultParams: { ...entry.defaultParams },
-      });
+        targetScope,
+        allowedSequenceTypes: plugin?.allowedSequenceTypes,
+      } as AvailableModifierDef);
     }
   }
 
@@ -1026,6 +1054,7 @@ export const AVAILABLE_MODIFIERS: AvailableModifierDef[] = [
     category: 'vfx',
     icon: Monitor,
     supportedTrackTypes: ['video'],
+    targetScope: 'standalone',
     defaultParams: {
       enabled: true,
       ringRadiusNorm: 0.35,
@@ -1040,6 +1069,7 @@ export const AVAILABLE_MODIFIERS: AvailableModifierDef[] = [
     category: 'vfx',
     icon: Layers,
     supportedTrackTypes: ['video'],
+    targetScope: 'standalone',
     defaultParams: {
       enabled: true,
       type: 'cyber_sparks',

@@ -1,13 +1,21 @@
 import React from 'react';
-import { ArrowUp, ArrowDown, Layers, Volume2, ChevronRight } from 'lucide-react';
+import { ArrowUp, ArrowDown, Layers, Volume2, ChevronRight, Sparkles, RotateCcw, Trash2 } from 'lucide-react';
 import { Card } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
-import { ParameterSlider } from './modifierCatalog';
+import { Switch } from '../ui/switch';
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from '../ui/accordion';
+import { ParameterSlider, MODIFIER_PRESENTATION_CATALOG } from './modifierCatalog';
+import { DynamicModifierInspector } from './DynamicModifierInspector';
 import { IRStateManager } from '../../lib/ir/irState';
 import type { StudioSequence, StudioTrack } from '../../lib/ir/studioTypes';
-import type { BlendMode } from '@acc/ir';
+import type { BlendMode, ModifierNode } from '@acc/ir';
 
 export interface TrackInspectorProps {
   selectedTrack: StudioTrack | null | undefined;
@@ -238,6 +246,99 @@ export const TrackInspector: React.FC<TrackInspectorProps> = ({
           </div>
         </div>
       </Card>
+
+      {/* Attached Track Modifiers */}
+      {selectedTrack.modifiers && selectedTrack.modifiers.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between px-1">
+            <span className="text-[11px] font-semibold text-foreground flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-accent-theme" />
+              Track Modifiers ({selectedTrack.modifiers.length})
+            </span>
+          </div>
+
+          <Accordion
+            type="multiple"
+            defaultValue={selectedTrack.modifiers.map((m: ModifierNode, i: number) => m.id || `${m.type}_${i}`)}
+            className="border-glass-border space-y-2"
+          >
+            {selectedTrack.modifiers.map((mod: ModifierNode, idx: number) => {
+              const modKey = mod.id || `${mod.type}_${idx}`;
+              const catalogEntry = MODIFIER_PRESENTATION_CATALOG[mod.type];
+              const Icon = catalogEntry?.icon || Sparkles;
+              const title = catalogEntry?.name || mod.type.split('/').pop() || mod.type;
+              const isEnabled = mod.params?.enabled !== false;
+
+              return (
+                <AccordionItem
+                  key={modKey}
+                  value={modKey}
+                  className="rounded-md overflow-hidden glass-card border-glass-border"
+                >
+                  <AccordionTrigger
+                    actions={
+                      <div className="flex items-center gap-1">
+                        {catalogEntry?.defaultParams && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-muted-foreground hover:text-foreground cursor-pointer"
+                            onClick={() =>
+                              IRStateManager.getInstance().updateModifier(selectedTrack.id, mod.type, {
+                                ...catalogEntry.defaultParams,
+                                enabled: isEnabled,
+                              })
+                            }
+                            title="Reset modifier"
+                          >
+                            <RotateCcw className="w-3 h-3" />
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-muted-foreground hover:text-destructive cursor-pointer"
+                          onClick={() => IRStateManager.getInstance().removeModifier(selectedTrack.id, mod.type)}
+                          title="Remove modifier"
+                        >
+                          <Trash2 className="w-3 h-3 text-destructive" />
+                        </Button>
+                        <Switch
+                          checked={isEnabled}
+                          onCheckedChange={(checked) =>
+                            IRStateManager.getInstance().updateModifier(selectedTrack.id, mod.type, {
+                              ...(mod.params || {}),
+                              enabled: checked,
+                            })
+                          }
+                        />
+                      </div>
+                    }
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <Icon className="w-3.5 h-3.5 text-accent-theme" />
+                      <span className="text-xs font-bold text-foreground">
+                        {title}
+                      </span>
+                    </div>
+                  </AccordionTrigger>
+
+                  <AccordionContent className="p-3 space-y-3">
+                    <DynamicModifierInspector
+                      modifierType={mod.type}
+                      params={mod.params || {}}
+                      disabled={!isEnabled}
+                      onChange={(nextParams) =>
+                        IRStateManager.getInstance().updateModifier(selectedTrack.id, mod.type, nextParams)
+                      }
+                    />
+                  </AccordionContent>
+                </AccordionItem>
+              );
+            })}
+          </Accordion>
+        </div>
+      )}
     </div>
   );
 };

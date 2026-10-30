@@ -22,6 +22,20 @@ export class RemoveModifierCommand implements ICommand {
   public execute(doc: VideoIRDocument): VideoIRDocument {
     const copy = JSON.parse(JSON.stringify(doc)) as VideoIRDocument;
 
+    // 1. Timeline / Project level modifier removal
+    if (this.sequenceId === 'timeline' || this.sequenceId === copy.meta.contentId) {
+      if (copy.modifiers) {
+        const idx = copy.modifiers.findIndex((m: ModifierNode) => m.type === this.modifierType);
+        if (idx !== -1) {
+          this.removedModifier = copy.modifiers[idx];
+          this.removedIndex = idx;
+          copy.modifiers.splice(idx, 1);
+        }
+      }
+      return copy;
+    }
+
+    // 2. Track & Sequence level modifier removal
     for (const track of copy.tracks) {
       if (track.id === this.sequenceId && track.modifiers) {
         const idx = track.modifiers.findIndex((m: ModifierNode) => m.type === this.modifierType);
@@ -54,6 +68,18 @@ export class RemoveModifierCommand implements ICommand {
 
     const copy = JSON.parse(JSON.stringify(doc)) as VideoIRDocument;
 
+    // 1. Timeline / Project level modifier undo restoration
+    if (this.sequenceId === 'timeline' || this.sequenceId === copy.meta.contentId) {
+      if (!copy.modifiers) copy.modifiers = [];
+      if (this.removedIndex >= 0 && this.removedIndex <= copy.modifiers.length) {
+        copy.modifiers.splice(this.removedIndex, 0, this.removedModifier);
+      } else {
+        copy.modifiers.push(this.removedModifier);
+      }
+      return copy;
+    }
+
+    // 2. Track & Sequence level modifier undo restoration
     for (const track of copy.tracks) {
       if (track.id === this.sequenceId) {
         if (!track.modifiers) track.modifiers = [];

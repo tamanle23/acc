@@ -31,6 +31,39 @@ export class UpdateModifierCommand implements ICommand {
   public execute(doc: VideoIRDocument): VideoIRDocument {
     const copy = JSON.parse(JSON.stringify(doc)) as VideoIRDocument;
 
+    // 1. Timeline / Project level modifier
+    if (this.sequenceId === 'timeline' || this.sequenceId === copy.meta.contentId) {
+      if (!copy.modifiers) copy.modifiers = [];
+      const existingMod = copy.modifiers.find((m) => m.type === this.modifierType);
+
+      if (existingMod) {
+        if (this.previousParamsSnapshot === null) {
+          this.previousParamsSnapshot = JSON.parse(JSON.stringify(existingMod.params));
+          this.wasPreviouslyExisting = true;
+        }
+        if (!existingMod.id) {
+          existingMod.id = `mod_${this.modifierType.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`;
+        }
+        if (this.target && !existingMod.target) {
+          existingMod.target = this.target;
+        }
+        existingMod.params = { ...existingMod.params, ...this.params };
+      } else {
+        if (this.previousParamsSnapshot === null) {
+          this.previousParamsSnapshot = null;
+          this.wasPreviouslyExisting = false;
+        }
+        copy.modifiers.push({
+          id: `mod_${this.modifierType.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`,
+          type: this.modifierType,
+          target: this.target || 'video',
+          params: { ...this.params },
+        });
+      }
+      return copy;
+    }
+
+    // 2. Track & Sequence level modifiers
     for (const track of copy.tracks) {
       if (track.id === this.sequenceId) {
         if (!track.modifiers) track.modifiers = [];
@@ -103,6 +136,22 @@ export class UpdateModifierCommand implements ICommand {
   public undo(doc: VideoIRDocument): VideoIRDocument {
     const copy = JSON.parse(JSON.stringify(doc)) as VideoIRDocument;
 
+    // 1. Timeline / Project level modifier undo
+    if (this.sequenceId === 'timeline' || this.sequenceId === copy.meta.contentId) {
+      if (copy.modifiers) {
+        if (!this.wasPreviouslyExisting) {
+          copy.modifiers = copy.modifiers.filter((m) => m.type !== this.modifierType);
+        } else if (this.previousParamsSnapshot !== null) {
+          const existingMod = copy.modifiers.find((m) => m.type === this.modifierType);
+          if (existingMod) {
+            existingMod.params = { ...this.previousParamsSnapshot };
+          }
+        }
+      }
+      return copy;
+    }
+
+    // 2. Track & Sequence level modifiers undo
     for (const track of copy.tracks) {
       if (track.id === this.sequenceId && track.modifiers) {
         if (!this.wasPreviouslyExisting) {

@@ -104,29 +104,68 @@ export function RightSidebar() {
     | 'timed_text'
     | 'data';
   const availableModifiers = getAvailableModifiersFromRegistry();
+  const registry = ModifierPluginRegistry.getInstance();
+
   const relevantModifiers = availableModifiers.filter((mod) => {
-    if (!mod.supportedTrackTypes.includes(trackType)) return false;
-    if (selectedSeq) {
-      const check = ModifierPluginRegistry.getInstance().isModifierAllowedOnEntity(mod.type, {
+    if (currentMode === 'sequence' && selectedSeq) {
+      if (selectedTrack && !mod.supportedTrackTypes.includes(trackType)) return false;
+      return registry.isModifierAllowedOnEntity(mod.type, {
         type: 'sequence',
         sequenceType: selectedSeq.type,
-      });
-      return check.allowed;
+      }).allowed;
     }
-    return true;
+    if (currentMode === 'track' && selectedTrack) {
+      if (!mod.supportedTrackTypes.includes(selectedTrack.type)) return false;
+      return registry.isModifierAllowedOnEntity(mod.type, {
+        type: 'track',
+      }).allowed;
+    }
+    if (currentMode === 'timeline') {
+      return registry.isModifierAllowedOnEntity(mod.type, {
+        type: 'timeline',
+      }).allowed;
+    }
+    return false;
   });
 
-  const modifiers: ModifierNode[] = selectedSeq?.modifiers || [];
+  const activeEntityModifiers: ModifierNode[] =
+    currentMode === 'sequence' && selectedSeq
+      ? selectedSeq.modifiers || []
+      : currentMode === 'track' && selectedTrack
+      ? selectedTrack.modifiers || []
+      : currentMode === 'timeline'
+      ? irState.doc.modifiers || []
+      : [];
+
+  const canAddEffect =
+    (currentMode === 'sequence' && Boolean(selectedSeq)) ||
+    (currentMode === 'track' && Boolean(selectedTrack)) ||
+    currentMode === 'timeline';
+  const isAddEffectDisabled = currentMode === 'sequence' ? isSequenceLocked : false;
 
   const handleAddEffect = (mod: AvailableModifierDef) => {
-    if (!selectedSeqId || isSequenceLocked) return;
-    IRStateManager.getInstance().addModifier(selectedSeqId, {
-      type: mod.type,
-      params: { ...mod.defaultParams },
-      target: selectedSeq?.type,
-    });
-    const sectionId = getSectionIdForModifierType(mod.type);
-    setOpenSections((prev) => (prev.includes(sectionId) ? prev : [...prev, sectionId]));
+    if (currentMode === 'sequence' && selectedSeq) {
+      if (isSequenceLocked) return;
+      IRStateManager.getInstance().addModifier(selectedSeq.id, {
+        type: mod.type,
+        params: { ...mod.defaultParams },
+        target: selectedSeq.type,
+      });
+      const sectionId = getSectionIdForModifierType(mod.type);
+      setOpenSections((prev) => (prev.includes(sectionId) ? prev : [...prev, sectionId]));
+    } else if (currentMode === 'track' && selectedTrack) {
+      IRStateManager.getInstance().addModifier(selectedTrack.id, {
+        type: mod.type,
+        params: { ...mod.defaultParams },
+        target: selectedTrack.type === 'timed_text' ? 'text' : 'video',
+      });
+    } else if (currentMode === 'timeline') {
+      IRStateManager.getInstance().addModifier('timeline', {
+        type: mod.type,
+        params: { ...mod.defaultParams },
+        target: 'video',
+      });
+    }
   };
 
   return (
@@ -141,13 +180,13 @@ export function RightSidebar() {
             </span>
           </div>
 
-          {currentMode === 'sequence' && selectedSeq && (
+          {canAddEffect && (
             <DropdownMenu open={isAddMenuOpen} onOpenChange={setIsAddMenuOpen}>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="outline"
                   size="sm"
-                  disabled={isSequenceLocked}
+                  disabled={isAddEffectDisabled}
                   className="h-6 text-[10px] gap-1 px-1.5 border-accent-theme/40 text-accent-theme bg-accent-theme/10 hover:bg-accent-theme/20 cursor-pointer disabled:cursor-not-allowed"
                 >
                   <Plus className="w-3 h-3" />
@@ -155,49 +194,57 @@ export function RightSidebar() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-64 max-h-96 overflow-y-auto">
-                {CATEGORY_KEYS.map((catKey) => {
-                  const groupModifiers = relevantModifiers.filter(
-                    (m) => (m.category || 'custom') === catKey
-                  );
-                  if (groupModifiers.length === 0) return null;
-                  const catMeta = CATEGORY_CONFIG[catKey];
-                  const CatIcon = catMeta.icon;
+                {relevantModifiers.length === 0 ? (
+                  <div className="p-3 text-center text-xs text-muted-foreground">
+                    No effects available for this {currentMode}.
+                  </div>
+                ) : (
+                  CATEGORY_KEYS.map((catKey) => {
+                    const groupModifiers = relevantModifiers.filter(
+                      (m) => (m.category || 'custom') === catKey
+                    );
+                    if (groupModifiers.length === 0) return null;
+                    const catMeta = CATEGORY_CONFIG[catKey];
+                    const CatIcon = catMeta.icon;
 
-                  return (
-                    <DropdownMenuSub key={catKey}>
-                      <DropdownMenuSubTrigger className="cursor-pointer py-1.5 text-xs flex items-center gap-2">
-                        <CatIcon className="w-3.5 h-3.5 text-accent-theme shrink-0" />
-                        <span className="font-medium">{catMeta.label}</span>
-                        <span className="text-[10px] text-muted-foreground ml-auto pr-1">
-                          {groupModifiers.length}
-                        </span>
-                      </DropdownMenuSubTrigger>
-                      <DropdownMenuSubContent className="w-56">
-                        {groupModifiers.map((mod) => {
-                          const isAttached = modifiers.some((m: ModifierNode) => m.type === mod.type);
-                          const Icon = mod.icon;
-                          return (
-                            <DropdownMenuItem
-                              key={mod.type}
-                              disabled={isAttached || isSequenceLocked}
-                              onSelect={() => handleAddEffect(mod)}
-                              onClick={() => handleAddEffect(mod)}
-                              className="flex items-center justify-between cursor-pointer py-1.5 text-xs"
-                            >
-                              <div className="flex items-center gap-2 truncate">
-                                <Icon className="w-3.5 h-3.5 text-accent-theme shrink-0" />
-                                <span className="truncate">{mod.name}</span>
-                              </div>
-                              {isAttached && (
-                                <Check className="w-3.5 h-3.5 text-accent-theme shrink-0" />
-                              )}
-                            </DropdownMenuItem>
-                          );
-                        })}
-                      </DropdownMenuSubContent>
-                    </DropdownMenuSub>
-                  );
-                })}
+                    return (
+                      <DropdownMenuSub key={catKey}>
+                        <DropdownMenuSubTrigger className="cursor-pointer py-1.5 text-xs flex items-center gap-2">
+                          <CatIcon className="w-3.5 h-3.5 text-accent-theme shrink-0" />
+                          <span className="font-medium">{catMeta.label}</span>
+                          <span className="text-[10px] text-muted-foreground ml-auto pr-1">
+                            {groupModifiers.length}
+                          </span>
+                        </DropdownMenuSubTrigger>
+                        <DropdownMenuSubContent className="w-56">
+                          {groupModifiers.map((mod) => {
+                            const isAttached = activeEntityModifiers.some(
+                              (m: ModifierNode) => m.type === mod.type
+                            );
+                            const Icon = mod.icon;
+                            return (
+                              <DropdownMenuItem
+                                key={mod.type}
+                                disabled={isAttached || isAddEffectDisabled}
+                                onSelect={() => handleAddEffect(mod)}
+                                onClick={() => handleAddEffect(mod)}
+                                className="flex items-center justify-between cursor-pointer py-1.5 text-xs"
+                              >
+                                <div className="flex items-center gap-2 truncate">
+                                  <Icon className="w-3.5 h-3.5 text-accent-theme shrink-0" />
+                                  <span className="truncate">{mod.name}</span>
+                                </div>
+                                {isAttached && (
+                                  <Check className="w-3.5 h-3.5 text-accent-theme shrink-0" />
+                                )}
+                              </DropdownMenuItem>
+                            );
+                          })}
+                        </DropdownMenuSubContent>
+                      </DropdownMenuSub>
+                    );
+                  })
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           )}
