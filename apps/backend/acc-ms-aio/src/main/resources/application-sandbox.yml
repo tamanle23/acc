@@ -10,7 +10,7 @@ spring:
       connection-timeout: 30000
   liquibase:
     enabled: true
-    change-log: classpath:db/changelog-master.xml
+    change-log: classpath:db/sandbox/changelog-master.xml
     contexts: dev,test,local
 
 application:

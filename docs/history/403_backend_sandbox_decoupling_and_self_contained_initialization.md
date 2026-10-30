@@ -12,8 +12,9 @@ Furthermore, when `spring.jpa.hibernate.ddl-auto: update` was tested, Hibernate 
    - Reverted `apps/backend/acc-fw/src/main/java/com/acc/service/AuditPartitionProvisioner.java` to its original clean state with zero references or dependencies on `application.sandbox`.
 2. **Authoritative Liquibase Migrations via `acc-db` (Approach A)**:
    - Added `acc-db` and `spring-boot-starter-liquibase` as dependencies of `apps/backend/acc-sandbox/pom.xml`.
+   - Created [`db/sandbox/changelog-master.xml`](file:///mnt/c/Users/Admin/workspace/git/acc/apps/backend/acc-sandbox/src/main/resources/db/sandbox/changelog-master.xml) inside `acc-sandbox`, eliminating schema validation errors (`cvc-complex-type.3.2.2: Attribute 'context' is not allowed to appear in element 'include'`) by removing invalid context attributes on `<include>` tags while retaining changeset-level contexts.
    - Created [`SandboxLiquibaseConfiguration`](file:///mnt/c/Users/Admin/workspace/git/acc/apps/backend/acc-sandbox/src/main/java/com/acc/sandbox/db/SandboxLiquibaseConfiguration.java), which registers a `SpringLiquibase` bean bound to `sandboxDataSource`.
-   - On sandbox boot, Liquibase runs `db/changelog-master.xml` against PGlite with contexts `dev,test,local`, migrating all authoritative tables (`UNIPOST_IDENTITY_*`, `UNIPOST_ENTITY_TYPES`, `UNIPOST_RECORD_AUDIT_LOG`) and baseline mock data.
+   - On sandbox boot, Liquibase runs `db/sandbox/changelog-master.xml` against PGlite with contexts `dev,test,local`, migrating all authoritative tables (`UNIPOST_IDENTITY_*`, `UNIPOST_ENTITY_TYPES`, `UNIPOST_RECORD_AUDIT_LOG`, `UNIPOST_FS_*`) and baseline mock data.
    - Spring Data JPA (`EntityManagerFactory`) and MyBatis (`SqlSessionFactory`) automatically wait for `SpringLiquibase` to complete before initializing.
    - `spring.jpa.hibernate.ddl-auto` remains `none`, eliminating Hibernate's invalid catalog introspection query on `information_schema.sequences`.
 3. **Defensive Snapshot Integrity**:
@@ -24,6 +25,7 @@ Furthermore, when `spring.jpa.hibernate.ddl-auto: update` was tested, Hibernate 
 ## 3. Changes Made
 - [`AuditPartitionProvisioner.java`](file:///mnt/c/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/service/AuditPartitionProvisioner.java): Reverted completely to original pristine implementation.
 - [`acc-sandbox/pom.xml`](file:///mnt/c/Users/Admin/workspace/git/acc/apps/backend/acc-sandbox/pom.xml): Declared `acc-db` and `spring-boot-starter-liquibase`.
+- [`db/sandbox/changelog-master.xml`](file:///mnt/c/Users/Admin/workspace/git/acc/apps/backend/acc-sandbox/src/main/resources/db/sandbox/changelog-master.xml): Master changelog for sandbox execution eliminating invalid attribute on `<include>`.
 - [`SandboxLiquibaseConfiguration.java`](file:///mnt/c/Users/Admin/workspace/git/acc/apps/backend/acc-sandbox/src/main/java/com/acc/sandbox/db/SandboxLiquibaseConfiguration.java): Implemented self-contained `SpringLiquibase` runner targeting `sandboxDataSource`.
 - [`SandboxAutoConfiguration.java`](file:///mnt/c/Users/Admin/workspace/git/acc/apps/backend/acc-sandbox/src/main/java/com/acc/sandbox/config/SandboxAutoConfiguration.java): Registered `SandboxLiquibaseConfiguration`.
 - [`PgLiteDatasourceConfiguration.java`](file:///mnt/c/Users/Admin/workspace/git/acc/apps/backend/acc-sandbox/src/main/java/com/acc/sandbox/db/PgLiteDatasourceConfiguration.java): Pure connection pool factory; removed ad-hoc DDL.

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+
+  <property name="schema" value="UNIPOST"/>
+  <property name="table_prefix" value="UNIPOST_IDENTITY_"/>
+
+  <!-- 1. Identity & RBAC Core Tables (Migrated into acc) -->
+  <include file="db/acc/changelog-identity-00.xml"/>
+  <include file="db/acc/changelog-identity-tokens.xml"/>
+  <include file="db/acc/changelog-identity-master_data.xml"/>
+  <!-- Note: changelog-identity-mock_data.xml defines context="dev, test, local, mock" at changeSet level -->
+  <include file="db/acc/changelog-identity-mock_data.xml"/>
+
+  <!-- 2. Dynamic Metadata Plane & Multi-Tenancy Core -->
+  <include file="db/acc/changelog-000.000.00001.xml"/>
+  <include file="db/acc/changelog-000.000.00002.xml"/>
+  <include file="db/acc/changelog-000.000.00003.xml"/>
+  <include file="db/acc/changelog-000.000.00004.xml"/>
+  <include file="db/acc/changelog-000.000.00005.xml"/>
+  <include file="db/acc/changelog-000.000.00006.xml"/>
+  <include file="db/acc/changelog-000.000.00007.xml"/>
+  <include file="db/acc/changelog-000.000.00008.xml"/>
+  <include file="db/acc/changelog-000.000.00009.xml"/>
+  <include file="db/acc/changelog-000.000.00010.xml"/>
+  <include file="db/acc/changelog-000.000.00011.xml"/>
+  <include file="db/acc/changelog-000.000.00012.xml"/>
+  <include file="db/acc/changelog-000.000.00013.xml"/>
+  <include file="db/acc/changelog-000.000.00014.xml"/>
+  <include file="db/acc/changelog-000.000.00015.xml"/>
+  <include file="db/acc/changelog-000.000.00016.xml"/>
+  <include file="db/acc/changelog-000.000.00017.xml"/>
+  <include file="db/acc/changelog-000.000.00018.xml"/>
+
+  <!-- 3. File Storage Schema -->
+  <include file="db/fs/changelog-master.xml"/>
+
+</databaseChangeLog>

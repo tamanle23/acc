@@ -30,7 +30,7 @@ public class SandboxLiquibaseConfiguration {
         log.info("================================================================");
         SpringLiquibase liquibase = new SpringLiquibase();
         liquibase.setDataSource(dataSource);
-        liquibase.setChangeLog("classpath:db/changelog-master.xml");
+        liquibase.setChangeLog("classpath:db/sandbox/changelog-master.xml");
         liquibase.setContexts("dev,test,local");
 
         Map<String, String> params = new HashMap<>();

@@ -206,7 +206,16 @@ describe('Iteration 58: Backend Sandbox Two-Tier Safeguards & PGlite WASM Parity
     const configContent = fs.readFileSync(liquibaseConfigPath, 'utf-8');
     expect(configContent).toContain('class SandboxLiquibaseConfiguration');
     expect(configContent).toContain('SpringLiquibase');
-    expect(configContent).toContain('classpath:db/changelog-master.xml');
+    expect(configContent).toContain('classpath:db/sandbox/changelog-master.xml');
     expect(configContent).toContain('sandboxLiquibase');
+
+    const sandboxChangelogPath = path.join(
+      repoRoot,
+      'apps/backend/acc-sandbox/src/main/resources/db/sandbox/changelog-master.xml'
+    );
+    expect(fs.existsSync(sandboxChangelogPath)).toBe(true);
+    const changelogContent = fs.readFileSync(sandboxChangelogPath, 'utf-8');
+    expect(changelogContent).toContain('changelog-identity-mock_data.xml');
+    expect(changelogContent).not.toContain('<include file="db/acc/changelog-identity-mock_data.xml" context=');
   });
 });
