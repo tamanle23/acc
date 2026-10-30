@@ -67,7 +67,7 @@ public class SandboxProperties {
     @Setter
     public static class DatabaseSimulationProperties {
         private boolean embeddedPglite = true;
-        private String devStoragePath = "tmp/db/pglite-sandbox";
+        private String devStoragePath = "tmp/db/pglite-sandbox.db";
     }
 
     @Getter

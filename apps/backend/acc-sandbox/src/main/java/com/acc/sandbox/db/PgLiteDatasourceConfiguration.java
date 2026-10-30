@@ -1,6 +1,7 @@
 package com.acc.sandbox.db;
 
 import com.acc.sandbox.config.SandboxProperties;
+import com.zaxxer.hikari.HikariDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -70,12 +71,17 @@ public class PgLiteDatasourceConfiguration {
           properties.getDev().isPristine(), jdbcUrl);
     }
 
-    return DataSourceBuilder.create()
+    HikariDataSource ds = DataSourceBuilder.create()
+        .type(HikariDataSource.class)
         .driverClassName(PGLITE_DRIVER)
         .url(jdbcUrl)
         .username("postgres")
         .password("postgres")
         .build();
+    ds.setMaximumPoolSize(10);
+    ds.setMinimumIdle(1);
+    ds.setConnectionTimeout(30000);
+    return ds;
   }
 
   private void deleteRecursively(File file) {

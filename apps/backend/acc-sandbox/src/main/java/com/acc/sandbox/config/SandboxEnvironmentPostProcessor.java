@@ -80,7 +80,7 @@ public class SandboxEnvironmentPostProcessor implements EnvironmentPostProcessor
     // Inject sandbox properties at highest precedence so DataSourceAutoConfiguration and MyBatis
     // connect seamlessly to embedded PGlite WASM with zero external PostgreSQL dependencies
     String mode = environment.getProperty("application.sandbox.mode", "DEV");
-    String devStorage = environment.getProperty("application.sandbox.database.dev-storage-path", "../../tmp/db/pglite-sandbox");
+    String devStorage = environment.getProperty("application.sandbox.database.dev-storage-path", "../../tmp/db/pglite-sandbox.db");
 
     String jdbcUrl;
     if ("TEST".equalsIgnoreCase(mode)) {
@@ -104,6 +104,9 @@ public class SandboxEnvironmentPostProcessor implements EnvironmentPostProcessor
     sandboxOverrides.put("spring.datasource.driver-class-name", PGLITE_DRIVER);
     sandboxOverrides.put("spring.datasource.username", "postgres");
     sandboxOverrides.put("spring.datasource.password", "postgres");
+    sandboxOverrides.put("spring.datasource.hikari.maximum-pool-size", 10);
+    sandboxOverrides.put("spring.datasource.hikari.minimum-idle", 1);
+    sandboxOverrides.put("spring.datasource.hikari.connection-timeout", 30000);
 
     environment.getPropertySources().addFirst(new MapPropertySource("sandboxEnvironmentOverrides", sandboxOverrides));
 
