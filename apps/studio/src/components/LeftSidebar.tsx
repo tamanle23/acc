@@ -65,7 +65,7 @@ export interface LeftSidebarProps {
   onInsertPreset?: (preset: StagingPreset) => void;
 }
 
-export function LeftSidebar({
+function LeftSidebarInner({
   isOpen,
   onToggle,
   activeNav,
@@ -504,3 +504,5 @@ export function LeftSidebar({
     </div>
   );
 }
+
+export const LeftSidebar = React.memo(LeftSidebarInner);

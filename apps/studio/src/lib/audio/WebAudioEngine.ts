@@ -582,7 +582,69 @@ export class WebAudioEngine {
     return this.ctx?.state === 'running';
   }
 
+  // Active audition source for preset & procedural previews
+  private auditionSource: AudioBufferSourceNode | null = null;
+
   public getIsPlaying(): boolean {
     return this.isPlaying;
+  }
+
+  /**
+   * Plays an audition audio buffer (e.g. SFX/preset preview) through the shared master AudioContext.
+   * Prevents creating runaway AudioContext instances and hitting browser hardware limits.
+   */
+  public playAuditionBuffer(
+    buffer: Float32Array,
+    sampleRate = 44100,
+    onEnded?: () => void
+  ): () => void {
+    if (!this.initContext() || !this.ctx) {
+      onEnded?.();
+      return () => {};
+    }
+
+    if (this.auditionSource) {
+      try {
+        this.auditionSource.stop();
+        this.auditionSource.disconnect();
+      } catch {}
+      this.auditionSource = null;
+    }
+
+    try {
+      const audioBuf = this.ctx.createBuffer(1, buffer.length, sampleRate);
+      audioBuf.copyToChannel(buffer as unknown as Float32Array<ArrayBuffer>, 0);
+      const source = this.ctx.createBufferSource();
+      source.buffer = audioBuf;
+      source.connect(this.masterGain || this.ctx.destination);
+
+      let isFinished = false;
+      const cleanup = () => {
+        if (isFinished) return;
+        isFinished = true;
+        try {
+          source.disconnect();
+        } catch {}
+        if (this.auditionSource === source) {
+          this.auditionSource = null;
+        }
+        onEnded?.();
+      };
+
+      source.onended = cleanup;
+      source.start();
+      this.auditionSource = source;
+
+      return () => {
+        try {
+          source.stop();
+        } catch {}
+        cleanup();
+      };
+    } catch (e) {
+      console.warn('[WebAudioEngine] playAuditionBuffer error:', e);
+      onEnded?.();
+      return () => {};
+    }
   }
 }

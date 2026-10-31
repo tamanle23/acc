@@ -37,7 +37,7 @@ export interface TimelineProps {
   onScrollChange?: (scrollLeft: number) => void;
 }
 
-export function Timeline({
+function TimelineInner({
   playhead,
   onScrub,
   isPlaying,
@@ -462,3 +462,5 @@ export function Timeline({
     </footer>
   );
 }
+
+export const Timeline = React.memo(TimelineInner);

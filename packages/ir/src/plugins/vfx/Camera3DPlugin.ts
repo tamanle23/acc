@@ -186,15 +186,14 @@ export class Camera3DPlugin implements ModifierPlugin<Camera3DPluginParams> {
     const imgPath = params.imagePath;
     if (rackFocusEnabled && imgPath && typeof window === 'undefined') {
       try {
-        const req = typeof require !== 'undefined' ? require : (0, eval)('require');
-        const effectEngines = req('@acc/effect-engines');
+        const effectEngines: any = await import('@acc/effect-engines');
         const depthData = await effectEngines.resolveDepthMapData(imgPath, width, height, params as any);
         if (depthData?.srcCanvas) {
           const sharpCanvas = depthData.srcCanvas;
 
           // Generate near-blur (foreground bokeh) and far-blur (background bokeh)
-          const uNear = UniversalCanvasProvider.createCanvas(width, height);
-          const uFar = UniversalCanvasProvider.createCanvas(width, height);
+          const uNear = UniversalCanvasProvider.acquireScratchCanvas(width, height);
+          const uFar = UniversalCanvasProvider.acquireScratchCanvas(width, height);
           const nearBlurCanvas = uNear.getRawCanvas ? uNear.getRawCanvas() : uNear;
           const farBlurCanvas = uFar.getRawCanvas ? uFar.getRawCanvas() : uFar;
 

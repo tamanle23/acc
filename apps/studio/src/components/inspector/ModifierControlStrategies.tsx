@@ -4,6 +4,7 @@ import { Button } from '../ui/button';
 import type { ParamFieldDescriptor, IRSequence } from '@acc/ir';
 import { ProceduralAudioSynthesizer } from '@acc/ir';
 import { EasingCurveSelector } from '../EasingCurveSelector';
+import { WebAudioEngine } from '../../lib/audio/WebAudioEngine';
 import { IRStateManager } from '../../lib/ir/irState';
 import { useIRSelector, usePlayheadFrame } from '../../lib/ir/useStudioStore';
 import {
@@ -91,25 +92,9 @@ export const SFXActionsControlStrategy: React.FC<ControlStrategyProps> = ({
     }
 
     try {
-      const win = window as Window & { webkitAudioContext?: typeof AudioContext };
-      const AudioCtx = window.AudioContext || win.webkitAudioContext;
-      if (AudioCtx) {
-        const ctx = new AudioCtx();
-        const audioBuf = ctx.createBuffer(1, buf.length, 44100);
-        audioBuf.copyToChannel(buf as unknown as Float32Array<ArrayBuffer>, 0);
-        const source = ctx.createBufferSource();
-        source.buffer = audioBuf;
-        source.connect(ctx.destination);
-        source.onended = () => {
-          ctx.close().catch(() => {});
-          setIsPlayingAudition(false);
-        };
-        source.start();
-        setTimeout(() => {
-          ctx.close().catch(() => {});
-          setIsPlayingAudition(false);
-        }, Math.min(10000, Math.max(1000, durationSec * 1000 + 500)));
-      }
+      WebAudioEngine.getInstance().playAuditionBuffer(buf, 44100, () => {
+        setIsPlayingAudition(false);
+      });
     } catch (e) {
       console.warn('Audio audition error:', e);
       setIsPlayingAudition(false);

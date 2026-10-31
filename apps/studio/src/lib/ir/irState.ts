@@ -16,6 +16,7 @@ import {
   type ValidationResult,
 } from '@acc/ir';
 import { complexSciFiDemoIR } from './complexSciFiDemoIR';
+import { AssetTextureCache } from '../textures/AssetTextureCache';
 import { defaultDemoIR } from './defaultDemoIR';
 import { broadcastNewsDemoIR } from './broadcastNewsDemoIR';
 import { cyberAudioVisualizerDemoIR } from './cyberAudioVisualizerDemoIR';
@@ -366,6 +367,7 @@ export class IRStateManager {
       canUndo: false,
       canRedo: false,
     };
+    AssetTextureCache.getInstance().clear();
     this.notify();
     await this.recompile();
   }
@@ -373,6 +375,7 @@ export class IRStateManager {
   public loadDocument(doc: VideoIRDocument): void {
     const migrated = migrateLegacyModifiers(cloneIR(doc));
     this.historyManager.clear();
+    AssetTextureCache.getInstance().clear();
     this.state = {
       ...this.state,
       doc: migrated,
@@ -397,6 +400,7 @@ export class IRStateManager {
         return val;
       }
       this.historyManager.clear();
+      AssetTextureCache.getInstance().clear();
       this.state = {
         ...this.state,
         doc: parsed,

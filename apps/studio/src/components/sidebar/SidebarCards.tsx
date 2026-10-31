@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useDraggable } from '@dnd-kit/core';
 import { ProceduralAudioSynthesizer, ProceduralSFXModifierPlugin } from '@acc/ir';
+import { WebAudioEngine } from '../../lib/audio/WebAudioEngine';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Card } from '../ui/card';
@@ -109,10 +110,6 @@ export function DraggablePresetCard({
             onClick={(e) => {
               e.stopPropagation();
               try {
-                const win = window as Window & { webkitAudioContext?: typeof AudioContext };
-                const AudioCtx = window.AudioContext || win.webkitAudioContext;
-                if (!AudioCtx) return;
-                const ctx = new AudioCtx();
                 let buf: Float32Array;
                 if (preset.category === 'sfx') {
                   const seq = preset.createSequence({ startFrame: 0 });
@@ -124,20 +121,7 @@ export function DraggablePresetCard({
                 } else {
                   buf = ProceduralAudioSynthesizer.synthWhoosh(0, 0.6);
                 }
-                const audioBuf = ctx.createBuffer(1, buf.length, 44100);
-                audioBuf.copyToChannel(buf as unknown as Float32Array<ArrayBuffer>, 0);
-                const source = ctx.createBufferSource();
-                source.buffer = audioBuf;
-                source.connect(ctx.destination);
-                source.onended = () => {
-                  ctx.close().catch(() => {});
-                };
-                source.start();
-                setTimeout(() => {
-                  if (ctx.state !== 'closed') {
-                    ctx.close().catch(() => {});
-                  }
-                }, 3500);
+                WebAudioEngine.getInstance().playAuditionBuffer(buf, 44100);
               } catch (err) {
                 console.warn('Audition error:', err);
               }

@@ -186,11 +186,9 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
       mode === "sandwich";
 
   const segStrat = VisionEngineRegistry.getSegmentationStrategy(depthConfig?.segmentationStrategy);
-  console.log("segstrat", segStrat)
   // Load subject cutout if available
   try {
     const cutoutRes = await resolveSubjectCutout(scene.resolvedImage, depthConfig);
-    console.log("cutout", cutoutRes)
     if (cutoutRes.subjectImg) {
       subjectImg = cutoutRes.subjectImg;
       subjectBBox = cutoutRes.subjectBBox;
@@ -200,8 +198,6 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
   // Auto-segmentation fallback
   if (!subjectImg && shouldAutoSegment) {
     try {
-      console.log('Segment infer', subjectImg);
-
       const segRes = await (segStrat as any).segment(imgBuffer);
       const maskBuffer = (segRes as any)?.maskRgbaBuffer || (segRes as any)?.maskAlphaData;
       if (maskBuffer) {
@@ -233,10 +229,10 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
 
   // Depth-3D Depth Map loading
   let loadedDepth = false;
-  const dCanvas = UniversalCanvasProvider.createCanvas(width, height);
+  const dCanvas = UniversalCanvasProvider.acquireScratchCanvas(width, height);
   const dCtx = dCanvas.getContext("2d");
 
-  const sCanvas = UniversalCanvasProvider.createCanvas(width, height);
+  const sCanvas = UniversalCanvasProvider.acquireScratchCanvas(width, height);
   const sCtx = sCanvas.getContext("2d");
   drawImageCover(sCtx, img, 0, 0, width, height);
 
@@ -276,17 +272,17 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
     const depthDataFull = dCtx.getImageData(0, 0, width, height).data;
     const srcDataFull = sCtx.getImageData(0, 0, width, height).data;
 
-    const mgCanvas = UniversalCanvasProvider.createCanvas(width, height);
+    const mgCanvas = UniversalCanvasProvider.acquireScratchCanvas(width, height);
     const mgCtx = mgCanvas.getContext("2d");
     const mgImgData = mgCtx.createImageData(width, height);
     const mgData = mgImgData.data;
 
-    const fgCanvas = UniversalCanvasProvider.createCanvas(width, height);
+    const fgCanvas = UniversalCanvasProvider.acquireScratchCanvas(width, height);
     const fgCtx = fgCanvas.getContext("2d");
     const fgImgData = fgCtx.createImageData(width, height);
     const fgData = fgImgData.data;
 
-    const bgC = UniversalCanvasProvider.createCanvas(width, height);
+    const bgC = UniversalCanvasProvider.acquireScratchCanvas(width, height);
     const bgCctx = bgC.getContext("2d");
     const bgImgData = bgCctx.createImageData(width, height);
     const bgData = bgImgData.data;
@@ -421,6 +417,17 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
     }
   }
 
+  // Release pre-allocated scratch canvases after rendering completes
+  try {
+    UniversalCanvasProvider.releaseScratchCanvas(dCanvas);
+    UniversalCanvasProvider.releaseScratchCanvas(sCanvas);
+    if (depthLayers) {
+      if (depthLayers.bg) UniversalCanvasProvider.releaseScratchCanvas(depthLayers.bg);
+      if (depthLayers.mg) UniversalCanvasProvider.releaseScratchCanvas(depthLayers.mg);
+      if (depthLayers.fg) UniversalCanvasProvider.releaseScratchCanvas(depthLayers.fg);
+    }
+  } catch {}
+
   await sink.finalize();
   return { path: outputPath, duration: totalDuration };
 }
@@ -459,7 +466,6 @@ export async function resolveSubjectCutout(
     if (maskBuffer) {
       await cache.set(cacheKey, maskBuffer, { mimeType: 'image/png' });
       const subjectImg = await CanvasAssetLoader.loadImage(maskBuffer);
-      console.log("resolved", subjectImg);
       return { subjectImg, subjectBBox: segRes.boundingBox };
     }
 

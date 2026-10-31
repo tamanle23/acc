@@ -57,7 +57,7 @@ const CATEGORY_CONFIG: Record<ModifierCategory, { label: string; icon: ModifierI
 };
 const CATEGORY_KEYS = Object.keys(CATEGORY_CONFIG) as ModifierCategory[];
 
-export function RightSidebar() {
+function RightSidebarInner() {
   const irState = useIRState();
   const [openSections, setOpenSections] = useState<string[]>([
     'transform',
@@ -350,3 +350,5 @@ export function RightSidebar() {
     </aside>
   );
 }
+
+export const RightSidebar = React.memo(RightSidebarInner);

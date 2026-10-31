@@ -34,7 +34,7 @@ interface PreviewProps {
   onScrub?: (frame: number) => void;
 }
 
-export function Preview({
+function PreviewInner({
   playhead,
   isPlaying = false,
   onTogglePlay,
@@ -430,3 +430,5 @@ export function Preview({
     </div>
   );
 }
+
+export const Preview = React.memo(PreviewInner);
