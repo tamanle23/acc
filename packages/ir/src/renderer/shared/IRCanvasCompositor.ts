@@ -352,6 +352,10 @@ export class IRCanvasCompositor {
       }
     };
 
+    // Isolation scratch canvases are sized to the virtual preview buffer to avoid full-resolution clears.
+    const scratchW = isVirtualScaled ? bufferW : width;
+    const scratchH = isVirtualScaled ? bufferH : height;
+
     const finishTrackIsolation = (
       track: ResolvedTrack,
       activeTrackSeqs: ResolvedSequence[],
@@ -387,11 +391,9 @@ export class IRCanvasCompositor {
       canvasCtx.save();
       canvasCtx.globalCompositeOperation = mapBlendModeToCanvasCompositeOperation(trackBlend);
       canvasCtx.globalAlpha = Math.max(0, Math.min(1, trackOpacity));
-      if (scratchCanvas.width === width && scratchCanvas.height === height) {
-        canvasCtx.drawImage(scratchCanvas, 0, 0, width, height);
-      } else {
-        canvasCtx.drawImage(scratchCanvas, 0, 0, width, height, 0, 0, width, height);
-      }
+      // Scratch holds the virtual-resolution (bufferW x bufferH) raster; canvasCtx already applies scaleX/scaleY,
+      // so draw the buffer-sized source region into the logical width x height destination.
+      canvasCtx.drawImage(scratchCanvas, 0, 0, scratchW, scratchH, 0, 0, width, height);
       canvasCtx.restore();
     };
 
@@ -447,8 +449,11 @@ export class IRCanvasCompositor {
             return seqRes.then(() => processTracksFrom(tIdx + 1));
           }
         } else {
-          const { canvas: scratchCanvas, ctx: scratchCtx } = getFrameScratchContext(width, height);
+          const { canvas: scratchCanvas, ctx: scratchCtx } = getFrameScratchContext(scratchW, scratchH);
           scratchCtx.save();
+          if (isVirtualScaled) {
+            scratchCtx.scale(scaleX, scaleY);
+          }
           scratchCtx.clearRect(0, 0, width, height);
           scratchCtx.globalAlpha = 1.0;
           scratchCtx.globalCompositeOperation = 'source-over';

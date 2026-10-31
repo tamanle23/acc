@@ -4,12 +4,17 @@
  * Decouples 60fps frame advancement from React reconciliation overhead
  * (incorporating architectural patterns from Twick & Motion Canvas).
  */
-export type PlayheadSubscriber = (frame: number, isPlaying: boolean) => void;
+export type PlayheadSubscriber = (
+  frame: number,
+  isPlaying: boolean,
+  fractionalFrame?: number
+) => void;
 
 export class StudioPlayheadController {
   private static instance: StudioPlayheadController;
 
   private currentFrame = 0;
+  private currentFractionalFrame = 0;
   private isPlaying = false;
   private fps = 30;
   private totalFrames = 300;
@@ -20,7 +25,7 @@ export class StudioPlayheadController {
   // Low-frequency throttled subscribers (React inspectors, track details)
   private lowFreqSubscribers = new Set<PlayheadSubscriber>();
   private lastLowFreqSyncTime = 0;
-  private lowFreqSyncIntervalMs = 100; // ~10 Hz React updates during playback
+  private lowFreqSyncIntervalMs = 250; // ~4 Hz React updates during playback
 
   private constructor() {}
 
@@ -104,7 +109,7 @@ export class StudioPlayheadController {
   public subscribeHighFrequency = (subscriber: PlayheadSubscriber): (() => void) => {
     this.highFreqSubscribers.add(subscriber);
     // Initial call
-    subscriber(this.currentFrame, this.isPlaying);
+    subscriber(this.currentFrame, this.isPlaying, this.currentFractionalFrame);
     return () => {
       this.highFreqSubscribers.delete(subscriber);
     };
@@ -116,7 +121,7 @@ export class StudioPlayheadController {
    */
   public subscribeLowFrequency = (subscriber: PlayheadSubscriber): (() => void) => {
     this.lowFreqSubscribers.add(subscriber);
-    subscriber(this.currentFrame, this.isPlaying);
+    subscriber(this.currentFrame, this.isPlaying, this.currentFractionalFrame);
     return () => {
       this.lowFreqSubscribers.delete(subscriber);
     };
@@ -125,14 +130,15 @@ export class StudioPlayheadController {
   /**
    * Seeks to an exact frame and dispatches updates.
    */
-  public seek(frame: number, immediateUiSync = false): void {
+  public seek(frame: number, immediateUiSync = false, fractionalFrame?: number): void {
     const clamped = Math.max(0, Math.min(Math.round(frame), this.totalFrames));
     this.currentFrame = clamped;
+    this.currentFractionalFrame = Math.max(0, Math.min(fractionalFrame ?? clamped, this.totalFrames));
 
     // 1. Immediately notify high-frequency subscribers (Zero React overhead)
     for (const sub of this.highFreqSubscribers) {
       try {
-        sub(this.currentFrame, this.isPlaying);
+        sub(this.currentFrame, this.isPlaying, this.currentFractionalFrame);
       } catch (err) {
         console.error('[StudioPlayheadController] HighFreq subscriber error:', err);
       }
@@ -149,7 +155,7 @@ export class StudioPlayheadController {
     this.lastLowFreqSyncTime = performance.now();
     for (const sub of this.lowFreqSubscribers) {
       try {
-        sub(this.currentFrame, this.isPlaying);
+        sub(this.currentFrame, this.isPlaying, this.currentFractionalFrame);
       } catch (err) {
         console.error('[StudioPlayheadController] LowFreq subscriber error:', err);
       }

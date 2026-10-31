@@ -574,6 +574,14 @@ export class WebAudioEngine {
   /**
    * Returns true if audio playback is currently active.
    */
+  /**
+   * True when the underlying AudioContext exists and is in the 'running' state
+   * (i.e. its hardware clock is advancing and safe to use as master clock).
+   */
+  public isContextRunning(): boolean {
+    return this.ctx?.state === 'running';
+  }
+
   public getIsPlaying(): boolean {
     return this.isPlaying;
   }

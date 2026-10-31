@@ -153,7 +153,11 @@ export function useShuttleEngine({
     const tick = (now: number) => {
       let targetFrame: number;
 
-      if (clock.getSyncMode() === 'audio_master' && WebAudioEngine.getInstance().getIsPlaying()) {
+      if (
+        clock.getSyncMode() === 'audio_master' &&
+        WebAudioEngine.getInstance().getIsPlaying() &&
+        WebAudioEngine.getInstance().isContextRunning()
+      ) {
         const audioNow = WebAudioEngine.getInstance().getAudioCurrentTime();
         targetFrame = clock.tick(audioNow);
       } else {
@@ -180,15 +184,16 @@ export function useShuttleEngine({
         return;
       }
 
-      const discreteFrame = snapToDiscreteFrame(targetFrame);
+      const rawFractionalFrame = targetFrame;
+      const discreteFrame = snapToDiscreteFrame(rawFractionalFrame);
       currentFrameRef.current = discreteFrame;
 
       // Advance high-frequency render subscribers (Canvas & Needle) on EVERY RAF frame at full 60 FPS
-      StudioPlayheadController.getInstance().seek(discreteFrame, false);
+      StudioPlayheadController.getInstance().seek(discreteFrame, false, rawFractionalFrame);
 
-      // Throttle React state update to ~15 Hz (every ~66ms) during continuous playback,
+      // Throttle React state update to ~4 Hz (every 250ms) during continuous playback,
       // preventing continuous 60 Hz React reconciliation overhead
-      if (now - lastUiSyncTime >= 66) {
+      if (now - lastUiSyncTime >= 250) {
         lastUiSyncTime = now;
         onScrubRef.current(discreteFrame);
       }

@@ -161,8 +161,10 @@ export function Timeline({
     const needle = playheadNeedleRef.current;
     if (!needle) return;
 
-    return StudioPlayheadController.getInstance().subscribeHighFrequency((frame) => {
-      const leftPx = 208 + frame * pixelsPerFrame;
+    return StudioPlayheadController.getInstance().subscribeHighFrequency((frame, isPlaying, fractionalFrame) => {
+      // Sub-frame gliding during playback; discrete integer frame when parked/scrubbing.
+      const activeFrame = isPlaying && fractionalFrame !== undefined ? fractionalFrame : frame;
+      const leftPx = 208 + activeFrame * pixelsPerFrame;
       needle.style.transform = `translate3d(${leftPx}px, 0, 0)`;
     });
   }, [pixelsPerFrame]);

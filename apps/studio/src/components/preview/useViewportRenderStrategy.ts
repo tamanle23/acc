@@ -118,6 +118,12 @@ export function useViewportRenderStrategy({
     const strategy = strategyRef.current;
     if (!strategy) return;
 
+    if (isPlaying) {
+      // During active playback, frame rendering is driven exclusively by high-frequency playhead ticks.
+      // Do not dispatch stale async frame render calls from React reconciliation.
+      return;
+    }
+
     const renderOptions: WorkerRenderOptions = {
       lod: isPlaying ? 0.5 : 1.0,
       isScrubbing: !isPlaying,
@@ -137,10 +143,13 @@ export function useViewportRenderStrategy({
   }, [currentFrame, fps, isPlaying, clearColor, debugMode, activeSeqs, assetsMap, assetTick, width, height]);
 
   // High-frequency subscription for smooth 60fps playhead animation without React rerenders
+  const lastDispatchedFrameRef = useRef(-1);
   useEffect(() => {
     return StudioPlayheadController.getInstance().subscribeHighFrequency((frame, playing) => {
       const strategy = strategyRef.current;
       if (strategy && strategy.isReady) {
+        if (playing && frame === lastDispatchedFrameRef.current) return;
+        lastDispatchedFrameRef.current = playing ? frame : -1;
         strategy.renderFrame(frame, {
           lod: playing ? 0.5 : 1.0,
           isScrubbing: !playing,

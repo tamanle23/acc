@@ -441,7 +441,7 @@ self.onmessage = async (e: MessageEvent) => {
       canvas.width = currentWidth;
       canvas.height = currentHeight;
       ctx = canvas.getContext('2d', {
-        willReadFrequently: false,
+        willReadFrequently: true,
       }) as OffscreenCanvasRenderingContext2D;
 
       if (data.timeline) {

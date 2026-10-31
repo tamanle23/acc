@@ -138,8 +138,14 @@ export class WorkerRenderStrategy implements IPreviewRenderStrategy {
     }
   }
 
+  private lastRenderedFrame = -1;
+
   public renderFrame(frame: number, options?: WorkerRenderOptions): void {
     if (this.bridge.hasTransferred()) {
+      // Skip redundant identical-frame dispatches during playback (e.g. 60 Hz RAF on a 30 FPS timeline).
+      // Parked/scrub renders always dispatch so edits and texture updates still repaint.
+      if (options?.isPlaying && frame === this.lastRenderedFrame) return;
+      this.lastRenderedFrame = options?.isPlaying ? frame : -1;
       this.bridge.renderFrame(frame, options);
     }
   }
