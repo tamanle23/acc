@@ -10,7 +10,7 @@ import com.acc.core.io.Page;
 import com.acc.user.model.User;
 import com.acc.user.repository.mybatis.model.RoleWithUserCount;
 
-@Mapper
+@Mapper(componentModel = "spring")
 public interface UserMapper {
 
   Page<UserVm> pageToResponsePage(Page<User> page);

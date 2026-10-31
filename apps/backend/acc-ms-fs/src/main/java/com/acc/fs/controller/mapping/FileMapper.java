@@ -5,7 +5,7 @@ import org.mapstruct.Mapper;
 
 import com.acc.fs.controller.response.FileVm;
 
-@Mapper
+@Mapper(componentModel = "spring")
 public interface FileMapper {
 
   FileVm fileToFileVM(FsObject fsObject);
