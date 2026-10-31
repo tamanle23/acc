@@ -93,6 +93,9 @@ function RightSidebarInner() {
     }
   }
 
+  // Fallback track resolution if no track is explicitly selected but tracks exist
+  const effectiveTrack: IRTrack | null = selectedTrack || (irState.doc.tracks.length > 0 ? irState.doc.tracks[0] : null);
+
   const fps = irState.doc.meta?.globalFps || 30;
   const currentMode =
     irState.inspectorMode ||
@@ -263,7 +266,10 @@ function RightSidebarInner() {
           <button
             type="button"
             aria-current={currentMode === 'timeline' ? 'page' : undefined}
-            onClick={() => IRStateManager.getInstance().setInspectorMode('timeline')}
+            onClick={() => {
+              IRStateManager.getInstance().setSelectedSequenceId(null);
+              IRStateManager.getInstance().setInspectorMode('timeline');
+            }}
             className={`px-1.5 py-0.5 rounded font-medium transition-colors flex items-center gap-1 truncate max-w-[90px] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${currentMode === 'timeline'
               ? 'bg-accent-theme text-primary-foreground shadow-2xs'
               : 'bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground'
@@ -279,25 +285,26 @@ function RightSidebarInner() {
           {/* Track Tier Pill */}
           <button
             type="button"
-            disabled={!selectedTrack}
+            disabled={!effectiveTrack}
             aria-current={currentMode === 'track' ? 'page' : undefined}
             onClick={() => {
-              if (selectedTrack) {
-                IRStateManager.getInstance().setSelectedTrackId(selectedTrack.id);
+              if (effectiveTrack) {
+                IRStateManager.getInstance().setSelectedSequenceId(null);
+                IRStateManager.getInstance().setSelectedTrackId(effectiveTrack.id);
                 IRStateManager.getInstance().setInspectorMode('track');
               }
             }}
-            className={`px-1.5 py-0.5 rounded font-medium transition-colors flex items-center gap-1 truncate max-w-[100px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${!selectedTrack
+            className={`px-1.5 py-0.5 rounded font-medium transition-colors flex items-center gap-1 truncate max-w-[100px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${!effectiveTrack
               ? 'opacity-40 cursor-not-allowed text-muted-foreground'
               : currentMode === 'track'
                 ? 'bg-accent-theme text-primary-foreground shadow-2xs cursor-pointer'
                 : 'bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground cursor-pointer'
               }`}
-            title={selectedTrack ? `Inspect Track ${selectedTrack.id}` : 'No track selected'}
+            title={effectiveTrack ? `Inspect Track ${effectiveTrack.name || effectiveTrack.id}` : 'No track selected'}
           >
             <Layers className="w-2.5 h-2.5 shrink-0" />
             <span className="truncate">
-              {selectedTrack?.name || selectedTrack?.id || 'Track'}
+              {effectiveTrack?.name || effectiveTrack?.id || 'Track'}
             </span>
           </button>
 
@@ -329,14 +336,14 @@ function RightSidebarInner() {
 
       {/* 2. Main Content Area */}
       <div className="flex-1 p-3 overflow-y-auto">
-        {currentMode === 'track' && selectedTrack ? (
-          <TrackInspector selectedTrack={selectedTrack} irState={irState} />
+        {currentMode === 'track' && effectiveTrack ? (
+          <TrackInspector selectedTrack={effectiveTrack} irState={irState} />
         ) : currentMode === 'timeline' || !selectedSeq ? (
           <ProjectInspector irState={irState} />
         ) : (
           <SequenceInspector
             selectedSeq={selectedSeq}
-            selectedTrack={selectedTrack}
+            selectedTrack={effectiveTrack}
             irState={irState}
             fps={fps}
             isLocked={isSequenceLocked}

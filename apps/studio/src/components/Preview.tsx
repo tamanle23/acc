@@ -327,7 +327,7 @@ function PreviewInner({
               panZoom.handleMouseDownPan(e);
             } else if (e.target === canvasRef.current) {
               IRStateManager.getInstance().setSelectedSequenceId(null);
-              IRStateManager.getInstance().setInspectorMode('project');
+              IRStateManager.getInstance().setInspectorMode('timeline');
             }
           }}
         >
