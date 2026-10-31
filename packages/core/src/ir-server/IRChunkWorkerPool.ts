@@ -229,7 +229,8 @@ export class IRChunkWorkerPool {
         this.timeline,
         this.seed,
         undefined,
-        workerResourceManager
+        workerResourceManager,
+        mediaEngine
       );
 
       let sink: IIRFrameSink | undefined;

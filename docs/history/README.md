@@ -68,4 +68,4 @@
 | 403 | [Backend Sandbox Decoupling & Self-Contained Schema Initialization](./403_backend_sandbox_decoupling_and_self_contained_initialization.md) | Completed |
 | 404 | [3D LUT Pipeline Integration & Tetrahedral Color Grading](./404_lut_colorgrading_integration.md) | Completed |
 | 405 | [Studio-Grade Color Correction Stage & Multi-Tab Color Inspector](./405_color_correction_stage_and_studio_color_inspector.md) | Completed |
-
+| 406 | [IRMasterRenderer MediaEngineStrategy Injection & Master vs Preview Comparison](./406_ir_master_renderer_strategy_injection_and_preview_comparison.md) | Completed |

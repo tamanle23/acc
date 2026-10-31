@@ -3,8 +3,10 @@ import {
   NativeResourceManager,
   UniversalCanvasProvider,
   CanvasScratchPool,
+  ContentCacheRegistry,
 } from '@acc/core-isomorphic';
 import { NapiCanvasAdapter } from '../packages/core/src/native';
+import { NativeFileCacheStrategy } from '../packages/core/src/cache/NativeFileCacheStrategy';
 import {
   IRMasterRenderer,
   IRCanvasCompositor,
@@ -58,6 +60,7 @@ function createTestTimeline(options: {
 describe('Iteration 46: Headless Scoped Resource Engine & Deterministic Zero-Leak Exporter', () => {
   beforeEach(() => {
     UniversalCanvasProvider.registerAdapter(new NapiCanvasAdapter(), true);
+    ContentCacheRegistry.register(new NativeFileCacheStrategy({ maxBytes: 16 * 1024 * 1024 }), true);
     CanvasScratchPool.getInstance().clear();
     const mgr = NativeResourceManager.getInstance();
     mgr.clear();

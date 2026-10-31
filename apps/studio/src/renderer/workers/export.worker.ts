@@ -86,7 +86,13 @@ self.onmessage = async (event: MessageEvent<ExportWorkerInMessage>) => {
         writableStream,
       });
 
-      const masterRenderer = new IRMasterRenderer(timeline, 42);
+      const masterRenderer = new IRMasterRenderer(
+        timeline,
+        42,
+        undefined,
+        undefined,
+        MediaEngineRegistry.get('mediabunny-client' as any)
+      );
 
       const renderResult = await masterRenderer.render({
         engine: 'mediabunny-client' as any,

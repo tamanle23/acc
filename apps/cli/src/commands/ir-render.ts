@@ -196,7 +196,13 @@ export async function handleIrRenderCommand(options: IrRenderCliOptions): Promis
         }
 
         Logger.info('IRRenderCommand', 'Starting deterministic headless rasterization loop...');
-        const renderer = new IRMasterRenderer(timeline, options.seed ?? 42);
+        const renderer = new IRMasterRenderer(
+          timeline,
+          options.seed ?? 42,
+          undefined,
+          undefined,
+          MediaEngineRegistry.get(options.engine)
+        );
 
         const result = await renderer.render({
           sink,

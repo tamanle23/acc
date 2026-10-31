@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'bun:test';
-import { ContentCacheRegistry, UniversalCanvasProvider } from '@acc/core-isomorphic';
+import { ContentCacheRegistry, CacheNamespace, UniversalCanvasProvider } from '@acc/core-isomorphic';
 import { NapiCanvasAdapter, NativeFileCacheStrategy } from '@acc/core';
 import {
   IRMasterRenderer,
@@ -31,8 +31,9 @@ describe('IRMasterRenderer Pure Isomorphic & Universal Content Cache Integration
       0x42, 0x60, 0x82,
     ]);
 
-    await testStrategy.set(assetKey, new Blob([pngBytes], { type: 'image/png' }), { mimeType: 'image/png' });
-    expect(await testStrategy.has(assetKey)).toBe(true);
+    const assetsCache = ContentCacheRegistry.namespace(CacheNamespace.Assets);
+    await assetsCache.set(assetKey, new Blob([pngBytes], { type: 'image/png' }), { mimeType: 'image/png' });
+    expect(await assetsCache.has(assetKey)).toBe(true);
 
     // 2. Build minimal timeline referencing this cached asset
     const track: ResolvedTrack = {

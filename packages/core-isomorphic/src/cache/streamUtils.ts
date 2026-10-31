@@ -53,21 +53,7 @@ export async function streamToUint8Array(stream: ReadableStream<Uint8Array>): Pr
  * Converts a Web standard Blob into a WHATWG ReadableStream<Uint8Array>.
  */
 export function blobToStream(blob: Blob): ReadableStream<Uint8Array> {
-  if (typeof blob.stream === 'function') {
-    return blob.stream();
-  }
-  // Fallback for polyfilled or mock Blob implementations
-  return new ReadableStream<Uint8Array>({
-    async start(controller) {
-      try {
-        const buffer = await blob.arrayBuffer();
-        controller.enqueue(new Uint8Array(buffer));
-        controller.close();
-      } catch (err) {
-        controller.error(err);
-      }
-    },
-  });
+  return blob.stream();
 }
 
 /**
@@ -78,22 +64,10 @@ export async function streamToBlob(
   stream: ReadableStream<Uint8Array>,
   mimeType: string = 'application/octet-stream'
 ): Promise<Blob> {
-  const reader = stream.getReader();
-  const parts: BlobPart[] = [];
-
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      if (value) {
-        parts.push(value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength));
-      }
-    }
-  } finally {
-    reader.releaseLock();
-  }
-
-  return new Blob(parts, { type: mimeType });
+  const response = new Response(stream, {
+    headers: { "Content-Type": mimeType }
+  });
+  return await response.blob();
 }
 
 /**

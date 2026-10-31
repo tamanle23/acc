@@ -65,8 +65,9 @@ export class VideoExporter implements IExporter<VideoExportOptions> {
       const compiler = new RelationalDAGCompiler({ prober });
       const timeline = await compiler.compile(irDoc);
 
-      const renderer = new IRMasterRenderer(timeline, 42);
-      const sink = MediaEngineRegistry.get(options.engine).createVideoSink() as IIRFrameSinkType;
+      const mediaEngine = MediaEngineRegistry.get(options.engine);
+      const renderer = new IRMasterRenderer(timeline, 42, undefined, undefined, mediaEngine);
+      const sink = mediaEngine.createVideoSink() as IIRFrameSinkType;
 
       const renderResult = await renderer.render({
         sink,

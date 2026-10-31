@@ -15,7 +15,7 @@ import {
   NativeResourceManager,
   AssetProtocolRegistry,
 } from '@acc/core-isomorphic';
-import type { IVideoDecoder, IMediaEngineStrategy, MediaEngineType } from '@acc/core-isomorphic';
+import type { IVideoDecoder, IMediaEngineStrategy, MediaEngineType, INamespacedCache } from '@acc/core-isomorphic';
 import { IRCanvasCompositor, type IAssetSourceResolver } from './shared/IRCanvasCompositor';
 
 export interface HeadlessRenderOptions {
@@ -262,7 +262,7 @@ export class IRMasterRenderer implements Disposable {
               if (img && typeof img.close === 'function') {
                 try {
                   img.close();
-                } catch {}
+                } catch { }
               }
             }
 
@@ -272,7 +272,7 @@ export class IRMasterRenderer implements Disposable {
               if (dec) {
                 try {
                   dec.close();
-                } catch {}
+                } catch { }
               }
             }
           }
@@ -290,7 +290,7 @@ export class IRMasterRenderer implements Disposable {
 
     const strategy = this.mediaEngineStrategy;
 
-    const cache = ContentCacheRegistry.namespace(CacheNamespace.Assets);
+    const cache: INamespacedCache = ContentCacheRegistry.namespace(CacheNamespace.Assets);
     const protocolRegistry = AssetProtocolRegistry.getInstance();
 
     for (const [assetId, assetDef] of Object.entries(this.timeline.assets)) {
@@ -299,46 +299,22 @@ export class IRMasterRenderer implements Disposable {
         const resolvedPath = resolveAssetPath(baseDir, rawSrc);
         const ext = getFileExtension(resolvedPath);
 
-        let assetExists = (await cache.has(resolvedPath)) || (await cache.has(assetId));
-        let cachedBytes: Uint8Array | null = null;
+        let blobData = (await cache.get(resolvedPath));
 
-        if (assetExists) {
-          const cachedVal = (await cache.get(resolvedPath)) || (await cache.get(assetId));
-          if (cachedVal instanceof Blob) {
-            cachedBytes = new Uint8Array(await cachedVal.arrayBuffer());
-          } else if (cachedVal instanceof Uint8Array) {
-            cachedBytes = cachedVal;
-          }
-        } else {
+        if (!blobData) {
           // Resolve transparently via isomorphic AssetProtocolRegistry (supports http:, blob:, data:, cache:, file:)
-          try {
-            const assetBlob = protocolRegistry.resolve(rawSrc, baseDir);
-            const blobData = await assetBlob.blob();
-            if (blobData && blobData.size > 0) {
-              cachedBytes = new Uint8Array(await blobData.arrayBuffer());
-              assetExists = true;
-              await cache.set(resolvedPath, blobData);
-            }
-          } catch {
-            if (typeof process !== 'undefined' && process.versions?.node) {
-              try {
-                const fsModule = await import('fs');
-                if (fsModule.existsSync(resolvedPath)) {
-                  assetExists = true;
-                }
-              } catch {
-                assetExists = false;
-              }
-            }
+          const assetBlob = protocolRegistry.resolve(rawSrc, baseDir);
+          blobData = await assetBlob.blob();
+          if (blobData) {
+            await cache.set(resolvedPath, blobData);
           }
         }
 
-        if (assetExists || isAbsolutePath(resolvedPath)) {
+        if (blobData || isAbsolutePath(resolvedPath)) {
           try {
             // Load if image format
             if (['.jpg', '.jpeg', '.png', '.webp', '.bmp', '.svg'].includes(ext) || assetDef.type === 'image') {
-              const imageSource = cachedBytes || resolvedPath;
-              const img = await CanvasAssetLoader.loadImage(imageSource);
+              const img = await CanvasAssetLoader.loadImage(await blobData.bytes());
               this.imageCache.set(assetId, img);
             } else if (['.mp4', '.mov', '.mkv', '.webm', '.avi'].includes(ext) || assetDef.type === 'video') {
               if (strategy && typeof strategy.createVideoDecoder === 'function') {
@@ -577,7 +553,7 @@ export class IRMasterRenderer implements Disposable {
     if (tempAudioWavPath) {
       try {
         await ContentCacheRegistry.namespace(CacheNamespace.Audio).delete(tempAudioWavPath);
-      } catch {}
+      } catch { }
 
       if (typeof process !== 'undefined' && process.versions?.node) {
         try {
@@ -585,7 +561,7 @@ export class IRMasterRenderer implements Disposable {
           if (fsModule.existsSync(tempAudioWavPath)) {
             await fsModule.promises.unlink(tempAudioWavPath);
           }
-        } catch {}
+        } catch { }
       }
     }
 
@@ -593,7 +569,7 @@ export class IRMasterRenderer implements Disposable {
     for (const decoder of this.videoDecoders.values()) {
       try {
         decoder.close();
-      } catch {}
+      } catch { }
     }
     this.videoDecoders.clear();
 
@@ -645,7 +621,7 @@ export class IRMasterRenderer implements Disposable {
             scope: frameScope,
           });
         }
-      } catch {}
+      } catch { }
     }
 
     // 2. Build asset source resolver combining static imageCache and dynamic activeVideoFrames
@@ -660,7 +636,7 @@ export class IRMasterRenderer implements Disposable {
             if (frame && typeof frame.close === 'function') {
               frame.close();
             }
-          } catch {}
+          } catch { }
         }
       },
     };
@@ -683,7 +659,7 @@ export class IRMasterRenderer implements Disposable {
           if (frame && typeof frame.close === 'function') {
             frame.close();
           }
-        } catch {}
+        } catch { }
       }
       activeVideoFrames.clear();
       frameScope.dispose();
@@ -709,7 +685,7 @@ export class IRMasterRenderer implements Disposable {
       if (img && typeof img.close === 'function') {
         try {
           img.close();
-        } catch {}
+        } catch { }
       }
     }
     this.imageCache.clear();
@@ -717,7 +693,7 @@ export class IRMasterRenderer implements Disposable {
     for (const dec of this.videoDecoders.values()) {
       try {
         dec.close();
-      } catch {}
+      } catch { }
     }
     this.videoDecoders.clear();
   }
