@@ -49,7 +49,7 @@ export class MediaEngineRegistry {
   }
 
   public static async getAsync(type?: string): Promise<IMediaEngineStrategy> {
-    const rawSelected = type || (process.env.ACC_MEDIA_ENGINE as string) || this.defaultEngine;
+    const rawSelected = type || this.defaultEngine;
     const selected = this.normalizeId(rawSelected);
 
     let strategy = this.strategies.get(selected) || this.strategies.get(rawSelected as any);
@@ -71,7 +71,7 @@ export class MediaEngineRegistry {
   }
 
   public static get(type?: string): IMediaEngineStrategy {
-    const rawSelected = type || (process.env.ACC_MEDIA_ENGINE as string) || this.defaultEngine;
+    const rawSelected = type || this.defaultEngine;
     const selected = this.normalizeId(rawSelected);
     const strategy = this.strategies.get(selected) || this.strategies.get(rawSelected as any);
 
