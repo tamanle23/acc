@@ -343,14 +343,6 @@ export class IRMasterRenderer implements Disposable {
   }
 
   /**
-   * Pre-load static visual image assets declared in timeline.assets into memory.
-   * @deprecated Use `prepare({ baseDir })` instead.
-   */
-  public async preloadAssets(baseDir: string = '.'): Promise<void> {
-    return this.prepare({ baseDir });
-  }
-
-  /**
    * Renders the entire timeline deterministically.
    */
   public async render(options: HeadlessRenderOptions = {}): Promise<HeadlessRenderResult> {

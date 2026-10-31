@@ -86,21 +86,6 @@ describe('IRMasterRenderer constructor-injected MediaEngineStrategy', () => {
     expect((renderer as any).videoDecoders.size).toBe(0);
   });
 
-  it('supports deprecated preloadAssets as an alias to prepare', async () => {
-    const calls: Array<{ path: string; w: number; h: number }> = [];
-    const strategy = {
-      createVideoDecoder: (path: string, w: number, h: number) => {
-        calls.push({ path, w, h });
-        return { open: async () => true, close: () => {} };
-      },
-    } as unknown as IMediaEngineStrategy;
-
-    const renderer = new IRMasterRenderer(buildVideoTimeline(), 42, undefined, undefined, strategy);
-    await renderer.preloadAssets('.');
-    expect(calls.length).toBe(1);
-    expect((renderer as any).videoDecoders.has('clip')).toBe(true);
-  });
-
   it('no longer performs ad-hoc MediaEngineRegistry lookups in the renderer source', async () => {
     const fsModule = await import('fs');
     const pathModule = await import('path');

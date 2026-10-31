@@ -74,7 +74,7 @@ describe('IRMasterRenderer Pure Isomorphic & Universal Content Cache Integration
     };
 
     const renderer = new IRMasterRenderer(timeline, 42, createIsolatedCoreModifierPlugins());
-    await renderer.preloadAssets();
+    await renderer.prepare();
 
     // Verify asset was loaded into imageCache
     expect((renderer as any).imageCache.has('cached_img')).toBe(true);
