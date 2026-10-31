@@ -64,7 +64,7 @@ describe('IRMasterRenderer constructor-injected MediaEngineStrategy', () => {
     } as unknown as IMediaEngineStrategy;
 
     const renderer = new IRMasterRenderer(buildVideoTimeline(), 42, undefined, undefined, strategy);
-    await renderer.preloadAssets('.');
+    await renderer.prepare({ baseDir: '.' });
 
     expect(calls).toEqual([{ path: '/abs/path/clip.mp4', w: 320, h: 240 }]);
     expect((renderer as any).videoDecoders.has('clip')).toBe(true);
@@ -73,7 +73,7 @@ describe('IRMasterRenderer constructor-injected MediaEngineStrategy', () => {
 
   it('does not throw and skips video decoders when no strategy is injected', async () => {
     const renderer = new IRMasterRenderer(buildVideoTimeline());
-    await expect(renderer.preloadAssets('.')).resolves.toBeUndefined();
+    await expect(renderer.prepare({ baseDir: '.' })).resolves.toBeUndefined();
     expect((renderer as any).videoDecoders.size).toBe(0);
   });
 
@@ -82,8 +82,23 @@ describe('IRMasterRenderer constructor-injected MediaEngineStrategy', () => {
       createVideoDecoder: () => ({ open: async () => false, close: () => {} }),
     } as unknown as IMediaEngineStrategy;
     const renderer = new IRMasterRenderer(buildVideoTimeline(), 42, undefined, undefined, strategy);
-    await renderer.preloadAssets('.');
+    await renderer.prepare({ baseDir: '.' });
     expect((renderer as any).videoDecoders.size).toBe(0);
+  });
+
+  it('supports deprecated preloadAssets as an alias to prepare', async () => {
+    const calls: Array<{ path: string; w: number; h: number }> = [];
+    const strategy = {
+      createVideoDecoder: (path: string, w: number, h: number) => {
+        calls.push({ path, w, h });
+        return { open: async () => true, close: () => {} };
+      },
+    } as unknown as IMediaEngineStrategy;
+
+    const renderer = new IRMasterRenderer(buildVideoTimeline(), 42, undefined, undefined, strategy);
+    await renderer.preloadAssets('.');
+    expect(calls.length).toBe(1);
+    expect((renderer as any).videoDecoders.has('clip')).toBe(true);
   });
 
   it('no longer performs ad-hoc MediaEngineRegistry lookups in the renderer source', async () => {

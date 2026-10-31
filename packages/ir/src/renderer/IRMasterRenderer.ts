@@ -18,6 +18,10 @@ import {
 import type { IVideoDecoder, IMediaEngineStrategy, MediaEngineType, INamespacedCache } from '@acc/core-isomorphic';
 import { IRCanvasCompositor, type IAssetSourceResolver } from './shared/IRCanvasCompositor';
 
+export interface IRMasterPrepareOptions {
+  baseDir?: string;
+}
+
 export interface HeadlessRenderOptions {
   engine?: MediaEngineType;
   sink?: IIRFrameSink;
@@ -282,10 +286,12 @@ export class IRMasterRenderer implements Disposable {
   }
 
   /**
-   * Pre-load static visual image assets declared in timeline.assets into memory.
+   * Pre-warms resources and decoders for execution:
+   * Pre-loads static visual and video assets declared in timeline.assets into memory.
    * Utilizes Universal Content Cache Registry (ContentCacheRegistry) to verify and cache asset buffers.
    */
-  public async preloadAssets(baseDir: string = '.'): Promise<void> {
+  public async prepare(options: IRMasterPrepareOptions = {}): Promise<void> {
+    const baseDir = options.baseDir || '.';
     if (!this.timeline.assets) return;
 
     const strategy = this.mediaEngineStrategy;
@@ -337,6 +343,14 @@ export class IRMasterRenderer implements Disposable {
   }
 
   /**
+   * Pre-load static visual image assets declared in timeline.assets into memory.
+   * @deprecated Use `prepare({ baseDir })` instead.
+   */
+  public async preloadAssets(baseDir: string = '.'): Promise<void> {
+    return this.prepare({ baseDir });
+  }
+
+  /**
    * Renders the entire timeline deterministically.
    */
   public async render(options: HeadlessRenderOptions = {}): Promise<HeadlessRenderResult> {
@@ -367,7 +381,7 @@ export class IRMasterRenderer implements Disposable {
 
     // Preload assets if baseDir provided or assets exist
     if (this.timeline.assets && this.imageCache.size === 0) {
-      await this.preloadAssets(options.baseDir || '.');
+      await this.prepare({ baseDir: options.baseDir || '.' });
     }
 
     // Pre-flight execution for track-level and sequence-level modifiers
