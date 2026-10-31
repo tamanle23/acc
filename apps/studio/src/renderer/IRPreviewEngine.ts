@@ -69,7 +69,7 @@ export class IRPreviewEngine {
   private audioMixer: UniversalAudioMixer;
   private audioSourceResolver?: (assetId: string, src?: string) => IAudioSourceProvider | undefined;
   private sidecarCoordinator: PreviewWorkerCoordinator | null = null;
-  private autoPreflight: boolean = true;
+  private autoPreflight: boolean = false;
   private ephemeralTransformOverrides: Map<string, EphemeralTransformOverride> = new Map();
 
   constructor(
@@ -304,15 +304,9 @@ export class IRPreviewEngine {
   }
 
   /**
-   * Renders a discrete frame deterministically onto the target CanvasRenderingContext2D.
-   * Delegates pure visual layer blitting to canonical IRCanvasCompositor.
+   * Prepares common frame rendering context (clamping, timestamps, frame scope, effective timeline).
    */
-  public renderFrame(
-    frame: number,
-    ctx: CanvasRenderingContext2D,
-    options: PreviewRenderOptions = {}
-  ): PreviewFrameResult {
-    const start = performance.now();
+  private prepareFrameContext(frame: number, options: PreviewRenderOptions) {
     const totalFrames = this.timeline.totalFrames;
     const clampedFrame = Math.max(0, Math.min(totalFrames, Math.round(frame)));
     const fps = this.timeline.meta.globalFps;
@@ -323,8 +317,38 @@ export class IRPreviewEngine {
 
     const resourceManager = NativeResourceManager.getInstance();
     const frameScope = resourceManager.createFrameScope(`preview-frame-${clampedFrame}`);
-
     const effectiveTimeline = this.getEffectiveTimeline();
+
+    return {
+      clampedFrame,
+      timeSec,
+      textures,
+      activeSequences,
+      resourceManager,
+      frameScope,
+      effectiveTimeline,
+    };
+  }
+
+  /**
+   * Renders a discrete frame deterministically onto the target CanvasRenderingContext2D.
+   * Delegates pure visual layer blitting to canonical IRCanvasCompositor.
+   */
+  public renderFrame(
+    frame: number,
+    ctx: CanvasRenderingContext2D,
+    options: PreviewRenderOptions = {}
+  ): PreviewFrameResult {
+    const start = performance.now();
+    const {
+      clampedFrame,
+      timeSec,
+      textures,
+      activeSequences,
+      resourceManager,
+      frameScope,
+      effectiveTimeline,
+    } = this.prepareFrameContext(frame, options);
 
     void IRCanvasCompositor.renderFrame(ctx, effectiveTimeline, clampedFrame, {
       pluginRegistry: this.pluginRegistry,
@@ -360,18 +384,15 @@ export class IRPreviewEngine {
     options: PreviewRenderOptions = {}
   ): Promise<PreviewFrameResult> {
     const start = performance.now();
-    const totalFrames = this.timeline.totalFrames;
-    const clampedFrame = Math.max(0, Math.min(totalFrames, Math.round(frame)));
-    const fps = this.timeline.meta.globalFps;
-    const timeSec = clampedFrame / fps;
-
-    const textures = options.textureCache ?? this.defaultTextureCache;
-    const activeSequences = this.intervalTree.queryActive(clampedFrame);
-
-    const resourceManager = NativeResourceManager.getInstance();
-    const frameScope = resourceManager.createFrameScope(`preview-frame-${clampedFrame}`);
-
-    const effectiveTimeline = this.getEffectiveTimeline();
+    const {
+      clampedFrame,
+      timeSec,
+      textures,
+      activeSequences,
+      resourceManager,
+      frameScope,
+      effectiveTimeline,
+    } = this.prepareFrameContext(frame, options);
 
     try {
       await IRCanvasCompositor.renderFrame(ctx, effectiveTimeline, clampedFrame, {

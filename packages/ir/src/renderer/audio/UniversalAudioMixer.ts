@@ -157,9 +157,18 @@ export class UniversalAudioMixer {
           audioSource = audioSourceResolver(seq.assetId, assetDef?.src);
         }
 
+        // Infer clip audio type ('voice' | 'sfx' | 'bgm') from sequence / track semantics or modifiers
+        let clipType: AudioTrackType = 'bgm';
+        const identifier = `${seq.id} ${seq.name || ''} ${track.id} ${track.name || ''}`.toLowerCase();
+        if (/voice|dialogue|speech|narration|vocal/.test(identifier)) {
+          clipType = 'voice';
+        } else if (/sfx|effect|laser|impact|hit|foley|sound_effect/.test(identifier)) {
+          clipType = 'sfx';
+        }
+
         clips.push({
           id: seq.id,
-          type: 'bgm',
+          type: clipType,
           startTimeSec: startSec,
           durationSec,
           volume: clipVolume,

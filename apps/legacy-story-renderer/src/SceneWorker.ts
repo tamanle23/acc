@@ -1,5 +1,6 @@
 import { Worker, isMainThread, parentPort, workerData } from 'worker_threads';
-import { FFmpegManager, bootstrapNode, FFISceneEngine } from '@acc/core';
+import { FFmpegManager, bootstrapNode } from '@acc/core';
+import { FFISceneEngine } from './FFISceneEngine';
 import { UniversalLogger as Logger } from '@acc/core-isomorphic';
 import { renderDepth3DScene } from '@acc/effect-engines';
 import path from 'path';

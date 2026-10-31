@@ -1,6 +1,7 @@
-import { describe, it, expect } from 'bun:test';
+import { describe, it, expect, beforeAll } from 'bun:test';
 import path from 'path';
 import fs from 'fs';
+import { bootstrapNode } from '../packages/core/src/bootstrap';
 import {
   RelationalDAGCompiler,
   AssetMetadataProber,
@@ -13,6 +14,9 @@ import { IRPreviewEngine } from '@acc/studio/renderer';
 import { StoryConfigToUniversalIRAdapter, LegacyStoryConfigAdapter, type LegacyStoryConfig } from '@acc/legacy-story-renderer';
 
 describe('Video IR Phase 4: Deterministic Headless Rasterizer & Interactive Preview Engine', () => {
+  beforeAll(async () => {
+    await bootstrapNode({ prepareFFmpeg: false });
+  });
   it('generates bit-identical frame hashes and cumulative hash across independent runs (Determinism Invariant)', async () => {
     const storyConfigPath = path.resolve('sample-story/story-config.json');
     const rawJson = JSON.parse(fs.readFileSync(storyConfigPath, 'utf-8')) as LegacyStoryConfig;

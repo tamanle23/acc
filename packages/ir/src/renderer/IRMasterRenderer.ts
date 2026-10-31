@@ -309,10 +309,15 @@ export class IRMasterRenderer implements Disposable {
 
         if (!blobData) {
           // Resolve transparently via isomorphic AssetProtocolRegistry (supports http:, blob:, data:, cache:, file:)
-          const assetBlob = protocolRegistry.resolve(rawSrc, baseDir);
-          blobData = await assetBlob.blob();
-          if (blobData) {
-            await cache.set(resolvedPath, blobData);
+          try {
+            const assetBlob = protocolRegistry.resolve(rawSrc, baseDir);
+            blobData = await assetBlob.blob();
+            if (blobData) {
+              await cache.set(resolvedPath, blobData);
+            }
+          } catch {
+            // Asset unreachable or missing on disk, fallback gracefully to procedural rendering
+            blobData = null;
           }
         }
 
