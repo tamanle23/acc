@@ -334,6 +334,7 @@ export class VideoIRSchemaValidator {
 
     const registry = ModifierPluginRegistry.getInstance();
     const compatibleTrackSeqTypes = trackType ? TRACK_COMPATIBLE_SEQUENCE_TYPES[trackType] : undefined;
+    const isRootDocument = context === 'root document';
 
     // Standalone generator single-source audit for sequence-level scopes
     let hasStandaloneGenerator = false;
@@ -378,9 +379,10 @@ export class VideoIRSchemaValidator {
           errors.push(`Modifier "${mod.type || i}" on ${context} has empty "target" array`);
         } else {
           for (const tgt of targets) {
-            if (typeof tgt !== 'string' || !VALID_SEQUENCE_TYPES.has(tgt)) {
+            const isValidTarget = VALID_SEQUENCE_TYPES.has(tgt) || (isRootDocument && tgt === 'timeline');
+            if (typeof tgt !== 'string' || !isValidTarget) {
               errors.push(
-                `Modifier "${mod.type || i}" on ${context} has invalid target "${tgt}". Expected: ${Array.from(VALID_SEQUENCE_TYPES).join(', ')}`
+                `Modifier "${mod.type || i}" on ${context} has invalid target "${tgt}". Expected: ${Array.from(VALID_SEQUENCE_TYPES).join(', ')}${isRootDocument ? ', timeline' : ''}`
               );
             }
           }
@@ -420,6 +422,8 @@ export class VideoIRSchemaValidator {
               hasStandaloneGenerator: hasOtherStandalone,
               existingModifierTypes: otherModifierTypes,
             }
+          : isRootDocument
+          ? { type: 'timeline' as const }
           : { type: 'track' as const };
         const check = registry.isModifierAllowedOnEntity(mod.type, targetCtx);
         if (!check.allowed && check.reason) {

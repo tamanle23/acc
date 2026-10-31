@@ -166,8 +166,4 @@ export class MainThreadRenderStrategy implements IPreviewRenderStrategy {
     this.engine = null;
     this.ready = false;
   }
-
-  public getEngine(): IRPreviewEngine | null {
-    return this.engine;
-  }
 }

@@ -116,7 +116,7 @@ export const cinemaMasteringDemoIR: VideoIRDocument = {
               params: {
                 durationSec: 0.833,
                 type: 'dissolve',
-                alignment: 'center',
+                alignment: 'center_on_cut',
               },
             },
             {
@@ -151,7 +151,7 @@ export const cinemaMasteringDemoIR: VideoIRDocument = {
               params: {
                 durationSec: 0.667,
                 type: 'dissolve',
-                alignment: 'center',
+                alignment: 'center_on_cut',
               },
             },
             {
