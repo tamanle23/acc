@@ -68,6 +68,9 @@ export class DecodedPcmSource implements IAudioSourceProvider {
       let sourceSampleIdx = targetTime * this.sourceSampleRate;
       if (this.loop && totalSourceSamples > 0) {
         sourceSampleIdx = sourceSampleIdx % totalSourceSamples;
+      } else if (sourceSampleIdx >= totalSourceSamples) {
+        // Clamp to asset end: output silence past source duration
+        continue;
       }
 
       const idx0 = Math.floor(sourceSampleIdx);

@@ -215,11 +215,14 @@ export class UniversalAudioMixer {
         continue;
       }
 
+      // Compute clip-relative time offset to ensure the asset plays from its beginning
+      const clipRelativeOffsetSec = Math.max(0, sliceStart - clipStart);
+
       // Generate or sample raw audio for this clip
-      const { left: rawL, right: rawR } = this.sampleClipAudio(clip, sliceStart, durationSec);
+      const { left: rawL, right: rawR } = this.sampleClipAudio(clip, clipRelativeOffsetSec, durationSec);
 
       // Process clip-level modifier plugins
-      this.applyClipModifiers(clip, rawL, rawR, sliceStart, durationSec);
+      this.applyClipModifiers(clip, rawL, rawR, clipRelativeOffsetSec, durationSec);
 
       // Apply base clip volume and pan if not overridden by modifiers
       const clipVolume = clip.volume ?? 1.0;
@@ -231,8 +234,10 @@ export class UniversalAudioMixer {
       for (let i = 0; i < numSamples; i++) {
         const t = sliceStart + i / this.sampleRate;
         if (t >= clipStart && t < clipEnd) {
-          const sampleL = rawL[i] * gainL;
-          const sampleR = rawR[i] * gainR;
+          // Calculate intra-slice sample offset relative to clip start
+          const intraClipSampleIdx = Math.floor((t - sliceStart) * this.sampleRate);
+          const sampleL = (rawL[intraClipSampleIdx] ?? 0) * gainL;
+          const sampleR = (rawR[intraClipSampleIdx] ?? 0) * gainR;
 
           if (clip.type === 'voice') {
             voiceLeft[i] += sampleL;
@@ -331,7 +336,16 @@ export class UniversalAudioMixer {
       return { left, right };
     }
 
-    // 3. Fallback procedural synthesis
+    // 3. Procedural synthesis or silent fallback
+    // If the clip was attached to a real assetId that is still loading or absent,
+    // output silence instead of unexpected procedural synth tones.
+    const left = new Float32Array(numSamples);
+    const right = new Float32Array(numSamples);
+
+    if (clip.assetId) {
+      return { left, right };
+    }
+
     let mono: Float32Array;
     if (clip.type === 'voice') {
       mono = ProceduralAudioSynthesizer.synthPilotVoice(timeOffsetSec, durationSec, this.sampleRate);
@@ -341,8 +355,6 @@ export class UniversalAudioMixer {
       mono = ProceduralAudioSynthesizer.synthBGM(timeOffsetSec, durationSec, this.sampleRate);
     }
 
-    const left = new Float32Array(numSamples);
-    const right = new Float32Array(numSamples);
     const copyLen = Math.min(mono.length, numSamples);
     left.set(mono.subarray(0, copyLen));
     right.set(mono.subarray(0, copyLen));

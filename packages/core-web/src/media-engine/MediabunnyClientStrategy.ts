@@ -181,6 +181,18 @@ export class MediabunnyClientStrategy implements IMediaEngineStrategy {
             inputSource = new BlobSource(blob);
           } else if (arrayBuffer) {
             inputSource = new BlobSource(new Blob([arrayBuffer]));
+          } else if (typeof fetch !== 'undefined') {
+            try {
+              const res = await fetch(uriOrPath);
+              if (res.ok) {
+                const ab = await res.arrayBuffer();
+                inputSource = new BlobSource(new Blob([ab]));
+              } else {
+                inputSource = new UrlSource(uriOrPath);
+              }
+            } catch {
+              inputSource = new UrlSource(uriOrPath);
+            }
           } else {
             inputSource = new UrlSource(uriOrPath);
           }

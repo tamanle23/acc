@@ -74,3 +74,4 @@
 | 409 | [Enhanced Unified PostgreSQL Architecture for Workflow Engine (Iteration 61)](./409_unified_postgres_reactive_workflow_queue.md) | Completed |
 | 410 | [On-Demand Unified Sandbox Activation via "Bypass with sandbox" & Workflow Simulation Consolidation](./410_ondemand_sandbox_activation_bypass_only.md) | Completed |
 | 411 | [PostgreSQL Physical Naming Strategy for Mixed-Case Liquibase Columns and Table Identifier Resolution](./411_postgresql_mixed_case_naming_strategy.md) | Completed |
+| 412 | [Studio Audio Pipeline Parity & Export Demuxer Resolution](./412_studio_audio_pipeline_parity_and_export_demuxer_resolution.md) | Completed |

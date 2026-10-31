@@ -199,32 +199,26 @@ export class WebAudioEngine {
       const renderDuration = Math.min(5.0, remainingSec);
       const mixResult = this.mixer.mixStereo(startSec, renderDuration);
 
-      // Stream into UniversalAudioStreamWorklet ring buffer for non-blocking worklet transport
-      this.streamWorklet.reset();
-      this.streamWorklet.pushChunk(mixResult.left, mixResult.right);
-
       const now = this.ctx.currentTime;
 
-      if (!this.isWorkletActive) {
-        const buffer = this.ctx.createBuffer(2, mixResult.left.length, this.ctx.sampleRate);
-        buffer.copyToChannel(mixResult.left as unknown as Float32Array<ArrayBuffer>, 0);
-        buffer.copyToChannel(mixResult.right as unknown as Float32Array<ArrayBuffer>, 1);
+      const buffer = this.ctx.createBuffer(2, mixResult.left.length, this.ctx.sampleRate);
+      buffer.copyToChannel(mixResult.left as unknown as Float32Array<ArrayBuffer>, 0);
+      buffer.copyToChannel(mixResult.right as unknown as Float32Array<ArrayBuffer>, 1);
 
-        const source = this.ctx.createBufferSource();
-        source.buffer = buffer;
-        source.connect(this.masterGain);
+      const source = this.ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(this.masterGain);
 
-        source.start(now);
+      source.start(now);
 
-        this.currentSource = source;
-        this.activeSources.add(source);
-        source.onended = () => {
-          try {
-            source.disconnect();
-          } catch {}
-          this.activeSources.delete(source);
-        };
-      }
+      this.currentSource = source;
+      this.activeSources.add(source);
+      source.onended = () => {
+        try {
+          source.disconnect();
+        } catch {}
+        this.activeSources.delete(source);
+      };
 
       this.isPlaying = true;
       this.playbackStartAudioTime = now;
@@ -274,32 +268,27 @@ export class WebAudioEngine {
 
         try {
           const mix = this.mixer.mixStereo(sliceStart, sliceDuration);
-          this.streamWorklet.pushChunk(mix.left, mix.right);
 
-          if (!this.isWorkletActive) {
-            const buffer = this.ctx.createBuffer(2, mix.left.length, this.ctx.sampleRate);
-            buffer.copyToChannel(mix.left as unknown as Float32Array<ArrayBuffer>, 0);
-            buffer.copyToChannel(mix.right as unknown as Float32Array<ArrayBuffer>, 1);
+          const buffer = this.ctx.createBuffer(2, mix.left.length, this.ctx.sampleRate);
+          buffer.copyToChannel(mix.left as unknown as Float32Array<ArrayBuffer>, 0);
+          buffer.copyToChannel(mix.right as unknown as Float32Array<ArrayBuffer>, 1);
 
-            const nextSource = this.ctx.createBufferSource();
-            nextSource.buffer = buffer;
-            nextSource.connect(this.masterGain);
+          const nextSource = this.ctx.createBufferSource();
+          nextSource.buffer = buffer;
+          nextSource.connect(this.masterGain);
 
-            // Schedule contiguous playback right after preceding chunk finishes
-            const scheduleTime = Math.max(now, this.scheduledAudioEndTime);
-            nextSource.start(scheduleTime);
-            this.scheduledAudioEndTime = scheduleTime + sliceDuration;
+          // Schedule contiguous playback right after preceding chunk finishes
+          const scheduleTime = Math.max(now, this.scheduledAudioEndTime);
+          nextSource.start(scheduleTime);
+          this.scheduledAudioEndTime = scheduleTime + sliceDuration;
 
-            this.activeSources.add(nextSource);
-            nextSource.onended = () => {
-              try {
-                nextSource.disconnect();
-              } catch {}
-              this.activeSources.delete(nextSource);
-            };
-          } else {
-            this.scheduledAudioEndTime = Math.max(now, this.scheduledAudioEndTime) + sliceDuration;
-          }
+          this.activeSources.add(nextSource);
+          nextSource.onended = () => {
+            try {
+              nextSource.disconnect();
+            } catch {}
+            this.activeSources.delete(nextSource);
+          };
         } catch (e) {
           console.warn('[WebAudioEngine] Error scheduling audio slice:', e);
         }

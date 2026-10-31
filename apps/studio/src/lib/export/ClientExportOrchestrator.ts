@@ -1,4 +1,5 @@
-import { MediabunnyClientSink } from '@acc/core-web';
+import { MediabunnyClientSink, MediabunnyClientStrategy } from '@acc/core-web';
+import { MediaEngineRegistry } from '@acc/core-isomorphic';
 import { IRMasterRenderer } from '@acc/ir';
 import type { IRState } from '../ir/irState';
 import { ExportWorkerBridge } from '../../renderer/workers/ExportWorkerBridge';
@@ -156,7 +157,17 @@ export class ClientExportOrchestrator {
       throw new Error('[ClientExportOrchestrator] Timeline is not initialized');
     }
 
-    const masterRenderer = new IRMasterRenderer(irState.timeline, 42);
+    if (!MediaEngineRegistry.has('mediabunny-client')) {
+      MediaEngineRegistry.register(new MediabunnyClientStrategy());
+    }
+
+    const masterRenderer = new IRMasterRenderer(
+      irState.timeline,
+      42,
+      undefined,
+      undefined,
+      MediaEngineRegistry.get('mediabunny-client')
+    );
 
     const renderResult = await masterRenderer.render({
       engine: 'mediabunny-client' as any,
