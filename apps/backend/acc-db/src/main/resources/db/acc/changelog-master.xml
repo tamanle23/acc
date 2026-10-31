@@ -11,8 +11,6 @@
   <!-- 1. Identity & RBAC Core Tables (Migrated into acc) -->
   <include file="db/acc/changelog-identity-00.xml"/>
   <include file="db/acc/changelog-identity-tokens.xml"/>
-  <include file="db/acc/changelog-identity-master_data.xml"/>
-  <include file="db/acc/changelog-identity-mock_data.xml"/>
   <!-- 2. Dynamic Metadata Plane & Multi-Tenancy Core -->
   <include file="db/acc/changelog-000.000.00001.xml"/>
   <include file="db/acc/changelog-000.000.00002.xml"/>
