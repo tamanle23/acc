@@ -1,11 +1,8 @@
 package com.acc.fs.controller.mapping;
 
-import com.acc.fs.model.FsObject;
-import org.mapstruct.Mapper;
-
 import com.acc.fs.controller.response.FileVm;
+import com.acc.fs.model.FsObject;
 
-@Mapper(componentModel = "spring")
 public interface FileMapper {
 
   FileVm fileToFileVM(FsObject fsObject);
