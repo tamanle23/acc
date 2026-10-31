@@ -120,21 +120,113 @@ Files: `packages/ir/src/renderer/IRMasterRenderer.ts` (Master) and `apps/studio/
 | F5 | Preview has no decoder path; video in preview depends on whatever populates `AssetTextureCache`. | Document the contract, or add a preview video-frame provider behind `IPreviewTextureProvider`. |
 | F6 | `HeadlessRenderOptions.engine` is declared but no longer read by `IRMasterRenderer` (engine now comes from the constructor). | Deprecate or remove the field and update callers that still pass it (`ir-render.ts`, studio export code). |
 | F7 | `render()` preloads only when `imageCache.size === 0`; a timeline with only video assets re-preloads on each `render()`. Master also closes decoders at the end of `render()`, so re-rendering reopens them. | Track a preload flag instead of using cache size. |
-| F8 | `ClientExportOrchestrator` does not inject a strategy. | Confirm `mediabunny-client` registration on the main thread, then inject it. |
+| F8 | `ClientExportOrchestrator` does not inject a strategy in fallback path (`new IRMasterRenderer(irState.timeline, 42)`). | Pass `MediaEngineRegistry.get('mediabunny-client')` into `IRMasterRenderer`. |
 
-## 7. Tasks
+---
+
+## 7. Deep Research Synthesis & Diagnostic Analysis (Audio Pipeline)
+
+### 7.1 Root Cause: Why There Is No Audio in Output Video
+
+Tracing the export pipeline (`ClientExportOrchestrator` -> `export.worker.ts` -> `IRMasterRenderer` -> `UniversalAudioMixer` -> `MediabunnyClientSink`):
+
+1. **Web Worker Context Lacks `OfflineAudioContext`**:
+   - In `apps/studio/src/renderer/workers/export.worker.ts`, export executes in a dedicated Web Worker.
+   - When `IRMasterRenderer.render()` runs, it invokes `this.audioMixer.mixTimeline(this.timeline)`.
+   - `UniversalAudioMixer.mixTimeline()` iterates all audio clips and delegates decoding to `this.decodeAsset(resolvedPath)`.
+   - `MediabunnyClientStrategy.createAudioDecoder().decodeToPCM()` checks:
+     ```ts
+     const OfflineCtx = (globalThis as any).OfflineAudioContext || (globalThis as any).webkitOfflineAudioContext;
+     if (!isVideoContainer && OfflineCtx && arrayBuffer) { ... }
+     ```
+   - In standard browser Web Workers, `OfflineAudioContext` is frequently undefined or unsupported. When falling through to `UrlSource` without protocol resolution or across relative/CORS boundaries, the decoder returns `null`.
+   - As a result, `mixTimeline` produces an all-zero buffer or 0 total samples.
+
+2. **Sink Initialization / Finalization Audio Mismatch**:
+   - In `IRMasterRenderer.ts`:
+     ```ts
+     if (sink && !options.audioPath) {
+       audioResult = await this.audioMixer.mixTimeline(this.timeline, { baseDir: options.baseDir });
+       if (audioResult.totalSamples > 0) {
+         tempAudioWavPath = `${outDir}/.temp_${Date.now()}_master_audio.wav`;
+         await UniversalAudioMixer.exportToWav(tempAudioWavPath, audioResult);
+     ```
+   - In browser/worker environments, `tempAudioWavPath` uses a simulated filesystem path. `exportToWav` fails or no-ops without Node `fs`.
+   - In `export.worker.ts`, `sink.initialize({ ..., enableAudio: true })` is called before passing `sink` to `IRMasterRenderer`. `IRMasterRenderer` detects `sink.isInitialized()` and skips passing `audioPath`.
+   - On completion, `IRMasterRenderer` invokes `await sink.finalize(audioResult)`.
+   - In `MediabunnyClientSink.finalize()`, audio samples are only pushed if `this.audioSource && audioResult && audioResult.totalSamples > 0`. If `audioResult` has 0 samples or is silent, zero audio samples are appended to `AudioSampleSource`, creating an MP4 with an empty or silent audio track.
+
+3. **Fallback In-Process Export Completely Disables Media Engine**:
+   - In `apps/studio/src/lib/export/ClientExportOrchestrator.ts`:
+     ```ts
+     const masterRenderer = new IRMasterRenderer(irState.timeline, 42); // 5th argument omitted!
+     ```
+   - When falling back to in-process export, no `mediaEngineStrategy` is injected, leaving `IRMasterRenderer` unable to decode audio or video assets.
+
+### 7.2 Root Cause: Why Preview Audio Is Inconsistent Between Playings
+
+1. **Decoded Audio Cache Race Condition (`getAudioChannels` returning `null` on Play 1)**:
+   - In `apps/studio/src/lib/audio/AudioAssetCache.ts`:
+     ```ts
+     public getAudioChannels(assetId: string, src?: string): DecodedAudioData | null {
+       const existing = this.cache.get(assetId);
+       if (existing) return existing;
+       if (src && !this.inFlight.has(assetId)) {
+         this.fetchAndDecode(assetId, src);
+       }
+       return null;
+     }
+     ```
+   - On the first press of Play, `WebAudioEngine.startPlayback()` executes synchronously. The audio asset is not yet in `AudioAssetCache`, so `getAudioChannels()` returns `null` and kicks off `fetchAndDecode()` in the background.
+   - Because `audioSource` is `undefined`, `UniversalAudioMixer.sampleClipAudio()` falls back to procedural synthesis (`synthBGM`, `synthPilotVoice`, `synthLaserSFX`). The user hears procedural synth tones.
+   - Meanwhile, `fetchAndDecode()` finishes and triggers subscribers.
+   - On the second press of Play, `getAudioChannels()` returns the real decoded PCM audio. The user now hears the actual asset.
+   - When the LRU cache evicts the entry (`MAX_CACHE_ENTRIES = 8`), subsequent seeks or playback can fall back to procedural sound again, leading to inconsistent audio across playings.
+
+2. **Clip-Local Time vs. Timeline Global Time in `sampleClipAudio`**:
+   - In `UniversalAudioMixer.ts`:
+     ```ts
+     // sliceStart is the global timeline time (e.g. 5.0s)
+     const { left: rawL, right: rawR } = this.sampleClipAudio(clip, sliceStart, durationSec);
+     ```
+   - And in `DecodedPcmSource.sample()` (`AudioSourceAdapter.ts`):
+     ```ts
+     const targetTime = timeOffsetSec + (i / targetSampleRate) + this.trimStartSec;
+     let sourceSampleIdx = targetTime * this.sourceSampleRate;
+     ```
+   - When a clip starts at `clip.startTimeSec = 5.0s` and is 2.0s long:
+     - At timeline time `5.0s`, `sampleClipAudio` passes `timeOffsetSec = 5.0s`.
+     - `sourceSampleIdx` is computed as `5.0 * sampleRate = 220,500 samples`.
+     - Because `220,500 > sourceLength (88,200)` and `loop` is `false`, the adapter returns all zeros (complete silence).
+     - Any clip placed after `t = 0` on the timeline samples past its source buffer and outputs silence.
+
+3. **SPSC AudioWorklet vs. `AudioBufferSourceNode` Chaining**:
+   - In `WebAudioEngine.ts`, `pushChunk` is sent to `streamWorklet` while an `AudioBufferSourceNode` is concurrently scheduled if `!this.isWorkletActive`.
+   - If the AudioWorklet initializes asynchronously after playback starts, dual output or audio cancellation can occur.
+   - The 1000ms refill interval in `startRefillScheduler()` can fall behind real time if the tab throttles or background tasks delay timers, causing audio gaps or drift relative to video frames.
+
+---
+
+## 8. Tasks
 
 - [x] Constructor injection of `IMediaEngineStrategy`; remove ad-hoc registry lookup
 - [x] Inject at 5 call sites
 - [x] New injection tests; repair 2 existing tests; fix `@acc/ir` `@acc/core` path resolution
 - [x] Comparison analysis
+- [x] Deep Research & Diagnostic Analysis on Audio Export & Preview Inconsistency
+- [ ] Fix clip-relative offset in `UniversalAudioMixer.sampleClipAudio` (`sliceStart - clip.startTimeSec`)
+- [ ] Ensure `MediabunnyClientStrategy.createAudioDecoder()` functions in Web Worker contexts without `OfflineAudioContext`
+- [ ] Inject `MediaEngineRegistry.get('mediabunny-client')` into `ClientExportOrchestrator` in-process fallback
+- [ ] Ensure `AudioAssetCache` preloading avoids procedural audio fallback race on initial play
 - [ ] Fix `FFISceneEngine` import in `apps/legacy-story-renderer/src/SceneWorker.ts` (unblocks 9 test files)
 - [ ] Fix stale import in `ir_schema_sync_iteration5.test.ts`
 - [ ] Investigate `ir_preview_master_renderer_audio_parity` mixer labels
-- [ ] F1–F8 above
+- [ ] F1–F8 recommendations
 
-## 8. Enhancement
+---
+
+## 9. Enhancement
 
 - Shared `FrameCompositionOptions` builder used by both engines to guarantee identical compositor wiring apart from `executionProfile`.
-- A parity test asserting that Master and Preview produce identical pixels for the same frame when run with equal plugin registries.
+- A parity test asserting that Master and Preview produce identical pixels and identical audio PCM for the same frame/slice when run with equal plugin registries and audio sources.
 - Optionally register `bun-ffi` in `headless_scoped_resource_engine.test.ts` Suite 4 so the worker-pool path is covered.
