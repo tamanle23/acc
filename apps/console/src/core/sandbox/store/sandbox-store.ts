@@ -58,7 +58,7 @@ export interface SandboxStoreActions {
 export type SandboxStore = SandboxState & SandboxStoreActions;
 
 const initialDefaultState: SandboxState = {
-  enabled: import.meta.env.DEV || false,
+  enabled: false,
   activePersonaId: 'admin',
   activeTenantId: 'tenant-us-east-1',
   networkSimulation: {

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { decodeJwt } from './utils/jwt';
 import type { AuthState } from './types';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { useSandboxStore } from '../../core/sandbox/store/sandbox-store';
 
 const REFRESH_STORAGE_KEY = 'sandbox_refresh_token';
 
@@ -38,6 +39,12 @@ export const useSpringAuthStore = create<AuthState>()(
       setHydrating: (val: boolean) => set({ isHydrating: val }),
       clearTokens: () => {
         localStorage.removeItem(REFRESH_STORAGE_KEY);
+        // Deactivate sandbox mode when logging out
+        try {
+          useSandboxStore.getState().setEnabled(false);
+        } catch {
+          /* ignore */
+        }
         set({
           accessToken: null,
           refreshToken: null,

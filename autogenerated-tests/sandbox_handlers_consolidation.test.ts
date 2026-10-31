@@ -28,7 +28,7 @@ describe('Phase 1: Unified Sandbox Domain Handler Consolidation', () => {
 
   beforeEach(() => {
     sandboxResetRegistry.resetAll();
-    defaultSandboxStore.getState().setActiveTenant('tenant-acme');
+    defaultSandboxStore.setActiveTenant('tenant-acme');
   });
 
   test('extractTenantFromAuth derives tenantId strictly from JWT Bearer token claims', () => {

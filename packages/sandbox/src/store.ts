@@ -48,7 +48,7 @@ export const DEFAULT_SANDBOX_PERSONAS: Record<SandboxPersonaId, SandboxPersona> 
 };
 
 export const initialDefaultSandboxState: SandboxState = {
-  enabled: true,
+  enabled: false,
   activePersonaId: 'admin',
   activeTenantId: 'tenant-us-east-1',
   networkSimulation: {
