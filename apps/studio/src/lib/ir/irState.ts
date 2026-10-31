@@ -51,7 +51,7 @@ import { ReplaceDocumentCommand } from '../commands/ReplaceDocumentCommand';
 import type { IRSequence, SequenceTime } from '@acc/ir';
 import { cloneIR, getErrorMessage, type StudioAssetRecord } from './studioTypes';
 
-export type InspectorMode = 'sequence' | 'track' | 'timeline';
+export type InspectorMode = 'sequence' | 'track' | 'timeline' | 'project';
 
 export interface IRState {
   doc: VideoIRDocument;
@@ -315,16 +315,34 @@ export class IRStateManager {
     this.state = {
       ...this.state,
       selectedTrackId: trackId,
+      // Deselect child sequence when explicitly switching track focus
+      selectedSequenceId: null,
       inspectorMode: trackId ? 'track' : this.state.inspectorMode,
     };
     this.notify();
   }
 
   public setInspectorMode(mode: InspectorMode) {
-    this.state = {
-      ...this.state,
-      inspectorMode: mode,
-    };
+    if (mode === 'timeline' || mode === 'project') {
+      // Inspecting root project/timeline clears any sequence selection
+      this.state = {
+        ...this.state,
+        selectedSequenceId: null,
+        inspectorMode: mode,
+      };
+    } else if (mode === 'track') {
+      // Inspecting track clears child sequence selection
+      this.state = {
+        ...this.state,
+        selectedSequenceId: null,
+        inspectorMode: 'track',
+      };
+    } else {
+      this.state = {
+        ...this.state,
+        inspectorMode: mode,
+      };
+    }
     this.notify();
   }
 

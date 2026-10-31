@@ -111,17 +111,37 @@ describe('Studio Phase 2: Dynamic Multi-Tier Inspector & State Commands', () => 
   });
 
   describe('ReorderTrackCommand', () => {
-    it('shifts a track up and down in doc.tracks', () => {
-      // track-a1 is currently index 1. Moving it 'up' should make it index 0.
-      const moveUpCmd = new ReorderTrackCommand('track-a1', 'up');
-      const docMovedUp = moveUpCmd.execute(initialDoc);
-      expect(docMovedUp.tracks[0].id).toBe('track-a1');
-      expect(docMovedUp.tracks[1].id).toBe('track-v1');
+    it('shifts a track up and down within its modality group in doc.tracks', () => {
+      // Add a second video track to test intra-group reordering
+      const multiVideoDoc: VideoIRDocument = {
+        ...initialDoc,
+        tracks: [
+          initialDoc.tracks[0], // track-v1
+          {
+            id: 'track-v2',
+            type: 'video',
+            name: 'Video Track 2',
+            blendMode: 'normal',
+            style: { opacity: 1.0 },
+            sequences: [],
+          },
+          ...initialDoc.tracks.slice(1), // track-a1, track-text
+        ],
+      };
+
+      // track-v2 is currently index 1 within video group. Moving it 'up' should make it index 0.
+      const moveUpCmd = new ReorderTrackCommand('track-v2', 'up');
+      const docMovedUp = moveUpCmd.execute(multiVideoDoc);
+      // In canonical layout: timed_text -> video -> audio
+      const videoTracks = docMovedUp.tracks.filter((t) => t.type === 'video');
+      expect(videoTracks[0].id).toBe('track-v2');
+      expect(videoTracks[1].id).toBe('track-v1');
 
       // Undo moving up
       const docReverted = moveUpCmd.undo(docMovedUp);
-      expect(docReverted.tracks[0].id).toBe('track-v1');
-      expect(docReverted.tracks[1].id).toBe('track-a1');
+      const revertedVideoTracks = docReverted.tracks.filter((t) => t.type === 'video');
+      expect(revertedVideoTracks[0].id).toBe('track-v1');
+      expect(revertedVideoTracks[1].id).toBe('track-v2');
     });
 
     it('prevents merging for discrete track reorder commands', () => {
