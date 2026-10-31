@@ -35,7 +35,7 @@ import { MediabunnyServerSink } from '../sinks/MediabunnyServerSink';
 export class MediabunnyProbeStrategy implements IMediaProbeStrategy {
   public async probe(filePath: string): Promise<MediaProbeResult> {
     if (!fs.existsSync(filePath)) {
-      throw new MediaEngineError('mediabunny-server', `File not found for probing: ${filePath}`);
+      throw new MediaEngineError(MediaEngineType.MediabunnyServer, `File not found for probing: ${filePath}`);
     }
 
     try {
@@ -70,7 +70,7 @@ export class MediabunnyProbeStrategy implements IMediaProbeStrategy {
       };
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      throw new MediaEngineError('mediabunny-server', `Mediabunny probe failed on ${filePath}: ${msg}`);
+      throw new MediaEngineError(MediaEngineType.MediabunnyServer, `Mediabunny probe failed on ${filePath}: ${msg}`);
     }
   }
 }
@@ -78,7 +78,7 @@ export class MediabunnyProbeStrategy implements IMediaProbeStrategy {
 export class MediabunnyConcatStrategy implements IMediaConcatStrategy {
   public async concatenate(inputPaths: string[], outputPath: string): Promise<void> {
     if (inputPaths.length === 0) {
-      throw new MediaEngineError('mediabunny-server', 'No input files provided for concatenation.');
+      throw new MediaEngineError(MediaEngineType.MediabunnyServer, 'No input files provided for concatenation.');
     }
     if (inputPaths.length === 1) {
       fs.copyFileSync(inputPaths[0], outputPath);
@@ -92,7 +92,7 @@ export class MediabunnyConcatStrategy implements IMediaConcatStrategy {
       const firstAudioTrack = await firstInput.getPrimaryAudioTrack();
 
       if (!firstVideoTrack && !firstAudioTrack) {
-        throw new MediaEngineError('mediabunny-server', 'Input file contains neither video nor audio tracks.');
+        throw new MediaEngineError(MediaEngineType.MediabunnyServer, 'Input file contains neither video nor audio tracks.');
       }
 
       let videoSource: EncodedVideoPacketSource | undefined;
@@ -179,7 +179,7 @@ export class MediabunnyConcatStrategy implements IMediaConcatStrategy {
       await output.finalize();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      throw new MediaEngineError('mediabunny-server', `Mediabunny lossless concatenation failed: ${msg}`);
+      throw new MediaEngineError(MediaEngineType.MediabunnyServer, `Mediabunny lossless concatenation failed: ${msg}`);
     }
   }
 }
@@ -190,7 +190,7 @@ export class MediabunnyAudioMuxerStrategy implements IAudioMuxerStrategy {
       await FFAudioMuxer.mux(videoPath, audioPath, outputPath);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      throw new MediaEngineError('mediabunny-server', `Mediabunny audio multiplexing failed: ${msg}`);
+      throw new MediaEngineError(MediaEngineType.MediabunnyServer, `Mediabunny audio multiplexing failed: ${msg}`);
     }
   }
 }

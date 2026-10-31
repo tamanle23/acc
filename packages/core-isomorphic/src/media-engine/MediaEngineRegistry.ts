@@ -36,9 +36,8 @@ export class MediaEngineRegistry {
     return this.defaultEngine;
   }
 
-  public static has(type: string): boolean {
-    const norm = this.normalizeId(type);
-    return this.strategies.has(norm as any) || this.strategies.has(type as any) || this.registeredLazyLoaders.has(norm);
+  public static has(type: MediaEngineType): boolean {
+    return this.strategies.has(type as any) || this.registeredLazyLoaders.has(type);
   }
 
   public static listAvailable(): MediaEngineType[] {

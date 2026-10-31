@@ -15,7 +15,7 @@ import {
   NativeResourceManager,
   AssetProtocolRegistry,
 } from '@acc/core-isomorphic';
-import { MediaEngineRegistry, type IVideoDecoder, type MediaEngineType } from '@acc/core-isomorphic';
+import type { IVideoDecoder, IMediaEngineStrategy, MediaEngineType } from '@acc/core-isomorphic';
 import { IRCanvasCompositor, type IAssetSourceResolver } from './shared/IRCanvasCompositor';
 
 export interface HeadlessRenderOptions {
@@ -155,6 +155,7 @@ export class IRMasterRenderer implements Disposable {
   private audioMixer: UniversalAudioMixer;
   private pluginRegistry: ModifierPluginRegistry;
   private resourceManager: NativeResourceManager;
+  private mediaEngineStrategy?: IMediaEngineStrategy;
 
   // Cached assets to prevent disk/network re-reads in render loop
   private imageCache: Map<string, any> = new Map();
@@ -169,9 +170,11 @@ export class IRMasterRenderer implements Disposable {
     timeline: ResolvedTimeline,
     seed: number = 42,
     pluginRegistry?: ModifierPluginRegistry,
-    resourceManager?: NativeResourceManager
+    resourceManager?: NativeResourceManager,
+    mediaEngineStrategy?: IMediaEngineStrategy
   ) {
     this.timeline = timeline;
+    this.mediaEngineStrategy = mediaEngineStrategy;
     this.noiseGen = new DeterministicNoiseGenerator(seed);
     this.lock = new FrameBackpressureLock();
     this.audioMixer = new UniversalAudioMixer([], 48000);
@@ -282,18 +285,10 @@ export class IRMasterRenderer implements Disposable {
    * Pre-load static visual image assets declared in timeline.assets into memory.
    * Utilizes Universal Content Cache Registry (ContentCacheRegistry) to verify and cache asset buffers.
    */
-  public async preloadAssets(baseDir: string = '.', engineType?: MediaEngineType): Promise<void> {
+  public async preloadAssets(baseDir: string = '.'): Promise<void> {
     if (!this.timeline.assets) return;
 
-    let strategy: any;
-    try {
-      strategy = MediaEngineRegistry.has(engineType)
-        ? MediaEngineRegistry.get(engineType)
-        : (MediaEngineRegistry.has('bun-ffi') ? MediaEngineRegistry.get('bun-ffi') : undefined);
-    } catch {
-      // Strategy not available or prerequisites (e.g. FFmpegManager) not initialized in lightweight test
-      strategy = undefined;
-    }
+    const strategy = this.mediaEngineStrategy;
 
     const cache = ContentCacheRegistry.namespace(CacheNamespace.Assets);
     const protocolRegistry = AssetProtocolRegistry.getInstance();
