@@ -119,17 +119,20 @@ export class OpfsCacheStrategy implements IContentCacheStrategy {
     const rootDir = await this.getDirectory();
     if (!rootDir) return null;
 
-    if (!key.includes('/')) {
-      return { dir: rootDir, fileName: this.sanitizeKey(key) };
+    // Filter out empty segments (e.g. from "https://" protocol or leading/trailing/repeated slashes)
+    const rawSegments = key.split('/').filter(Boolean);
+    if (rawSegments.length <= 1) {
+      const singleName = rawSegments.length === 1 ? rawSegments[0] : key;
+      return { dir: rootDir, fileName: this.sanitizeKey(singleName) };
     }
 
-    const segments = key.split('/');
-    const dirSegments = segments.slice(0, -1);
-    const fileSegment = segments[segments.length - 1];
+    const dirSegments = rawSegments.slice(0, -1);
+    const fileSegment = rawSegments[rawSegments.length - 1];
 
     let currentDir = rootDir;
     for (const seg of dirSegments) {
       const safeSeg = this.sanitizeKey(seg);
+      if (!safeSeg) continue;
       try {
         currentDir = await currentDir.getDirectoryHandle(safeSeg, { create });
       } catch {
@@ -247,24 +250,26 @@ export class OpfsCacheStrategy implements IContentCacheStrategy {
   }
 
   public async getMetadata(key: string): Promise<CacheEntryMetadata | null> {
-    const dir = await this.getDirectory();
-    if (!dir) {
-      if (typeof this.fallback.getMetadata === 'function') {
-        return this.fallback.getMetadata(key);
+    const resolved = await this.resolveTargetDirectory(key, false);
+    if (!resolved) {
+      const dir = await this.getDirectory();
+      if (!dir) {
+        if (typeof this.fallback.getMetadata === 'function') {
+          return this.fallback.getMetadata(key);
+        }
       }
       return null;
     }
 
-    const safeName = this.sanitizeKey(key);
     try {
-      const metaHandle = await dir.getFileHandle(`${safeName}.meta.json`);
+      const metaHandle = await resolved.dir.getFileHandle(`${resolved.fileName}.meta.json`);
       const file = await metaHandle.getFile();
       const text = await file.text();
       return JSON.parse(text) as CacheEntryMetadata;
     } catch {
       // Fallback: derive basic metadata from the file handle directly
       try {
-        const handle = await dir.getFileHandle(safeName);
+        const handle = await resolved.dir.getFileHandle(resolved.fileName);
         const file = await handle.getFile();
         return {
           checksum: `opfs-derived-${file.lastModified}`,
@@ -279,20 +284,23 @@ export class OpfsCacheStrategy implements IContentCacheStrategy {
   }
 
   public async delete(key: string): Promise<boolean> {
-    const dir = await this.getDirectory();
-    if (!dir) {
-      return this.fallback.delete(key);
+    const resolved = await this.resolveTargetDirectory(key, false);
+    if (!resolved) {
+      const dir = await this.getDirectory();
+      if (!dir) {
+        return this.fallback.delete(key);
+      }
+      return false;
     }
 
-    const safeName = this.sanitizeKey(key);
     let deleted = false;
     try {
-      await dir.removeEntry(safeName);
+      await resolved.dir.removeEntry(resolved.fileName);
       deleted = true;
     } catch {}
 
     try {
-      await dir.removeEntry(`${safeName}.meta.json`);
+      await resolved.dir.removeEntry(`${resolved.fileName}.meta.json`);
     } catch {}
 
     return deleted;
