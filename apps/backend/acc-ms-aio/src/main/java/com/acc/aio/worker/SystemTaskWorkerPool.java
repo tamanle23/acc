@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * SystemTaskWorkerPool:
@@ -42,6 +43,7 @@ public class SystemTaskWorkerPool {
     private final ExecutionStreamBroadcaster broadcaster;
     private final HttpClient httpClient;
     private final ExecutorService virtualThreadExecutor;
+    private final AtomicBoolean drainScheduled = new AtomicBoolean(false);
 
     private static final List<String> SYSTEM_DOMAINS = List.of(
         "system:http",
@@ -102,9 +104,31 @@ public class SystemTaskWorkerPool {
         "system:kafka", "KAFKA_PUBLISH"
     );
 
-    @Scheduled(fixedDelay = 200)
+    /**
+     * Triggered by PostgresNotificationListener upon task insertion signal.
+     * Debounces concurrent bursts via AtomicBoolean compareAndSet, draining until queue is empty.
+     */
+    public void triggerReactiveDrain() {
+        if (drainScheduled.compareAndSet(false, true)) {
+            virtualThreadExecutor.submit(() -> {
+                try {
+                    int drained;
+                    do {
+                        drained = pollAndExecuteBatch(System.currentTimeMillis());
+                    } while (drained > 0);
+                } finally {
+                    drainScheduled.set(false);
+                }
+            });
+        }
+    }
+
+    /**
+     * Fallback anti-stall watchdog scheduled at relaxed 5000ms delay (down from 200ms busy-polling).
+     */
+    @Scheduled(fixedDelay = 5000)
     public void scheduleSystemTasksPoll() {
-        pollAndExecuteBatch(System.currentTimeMillis());
+        triggerReactiveDrain();
     }
 
     /**

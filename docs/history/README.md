@@ -70,3 +70,5 @@
 | 405 | [Studio-Grade Color Correction Stage & Multi-Tab Color Inspector](./405_color_correction_stage_and_studio_color_inspector.md) | Completed |
 | 406 | [IRMasterRenderer MediaEngineStrategy Injection & Master vs Preview Comparison](./406_ir_master_renderer_strategy_injection_and_preview_comparison.md) | Completed |
 | 407 | [Studio Preview Playback Smoothness (Iteration 60)](./407_studio_preview_playback_smoothness.md) | Completed |
+| 408 | [Comprehensive Architecture & Code Health Audit: Studio, IR, Core, and Effect Engines](./408_studio_ir_core_health_audit.md) | In Progress |
+| 409 | [Enhanced Unified PostgreSQL Architecture for Workflow Engine (Iteration 61)](./409_unified_postgres_reactive_workflow_queue.md) | Completed |

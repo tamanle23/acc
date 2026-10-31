@@ -1,3 +1,4 @@
+-- DEPRECATED (Iteration 61): Legacy SQLite schema superseded by Unified PostgreSQL (schema-postgres.sql & changelog-000.000.00019.xml)
 CREATE TABLE IF NOT EXISTS workflow_executions (
   workflow_id TEXT PRIMARY KEY,
   tenant_id TEXT NOT NULL DEFAULT 'system',

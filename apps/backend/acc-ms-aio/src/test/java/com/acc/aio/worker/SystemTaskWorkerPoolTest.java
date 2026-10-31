@@ -104,4 +104,51 @@ class SystemTaskWorkerPoolTest {
         assertThat(finalSnapshot.status()).isEqualTo(WorkflowStatus.COMPLETED);
         assertThat(finalSnapshot.tasksByRef()).containsKey("publish-event");
     }
+
+    @Test
+    @DisplayName("triggerReactiveDrain coalesces concurrent notification storms and drains queued tasks")
+    void testTriggerReactiveDrainStormCoalescing() throws InterruptedException {
+        TaskDefinition jdbcNode = TaskDefinition.builder("audit-query")
+            .taskType(TaskType.JDBC)
+            .domain("system:jdbc")
+            .inputParameters(Map.of("sql", "SELECT 1"))
+            .build();
+
+        WorkflowDefinition def = WorkflowDefinition.builder("reactive-drain-wf")
+            .tasks(List.of(jdbcNode))
+            .build();
+
+        registry.register("tenant-1", def);
+
+        long now = System.currentTimeMillis();
+        for (int i = 0; i < 5; i++) {
+            engineService.startWorkflow("wf_reactive_" + i, "tenant-1", "ws-1", def, Map.of("idx", i), now + i);
+        }
+
+        // Simulate a burst of 10 concurrent notifications
+        for (int i = 0; i < 10; i++) {
+            workerPool.triggerReactiveDrain();
+        }
+
+        // Allow async drain and virtual thread execution to complete
+        Thread.sleep(350);
+
+        for (int i = 0; i < 5; i++) {
+            WorkflowSnapshot snap = persistencePort.getWorkflowSnapshot("wf_reactive_" + i).orElseThrow();
+            assertThat(snap.status()).isEqualTo(WorkflowStatus.COMPLETED);
+            assertThat(snap.tasksByRef()).containsKey("audit-query");
+        }
+    }
+
+    @Test
+    @DisplayName("PostgresNotificationListener safely skips non-PostgreSQL JDBC URLs and manages lifecycle")
+    void testPostgresNotificationListenerSafeLifecycle() {
+        PostgresNotificationListener nonPgListener = new PostgresNotificationListener(
+            "jdbc:h2:mem:test", "sa", "", workerPool
+        );
+        nonPgListener.start();
+        assertThat(nonPgListener.isRunning()).isFalse();
+        nonPgListener.stop();
+        assertThat(nonPgListener.isRunning()).isFalse();
+    }
 }

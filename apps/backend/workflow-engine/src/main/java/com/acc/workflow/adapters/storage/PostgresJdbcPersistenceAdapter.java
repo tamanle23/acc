@@ -11,12 +11,17 @@ import com.acc.workflow.core.model.WorkflowSnapshot;
 import com.acc.workflow.core.model.WorkflowStatus;
 import com.acc.workflow.ports.PersistencePort;
 import com.acc.workflow.ports.UnitOfWork;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -31,11 +36,30 @@ import java.util.Optional;
  */
 public final class PostgresJdbcPersistenceAdapter implements PersistencePort {
 
+    private static final Logger log = LoggerFactory.getLogger(PostgresJdbcPersistenceAdapter.class);
     private final DataSource dataSource;
     private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
     public PostgresJdbcPersistenceAdapter(DataSource dataSource) {
         this.dataSource = dataSource;
+        initializeSchemaIfMissing();
+    }
+
+    private void initializeSchemaIfMissing() {
+        try (Connection conn = getConnection(); Statement stmt = conn.createStatement()) {
+            try (ResultSet rs = stmt.executeQuery("SELECT 1 FROM information_schema.tables WHERE table_name = 'task_queue'")) {
+                if (!rs.next()) {
+                    InputStream is = getClass().getResourceAsStream("/db/schema-postgres.sql");
+                    if (is != null) {
+                        String ddl = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+                        stmt.execute(ddl);
+                        log.info("Defensively initialized PostgreSQL workflow schema from /db/schema-postgres.sql");
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Auto-initialization of workflow PostgreSQL schema skipped or handled by Liquibase: {}", e.getMessage());
+        }
     }
 
     private Connection getConnection() throws SQLException {

@@ -49,6 +49,25 @@ CREATE TABLE IF NOT EXISTS task_queue (
 CREATE INDEX IF NOT EXISTS idx_task_queue_poll 
   ON task_queue (tenant_id, task_type, domain, visible_at_epoch_ms, priority DESC);
 
+ALTER TABLE task_queue SET (
+  autovacuum_vacuum_scale_factor = 0.05,
+  autovacuum_vacuum_cost_limit = 1000
+);
+
+CREATE OR REPLACE FUNCTION notify_unipost_task_queued() 
+RETURNS TRIGGER AS '
+BEGIN
+  PERFORM pg_notify(''unipost_task_queue'', NEW.domain || '':'' || NEW.task_id);
+  RETURN NEW;
+END;
+' LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_unipost_task_queued ON task_queue;
+CREATE TRIGGER trg_unipost_task_queued
+  AFTER INSERT ON task_queue
+  FOR EACH ROW
+  EXECUTE FUNCTION notify_unipost_task_queued();
+
 CREATE TABLE IF NOT EXISTS task_dlq (
   dlq_id VARCHAR(128) PRIMARY KEY,
   task_id VARCHAR(128) NOT NULL,

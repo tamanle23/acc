@@ -32,7 +32,11 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * SQLite JDBC Persistence Adapter (Local-First).
  * Configures PRAGMA journal_mode = WAL and busy_timeout = 5000.
+ *
+ * @deprecated Since Iteration 61 in favor of Unified PostgreSQL {@link PostgresJdbcPersistenceAdapter}
+ *             and {@link InMemoryPersistenceAdapter} for zero-latency unit testing.
  */
+@Deprecated(since = "1.0.0", forRemoval = true)
 public final class SqliteJdbcPersistenceAdapter implements PersistencePort {
 
     private final ReentrantLock pollLock = new ReentrantLock();

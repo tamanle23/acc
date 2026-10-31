@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+
+  <changeSet id="workflow-engine-schema-001" author="architect">
+    <comment>Provision core workflow execution, task orchestration tables, autovacuum tuning, and pg_notify reactive trigger in unified PostgreSQL</comment>
+
+    <!-- 1-6. Core Workflow Tables & Indexes -->
+    <sql splitStatements="true">
+      -- 1. Workflow Executions
+      CREATE TABLE IF NOT EXISTS workflow_executions (
+        workflow_id VARCHAR(64) PRIMARY KEY,
+        tenant_id VARCHAR(64) NOT NULL DEFAULT 'system',
+        workspace_id VARCHAR(64) NOT NULL DEFAULT 'default',
+        workflow_name VARCHAR(128) NOT NULL,
+        version INT NOT NULL,
+        status VARCHAR(32) NOT NULL,
+        definition_snapshot JSONB NOT NULL,
+        input_payload JSONB NOT NULL,
+        output_payload JSONB,
+        failure_reason TEXT,
+        created_at_ms BIGINT NOT NULL,
+        updated_at_ms BIGINT NOT NULL
+      );
+
+      -- 2. Task Executions (Stores large payloads)
+      CREATE TABLE IF NOT EXISTS task_executions (
+        task_id VARCHAR(128) PRIMARY KEY,
+        workflow_id VARCHAR(64) NOT NULL REFERENCES workflow_executions(workflow_id) ON DELETE CASCADE,
+        tenant_id VARCHAR(64) NOT NULL DEFAULT 'system',
+        workspace_id VARCHAR(64) NOT NULL DEFAULT 'default',
+        reference_name VARCHAR(128) NOT NULL,
+        task_type VARCHAR(32) NOT NULL,
+        domain VARCHAR(64) NOT NULL DEFAULT 'default',
+        status VARCHAR(32) NOT NULL,
+        attempt INT NOT NULL DEFAULT 1,
+        worker_id VARCHAR(128),
+        input_payload JSONB NOT NULL,
+        output_payload JSONB,
+        error_details TEXT,
+        task_logs JSONB,
+        response_timeout_ms BIGINT NOT NULL DEFAULT 30000,
+        created_at_ms BIGINT NOT NULL,
+        updated_at_ms BIGINT NOT NULL
+      );
+
+      -- 3. Task Queue (Lean table: ~64 bytes/row for fast lock-free polling)
+      CREATE TABLE IF NOT EXISTS task_queue (
+        task_id VARCHAR(128) PRIMARY KEY,
+        workflow_id VARCHAR(64) NOT NULL,
+        tenant_id VARCHAR(64) NOT NULL DEFAULT 'system',
+        workspace_id VARCHAR(64) NOT NULL DEFAULT 'default',
+        task_type VARCHAR(32) NOT NULL,
+        domain VARCHAR(64) NOT NULL DEFAULT 'default',
+        priority INT NOT NULL DEFAULT 0,
+        created_at_ms BIGINT NOT NULL DEFAULT 0,
+        visible_at_epoch_ms BIGINT NOT NULL,
+        lease_owner VARCHAR(128)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_task_queue_poll 
+        ON task_queue (tenant_id, task_type, domain, visible_at_epoch_ms, priority DESC);
+
+      -- 4. Dead-Letter Queue (DLQ)
+      CREATE TABLE IF NOT EXISTS task_dlq (
+        dlq_id VARCHAR(128) PRIMARY KEY,
+        task_id VARCHAR(128) NOT NULL,
+        workflow_id VARCHAR(64) NOT NULL,
+        tenant_id VARCHAR(64) NOT NULL DEFAULT 'system',
+        workspace_id VARCHAR(64) NOT NULL DEFAULT 'default',
+        task_type VARCHAR(32) NOT NULL,
+        domain VARCHAR(64) NOT NULL DEFAULT 'default',
+        error_message TEXT,
+        error_stacktrace TEXT,
+        payload_snapshot JSONB,
+        retry_count INT NOT NULL DEFAULT 0,
+        isolated_at_ms BIGINT NOT NULL,
+        replayed_at_ms BIGINT,
+        status VARCHAR(32) NOT NULL DEFAULT 'ISOLATED'
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_task_dlq_tenant ON task_dlq(tenant_id, isolated_at_ms DESC);
+
+      -- 5. Workflow Definitions
+      CREATE TABLE IF NOT EXISTS workflow_definitions (
+        definition_id VARCHAR(128) PRIMARY KEY,
+        tenant_id VARCHAR(64) NOT NULL DEFAULT 'system',
+        workflow_key VARCHAR(128) NOT NULL,
+        version INT NOT NULL,
+        status VARCHAR(32) NOT NULL DEFAULT 'DRAFT',
+        name VARCHAR(128) NOT NULL,
+        description TEXT,
+        definition_json JSONB NOT NULL,
+        published_at_ms BIGINT,
+        published_by VARCHAR(128),
+        created_at_ms BIGINT NOT NULL,
+        updated_at_ms BIGINT NOT NULL,
+        CONSTRAINT uq_wf_def_version UNIQUE (tenant_id, workflow_key, version)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_wf_def_key ON workflow_definitions(tenant_id, workflow_key, version DESC);
+
+      -- 6. Tamper-Evident Workflow Audit Log
+      CREATE TABLE IF NOT EXISTS workflow_audit_log (
+        sequence_num BIGSERIAL PRIMARY KEY,
+        event_id VARCHAR(64) NOT NULL UNIQUE,
+        workflow_id VARCHAR(64) NOT NULL,
+        tenant_id VARCHAR(64) NOT NULL DEFAULT 'system',
+        actor_id VARCHAR(64) NOT NULL DEFAULT 'SYSTEM',
+        action VARCHAR(64) NOT NULL,
+        payload_snapshot JSONB NOT NULL,
+        prev_hash VARCHAR(64) NOT NULL,
+        current_hash VARCHAR(64) NOT NULL,
+        created_at_ms BIGINT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_audit_workflow ON workflow_audit_log(workflow_id, sequence_num ASC);
+    </sql>
+
+    <!-- Autovacuum tuning & Reactive Wakeup Trigger via pg_notify -->
+    <sql dbms="postgresql" splitStatements="false">
+      -- Autovacuum tuning for high-throughput queue
+      ALTER TABLE task_queue SET (
+        autovacuum_vacuum_scale_factor = 0.05,
+        autovacuum_vacuum_cost_limit = 1000
+      );
+
+      -- Reactive Wakeup Trigger via pg_notify
+      CREATE OR REPLACE FUNCTION notify_unipost_task_queued() 
+      RETURNS TRIGGER AS $$
+      BEGIN
+        PERFORM pg_notify('unipost_task_queue', NEW.domain || ':' || NEW.task_id);
+        RETURN NEW;
+      END;
+      $$ LANGUAGE plpgsql;
+
+      DROP TRIGGER IF EXISTS trg_unipost_task_queued ON task_queue;
+      CREATE TRIGGER trg_unipost_task_queued
+        AFTER INSERT ON task_queue
+        FOR EACH ROW
+        EXECUTE FUNCTION notify_unipost_task_queued();
+    </sql>
+
+    <rollback>
+      <sql dbms="postgresql" splitStatements="true">
+        DROP TRIGGER IF EXISTS trg_unipost_task_queued ON task_queue;
+        DROP FUNCTION IF EXISTS notify_unipost_task_queued;
+        DROP TABLE IF EXISTS workflow_audit_log CASCADE;
+        DROP TABLE IF EXISTS workflow_definitions CASCADE;
+        DROP TABLE IF EXISTS task_dlq CASCADE;
+        DROP TABLE IF EXISTS task_queue CASCADE;
+        DROP TABLE IF EXISTS task_executions CASCADE;
+        DROP TABLE IF EXISTS workflow_executions CASCADE;
+      </sql>
+    </rollback>
+  </changeSet>
+</databaseChangeLog>

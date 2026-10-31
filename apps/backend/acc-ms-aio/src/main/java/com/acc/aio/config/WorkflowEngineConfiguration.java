@@ -1,5 +1,7 @@
 package com.acc.aio.config;
 
+import com.acc.aio.worker.PostgresNotificationListener;
+import com.acc.aio.worker.SystemTaskWorkerPool;
 import com.acc.workflow.adapters.storage.InMemoryPersistenceAdapter;
 import com.acc.workflow.adapters.storage.PostgresJdbcPersistenceAdapter;
 import com.acc.workflow.adapters.storage.SqliteJdbcPersistenceAdapter;
@@ -7,9 +9,12 @@ import com.acc.workflow.application.WorkflowEngineService;
 import com.acc.workflow.core.decider.PureDecider;
 import com.acc.workflow.core.model.WorkflowDefinition;
 import com.acc.workflow.ports.PersistencePort;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
@@ -32,13 +37,63 @@ public class WorkflowEngineConfiguration {
 
     private static final Logger log = LoggerFactory.getLogger(WorkflowEngineConfiguration.class);
 
+    @Value("${spring.datasource.url:jdbc:postgresql://localhost:54329/postgres}")
+    private String dbUrl;
+
+    @Value("${spring.datasource.username:postgres}")
+    private String dbUser;
+
+    @Value("${spring.datasource.password:postgres}")
+    private String dbPassword;
+
+    @Bean(name = "workflowDataSource")
+    @ConditionalOnMissingBean(name = "workflowDataSource")
+    public DataSource workflowDataSource(@Autowired(required = false) DataSource primaryDataSource) {
+        String effectiveUrl = dbUrl;
+        String effectiveUser = dbUser;
+        String effectivePass = dbPassword;
+
+        if (primaryDataSource instanceof HikariDataSource hikariPrimary && hikariPrimary.getJdbcUrl() != null) {
+            effectiveUrl = hikariPrimary.getJdbcUrl();
+            if (hikariPrimary.getUsername() != null) {
+                effectiveUser = hikariPrimary.getUsername();
+            }
+            if (hikariPrimary.getPassword() != null) {
+                effectivePass = hikariPrimary.getPassword();
+            }
+        }
+
+        if (effectiveUrl != null && effectiveUrl.startsWith("jdbc:postgresql:")) {
+            try {
+                HikariConfig config = new HikariConfig();
+                config.setJdbcUrl(effectiveUrl);
+                config.setUsername(effectiveUser);
+                config.setPassword(effectivePass);
+                config.setPoolName("HikariPool-WorkflowEngine");
+                config.setMinimumIdle(2);
+                config.setMaximumPoolSize(4);
+                config.setConnectionTimeout(15000);
+                log.info("Provisioning isolated workflow connection pool 'HikariPool-WorkflowEngine' (min=2, max=4) for {}", effectiveUrl);
+                return new HikariDataSource(config);
+            } catch (Exception e) {
+                log.warn("Could not initialize dedicated HikariPool-WorkflowEngine, falling back to primary DataSource: {}", e.getMessage());
+            }
+        }
+        return primaryDataSource;
+    }
+
     @Bean
     @ConditionalOnMissingBean(PersistencePort.class)
-    public PersistencePort persistencePort(@Autowired(required = false) DataSource dataSource) {
-        if (dataSource != null) {
-            DataSource proxyDataSource = (dataSource instanceof org.springframework.jdbc.datasource.TransactionAwareDataSourceProxy)
-                ? dataSource
-                : new org.springframework.jdbc.datasource.TransactionAwareDataSourceProxy(dataSource);
+    @SuppressWarnings("deprecation")
+    public PersistencePort persistencePort(
+        @Autowired(required = false) @Qualifier("workflowDataSource") DataSource workflowDataSource,
+        @Autowired(required = false) DataSource primaryDataSource
+    ) {
+        DataSource targetDs = workflowDataSource != null ? workflowDataSource : primaryDataSource;
+        if (targetDs != null) {
+            DataSource proxyDataSource = (targetDs instanceof org.springframework.jdbc.datasource.TransactionAwareDataSourceProxy)
+                ? targetDs
+                : new org.springframework.jdbc.datasource.TransactionAwareDataSourceProxy(targetDs);
             try (Connection conn = proxyDataSource.getConnection()) {
                 String dbProduct = conn.getMetaData().getDatabaseProductName().toLowerCase();
                 log.info("Wiring Workflow PersistencePort for detected DB product: {}", dbProduct);
@@ -54,6 +109,27 @@ public class WorkflowEngineConfiguration {
         }
         log.info("Wiring default thread-safe InMemoryPersistenceAdapter for workflow engine");
         return new InMemoryPersistenceAdapter();
+    }
+
+    @Bean(initMethod = "start", destroyMethod = "stop")
+    @ConditionalOnMissingBean(PostgresNotificationListener.class)
+    public PostgresNotificationListener postgresNotificationListener(
+        SystemTaskWorkerPool workerPool,
+        @Autowired(required = false) @Qualifier("workflowDataSource") DataSource workflowDataSource
+    ) {
+        String effectiveUrl = dbUrl;
+        String effectiveUser = dbUser;
+        String effectivePass = dbPassword;
+        if (workflowDataSource instanceof HikariDataSource hikariDs && hikariDs.getJdbcUrl() != null) {
+            effectiveUrl = hikariDs.getJdbcUrl();
+            if (hikariDs.getUsername() != null) {
+                effectiveUser = hikariDs.getUsername();
+            }
+            if (hikariDs.getPassword() != null) {
+                effectivePass = hikariDs.getPassword();
+            }
+        }
+        return new PostgresNotificationListener(effectiveUrl, effectiveUser, effectivePass, workerPool);
     }
 
     @Bean
