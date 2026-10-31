@@ -53,8 +53,9 @@ class SandboxTokenAspectTest {
         ContextHeader header = new ContextHeader();
         header.setClientType("web");
         RequestWrapper<ContextHeader, AuthenticationRequestBody> request = RequestWrapper.create(header, body);
+        when(pjp.getArgs()).thenReturn(new Object[] { request });
 
-        Object result = aspect.interceptGetToken(pjp, request);
+        Object result = aspect.interceptGetToken(pjp);
 
         // Verify pjp.proceed() was NOT called
         verify(pjp, never()).proceed();
@@ -89,8 +90,9 @@ class SandboxTokenAspectTest {
         body.setPassword("secret123");
 
         RequestWrapper<ContextHeader, AuthenticationRequestBody> request = RequestWrapper.create(new ContextHeader(), body);
+        when(pjp.getArgs()).thenReturn(new Object[] { request });
 
-        Object result = aspect.interceptGetToken(pjp, request);
+        Object result = aspect.interceptGetToken(pjp);
 
         verify(pjp, times(1)).proceed();
         assertEquals("real-response", result);
@@ -104,17 +106,20 @@ class SandboxTokenAspectTest {
         AuthenticationRequestBody body = new AuthenticationRequestBody();
         body.setUserName(persona.username());
         RequestWrapper<ContextHeader, AuthenticationRequestBody> initialReq = RequestWrapper.create(new ContextHeader(), body);
+        ProceedingJoinPoint initPjp = mock(ProceedingJoinPoint.class);
+        when(initPjp.getArgs()).thenReturn(new Object[] { initialReq });
         @SuppressWarnings("unchecked")
         ResponseWrapper<ContextHeader, AuthenticationToken> initialRes = 
-                (ResponseWrapper<ContextHeader, AuthenticationToken>) aspect.interceptGetToken(mock(ProceedingJoinPoint.class), initialReq);
+                (ResponseWrapper<ContextHeader, AuthenticationToken>) aspect.interceptGetToken(initPjp);
 
         AuthenticationToken initialToken = initialRes.getBody();
 
         // Refresh it
         ProceedingJoinPoint pjp = mock(ProceedingJoinPoint.class);
         RequestWrapper<ContextHeader, AuthenticationToken> refreshReq = RequestWrapper.create(new ContextHeader(), initialToken);
+        when(pjp.getArgs()).thenReturn(new Object[] { refreshReq });
 
-        Object result = aspect.interceptRefreshToken(pjp, refreshReq);
+        Object result = aspect.interceptRefreshToken(pjp);
         verify(pjp, never()).proceed();
 
         assertTrue(result instanceof ResponseWrapper);

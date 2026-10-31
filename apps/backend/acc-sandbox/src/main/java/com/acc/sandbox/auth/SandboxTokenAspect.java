@@ -45,9 +45,17 @@ public class SandboxTokenAspect {
         this.jwtTokenHelperProvider = jwtTokenHelperProvider;
     }
 
-    @Around("execution(* com.acc.user.service.TokenService.getToken(..)) && args(request)")
-    public Object interceptGetToken(ProceedingJoinPoint pjp, RequestWrapper<ContextHeader, AuthenticationRequestBody> request) throws Throwable {
-        if (request == null || request.getBody() == null) {
+    @Around("execution(* com.acc.user.service.TokenService.getToken(..))")
+    public Object interceptGetToken(ProceedingJoinPoint pjp) throws Throwable {
+        Object[] args = pjp.getArgs();
+        if (args == null || args.length == 0 || !(args[0] instanceof RequestWrapper)) {
+            return pjp.proceed();
+        }
+
+        @SuppressWarnings("unchecked")
+        RequestWrapper<ContextHeader, AuthenticationRequestBody> request =
+                (RequestWrapper<ContextHeader, AuthenticationRequestBody>) args[0];
+        if (request.getBody() == null) {
             return pjp.proceed();
         }
 
@@ -75,9 +83,17 @@ public class SandboxTokenAspect {
         return pjp.proceed();
     }
 
-    @Around("execution(* com.acc.user.service.TokenService.refreshToken(..)) && args(request)")
-    public Object interceptRefreshToken(ProceedingJoinPoint pjp, RequestWrapper<ContextHeader, AuthenticationToken> request) throws Throwable {
-        if (request == null || request.getBody() == null) {
+    @Around("execution(* com.acc.user.service.TokenService.refreshToken(..))")
+    public Object interceptRefreshToken(ProceedingJoinPoint pjp) throws Throwable {
+        Object[] args = pjp.getArgs();
+        if (args == null || args.length == 0 || !(args[0] instanceof RequestWrapper)) {
+            return pjp.proceed();
+        }
+
+        @SuppressWarnings("unchecked")
+        RequestWrapper<ContextHeader, AuthenticationToken> request =
+                (RequestWrapper<ContextHeader, AuthenticationToken>) args[0];
+        if (request.getBody() == null) {
             return pjp.proceed();
         }
 
