@@ -73,3 +73,4 @@
 | 408 | [Comprehensive Architecture & Code Health Audit: Studio, IR, Core, and Effect Engines](./408_studio_ir_core_health_audit.md) | In Progress |
 | 409 | [Enhanced Unified PostgreSQL Architecture for Workflow Engine (Iteration 61)](./409_unified_postgres_reactive_workflow_queue.md) | Completed |
 | 410 | [On-Demand Unified Sandbox Activation via "Bypass with sandbox" & Workflow Simulation Consolidation](./410_ondemand_sandbox_activation_bypass_only.md) | Completed |
+| 411 | [PostgreSQL Physical Naming Strategy for Mixed-Case Liquibase Columns and Table Identifier Resolution](./411_postgresql_mixed_case_naming_strategy.md) | Completed |
