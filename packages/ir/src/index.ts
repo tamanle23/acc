@@ -4,6 +4,7 @@ export * from './PipelineIR';
 export * from './types/VideoIR';
 export * from './standards/VideoStandardsCatalog';
 export * from './types/modifiers';
+export * from './types/generated-ir-types';
 export * from './types/FineGrainedVideoDirectorConfig';
 export * from './schema/VideoIRSchemaValidator';
 export * from './authoring/VideoIRAuthoringEngine';
