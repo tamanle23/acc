@@ -433,7 +433,7 @@ export class VideoIRSchemaValidator {
             }
           : isRootDocument
           ? { type: 'timeline' as const }
-          : { type: 'track' as const };
+          : { type: 'track' as const, trackType };
         const check = registry.isModifierAllowedOnEntity(mod.type, targetCtx);
         if (!check.allowed && check.reason) {
           errors.push(`Modifier "${mod.type}" on ${context}: ${check.reason}`);
