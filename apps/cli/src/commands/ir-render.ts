@@ -119,7 +119,7 @@ export async function handleIrRenderCommand(options: IrRenderCliOptions): Promis
       'ir.dag_compile',
       async () => {
         const prober = new AssetMetadataProber(baseDir);
-        const compiler = new RelationalDAGCompiler({ prober });
+        const compiler: RelationalDAGCompiler = new RelationalDAGCompiler({ prober });
 
         Logger.info('IRRenderCommand', 'Executing two-pass topological DAG compilation...');
         const compiledTimeline = await compiler.compile(irDoc);

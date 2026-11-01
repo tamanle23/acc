@@ -42,8 +42,6 @@ export * from './resilience/AdaptiveResourceGovernor';
 export * from './resilience/RenderCircuitBreaker';
 export * from './resilience/RenderCheckpointManager';
 export * from './models/ModelHandleRegistry';
-export * from './saga/SagaOrchestrator';
-export * from './saga/ConductorSagaOrchestrator';
 export * from './workflow/IWorkflowOrchestrator';
 export * from './telemetry/TraceContext';
 export * from './telemetry/Tracer';

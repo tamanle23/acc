@@ -212,7 +212,6 @@ export class IRChunkWorkerPool {
 
     // Dynamic import of governance utilities when running in server context
     let checkpointManager: any = null;
-    let saga: any = null;
     if (typeof process !== 'undefined' && (process as any).versions?.node) {
       try {
         const core = await import('@acc/core');
@@ -222,9 +221,6 @@ export class IRChunkWorkerPool {
         }
         if (options.jobId && core.RenderCheckpointManager) {
           checkpointManager = core.RenderCheckpointManager.getInstance();
-        }
-        if (core.SagaOrchestrator) {
-          saga = new core.SagaOrchestrator(options.jobId ? `chunk_pool_${options.jobId}` : `chunk_pool_${this.seed}`);
         }
       } catch { }
     }
@@ -268,17 +264,7 @@ export class IRChunkWorkerPool {
           `.temp_master_audio_${this.seed}_${jobId || 'main'}.wav`
         );
         await DecoupledAudioMixer.exportToWav(masterAudioWavPath, mixedAudio);
-        if (saga) {
-          saga.addStep({
-            name: 'master_audio',
-            execute: async () => { },
-            compensate: async () => {
-              if (masterAudioWavPath) {
-                await removePathIfExists(masterAudioWavPath);
-              }
-            },
-          });
-        }
+
       }
     }
 
@@ -299,17 +285,6 @@ export class IRChunkWorkerPool {
 
       if (chunkMp4Path) {
         chunkPaths[slice.chunkIndex] = chunkMp4Path;
-        if (saga) {
-          saga.addStep({
-            name: `chunk_${slice.chunkIndex}`,
-            execute: async () => { },
-            compensate: async () => {
-              if (chunkMp4Path) {
-                await removePathIfExists(chunkMp4Path);
-              }
-            },
-          });
-        }
       }
 
       // Checkpoint resumption: skip already verified chunks
@@ -408,9 +383,6 @@ export class IRChunkWorkerPool {
     try {
       await Promise.all(activeTasks.map((task) => task()));
     } catch (err: any) {
-      if (saga) {
-        await saga.execute({});
-      }
       throw err;
     }
 
