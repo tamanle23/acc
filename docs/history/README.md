@@ -80,3 +80,4 @@
 | 414 | [Video Resolution Standards and Aspect Ratio Presets](./414_video_resolution_standards_and_aspect_presets.md) | Completed |
 | 415 | [Fix Studio Preview Playback Blinking and Black Strobe](./415_fix_preview_playback_blinking.md) | Completed |
 | 416 | [Video IR & Modifiers Schema-First Parity, 9-Component Governance & Automation Pipeline](./416_modifiers_schema_sync_and_enforcement.md) | Completed |
+| 417 | [Studio Preview Dimensions and Level of Detail (LOD) Architecture](./417_studio_preview_dimensions_and_lod_architecture.md) | Completed |
