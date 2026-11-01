@@ -296,7 +296,13 @@ export class ModifierPluginRegistry {
     }
 
     if (targetType === 'track') {
-      if (plugin.targetScope === 'track') return { allowed: true };
+      const trackType = (targetContext as any).trackType;
+      if (
+        plugin.targetScope === 'track' ||
+        (plugin.supportedTrackTypes && (!trackType || plugin.supportedTrackTypes.includes(trackType)))
+      ) {
+        return { allowed: true };
+      }
       return {
         allowed: false,
         reason: `Modifier "${modifierType}" targetScope is "${plugin.targetScope}", cannot be applied to track`,
@@ -380,7 +386,12 @@ export class ModifierPluginRegistry {
     const isCompatible =
       plugin.targetScope === 'standalone'
         ? context.targetType === 'sequence'
-        : (plugin.targetScope as any) === 'both' || plugin.targetScope === context.targetType;
+        : plugin.targetScope === context.targetType ||
+          (context.targetType === 'track' &&
+            Boolean(
+              plugin.supportedTrackTypes &&
+                (!context.trackType || plugin.supportedTrackTypes.includes(context.trackType as any))
+            ));
 
     if (!isCompatible) {
       console.warn(

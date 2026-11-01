@@ -4,7 +4,6 @@ export * from './PipelineIR';
 export * from './types/VideoIR';
 export * from './standards/VideoStandardsCatalog';
 export * from './types/modifiers';
-export * from './types/generated-ir-types';
 export * from './types/FineGrainedVideoDirectorConfig';
 export * from './schema/VideoIRSchemaValidator';
 export * from './authoring/VideoIRAuthoringEngine';
@@ -19,3 +18,6 @@ export * from './commands/RenderCommand';
 export * from './plugins';
 export * from './motion';
 export * from './renderer';
+
+// Disambiguate common modifier types re-exported from both types/modifiers and plugins
+export type { ColorWheelValue, ShapeModifierParams, TransformModifierParams } from './types/modifiers';

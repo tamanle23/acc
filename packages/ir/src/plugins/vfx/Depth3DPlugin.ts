@@ -180,8 +180,8 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
       mode: params.mode || 'frame_breaker',
       frameStyle: params.frameStyle,
       popOutIntensity: params.popOutIntensity ?? 1.25,
-      depthStrategy: params.depthStrategy || VisionEngineRegistry.getDefaultDepthStrategyId(),
-      segmentationStrategy: params.segmentationStrategy || VisionEngineRegistry.getDefaultSegmentationStrategyId(),
+      ...(params.depthStrategy ? { depthStrategy: params.depthStrategy } : {}),
+      ...(params.segmentationStrategy ? { segmentationStrategy: params.segmentationStrategy } : {}),
       active: true,
     };
     
