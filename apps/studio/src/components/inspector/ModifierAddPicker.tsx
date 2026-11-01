@@ -15,6 +15,7 @@ import {
   Popover,
   PopoverTrigger,
   PopoverContent,
+  PopoverAnchor,
 } from '../ui/popover';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -89,11 +90,15 @@ export const ModifierAddPicker: React.FC<ModifierAddPickerProps> = ({
 
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
-      {children && <PopoverTrigger asChild>{children}</PopoverTrigger>}
+      {children ? (
+        <PopoverTrigger asChild>{children}</PopoverTrigger>
+      ) : (
+        <PopoverAnchor className="absolute top-10 right-3 w-1 h-1 pointer-events-none" />
+      )}
       <PopoverContent
         align="end"
         sideOffset={6}
-        className="w-80 p-0 glass-card border-glass-border shadow-2xl overflow-hidden z-50 flex flex-col max-h-[420px]"
+        className="w-80 p-0 glass-card bg-popover/95 backdrop-blur-md border border-glass-border shadow-2xl overflow-hidden z-50 flex flex-col max-h-[420px]"
       >
         {/* Search Input Bar */}
         <div className="p-2 border-b border-glass-border bg-glass-surface/50 flex items-center gap-2">

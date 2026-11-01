@@ -26,7 +26,8 @@ export interface InspectorHeaderProps {
   onToggleSearch: () => void;
   isBypassAllActive: boolean;
   onToggleBypassAll: () => void;
-  onOpenAddPicker: () => void;
+  onOpenAddPicker?: () => void;
+  addEffectSlot?: React.ReactNode;
 }
 
 const MODALITY_COLOR_MAP: Record<string, string> = {
@@ -53,6 +54,7 @@ export const InspectorHeader: React.FC<InspectorHeaderProps> = ({
   isBypassAllActive,
   onToggleBypassAll,
   onOpenAddPicker,
+  addEffectSlot,
 }) => {
   const modalityColor =
     MODALITY_COLOR_MAP[effectiveTrack?.type || 'video'] || 'bg-accent-theme';
@@ -112,20 +114,23 @@ export const InspectorHeader: React.FC<InspectorHeaderProps> = ({
           )}
 
           {/* Add Effect Launcher */}
-          {canAddEffect && (
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={isAddEffectDisabled}
-              onClick={onOpenAddPicker}
-              className="h-6 text-[10px] gap-1 px-1.5 border-accent-theme/40 text-accent-theme bg-accent-theme/10 hover:bg-accent-theme/20 cursor-pointer disabled:cursor-not-allowed"
-              title="Add effect or modifier"
-              aria-label="Add effect or modifier"
-            >
-              <Plus className="w-3 h-3" />
-              Add Effect
-            </Button>
-          )}
+          {canAddEffect &&
+            (addEffectSlot ? (
+              addEffectSlot
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={isAddEffectDisabled}
+                onClick={onOpenAddPicker}
+                className="h-6 text-[10px] gap-1 px-1.5 border-accent-theme/40 text-accent-theme bg-accent-theme/10 hover:bg-accent-theme/20 cursor-pointer disabled:cursor-not-allowed"
+                title="Add effect or modifier"
+                aria-label="Add effect or modifier"
+              >
+                <Plus className="w-3 h-3" />
+                Add Effect
+              </Button>
+            ))}
         </div>
       </div>
 

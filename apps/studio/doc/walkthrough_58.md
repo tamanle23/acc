@@ -51,6 +51,11 @@ Modernized [`RightSidebar.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/st
    - Resolved an issue in [`SequenceInspector.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/studio/src/components/inspector/SequenceInspector.tsx) where `effectiveOpenSections` was polluted with raw section IDs (`secId`) and perpetually re-added collapsed item keys.
    - Implemented `handleAccordionValueChange` to cleanly prune all aliases (`key`, `secId`, `type`) for explicitly closed modifiers, while auto-expanding matching items during active property search.
 
+8. **Fixed ModifierAddPicker Popover Trigger Anchoring**:
+   - Resolved an issue where clicking "Add Effect" failed to display [`ModifierAddPicker.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/studio/src/components/inspector/ModifierAddPicker.tsx).
+   - In Radix UI, `<Popover>` requires an anchor or trigger reference to position its portal content. The "Add Effect" button in [`InspectorHeader.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/studio/src/components/inspector/InspectorHeader.tsx) was previously disconnected from `<ModifierAddPicker>`.
+   - Wired `ModifierAddPicker` to directly wrap the header's "Add Effect" button via `<PopoverTrigger asChild>`, and added a fallback `<PopoverAnchor>` when invoked without children.
+
 ---
 
 ## 2. Verification Results
