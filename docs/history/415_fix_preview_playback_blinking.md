@@ -19,14 +19,18 @@ Root causes identified:
 
 ## Changes
 - `apps/studio/src/renderer/workers/preview.worker.ts`:
+  - Implemented **Double-Buffering Architecture**: Created private offline `backCanvas` and `backCtx`. All visual track rendering, clearColor fills, and modifier passes run offscreen in `backCtx`.
+  - Added atomic front-buffer flip: Once `await engine.renderFrameAsync` completes 100%, a single synchronous `ctx.drawImage(backCanvas!, 0, 0)` blits the composite to the transferred onscreen canvas. The onscreen canvas is NEVER exposed to intermediate clears or pending modifier promises.
   - Awaited active video frames in parallel via `Promise.all(frameResolutions)` before drawing.
   - Eliminated unawaited floating promises and removed recursive re-render loop inside `.then()`.
-  - Removed premature `ctx.fillRect` before `engine.renderFrameAsync`.
-  - Maintained `currentClearColor` across worker ticks and passed `isSequentialPlayback: true` in `playbackLoop`.
+  - Maintained `currentClearColor` across worker ticks and synchronized `isPlaying` state on `renderFrame` messages.
+  - Enabled active sequential lookahead prewarming by passing `activePlaying = isPlaying || isSequentialPlayback` to `clipPrewarmer.prewarmUpcomingClips`.
+- `apps/studio/src/renderer/workers/SequentialVideoReader.ts`:
+  - Added `preloadingFrame` and `preloadPromise` concurrency guard: If frame $N$ is currently in-flight being decoded by `preloadNext`, `getFrameCanvas` awaits `preloadPromise` directly rather than launching an uncoordinated second decode on the active slot.
 - `apps/studio/src/renderer/strategies/MainThreadRenderStrategy.ts`:
-  - Removed redundant front-buffer canvas clearing before `this.engine.renderFrame`.
+  - Implemented double-buffering using private back-buffer and atomic blit to onscreen canvas.
 - `packages/ir/src/renderer/shared/IRCanvasCompositor.ts`:
-  - Maintained canonical, unmodified 1:1 Painter's Algorithm rendering.
+  - Maintained canonical, unmodified 1:1 Painter's Algorithm rendering (100% decoupled from preview runtime).
 - `apps/studio/src/components/Preview.tsx`:
   - Guarded `TransformGizmoOverlay` with `!isPlaying` to suppress editing bounding boxes and handles during playback.
 - `apps/studio/src/components/preview/ViewportCanvasLayer.tsx`:

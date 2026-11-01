@@ -15,6 +15,8 @@ export class MainThreadRenderStrategy implements IPreviewRenderStrategy {
   private height = 1080;
   private timeline: ResolvedTimeline | null = null;
   private readyCallbacks: (() => void)[] = [];
+  private backCanvas: OffscreenCanvas | HTMLCanvasElement | null = null;
+  private backCtx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D | null = null;
 
   public get isReady(): boolean {
     return this.ready;
@@ -113,19 +115,42 @@ export class MainThreadRenderStrategy implements IPreviewRenderStrategy {
     };
   }
 
+  private ensureBackBuffer(width: number, height: number): void {
+    if (!this.backCanvas || this.backCanvas.width !== width || this.backCanvas.height !== height) {
+      if (typeof OffscreenCanvas !== 'undefined') {
+        this.backCanvas = new OffscreenCanvas(width, height);
+        this.backCtx = this.backCanvas.getContext('2d') as OffscreenCanvasRenderingContext2D;
+      } else if (typeof document !== 'undefined') {
+        const c = document.createElement('canvas');
+        c.width = width;
+        c.height = height;
+        this.backCanvas = c;
+        this.backCtx = c.getContext('2d') as CanvasRenderingContext2D;
+      }
+    }
+  }
+
   public renderFrame(frame: number, options?: WorkerRenderOptions): void {
     if (!this.canvas || !this.engine) return;
     const ctx = this.canvas.getContext('2d');
     if (!ctx) return;
 
+    this.ensureBackBuffer(this.width, this.height);
+    const targetCtx = this.backCtx || ctx;
+
     const clearColor = options?.clearColor || '#000000';
     const start = performance.now();
-    const res = this.engine.renderFrame(frame, ctx, {
+    const res = this.engine.renderFrame(frame, targetCtx as any, {
       textureCache: this.engine.getTextureCache(),
       lodScale: options?.lod ?? 1.0,
       clearColor,
       debugMode: options?.debugMode,
     });
+
+    if (this.backCanvas && targetCtx !== ctx) {
+      ctx.drawImage(this.backCanvas as any, 0, 0);
+    }
+
     const latency = res?.latencyMs ?? (performance.now() - start);
     for (const listener of this.frameRenderedListeners) {
       listener(frame, latency);
@@ -139,6 +164,7 @@ export class MainThreadRenderStrategy implements IPreviewRenderStrategy {
       this.canvas.width = width;
       this.canvas.height = height;
     }
+    this.ensureBackBuffer(width, height);
   }
 
   public onReady(callback: () => void): void {

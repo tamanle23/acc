@@ -130,6 +130,17 @@ let lastUiSyncTime = 0;
 let workerClock: DeterministicTimelineClock | null = null;
 let currentClearColor = '#000000';
 
+// Double-buffering: Private offscreen back-buffer eliminates front-canvas black flashes
+let backCanvas: OffscreenCanvas | null = null;
+let backCtx: OffscreenCanvasRenderingContext2D | null = null;
+
+function ensureBackBuffer(w: number, h: number): void {
+  if (!backCanvas || backCanvas.width !== w || backCanvas.height !== h) {
+    backCanvas = new OffscreenCanvas(w, h);
+    backCtx = backCanvas.getContext('2d', { willReadFrequently: true }) as OffscreenCanvasRenderingContext2D;
+  }
+}
+
 async function renderCurrentFrame(
   frame: number,
   lod = 1.0,
@@ -164,7 +175,8 @@ async function renderCurrentFrame(
   const frameScope = NativeResourceManager.getInstance().createFrameScope();
 
   // 2. Lookahead Pre-warming of upcoming clips within 1.5s & active 4-frame sequential lookahead
-  clipPrewarmer.prewarmUpcomingClips(frame, currentFps, isPlaying);
+  const activePlaying = isPlaying || isSequentialPlayback;
+  clipPrewarmer.prewarmUpcomingClips(frame, currentFps, activePlaying);
 
   // 3. Resolve active video frames from Mediabunny readers or MemoryManager using clip-local frames
   const activeSeqs = engine.seek(frame).activeSequences;
@@ -216,10 +228,13 @@ async function renderCurrentFrame(
 
   await Promise.all(frameResolutions);
 
-  ctx.save();
+  ensureBackBuffer(w, h);
+  if (!backCtx) return;
+
+  backCtx.save();
   if (lod < 1.0) {
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'low';
+    backCtx.imageSmoothingEnabled = true;
+    backCtx.imageSmoothingQuality = 'low';
   }
 
   const workerAssetResolver = {
@@ -238,16 +253,21 @@ async function renderCurrentFrame(
   };
 
   try {
-    await engine.renderFrameAsync(frame, ctx as any, {
+    await engine.renderFrameAsync(frame, backCtx as any, {
       textureCache: workerAssetResolver as any,
       clearColor,
       debugMode,
     });
+
+    // ATOMIC FRONT-BUFFER FLIP:
+    // Blit completed frame from private back-buffer to transferred onscreen canvas in a single draw call.
+    // The onscreen canvas is NEVER wiped to black during async frame or modifier processing.
+    ctx.drawImage(backCanvas!, 0, 0);
   } catch (err) {
     console.error('[preview.worker] Render error at frame', frame, err);
   } finally {
     frameScope.dispose();
-    ctx.restore();
+    backCtx.restore();
     drainDisposalQueue();
     // Synchronously close any remaining playback transient bitmaps in textureCache
     for (const [id, val] of textureCache.entries()) {
@@ -489,6 +509,7 @@ self.onmessage = async (e: MessageEvent) => {
         canvas.width = currentWidth;
         canvas.height = currentHeight;
       }
+      ensureBackBuffer(currentWidth, currentHeight);
       texturesDirty = true;
       renderCurrentFrame(currentFrame, 1.0, false);
       break;
@@ -503,6 +524,7 @@ self.onmessage = async (e: MessageEvent) => {
       }
       const isScrub = Boolean(data.isScrubbing);
       const isPlay = Boolean(data.isPlaying);
+      isPlaying = isPlay;
       void renderCurrentFrame(
         currentFrame,
         data.lod ?? 1.0,

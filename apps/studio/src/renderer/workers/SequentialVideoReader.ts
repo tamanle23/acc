@@ -15,7 +15,9 @@ export class SequentialVideoReader implements Disposable {
   private activeSlot: 'A' | 'B' = 'A';
   private currentFrame = -1;
   private preloadedFrame = -1;
+  private preloadingFrame = -1;
   private isPreloading = false;
+  private preloadPromise: Promise<boolean> | null = null;
   private width: number;
   private height: number;
   private canvasSink: CanvasSink | null;
@@ -68,19 +70,24 @@ export class SequentialVideoReader implements Disposable {
       return this.getActiveCanvas();
     }
 
-    // 2. If requested frame matches preloaded frame in inactive slot, swap!
+    // 2. If requested frame is currently being preloaded in inactive slot, await it!
+    if (this.isPreloading && this.preloadingFrame === frame && this.preloadPromise) {
+      await this.preloadPromise;
+    }
+
+    // 3. If requested frame matches preloaded frame in inactive slot, swap!
     if (this.preloadedFrame === frame) {
       this.swap();
       this.currentFrame = frame;
-      this.preloadNext(frame + 1, fps);
+      void this.preloadNext(frame + 1, fps);
       return this.getActiveCanvas();
     }
 
-    // 3. Otherwise (seek/startup/miss), decode directly into active slot
+    // 4. Otherwise (seek/startup/miss), decode directly into active slot
     const painted = await this.paintSlot(this.activeSlot, frame, fps);
     if (painted) {
       this.currentFrame = frame;
-      this.preloadNext(frame + 1, fps);
+      void this.preloadNext(frame + 1, fps);
       return this.getActiveCanvas();
     }
 
@@ -123,21 +130,28 @@ export class SequentialVideoReader implements Disposable {
   private async preloadNext(frame: number, fps: number): Promise<void> {
     if (this.isPreloading || this.preloadedFrame === frame) return;
     this.isPreloading = true;
+    this.preloadingFrame = frame;
     const inactive = this.getInactiveSlot();
+    const promise = this.paintSlot(inactive, frame, fps);
+    this.preloadPromise = promise;
     try {
-      const success = await this.paintSlot(inactive, frame, fps);
+      const success = await promise;
       if (success) {
         this.preloadedFrame = frame;
       }
     } finally {
       this.isPreloading = false;
+      this.preloadPromise = null;
+      this.preloadingFrame = -1;
     }
   }
 
   public reset(): void {
     this.currentFrame = -1;
     this.preloadedFrame = -1;
+    this.preloadingFrame = -1;
     this.isPreloading = false;
+    this.preloadPromise = null;
   }
 
   public dispose(): void {
