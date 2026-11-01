@@ -151,24 +151,18 @@ export class IRCanvasCompositor {
     const canvas = canvasCtx.canvas || canvasCtx;
     const profile = options.executionProfile || 'preview';
 
-    // 1. Double-Buffering Safe Viewport Clear
-    // Deferred until track 0 is ready to draw, preventing intermediate black strobing during async modifier/texture evaluation
-    let isViewportCleared = false;
-    const ensureViewportCleared = (): void => {
-      if (isViewportCleared) return;
-      isViewportCleared = true;
-      canvasCtx.save();
-      canvasCtx.setTransform(1, 0, 0, 1, 0, 0);
-      canvasCtx.globalCompositeOperation = 'source-over';
-      canvasCtx.globalAlpha = 1.0;
-      if (options.clearColor === 'transparent') {
-        canvasCtx.clearRect(0, 0, width, height);
-      } else {
-        canvasCtx.fillStyle = options.clearColor || '#000000';
-        canvasCtx.fillRect(0, 0, width, height);
-      }
-      canvasCtx.restore();
-    };
+    // 1. Clear Viewport
+    canvasCtx.save();
+    canvasCtx.setTransform(1, 0, 0, 1, 0, 0);
+    canvasCtx.globalCompositeOperation = 'source-over';
+    canvasCtx.globalAlpha = 1.0;
+    if (options.clearColor === 'transparent') {
+      canvasCtx.clearRect(0, 0, width, height);
+    } else {
+      canvasCtx.fillStyle = options.clearColor || '#000000';
+      canvasCtx.fillRect(0, 0, width, height);
+    }
+    canvasCtx.restore();
 
     const tracksList = Array.from(timeline.tracks.values());
     const visualTracksList = tracksList
@@ -176,9 +170,6 @@ export class IRCanvasCompositor {
       .sort((a, b) => (a.groupOrder ?? 0) - (b.groupOrder ?? 0));
 
     const finalizePostVisualTracks = (): void => {
-      // Ensure canvas background is cleared even if timeline has zero active visual tracks
-      ensureViewportCleared();
-
       // 1. Restore root visual scale so master composite modifiers operate directly on physical buffer pixels
       canvasCtx.restore();
 
@@ -385,7 +376,6 @@ export class IRCanvasCompositor {
       }
       scratchCtx.restore();
 
-      ensureViewportCleared();
       canvasCtx.save();
       canvasCtx.globalCompositeOperation = mapBlendModeToCanvasCompositeOperation(trackBlend);
       canvasCtx.globalAlpha = Math.max(0, Math.min(1, trackOpacity));
@@ -427,7 +417,6 @@ export class IRCanvasCompositor {
           hasTrackModifiers;
 
         if (!requiresIsolation) {
-          ensureViewportCleared();
           const seqRes = IRCanvasCompositor.renderTrackSequences(
             canvasCtx,
             canvas,
