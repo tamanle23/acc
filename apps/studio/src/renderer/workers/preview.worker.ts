@@ -58,7 +58,7 @@ function drainDisposalQueue(): void {
     if (old && typeof old.close === 'function') {
       try {
         old.close();
-      } catch {}
+      } catch { }
     }
   }
 }
@@ -72,7 +72,7 @@ function safeSetTexture(id: string, bmp: any): void {
       } else {
         try {
           existing.close();
-        } catch {}
+        } catch { }
       }
     }
   }
@@ -87,7 +87,7 @@ function safeSetTexture(id: string, bmp: any): void {
         } else {
           try {
             oldBmp.close();
-          } catch {}
+          } catch { }
         }
       }
       textureCache.delete(oldestKey);
@@ -244,7 +244,7 @@ async function renderCurrentFrame(
       if (asset && (asset as any)._isTransient && typeof (asset as any).close === 'function') {
         try {
           (asset as any).close();
-        } catch {}
+        } catch { }
         if (textureCache.get(assetId) === asset) {
           textureCache.delete(assetId);
         }
@@ -274,7 +274,7 @@ async function renderCurrentFrame(
       if (val && (val as any)._isTransient && typeof (val as any).close === 'function') {
         try {
           (val as any).close();
-        } catch {}
+        } catch { }
         textureCache.delete(id);
       }
     }
@@ -368,7 +368,7 @@ function syncAssetSources(assets: Record<string, { src?: string; type?: string }
       if (oldBmp && typeof oldBmp.close === 'function') {
         try {
           oldBmp.close();
-        } catch {}
+        } catch { }
       }
       textureCache.delete(id);
     }
@@ -401,15 +401,15 @@ function syncAssetSources(assets: Record<string, { src?: string; type?: string }
             const cache = ContentCacheRegistry.namespace(CacheNamespace.Assets);
             const cached = (await cache.get(assetId)) || (await cache.get(url));
             if (cached) return cached;
-          } catch {}
+          } catch { }
           if (typeof fetch === 'function') {
             const res = await fetch(url);
             const blob = await res.blob();
             // Store to cache asynchronously
             try {
               const cache = ContentCacheRegistry.namespace(CacheNamespace.Assets);
-              cache.set(assetId, blob).catch(() => {});
-            } catch {}
+              cache.set(assetId, blob).catch(() => { });
+            } catch { }
             return blob;
           }
           return null;
@@ -421,12 +421,12 @@ function syncAssetSources(assets: Record<string, { src?: string; type?: string }
             if (bmp) {
               safeSetTexture(assetId, bmp);
               texturesDirty = true;
-              if (!isPlaying) {
-                renderCurrentFrame(currentFrame, 1.0, false);
-              }
+              // if (!isPlaying) {
+              //   renderCurrentFrame(currentFrame, 1.0, false);
+              // }
             }
           })
-          .catch(() => {});
+          .catch(() => { });
       }
     }
   }

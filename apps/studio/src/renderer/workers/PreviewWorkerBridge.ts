@@ -356,13 +356,6 @@ export class PreviewWorkerBridge implements Disposable {
     });
   }
 
-  public syncAssets(assets: Record<string, { src?: string; type?: string }>): void {
-    if (!this.worker || !this.isTransferred) return;
-    this.worker.postMessage({
-      type: 'syncAssets',
-      assets,
-    });
-  }
 
   public resize(width: number, height: number): void {
     if (!this.worker || !this.isTransferred) return;

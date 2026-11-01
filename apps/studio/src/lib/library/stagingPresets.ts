@@ -4,7 +4,7 @@ import { SFX_LIBRARY_CATALOG, convertSFXToPreset, SFX_PRESETS } from './sfxBank'
 import { TYPOGRAPHY_PRESETS } from './typographyBank';
 import { SHAPE_PRESETS } from './shapesBank';
 import { VFX_PRESETS } from './vfxBank';
-import { VIDEO_FOOTAGE_PRESETS } from './footageBank';
+import { FOOTAGE_PRESETS, VIDEO_FOOTAGE_PRESETS } from './footageBank';
 import { AUDIO_FOOTAGE_PRESETS } from './audioFootageBank';
 
 export type PresetCategory = 'text' | 'shape' | 'vfx' | 'overlay' | 'sfx' | 'video' | 'audio';
@@ -16,20 +16,20 @@ export interface StagingPreset {
   badge: string;
   description: string;
   iconName:
-    | 'Type'
-    | 'Square'
-    | 'Circle'
-    | 'ArrowUpRight'
-    | 'Sparkles'
-    | 'Eye'
-    | 'Sun'
-    | 'Zap'
-    | 'Volume2'
-    | 'Music'
-    | 'Radio'
-    | 'Video'
-    | 'Film'
-    | 'Play';
+  | 'Type'
+  | 'Square'
+  | 'Circle'
+  | 'ArrowUpRight'
+  | 'Sparkles'
+  | 'Eye'
+  | 'Sun'
+  | 'Zap'
+  | 'Volume2'
+  | 'Music'
+  | 'Radio'
+  | 'Video'
+  | 'Film'
+  | 'Play';
   targetTrackId: string;
   targetTrackType: 'timed_text' | 'video' | 'audio';
   targetTrackName: string;
@@ -447,209 +447,6 @@ export const STAGING_PRESETS: StagingPreset[] = [
   },
 
   // ==========================================
-  // 3. PARTIAL VFX PRESETS
-  // ==========================================
-  {
-    id: 'vfx_regional_blur',
-    category: 'vfx',
-    name: 'Regional Blur / Pixelate',
-    badge: 'Partial VFX',
-    description: 'Localized frosted privacy blur or sensor pixelation box',
-    iconName: 'Eye',
-    targetTrackId: 'track-partial-vfx',
-    targetTrackType: 'video',
-    targetTrackName: 'Partial VFX Overlays',
-    createSequence: ({ startFrame, durationFrames = 90, normX = 0.5, normY = 0.5 }) => ({
-      id: `seq-vfx-blur-${Date.now()}`,
-      type: 'overlay',
-      time: {
-        start: startFrame,
-        duration: durationFrames,
-      },
-      modifiers: [
-        {
-          type: 'transform',
-          target: ['video', 'overlay'],
-          params: {
-            normX,
-            normY,
-            x: (normX - 0.5) * 600,
-            y: (normY - 0.5) * 400,
-            scale: 1.0,
-            rotation: 0,
-          },
-        },
-        {
-          type: 'vfx/partial',
-          target: 'overlay',
-          params: {
-            regions: [
-              {
-                type: 'blur',
-                x: normX,
-                y: normY,
-                width: 0.35,
-                height: 0.25,
-                intensity: 16,
-              },
-            ],
-            label: 'REGIONAL BLUR',
-          },
-        },
-      ],
-    }),
-  },
-  {
-    id: 'vfx_spotlight',
-    category: 'vfx',
-    name: 'Spotlight / Radial Relight',
-    badge: 'Partial VFX',
-    description: 'Localized dynamic spotlight illumination cone with soft feathering',
-    iconName: 'Sun',
-    targetTrackId: 'track-partial-vfx',
-    targetTrackType: 'video',
-    targetTrackName: 'Partial VFX Overlays',
-    createSequence: ({ startFrame, durationFrames = 90, normX = 0.5, normY = 0.5 }) => ({
-      id: `seq-vfx-spotlight-${Date.now()}`,
-      type: 'overlay',
-      time: {
-        start: startFrame,
-        duration: durationFrames,
-      },
-      modifiers: [
-        {
-          type: 'transform',
-          target: ['video', 'overlay'],
-          params: {
-            normX,
-            normY,
-            x: (normX - 0.5) * 600,
-            y: (normY - 0.5) * 400,
-            scale: 1.0,
-            rotation: 0,
-          },
-        },
-        {
-          type: 'vfx/partial',
-          target: 'overlay',
-          params: {
-            regions: [
-              {
-                type: 'spotlight',
-                x: normX,
-                y: normY,
-                radius: 160,
-                intensity: 1.8,
-                color: '#00d4ff',
-              },
-            ],
-            label: 'SPOTLIGHT CONE',
-          },
-        },
-      ],
-    }),
-  },
-  {
-    id: 'vfx_regional_glitch',
-    category: 'vfx',
-    name: 'Regional Glitch & RGB Shift',
-    badge: 'Partial VFX',
-    description: 'Localized digital glitch artifact block with chromatic displacement',
-    iconName: 'Zap',
-    targetTrackId: 'track-partial-vfx',
-    targetTrackType: 'video',
-    targetTrackName: 'Partial VFX Overlays',
-    createSequence: ({ startFrame, durationFrames = 90, normX = 0.5, normY = 0.5 }) => ({
-      id: `seq-vfx-glitch-${Date.now()}`,
-      type: 'overlay',
-      time: {
-        start: startFrame,
-        duration: durationFrames,
-      },
-      modifiers: [
-        {
-          type: 'transform',
-          target: ['video', 'overlay'],
-          params: {
-            normX,
-            normY,
-            x: (normX - 0.5) * 600,
-            y: (normY - 0.5) * 400,
-            scale: 1.0,
-            rotation: 0,
-          },
-        },
-        {
-          type: 'vfx/partial',
-          target: 'overlay',
-          params: {
-            regions: [
-              {
-                type: 'glitch',
-                x: normX,
-                y: normY,
-                width: 0.35,
-                height: 0.2,
-                intensity: 0.85,
-              },
-            ],
-            label: 'RGB TEAR',
-          },
-        },
-      ],
-    }),
-  },
-  {
-    id: 'vfx_point_emitter',
-    category: 'vfx',
-    name: 'Point Particle Emitter',
-    badge: 'Partial VFX',
-    description: 'Radial particle generator bursting neon sparks from an anchor point',
-    iconName: 'Sparkles',
-    targetTrackId: 'track-partial-vfx',
-    targetTrackType: 'video',
-    targetTrackName: 'Partial VFX Overlays',
-    createSequence: ({ startFrame, durationFrames = 90, normX = 0.5, normY = 0.5 }) => ({
-      id: `seq-vfx-emitter-${Date.now()}`,
-      type: 'overlay',
-      time: {
-        start: startFrame,
-        duration: durationFrames,
-      },
-      modifiers: [
-        {
-          type: 'transform',
-          target: ['video', 'overlay'],
-          params: {
-            normX,
-            normY,
-            x: (normX - 0.5) * 600,
-            y: (normY - 0.5) * 400,
-            scale: 1.0,
-            rotation: 0,
-          },
-        },
-        {
-          type: 'vfx/partial',
-          target: 'overlay',
-          params: {
-            regions: [
-              {
-                type: 'point_emitter',
-                x: normX,
-                y: normY,
-                intensity: 1.5,
-                color: '#ec4899',
-              },
-            ],
-            label: 'PARTICLE BURST',
-          },
-        },
-      ],
-    }),
-  },
-
-  // ==========================================
   // 4. OVERLAY VFX PRESETS
   // ==========================================
   {
@@ -822,7 +619,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
   // ==========================================
   // 9. VIDEO FOOTAGE PRESETS (Curated Royalty-Free Plates)
   // ==========================================
-  ...VIDEO_FOOTAGE_PRESETS,
+  ...FOOTAGE_PRESETS,
 
   // ==========================================
   // 10. AUDIO FOOTAGE PRESETS (Curated Royalty-Free Scores)

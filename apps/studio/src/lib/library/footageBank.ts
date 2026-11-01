@@ -4,7 +4,7 @@ export const VIDEO_FOOTAGE_PRESETS: StagingPreset[] = [
   {
     id: 'footage_cyber_city',
     category: 'video',
-    type: 'video',
+    type: 'image',
     assetId: 'asset-cyber-city',
     name: 'Cyberpunk Metropolis Highway',
     badge: '4K Ultra HD',
@@ -17,7 +17,7 @@ export const VIDEO_FOOTAGE_PRESETS: StagingPreset[] = [
     durationSec: 10.0,
     createSequence: ({ startFrame, durationFrames = 300, normX = 0.5, normY = 0.5 }) => ({
       id: `seq-footage-cyber-${Date.now()}`,
-      type: 'video',
+      type: 'image',
       assetId: 'asset-cyber-city',
       time: { start: startFrame, duration: durationFrames },
       modifiers: [
@@ -37,7 +37,7 @@ export const VIDEO_FOOTAGE_PRESETS: StagingPreset[] = [
   {
     id: 'footage_matrix_rain',
     category: 'video',
-    type: 'video',
+    type: 'image',
     assetId: 'asset-matrix-core',
     name: 'Matrix Digital Stream Core',
     badge: '1080p Stream',
@@ -50,7 +50,7 @@ export const VIDEO_FOOTAGE_PRESETS: StagingPreset[] = [
     durationSec: 8.0,
     createSequence: ({ startFrame, durationFrames = 240, normX = 0.5, normY = 0.5 }) => ({
       id: `seq-footage-matrix-${Date.now()}`,
-      type: 'video',
+      type: 'image',
       assetId: 'asset-matrix-core',
       time: { start: startFrame, duration: durationFrames },
       modifiers: [
@@ -65,7 +65,7 @@ export const VIDEO_FOOTAGE_PRESETS: StagingPreset[] = [
   {
     id: 'footage_deep_space',
     category: 'video',
-    type: 'video',
+    type: 'image',
     assetId: 'asset-neon-warrior',
     name: 'Cosmic Nebula Space Void',
     badge: '4K Space',
@@ -78,7 +78,7 @@ export const VIDEO_FOOTAGE_PRESETS: StagingPreset[] = [
     durationSec: 12.0,
     createSequence: ({ startFrame, durationFrames = 360, normX = 0.5, normY = 0.5 }) => ({
       id: `seq-footage-space-${Date.now()}`,
-      type: 'video',
+      type: 'image',
       assetId: 'asset-neon-warrior',
       time: { start: startFrame, duration: durationFrames },
       modifiers: [
@@ -93,7 +93,7 @@ export const VIDEO_FOOTAGE_PRESETS: StagingPreset[] = [
   {
     id: 'footage_hologram_globe',
     category: 'video',
-    type: 'video',
+    type: 'image',
     assetId: 'asset-holo-globe',
     name: '3D Wireframe Telemetry Globe',
     badge: 'Holo Plate',
@@ -106,7 +106,7 @@ export const VIDEO_FOOTAGE_PRESETS: StagingPreset[] = [
     durationSec: 10.0,
     createSequence: ({ startFrame, durationFrames = 300, normX = 0.5, normY = 0.5 }) => ({
       id: `seq-footage-globe-${Date.now()}`,
-      type: 'video',
+      type: 'image',
       assetId: 'asset-holo-globe',
       time: { start: startFrame, duration: durationFrames },
       modifiers: [
@@ -121,7 +121,7 @@ export const VIDEO_FOOTAGE_PRESETS: StagingPreset[] = [
   {
     id: 'footage_vintage_film_burn',
     category: 'video',
-    type: 'video',
+    type: 'image',
     assetId: 'asset-film-burn',
     name: 'Vintage 35mm Analog Film Burn',
     badge: 'Analog Plate',
@@ -134,7 +134,7 @@ export const VIDEO_FOOTAGE_PRESETS: StagingPreset[] = [
     durationSec: 6.0,
     createSequence: ({ startFrame, durationFrames = 180, normX = 0.5, normY = 0.5 }) => ({
       id: `seq-footage-filmburn-${Date.now()}`,
-      type: 'video',
+      type: 'image',
       assetId: 'asset-film-burn',
       time: { start: startFrame, duration: durationFrames },
       modifiers: [
@@ -149,7 +149,7 @@ export const VIDEO_FOOTAGE_PRESETS: StagingPreset[] = [
   {
     id: 'footage_synthwave_grid',
     category: 'video',
-    type: 'video',
+    type: 'image',
     assetId: 'asset-synth-grid',
     name: 'Synthwave 80s Sunset Grid',
     badge: 'Outrun 4K',
@@ -162,7 +162,7 @@ export const VIDEO_FOOTAGE_PRESETS: StagingPreset[] = [
     durationSec: 15.0,
     createSequence: ({ startFrame, durationFrames = 450, normX = 0.5, normY = 0.5 }) => ({
       id: `seq-footage-synthgrid-${Date.now()}`,
-      type: 'video',
+      type: 'image',
       assetId: 'asset-synth-grid',
       time: { start: startFrame, duration: durationFrames },
       modifiers: [
@@ -177,7 +177,7 @@ export const VIDEO_FOOTAGE_PRESETS: StagingPreset[] = [
   {
     id: 'footage_thunderstorm_lightning',
     category: 'video',
-    type: 'video',
+    type: 'image',
     assetId: 'asset-lightning',
     name: 'Dramatic Lightning Thunderstorm',
     badge: 'Weather 4K',
@@ -190,7 +190,7 @@ export const VIDEO_FOOTAGE_PRESETS: StagingPreset[] = [
     durationSec: 5.0,
     createSequence: ({ startFrame, durationFrames = 150, normX = 0.5, normY = 0.5 }) => ({
       id: `seq-footage-lightning-${Date.now()}`,
-      type: 'video',
+      type: 'image',
       assetId: 'asset-lightning',
       time: { start: startFrame, duration: durationFrames },
       modifiers: [
@@ -205,7 +205,7 @@ export const VIDEO_FOOTAGE_PRESETS: StagingPreset[] = [
   {
     id: 'footage_underwater_caustics',
     category: 'video',
-    type: 'video',
+    type: 'image',
     assetId: 'asset-ocean-caustics',
     name: 'Underwater Sun Ray Caustics',
     badge: 'Oceanic 4K',
@@ -218,7 +218,7 @@ export const VIDEO_FOOTAGE_PRESETS: StagingPreset[] = [
     durationSec: 10.0,
     createSequence: ({ startFrame, durationFrames = 300, normX = 0.5, normY = 0.5 }) => ({
       id: `seq-footage-ocean-${Date.now()}`,
-      type: 'video',
+      type: 'image',
       assetId: 'asset-ocean-caustics',
       time: { start: startFrame, duration: durationFrames },
       modifiers: [

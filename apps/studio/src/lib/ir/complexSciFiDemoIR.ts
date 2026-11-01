@@ -41,7 +41,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
   assets: {
     'asset-cyber-city': {
       src: 'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?w=1920&q=80',
-      type: 'image',
+    type: 'image',
     },
     'asset-neon-warrior': {
       src: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1920&q=80',

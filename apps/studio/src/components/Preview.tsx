@@ -82,7 +82,7 @@ function PreviewInner({
   const [editingCue, setEditingCue] = useState<{ sequenceId: string; cueIndex: number; text: string } | null>(null);
 
   // Configurable Virtual Preview Buffer Resolution
-  const [previewResolution, setPreviewResolution] = useState<PreviewResolutionMode>('auto');
+  const [previewResolution, setPreviewResolution] = useState<PreviewResolutionMode>(0.5);
 
   // Calculate active virtual resolution scale
   const activeScale = useMemo(() => {
@@ -227,7 +227,7 @@ function PreviewInner({
 
   const selectedSeq = selectedSeqId
     ? irState.timeline?.sequences?.get(selectedSeqId) ||
-      irState.doc?.tracks.flatMap((t) => t.sequences).find((s) => s.id === selectedSeqId)
+    irState.doc?.tracks.flatMap((t) => t.sequences).find((s) => s.id === selectedSeqId)
     : undefined;
   const hasTransformModifier = Boolean(selectedSeq?.modifiers?.some((m) => m.type === 'transform'));
 
@@ -245,11 +245,10 @@ function PreviewInner({
         setDragCoords(null);
       }}
       onDrop={handleDrop}
-      className={`relative max-h-full max-w-full flex flex-col items-center justify-center p-0 overflow-hidden rounded-2xl select-none transition-all duration-300 ${
-        isOver
+      className={`relative max-h-full max-w-full flex flex-col items-center justify-center p-0 overflow-hidden rounded-2xl select-none transition-all duration-300 ${isOver
           ? 'ring-2 ring-[var(--accent-primary)] shadow-[0_0_35px_var(--accent-glow)] scale-[1.005]'
           : 'hover:border-[var(--glass-border-highlight)]'
-      }`}
+        }`}
     >
       {showVfxAmbiance && (
         <div className="absolute inset-0 pointer-events-none opacity-40 liquid-ambient-mesh transition-opacity duration-300" />
@@ -299,14 +298,12 @@ function PreviewInner({
 
       {/* Dynamic Viewport: Canvas Cell + Dockable Telemetry Companion */}
       <div
-        className={`w-full flex-1 flex flex-col xl:flex-row items-center justify-center gap-4 px-2 py-1 max-w-full overflow-hidden ${
-          isTelemetryCompanionOpen ? 'xl:justify-between' : 'justify-center'
-        }`}
+        className={`w-full flex-1 flex flex-col xl:flex-row items-center justify-center gap-4 px-2 py-1 max-w-full overflow-hidden ${isTelemetryCompanionOpen ? 'xl:justify-between' : 'justify-center'
+          }`}
       >
         <div
-          className={`relative flex items-center justify-center isolate rounded-xl overflow-hidden shadow-[0_12px_40px_rgba(0,0,0,0.7)] border border-[var(--glass-border)] bg-black select-none transition-all duration-300 ${
-            panZoom.isPanToolActive || panZoom.isSpacePressed ? (panZoom.isPanning ? 'cursor-grabbing' : 'cursor-grab') : ''
-          } ${isTelemetryCompanionOpen ? 'xl:max-w-[calc(100%-270px)]' : 'max-w-full'}`}
+          className={`relative flex items-center justify-center isolate rounded-xl overflow-hidden shadow-[0_12px_40px_rgba(0,0,0,0.7)] border border-[var(--glass-border)] bg-black select-none transition-all duration-300 ${panZoom.isPanToolActive || panZoom.isSpacePressed ? (panZoom.isPanning ? 'cursor-grabbing' : 'cursor-grab') : ''
+            } ${isTelemetryCompanionOpen ? 'xl:max-w-[calc(100%-270px)]' : 'max-w-full'}`}
           style={{
             aspectRatio: `${width} / ${height}`,
             maxHeight: '68vh',

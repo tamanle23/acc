@@ -254,7 +254,7 @@ export class CanvasParticleOverlayPlugin implements ModifierPlugin<CanvasParticl
         try {
           const uScratch = UniversalCanvasProvider.acquireScratchCanvas(width, height);
           const scratch = uScratch.getRawCanvas ? uScratch.getRawCanvas() : uScratch;
-          const sCtx = scratch.getContext('2d');
+          const sCtx = uScratch.getContext('2d');
           PostProcessingShaders.applyBloom(
             canvasCtx,
             scratch,
@@ -265,7 +265,7 @@ export class CanvasParticleOverlayPlugin implements ModifierPlugin<CanvasParticl
             params.shaders.bloom.intensity ?? 0.5
           );
           UniversalCanvasProvider.releaseScratchCanvas(uScratch);
-        } catch {}
+        } catch { }
       }
 
       // B. Anamorphic Lens Flare

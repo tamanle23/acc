@@ -16,7 +16,6 @@ import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import {
-  STAGING_PRESETS,
   getDynamicStagingPresets,
   type StagingPreset,
   type PresetCategory,
@@ -99,8 +98,8 @@ function LeftSidebarInner({
       // Store into ContentCacheRegistry with Blob API zero-copy backing
       try {
         const cache = ContentCacheRegistry.namespace(CacheNamespace.Assets);
-        cache.set(assetId, file, { mimeType: file.type, sizeBytes: file.size }).catch(() => {});
-      } catch {}
+        cache.set(assetId, file, { mimeType: file.type, sizeBytes: file.size }).catch(() => { });
+      } catch { }
 
       if (isVideo) {
         const video = document.createElement('video');
@@ -330,11 +329,10 @@ function LeftSidebarInner({
                         variant={selectedCategory === cat ? 'default' : 'outline'}
                         size="sm"
                         onClick={() => setSelectedCategory(cat)}
-                        className={`h-6 text-[10px] px-2 capitalize shrink-0 transition-transform hover:-translate-y-0.5 ${
-                          selectedCategory === cat
+                        className={`h-6 text-[10px] px-2 capitalize shrink-0 transition-transform hover:-translate-y-0.5 ${selectedCategory === cat
                             ? 'bg-accent-theme text-primary-foreground hover:bg-accent-theme/90'
                             : 'text-muted-foreground border-border/50 hover:bg-muted hover:text-foreground'
-                        }`}
+                          }`}
                       >
                         {CATEGORY_LABELS[cat] || cat}
                       </Button>
@@ -351,11 +349,10 @@ function LeftSidebarInner({
                         variant={selectedSfxBank === b.id ? 'default' : 'outline'}
                         size="sm"
                         onClick={() => setSelectedSfxBank(b.id)}
-                        className={`h-5 text-[9px] px-2 shrink-0 rounded-full font-mono ${
-                          selectedSfxBank === b.id
+                        className={`h-5 text-[9px] px-2 shrink-0 rounded-full font-mono ${selectedSfxBank === b.id
                             ? 'bg-accent-theme text-primary-foreground hover:bg-accent-theme/90'
                             : 'text-muted-foreground border-border/40 hover:bg-muted hover:text-foreground'
-                        }`}
+                          }`}
                       >
                         {b.name} ({b.count})
                       </Button>
@@ -417,11 +414,10 @@ function LeftSidebarInner({
                       variant={selectedAssetType === type ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => setSelectedAssetType(type)}
-                      className={`h-6 text-[10px] px-2 capitalize ${
-                        selectedAssetType === type
+                      className={`h-6 text-[10px] px-2 capitalize ${selectedAssetType === type
                           ? 'bg-accent-theme text-primary-foreground hover:bg-accent-theme/90'
                           : 'text-muted-foreground border-border/50 hover:bg-muted hover:text-foreground'
-                      }`}
+                        }`}
                     >
                       {type === 'all' ? 'All' : type}
                     </Button>
@@ -441,11 +437,10 @@ function LeftSidebarInner({
                     handleFilesIngest(e.dataTransfer.files);
                   }}
                   onClick={() => fileInputRef.current?.click()}
-                  className={`mt-2 border-2 border-dashed rounded-lg p-3 text-center cursor-pointer transition-colors ${
-                    isVaultDragOver
+                  className={`mt-2 border-2 border-dashed rounded-lg p-3 text-center cursor-pointer transition-colors ${isVaultDragOver
                       ? 'border-accent-theme bg-accent-theme/10 text-accent-theme'
                       : 'border-border/60 hover:border-accent-theme/40 hover:bg-muted/40 text-muted-foreground'
-                  }`}
+                    }`}
                 >
                   <input
                     type="file"
