@@ -5,7 +5,6 @@ import { Switch } from '../../ui/switch';
 import type { ParamFieldDescriptor } from '@acc/ir';
 import { EasingCurveSelector } from '../../EasingCurveSelector';
 import { ScrubbableNumberInput } from '../ScrubbableNumberInput';
-import { KeyframeAnchor } from '../KeyframeAnchor';
 
 export interface ControlStrategyProps {
   descriptor: ParamFieldDescriptor;
@@ -18,7 +17,7 @@ export interface ControlStrategyProps {
  * Strategy 1: NumberControlStrategy
  * Renders a studio-grade synchronized virtual scrub input + range slider.
  * Supports horizontal click-drag scrubbing (Shift: 10x, Alt: 0.1x), double-click direct text
- * with safe math expressions (e.g. 1080/2), double-click reset to defaults, and keyframe anchors.
+ * with safe math expressions (e.g. 1080/2), and double-click reset to defaults.
  */
 export const NumberControlStrategy: React.FC<ControlStrategyProps> = ({
   descriptor,
@@ -40,21 +39,15 @@ export const NumberControlStrategy: React.FC<ControlStrategyProps> = ({
   return (
     <div className={`space-y-1.5 ${disabled ? 'pointer-events-none opacity-60' : ''}`}>
       <div className="flex justify-between items-center text-[11px]">
-        <div className="flex items-center gap-1.5 truncate">
-          <KeyframeAnchor
-            disabled={disabled}
-            propertyLabel={descriptor.label}
-          />
-          <span
-            onDoubleClick={() => !disabled && onChange(defaultVal)}
-            className={`text-muted-foreground hover:text-accent-theme select-none truncate ${
-              disabled ? 'cursor-not-allowed' : 'cursor-pointer'
-            } transition-colors`}
-            title={disabled ? undefined : `Double-click to reset (${defaultVal})`}
-          >
-            {descriptor.label}
-          </span>
-        </div>
+        <span
+          onDoubleClick={() => !disabled && onChange(defaultVal)}
+          className={`text-muted-foreground hover:text-accent-theme select-none truncate ${
+            disabled ? 'cursor-not-allowed' : 'cursor-pointer'
+          } transition-colors`}
+          title={disabled ? undefined : `Double-click to reset (${defaultVal})`}
+        >
+          {descriptor.label}
+        </span>
         <ScrubbableNumberInput
           value={numericVal}
           min={min}

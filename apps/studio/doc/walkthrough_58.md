@@ -44,8 +44,9 @@ Modernized [`RightSidebar.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/st
      - Undoable modifier deletion.
      - Soft bypass toggle switch.
 
-6. **Keyframe Animation Anchors**:
-   - Implemented [`KeyframeAnchor.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/studio/src/components/inspector/KeyframeAnchor.tsx) with diamond indicator states and integrated into `NumberControlStrategy`.
+6. **Pruned Misleading Keyframe Diamond UI (Adherence to History 383)**:
+   - Verified that VideoIR modifier parameters (e.g. contrast, blur, opacity, particles) operate as pure static sequence-level values without per-frame keyframe branching.
+   - Removed `KeyframeAnchor` from `NumberControlStrategy` to prevent misleading, non-functional diamond buttons and keep property rows clean, focused, and truthful.
 
 7. **Fixed Modifier Accordion Collapse & Expansion Synchronization**:
    - Resolved an issue in [`SequenceInspector.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/studio/src/components/inspector/SequenceInspector.tsx) where `effectiveOpenSections` was polluted with raw section IDs (`secId`) and perpetually re-added collapsed item keys.

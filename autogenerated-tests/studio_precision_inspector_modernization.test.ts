@@ -205,7 +205,6 @@ describe('Studio Dynamic Property Editor & Precision Scrubber Suite', () => {
     it('verifies all extracted sub-components exist with correct signatures', () => {
       const inspectorDir = path.resolve('apps/studio/src/components/inspector');
       expect(fs.existsSync(path.join(inspectorDir, 'ScrubbableNumberInput.tsx'))).toBe(true);
-      expect(fs.existsSync(path.join(inspectorDir, 'KeyframeAnchor.tsx'))).toBe(true);
       expect(fs.existsSync(path.join(inspectorDir, 'ModifierCardHeader.tsx'))).toBe(true);
       expect(fs.existsSync(path.join(inspectorDir, 'ModifierAddPicker.tsx'))).toBe(true);
       expect(fs.existsSync(path.join(inspectorDir, 'PropertySearchFilter.tsx'))).toBe(true);
