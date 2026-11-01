@@ -155,6 +155,16 @@ export function generateTypeScriptTypes(videoIRSchema: any, modifiersSchema: any
   code.push('// ============================================================================');
   code.push('');
 
+  // 1a. Root Document Schema (VideoIRDocument & VideoIR)
+  const rootDoc: string = videoIRSchema.description ? `/** ${videoIRSchema.description} */\n` : '';
+  code.push(`${rootDoc}export interface VideoIRDocument ${schemaTypeToTs({
+    type: 'object',
+    required: videoIRSchema.required,
+    properties: videoIRSchema.properties,
+  })}\n`);
+  code.push('/** Convenient type alias for VideoIRDocument */');
+  code.push('export type VideoIR = VideoIRDocument;\n');
+
   const vDefs = videoIRSchema.definitions as Record<string, any>;
   for (const [name, def] of Object.entries(vDefs)) {
     if (name === 'ModifierNode' || name === 'SequenceType') continue; // canonically in modifiers

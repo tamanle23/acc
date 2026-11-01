@@ -9,6 +9,22 @@
 // Video IR Core Topology Types (from schema/video-ir.schema.json)
 // ============================================================================
 
+/** JSON Schema for Universal Video Intermediate Representation (VideoIR) Document V1.0-Stable adhering to the Extensible Entity-Component Architecture. */
+export interface VideoIRDocument {
+  /** Video IR specification version (e.g., '1.0.0-stable' or '1.0.0') */
+  version: string;
+  meta: IRMeta;
+  /** Dictionary of registered media, audio, visual, and font assets keyed by unique asset ID */
+  assets?: Record<string, AssetDefinition>;
+  /** Ordered collection of rendering and composition tracks (video, audio, data, timed_text) */
+  tracks: IRTrack[];
+  /** Global document-level master modifier chain (post-composition visual and master audio DSP) */
+  modifiers?: ModifierNode[];
+}
+
+/** Convenient type alias for VideoIRDocument */
+export type VideoIR = VideoIRDocument;
+
 /** Functional classification of the track */
 export type TrackType = "video" | "audio" | "data" | "timed_text";
 
