@@ -57,6 +57,13 @@ Modernized [`RightSidebar.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/st
    - In Radix UI, `<Popover>` requires an anchor or trigger reference to position its portal content. The "Add Effect" button in [`InspectorHeader.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/studio/src/components/inspector/InspectorHeader.tsx) was previously disconnected from `<ModifierAddPicker>`.
    - Wired `ModifierAddPicker` to directly wrap the header's "Add Effect" button via `<PopoverTrigger asChild>`, and added a fallback `<PopoverAnchor>` when invoked without children.
 
+9. **Improved Slider Control Track, Range, and Thumb Styling**:
+   - Resolved an issue in [`slider.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/studio/src/components/ui/slider.tsx) where only the thumb was visible.
+   - Root cause: `data-horizontal:h-2` was used, but Radix UI sets `data-orientation="horizontal"`, resulting in Tailwind generating no height and leaving the track at `0px`.
+   - Replaced with explicit `h-1.5 w-full` (and `data-[orientation=vertical]:h-full data-[orientation=vertical]:w-1.5`).
+   - Enhanced track with frosted border and inset shadow (`bg-muted/70 dark:bg-slate-800/90 border border-white/10 dark:border-white/5 shadow-[inset_0_1px_2px_rgba(0,0,0,0.5)]`).
+   - Added glowing accent fill to range (`bg-accent-theme shadow-[0_0_8px_var(--accent-glow,rgba(6,182,212,0.4))]`) and precision hover state to thumb (`hover:scale-125 cursor-ew-resize`).
+
 ---
 
 ## 2. Verification Results
