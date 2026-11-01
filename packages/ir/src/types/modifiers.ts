@@ -71,6 +71,49 @@ export interface TransformModifierParams {
   };
 }
 
+export interface AutoReframeModifierParams {
+  enabled?: boolean;
+  targetAspectRatio?: string;
+  strategyId?: string;
+  smoothingFactor?: number;
+  motionDamping?: boolean;
+  visualGuide?: boolean;
+}
+
+export interface PartialVfxRegion {
+  type: 'circle' | 'rect';
+  x: number;
+  y: number;
+  radius?: number;
+  width?: number;
+  height?: number;
+  intensity?: number;
+  color?: string;
+}
+
+export interface PartialVfxModifierParams {
+  regions?: PartialVfxRegion[];
+}
+
+export interface GSAPMotionModifierParams {
+  preset?: string;
+  introDuration?: number;
+  outroDuration?: number;
+  ease?: string;
+}
+
+export interface ShapeModifierParams {
+  geometry?: 'rect' | 'rounded_rect' | 'circle' | 'pill' | 'star' | 'hexagon' | 'triangle' | 'cross' | 'frame';
+  width?: number;
+  height?: number;
+  fillColor?: string;
+  strokeWidth?: number;
+  strokeColor?: string;
+}
+
+export type ShapeDrawModifierParams = ShapeModifierParams;
+export type ShapeVectorModifierParams = ShapeModifierParams;
+
 // ============================================================================
 // 2. 3D VFX & Camera Modifiers
 // ============================================================================
@@ -132,8 +175,15 @@ export interface Depth3DModifierParams {
   [key: string]: unknown;
 }
 
+export interface ColorWheelValue {
+  x: number;
+  y: number;
+  yLevel: number;
+}
+
 export interface ColorGradingModifierParams {
   lut?: string;
+  lutIntensity?: number;
   contrast?: number;
   saturation?: number;
   brightness?: number;
@@ -141,6 +191,21 @@ export interface ColorGradingModifierParams {
   tint?: number;
   vignette?: number;
   exposure?: number;
+  pivot?: number;
+  vibrance?: number;
+  highlights?: number;
+  shadows?: number;
+  whites?: number;
+  blacks?: number;
+  vignetteAmount?: number;
+  vignetteMidpoint?: number;
+  vignetteFeather?: number;
+  colorWheels?: {
+    lift?: ColorWheelValue;
+    gamma?: ColorWheelValue;
+    gain?: ColorWheelValue;
+    offset?: ColorWheelValue;
+  };
 }
 
 // ============================================================================
@@ -535,9 +600,13 @@ export type TimedTextStyleModifierParams = TextStyleModifierParams;
 
 export type StandardModifierNode =
   | TypedModifierNode<'transform', 'video' | 'image' | 'overlay' | 'text' | SequenceType[], TransformModifierParams>
+  | TypedModifierNode<'vfx/auto_reframe', 'video' | 'image' | SequenceType[], AutoReframeModifierParams>
+  | TypedModifierNode<'vfx/partial', 'video' | 'image' | SequenceType[], PartialVfxModifierParams>
   | TypedModifierNode<'vfx/camera_3d', 'video' | 'image' | 'overlay' | SequenceType[], Camera3DModifierParams>
   | TypedModifierNode<'vfx/depth3d' | 'vfx/depth_relighting' | 'vfx/depth3d_relighting', 'video' | 'image' | SequenceType[], Depth3DModifierParams>
   | TypedModifierNode<'vfx/color_grading', 'video' | 'image' | 'overlay' | SequenceType[], ColorGradingModifierParams>
+  | TypedModifierNode<'motion/gsap', 'video' | 'image' | 'overlay' | 'text' | SequenceType[], GSAPMotionModifierParams>
+  | TypedModifierNode<'shape/draw' | 'shape/vector', 'overlay' | SequenceType[], ShapeModifierParams>
   | TypedModifierNode<'overlay/canvas_particles', 'video' | 'overlay' | SequenceType[], ParticleVfxModifierParams>
   | TypedModifierNode<'overlay/hologram_hud', 'video' | 'overlay' | SequenceType[], HologramHudModifierParams>
   | TypedModifierNode<'overlay/blend_mode', 'video' | 'image' | 'overlay' | SequenceType[], BlendModeModifierParams>

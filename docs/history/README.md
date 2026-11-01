@@ -79,3 +79,4 @@
 | 412 | [Studio Audio Pipeline Parity & Export Demuxer Resolution](./412_studio_audio_pipeline_parity_and_export_demuxer_resolution.md) | Completed |
 | 414 | [Video Resolution Standards and Aspect Ratio Presets](./414_video_resolution_standards_and_aspect_presets.md) | Completed |
 | 415 | [Fix Studio Preview Playback Blinking and Black Strobe](./415_fix_preview_playback_blinking.md) | Completed |
+| 416 | [Video IR & Modifiers Schema-First Parity, 9-Component Governance & Automation Pipeline](./416_modifiers_schema_sync_and_enforcement.md) | Completed |
