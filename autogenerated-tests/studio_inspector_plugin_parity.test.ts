@@ -53,7 +53,7 @@ describe('Studio Inspector & Modifier Plugin Parity Suite', () => {
 
       const plugin = registry.get('motion/gsap');
       expect(plugin).toBeDefined();
-      expect(plugin?.targetScope).toBe('both');
+      expect(plugin?.targetScope).toBe('sequence');
 
       // Test easing curve evaluations
       expect(evaluateGSAPEasing('linear', 0.5)).toBeCloseTo(0.5, 3);

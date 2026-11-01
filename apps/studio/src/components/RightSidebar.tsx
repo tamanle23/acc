@@ -1,29 +1,6 @@
-import React, { useState } from 'react';
-import {
-  Sliders,
-  Settings,
-  Layers,
-  Film,
-  Plus,
-  Check,
-  ChevronRight,
-  Sparkles,
-  Move,
-  Volume2,
-  Type,
-  FolderPlus,
-  Galaxy
-} from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Plus } from 'lucide-react';
 import { Button } from './ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuSubContent,
-} from './ui/dropdown-menu';
 import type { IRSequence, IRTrack, ModifierNode } from '@acc/ir';
 import { ModifierPluginRegistry } from '@acc/ir';
 import { IRStateManager } from '../lib/ir/irState';
@@ -31,12 +8,13 @@ import { useIRState } from '../lib/ir/useStudioStore';
 import { ProjectInspector } from './inspector/ProjectInspector';
 import { TrackInspector } from './inspector/TrackInspector';
 import { SequenceInspector } from './inspector/SequenceInspector';
+import { InspectorHeader } from './inspector/InspectorHeader';
+import { PropertySearchFilter } from './inspector/PropertySearchFilter';
+import { ModifierAddPicker } from './inspector/ModifierAddPicker';
 import {
   getAvailableModifiersFromRegistry,
   getSectionIdForModifierType,
   type AvailableModifierDef,
-  type ModifierCategory,
-  type ModifierIconComponent,
 } from './inspector/modifierCatalog';
 
 export * from './inspector/modifierCatalog';
@@ -45,17 +23,6 @@ export { ProjectInspector } from './inspector/ProjectInspector';
 export { TrackInspector } from './inspector/TrackInspector';
 export { SequenceInspector } from './inspector/SequenceInspector';
 export { DynamicModifierInspector } from './inspector/DynamicModifierInspector';
-
-const CATEGORY_CONFIG: Record<ModifierCategory, { label: string; icon: ModifierIconComponent }> = {
-  motion: { label: 'Motion & Spatial', icon: Move },
-  time_space: { label: 'Spatio-Temporal ', icon: Galaxy },
-  vfx: { label: 'Visual Effects (VFX)', icon: Sparkles },
-  transitions: { label: 'Transitions', icon: Film },
-  audio: { label: 'Audio & DSP', icon: Volume2 },
-  text: { label: 'Typography & Shapes', icon: Type },
-  custom: { label: 'Extensions & Custom', icon: FolderPlus },
-};
-const CATEGORY_KEYS = Object.keys(CATEGORY_CONFIG) as ModifierCategory[];
 
 function RightSidebarInner() {
   const irState = useIRState();
@@ -73,7 +40,10 @@ function RightSidebarInner() {
     'transitions',
   ]);
   const [isSequenceLocked, setIsSequenceLocked] = useState(false);
-  const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
+  const [isAddPickerOpen, setIsAddPickerOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isBypassAllActive, setIsBypassAllActive] = useState(false);
 
   const selectedSeqId = irState.selectedSequenceId;
   const selectedTrackId = irState.selectedTrackId;
@@ -94,7 +64,8 @@ function RightSidebarInner() {
   }
 
   // Fallback track resolution if no track is explicitly selected but tracks exist
-  const effectiveTrack: IRTrack | null = selectedTrack || (irState.doc.tracks.length > 0 ? irState.doc.tracks[0] : null);
+  const effectiveTrack: IRTrack | null =
+    selectedTrack || (irState.doc.tracks.length > 0 ? irState.doc.tracks[0] : null);
 
   const fps = irState.doc.meta?.globalFps || 30;
   const currentMode =
@@ -114,29 +85,40 @@ function RightSidebarInner() {
   );
   const existingModifierTypes = selectedSeq?.modifiers?.map((m) => m.type) || [];
 
-  const relevantModifiers = availableModifiers.filter((mod) => {
-    if (currentMode === 'sequence' && selectedSeq) {
-      if (selectedTrack && !mod.supportedTrackTypes.includes(trackType)) return false;
-      return registry.isModifierAllowedOnEntity(mod.type, {
-        type: 'sequence',
-        sequenceType: selectedSeq.type,
-        hasStandaloneGenerator,
-        existingModifierTypes,
-      }).allowed;
-    }
-    if (currentMode === 'track' && selectedTrack) {
-      if (!mod.supportedTrackTypes.includes(selectedTrack.type)) return false;
-      return registry.isModifierAllowedOnEntity(mod.type, {
-        type: 'track',
-      }).allowed;
-    }
-    if (currentMode === 'timeline') {
-      return registry.isModifierAllowedOnEntity(mod.type, {
-        type: 'timeline',
-      }).allowed;
-    }
-    return false;
-  });
+  const relevantModifiers = useMemo(() => {
+    return availableModifiers.filter((mod) => {
+      if (currentMode === 'sequence' && selectedSeq) {
+        if (selectedTrack && !mod.supportedTrackTypes.includes(trackType)) return false;
+        return registry.isModifierAllowedOnEntity(mod.type, {
+          type: 'sequence',
+          sequenceType: selectedSeq.type,
+          hasStandaloneGenerator,
+          existingModifierTypes,
+        }).allowed;
+      }
+      if (currentMode === 'track' && selectedTrack) {
+        if (!mod.supportedTrackTypes.includes(selectedTrack.type)) return false;
+        return registry.isModifierAllowedOnEntity(mod.type, {
+          type: 'track',
+        }).allowed;
+      }
+      if (currentMode === 'timeline') {
+        return registry.isModifierAllowedOnEntity(mod.type, {
+          type: 'timeline',
+        }).allowed;
+      }
+      return false;
+    });
+  }, [
+    availableModifiers,
+    currentMode,
+    selectedSeq,
+    selectedTrack,
+    trackType,
+    registry,
+    hasStandaloneGenerator,
+    existingModifierTypes,
+  ]);
 
   const activeEntityModifiers: ModifierNode[] =
     currentMode === 'sequence' && selectedSeq
@@ -180,161 +162,54 @@ function RightSidebarInner() {
 
   return (
     <aside className="w-full glass-panel border-l border-glass-border flex flex-col h-full select-none shadow-xs z-10">
-      {/* 1. Multi-Tier Interactive Breadcrumbs & Header */}
-      <div className="p-2.5 border-b border-glass-border bg-glass-surface/40 flex flex-col gap-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <Sliders className="w-4 h-4 text-accent-theme shrink-0" />
-            <span className="text-[11px] font-bold uppercase tracking-wider text-foreground">
-              Inspector
-            </span>
-          </div>
-
-          {canAddEffect && (
-            <DropdownMenu open={isAddMenuOpen} onOpenChange={setIsAddMenuOpen}>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={isAddEffectDisabled}
-                  className="h-6 text-[10px] gap-1 px-1.5 border-accent-theme/40 text-accent-theme bg-accent-theme/10 hover:bg-accent-theme/20 cursor-pointer disabled:cursor-not-allowed"
-                >
-                  <Plus className="w-3 h-3" />
-                  Add Effect
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-64 max-h-96 overflow-y-auto">
-                {relevantModifiers.length === 0 ? (
-                  <div className="p-3 text-center text-xs text-muted-foreground">
-                    No effects available for this {currentMode}.
-                  </div>
-                ) : (
-                  CATEGORY_KEYS.map((catKey) => {
-                    const groupModifiers = relevantModifiers.filter(
-                      (m) => (m.category || 'custom') === catKey
-                    );
-                    if (groupModifiers.length === 0) return null;
-                    const catMeta = CATEGORY_CONFIG[catKey];
-                    const CatIcon = catMeta.icon;
-
-                    return (
-                      <DropdownMenuSub key={catKey}>
-                        <DropdownMenuSubTrigger className="cursor-pointer py-1.5 text-xs flex items-center gap-2">
-                          <CatIcon className="w-3.5 h-3.5 text-accent-theme shrink-0" />
-                          <span className="font-medium">{catMeta.label}</span>
-                          <span className="text-[10px] text-muted-foreground ml-auto pr-1">
-                            {groupModifiers.length}
-                          </span>
-                        </DropdownMenuSubTrigger>
-                        <DropdownMenuSubContent className="w-56">
-                          {groupModifiers.map((mod) => {
-                            const isAttached = activeEntityModifiers.some(
-                              (m: ModifierNode) => m.type === mod.type
-                            );
-                            const Icon = mod.icon;
-                            return (
-                              <DropdownMenuItem
-                                key={mod.type}
-                                disabled={isAttached || isAddEffectDisabled}
-                                onSelect={() => handleAddEffect(mod)}
-                                onClick={() => handleAddEffect(mod)}
-                                className="flex items-center justify-between cursor-pointer py-1.5 text-xs"
-                              >
-                                <div className="flex items-center gap-2 truncate">
-                                  <Icon className="w-3.5 h-3.5 text-accent-theme shrink-0" />
-                                  <span className="truncate">{mod.name}</span>
-                                </div>
-                                {isAttached && (
-                                  <Check className="w-3.5 h-3.5 text-accent-theme shrink-0" />
-                                )}
-                              </DropdownMenuItem>
-                            );
-                          })}
-                        </DropdownMenuSubContent>
-                      </DropdownMenuSub>
-                    );
-                  })
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </div>
-
-        {/* Persistent Breadcrumb Navigation Bar: [Project] > [Track] > [Sequence] */}
-        <nav aria-label="Inspector Hierarchy" className="flex items-center gap-1 overflow-x-auto text-[10px] font-mono scrollbar-none py-0.5">
-          {/* Project Tier Pill */}
-          <button
-            type="button"
-            aria-current={currentMode === 'timeline' ? 'page' : undefined}
-            onClick={() => {
-              IRStateManager.getInstance().setSelectedSequenceId(null);
-              IRStateManager.getInstance().setInspectorMode('timeline');
-            }}
-            className={`px-1.5 py-0.5 rounded font-medium transition-colors flex items-center gap-1 truncate max-w-[90px] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${currentMode === 'timeline'
-              ? 'bg-accent-theme text-primary-foreground shadow-2xs'
-              : 'bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground'
-              }`}
-            title="Inspect Timeline Master Settings"
+      {/* 1. Header with Multi-Tier Breadcrumbs & Global Actions */}
+      <InspectorHeader
+        currentMode={currentMode}
+        onModeChange={(mode) => IRStateManager.getInstance().setInspectorMode(mode)}
+        projectTitle={irState.doc.meta?.contentId || 'Timeline'}
+        effectiveTrack={effectiveTrack}
+        selectedSeq={selectedSeq}
+        canAddEffect={canAddEffect}
+        isAddEffectDisabled={isAddEffectDisabled}
+        isSearchOpen={isSearchOpen}
+        onToggleSearch={() => setIsSearchOpen((prev) => !prev)}
+        isBypassAllActive={isBypassAllActive}
+        onToggleBypassAll={() => setIsBypassAllActive((prev) => !prev)}
+        onOpenAddPicker={() => setIsAddPickerOpen(true)}
+        addEffectSlot={
+          <ModifierAddPicker
+            open={isAddPickerOpen}
+            onOpenChange={setIsAddPickerOpen}
+            relevantModifiers={relevantModifiers}
+            activeEntityModifiers={activeEntityModifiers}
+            isDisabled={isAddEffectDisabled}
+            onSelectModifier={handleAddEffect}
           >
-            <Settings className="w-2.5 h-2.5 shrink-0" />
-            <span className="truncate">{irState.doc.meta?.contentId || 'Timeline'}</span>
-          </button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isAddEffectDisabled}
+              className="h-6 text-[10px] gap-1 px-1.5 border-accent-theme/40 text-accent-theme bg-accent-theme/10 hover:bg-accent-theme/20 cursor-pointer disabled:cursor-not-allowed"
+              title="Add effect or modifier"
+              aria-label="Add effect or modifier"
+            >
+              <Plus className="w-3 h-3" />
+              Add Effect
+            </Button>
+          </ModifierAddPicker>
+        }
+      />
 
-          <ChevronRight className="w-3 h-3 text-muted-foreground shrink-0" aria-hidden="true" />
+      {/* 2. Real-Time Property Search Filter */}
+      {isSearchOpen && (
+        <PropertySearchFilter
+          query={searchQuery}
+          onQueryChange={setSearchQuery}
+          onClose={() => setIsSearchOpen(false)}
+        />
+      )}
 
-          {/* Track Tier Pill */}
-          <button
-            type="button"
-            disabled={!effectiveTrack}
-            aria-current={currentMode === 'track' ? 'page' : undefined}
-            onClick={() => {
-              if (effectiveTrack) {
-                IRStateManager.getInstance().setSelectedSequenceId(null);
-                IRStateManager.getInstance().setSelectedTrackId(effectiveTrack.id);
-                IRStateManager.getInstance().setInspectorMode('track');
-              }
-            }}
-            className={`px-1.5 py-0.5 rounded font-medium transition-colors flex items-center gap-1 truncate max-w-[100px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${!effectiveTrack
-              ? 'opacity-40 cursor-not-allowed text-muted-foreground'
-              : currentMode === 'track'
-                ? 'bg-accent-theme text-primary-foreground shadow-2xs cursor-pointer'
-                : 'bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground cursor-pointer'
-              }`}
-            title={effectiveTrack ? `Inspect Track ${effectiveTrack.name || effectiveTrack.id}` : 'No track selected'}
-          >
-            <Layers className="w-2.5 h-2.5 shrink-0" />
-            <span className="truncate">
-              {effectiveTrack?.name || effectiveTrack?.id || 'Track'}
-            </span>
-          </button>
-
-          {selectedSeq && (
-            <>
-              <ChevronRight className="w-3 h-3 text-muted-foreground shrink-0" aria-hidden="true" />
-
-              {/* Sequence Tier Pill */}
-              <button
-                type="button"
-                aria-current={currentMode === 'sequence' ? 'page' : undefined}
-                onClick={() => {
-                  IRStateManager.getInstance().setSelectedSequenceId(selectedSeq.id);
-                  IRStateManager.getInstance().setInspectorMode('sequence');
-                }}
-                className={`px-1.5 py-0.5 rounded font-medium transition-colors flex items-center gap-1 truncate max-w-[105px] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${currentMode === 'sequence'
-                  ? 'bg-accent-theme text-primary-foreground shadow-2xs'
-                  : 'bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground'
-                  }`}
-                title={`Inspect Sequence ${selectedSeq.id}`}
-              >
-                <Film className="w-2.5 h-2.5 shrink-0" />
-                <span className="truncate">{selectedSeq.id}</span>
-              </button>
-            </>
-          )}
-        </nav>
-      </div>
-
-      {/* 2. Main Content Area */}
+      {/* 3. Main Inspector Content Routing */}
       <div className="flex-1 p-3 overflow-y-auto">
         {currentMode === 'track' && effectiveTrack ? (
           <TrackInspector selectedTrack={effectiveTrack} irState={irState} />
@@ -350,7 +225,9 @@ function RightSidebarInner() {
             onToggleLock={setIsSequenceLocked}
             openSections={openSections}
             onOpenSectionsChange={setOpenSections}
-            onAddEffectClick={() => setIsAddMenuOpen(true)}
+            onAddEffectClick={() => setIsAddPickerOpen(true)}
+            searchQuery={searchQuery}
+            isBypassAll={isBypassAllActive}
           />
         )}
       </div>
