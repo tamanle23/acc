@@ -219,10 +219,11 @@ describe('Studio Phase 2: Dynamic Multi-Tier Inspector & State Commands', () => 
       expect(state.selectedTrackId).toBe('track-audio');
       expect(state.inspectorMode).toBe('track');
 
-      // Switch to project inspector tier
-      stateManager.setInspectorMode('project');
+      // Switch to timeline inspector tier
+      stateManager.setInspectorMode('timeline');
       state = stateManager.getState();
-      expect(state.inspectorMode).toBe('project');
+      expect(state.inspectorMode).toBe('timeline');
+      expect(state.selectedSequenceId).toBeNull();
     });
   });
 

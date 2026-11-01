@@ -284,7 +284,7 @@ describe('Studio Automated Memory Stress & Soak Test Suite', () => {
           intervalTree: null,
           selectedSequenceId: null,
           selectedTrackId: null,
-          inspectorMode: 'project',
+          inspectorMode: 'timeline',
           error: null,
           canUndo: false,
           canRedo: false,
