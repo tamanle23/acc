@@ -149,29 +149,24 @@ export class IRCanvasCompositor {
     const assets = options.assetResolver;
     const popOutIntensity = options.popOutIntensity;
     const canvas = canvasCtx.canvas || canvasCtx;
-    const bufferW = canvas.width || width;
-    const bufferH = canvas.height || height;
-    const scaleX = bufferW / width;
-    const scaleY = bufferH / height;
-    const isVirtualScaled = Math.abs(scaleX - 1.0) > 0.0001 || Math.abs(scaleY - 1.0) > 0.0001;
     const profile = options.executionProfile || 'preview';
 
-    // 1. Clear Physical Viewport
+    // 1. Clear Viewport
     canvasCtx.save();
     canvasCtx.setTransform(1, 0, 0, 1, 0, 0);
     canvasCtx.globalCompositeOperation = 'source-over';
     canvasCtx.globalAlpha = 1.0;
     if (options.clearColor === 'transparent') {
-      canvasCtx.clearRect(0, 0, bufferW, bufferH);
+      canvasCtx.clearRect(0, 0, width, height);
     } else {
       canvasCtx.fillStyle = options.clearColor || '#000000';
-      canvasCtx.fillRect(0, 0, bufferW, bufferH);
+      canvasCtx.fillRect(0, 0, width, height);
     }
     canvasCtx.restore();
 
     const tracksList = Array.from(timeline.tracks.values());
     const visualTracksList = tracksList
-      .filter((t) => t.type === 'video' || t.type === 'image' || t.type === 'overlay')
+      .filter((t) => t.type === 'video')
       .sort((a, b) => (a.groupOrder ?? 0) - (b.groupOrder ?? 0));
 
     const finalizePostVisualTracks = (): void => {
@@ -189,8 +184,8 @@ export class IRCanvasCompositor {
                   canvas,
                   ctx: canvasCtx,
                   frame: clampedFrame,
-                  width: bufferW,
-                  height: bufferH,
+                  width,
+                  height,
                   pixelBuffer: options.generatePixelBuffer || new Uint8Array(0),
                 },
                 {
@@ -212,8 +207,8 @@ export class IRCanvasCompositor {
                 canvas,
                 ctx: canvasCtx,
                 frame: clampedFrame,
-                width: bufferW,
-                height: bufferH,
+                width,
+                height,
                 pixelBuffer: options.generatePixelBuffer || new Uint8Array(0),
               },
               {
@@ -226,14 +221,8 @@ export class IRCanvasCompositor {
       }
 
       // 4. Supreme Timed-Text Flat Stack Pass
-      // Re-apply timeline coordinate scale so captions draw with canonical font sizes and layout
-      canvasCtx.save();
-      if (isVirtualScaled) {
-        canvasCtx.scale(scaleX, scaleY);
-      }
-
-      // 4. Supreme Timed-Text Flat Stack Pass
       // Promotes all timed_text tracks strictly on top of all visual and post-processed layers
+      canvasCtx.save();
       const timedTextTracks = tracksList
         .filter((t) => t.type === 'timed_text')
         .sort((a, b) => (a.groupOrder ?? 0) - (b.groupOrder ?? 0));
@@ -346,15 +335,14 @@ export class IRCanvasCompositor {
         if (typeof canvas.data === 'function') {
           options.generatePixelBuffer.set(canvas.data());
         } else if (typeof canvasCtx.getImageData === 'function') {
-          const imgData = canvasCtx.getImageData(0, 0, bufferW, bufferH);
+          const imgData = canvasCtx.getImageData(0, 0, width, height);
           options.generatePixelBuffer.set(imgData.data);
         }
       }
     };
 
-    // Isolation scratch canvases are sized to the virtual preview buffer to avoid full-resolution clears.
-    const scratchW = isVirtualScaled ? bufferW : width;
-    const scratchH = isVirtualScaled ? bufferH : height;
+    const scratchW = width;
+    const scratchH = height;
 
     const finishTrackIsolation = (
       track: ResolvedTrack,
@@ -391,9 +379,7 @@ export class IRCanvasCompositor {
       canvasCtx.save();
       canvasCtx.globalCompositeOperation = mapBlendModeToCanvasCompositeOperation(trackBlend);
       canvasCtx.globalAlpha = Math.max(0, Math.min(1, trackOpacity));
-      // Scratch holds the virtual-resolution (bufferW x bufferH) raster; canvasCtx already applies scaleX/scaleY,
-      // so draw the buffer-sized source region into the logical width x height destination.
-      canvasCtx.drawImage(scratchCanvas, 0, 0, scratchW, scratchH, 0, 0, width, height);
+      canvasCtx.drawImage(scratchCanvas, 0, 0, width, height, 0, 0, width, height);
       canvasCtx.restore();
     };
 
@@ -451,9 +437,6 @@ export class IRCanvasCompositor {
         } else {
           const { canvas: scratchCanvas, ctx: scratchCtx } = getFrameScratchContext(scratchW, scratchH);
           scratchCtx.save();
-          if (isVirtualScaled) {
-            scratchCtx.scale(scaleX, scaleY);
-          }
           scratchCtx.clearRect(0, 0, width, height);
           scratchCtx.globalAlpha = 1.0;
           scratchCtx.globalCompositeOperation = 'source-over';
@@ -487,9 +470,6 @@ export class IRCanvasCompositor {
 
     try {
       canvasCtx.save();
-      if (isVirtualScaled) {
-        canvasCtx.scale(scaleX, scaleY);
-      }
       const maybePromise = processTracksFrom(0);
       if (maybePromise instanceof Promise) {
         return maybePromise.finally(() => {

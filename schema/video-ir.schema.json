@@ -464,6 +464,19 @@
             }
           }
         },
+        "aspectRatio": {
+          "type": "string",
+          "enum": [
+            "16:9",
+            "9:16",
+            "1:1",
+            "4:5",
+            "21:9",
+            "4:3",
+            "2.39:1"
+          ],
+          "description": "Standardized composition aspect ratio"
+        },
         "colorSpace": {
           "type": "string",
           "description": "Target color space (e.g. 'rec709', 'bt2020', 'hdr10')"

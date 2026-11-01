@@ -1,6 +1,6 @@
 import { MediabunnyClientSink, MediabunnyClientStrategy } from '@acc/core-web';
 import { MediaEngineRegistry } from '@acc/core-isomorphic';
-import { IRMasterRenderer } from '@acc/ir';
+import { IRMasterRenderer, withTargetCanvasSize } from '@acc/ir';
 import type { IRState } from '../ir/irState';
 import { ExportWorkerBridge } from '../../renderer/workers/ExportWorkerBridge';
 
@@ -117,7 +117,14 @@ export class ClientExportOrchestrator {
     if (typeof Worker !== 'undefined' && !sinkFactory && irState.timeline) {
       try {
         const bridge = new ExportWorkerBridge();
-        return await bridge.export(options);
+        const exportTimeline = withTargetCanvasSize(irState.timeline, width, height);
+        return await bridge.export({
+          ...options,
+          irState: {
+            ...irState,
+            timeline: exportTimeline,
+          },
+        });
       } catch (workerErr) {
         console.warn('[ClientExportOrchestrator] Web Worker export failed, falling back to in-process IRMasterRenderer:', workerErr);
       }
@@ -161,8 +168,9 @@ export class ClientExportOrchestrator {
       MediaEngineRegistry.register(new MediabunnyClientStrategy());
     }
 
+    const exportTimeline = withTargetCanvasSize(irState.timeline, width, height);
     const masterRenderer = new IRMasterRenderer(
-      irState.timeline,
+      exportTimeline,
       42,
       undefined,
       undefined,

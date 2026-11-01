@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from 'react';
-import type { AssetDefinition, ResolvedSequence, ResolvedTimeline } from '@acc/ir';
+import { withTargetCanvasSize, type AssetDefinition, type ResolvedSequence, type ResolvedTimeline } from '@acc/ir';
 import {
   createPreviewRenderStrategy,
   type IPreviewRenderStrategy,
@@ -78,8 +78,10 @@ export function useViewportRenderStrategy({
       overlayCanvas.height = timelineHeight || height;
     }
 
+    const targetTimeline = withTargetCanvasSize(timeline, width, height);
+
     strategy.resize(width, height);
-    strategy.updateTimeline(timeline, totalFrames, fps, assetsMap);
+    strategy.updateTimeline(targetTimeline, totalFrames, fps, assetsMap);
 
     if (baseCanvas && !strategy.isReady) {
       const initialized = strategy.init(baseCanvas);
@@ -91,7 +93,7 @@ export function useViewportRenderStrategy({
       }
     }
 
-    PreviewWorkerCoordinator.getInstance().preflightTimeline(timeline, {
+    PreviewWorkerCoordinator.getInstance().preflightTimeline(targetTimeline, {
       prioritizedFrame: currentFrame,
     });
 

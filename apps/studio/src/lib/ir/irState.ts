@@ -14,6 +14,7 @@ import {
   VideoIRAuthoringEngine,
   DEFAULT_TRACK_AUTHORING_POLICY,
   type ValidationResult,
+  ModifierPluginRegistry,
 } from '@acc/ir';
 import { complexSciFiDemoIR } from './complexSciFiDemoIR';
 import { AssetTextureCache } from '../textures/AssetTextureCache';
@@ -64,15 +65,15 @@ export interface IRState {
   canUndo: boolean;
   canRedo: boolean;
   activeTemplate:
-    | 'scifi'
-    | 'default'
-    | 'broadcast'
-    | 'visualizer'
-    | 'quantum'
-    | 'astro'
-    | 'typography'
-    | 'mastering'
-    | 'spatial_audio';
+  | 'scifi'
+  | 'default'
+  | 'broadcast'
+  | 'visualizer'
+  | 'quantum'
+  | 'astro'
+  | 'typography'
+  | 'mastering'
+  | 'spatial_audio';
 }
 
 export type IRStateSubscriber = (state: IRState) => void;

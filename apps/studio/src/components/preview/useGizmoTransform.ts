@@ -145,8 +145,8 @@ export function useGizmoTransform({
 
       const baseW = 0.5;
       const baseH = 0.5;
-      const canvasW = 1920;
-      const canvasH = 1080;
+      const canvasW = width;
+      const canvasH = height;
 
       const startNormBox: BoundingBox2D = {
         x: 0.5 + startTransform.x / canvasW,

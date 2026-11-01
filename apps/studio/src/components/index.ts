@@ -5,6 +5,7 @@ export * from './Preview';
 export * from './Timeline';
 export * from './SettingsModal';
 export * from './ShortcutsModal';
+export * from './ExportConfigModal';
 export * from './ExportProgressModal';
 export * from './EasingCurveSelector';
 export * from './ui';

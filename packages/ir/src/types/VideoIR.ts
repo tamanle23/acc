@@ -5,6 +5,7 @@
  */
 
 import { ModifierNode } from "./modifiers";
+import type { StandardAspectRatio } from "../standards/VideoStandardsCatalog";
 
 export type TrackType = 'video' | 'audio' | 'data' | 'timed_text';
 
@@ -112,6 +113,7 @@ export interface IRMeta {
     w: number;
     h: number;
   };
+  aspectRatio?: StandardAspectRatio;
   colorSpace?: string;
   nextSequenceIndex?: number;
 }

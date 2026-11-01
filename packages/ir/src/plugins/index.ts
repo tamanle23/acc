@@ -57,6 +57,7 @@ export * from './vfx/Camera3DPlugin';
 export * from './vfx/AutoReframeModifierPlugin';
 export * from './vfx/ColorGradingPlugin';
 export * from './vfx/PartialVFXPlugin';
+export * from './transform/TransformModifierPlugin';
 export * from './motion/GSAPMotionPlugin';
 export * from './motion/VectorMotionBlurPlugin';
 export * from './text/CaptionModifierPlugin';

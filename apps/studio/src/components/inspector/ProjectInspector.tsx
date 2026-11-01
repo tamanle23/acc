@@ -1,5 +1,5 @@
 import React from 'react';
-import { Settings, Clock, Sparkles, RotateCcw, Trash2 } from 'lucide-react';
+import { Settings, Clock, Sparkles, RotateCcw, Trash2, Smartphone, Monitor, Film, Square } from 'lucide-react';
 import { Card } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Input } from '../ui/input';
@@ -14,25 +14,21 @@ import {
 import { MODIFIER_PRESENTATION_CATALOG } from './modifierCatalog';
 import { DynamicModifierInspector } from './DynamicModifierInspector';
 import { IRStateManager } from '../../lib/ir/irState';
-import type { ModifierNode } from '@acc/ir';
+import {
+  ASPECT_RATIO_PRESETS,
+  inferAspectRatioFromCanvasSize,
+  type StandardAspectRatio,
+} from '@acc/ir';
 
 export interface ProjectInspectorProps {
   irState: ReturnType<typeof IRStateManager.prototype.getState>;
 }
 
-export const ASPECT_PRESETS: Array<{ label: string; w: number; h: number }> = [
-  { label: '16:9', w: 1920, h: 1080 },
-  { label: '9:16', w: 1080, h: 1920 },
-  { label: '1:1', w: 1080, h: 1080 },
-  { label: '4:4', w: 1440, h: 1440 },
-  { label: '3:4', w: 1080, h: 1440 },
-  { label: '3:2', w: 1620, h: 1080 },
-  { label: '21:9', w: 2560, h: 1080 },
-];
-
 export const ProjectInspector: React.FC<ProjectInspectorProps> = ({ irState }) => {
   const width = irState.doc.meta?.canvasSize?.w || 1920;
   const height = irState.doc.meta?.canvasSize?.h || 1080;
+  const activeRatio: StandardAspectRatio =
+    irState.doc.meta?.aspectRatio || inferAspectRatioFromCanvasSize(width, height);
   const fps = irState.doc.meta?.globalFps || 30;
   const totalDurationFrames = irState.timeline?.totalFrames || 300;
   const activeSequencesCount = irState.timeline?.sequences
@@ -51,7 +47,7 @@ export const ProjectInspector: React.FC<ProjectInspectorProps> = ({ irState }) =
               Project Master Settings
             </h3>
             <p className="text-[10px] text-muted-foreground">
-              Global canvas resolution & timeline timing
+              Base aspect ratio & timeline timing
             </p>
           </div>
         </div>
@@ -73,70 +69,72 @@ export const ProjectInspector: React.FC<ProjectInspectorProps> = ({ irState }) =
           />
         </div>
 
-        {/* Aspect Ratio 1-Click Pills */}
+        {/* Base Aspect Ratio Standard Grid */}
         <div className="space-y-1.5">
-          <label className="text-[10px] text-muted-foreground font-mono">Aspect Ratio Presets</label>
-          <div className="grid grid-cols-4 gap-1">
-            {ASPECT_PRESETS.map((preset) => {
-              const isSelected = width === preset.w && height === preset.h;
+          <div className="flex items-center justify-between">
+            <label className="text-[10px] text-muted-foreground font-mono">Base Aspect Ratio</label>
+            <span className="text-[9px] font-mono text-accent-theme font-semibold">
+              {activeRatio} ({width}×{height})
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-1.5">
+            {ASPECT_RATIO_PRESETS.map((preset) => {
+              const isSelected = activeRatio === preset.ratio;
               return (
                 <button
-                  key={preset.label}
+                  key={preset.ratio}
                   type="button"
                   onClick={() => {
                     IRStateManager.getInstance().updateProjectMeta({
-                      canvasSize: { w: preset.w, h: preset.h },
+                      aspectRatio: preset.ratio,
+                      canvasSize: { w: preset.canonicalWidth, h: preset.canonicalHeight },
                     });
                   }}
-                  className={`px-1.5 py-1 text-[10px] font-mono rounded border transition-colors cursor-pointer ${
+                  className={`p-2 rounded-lg border text-left transition-all cursor-pointer flex items-center gap-2.5 ${
                     isSelected
-                      ? 'bg-accent-theme text-primary-foreground border-accent-theme font-bold shadow-accent-glow'
-                      : 'bg-glass-surface border-glass-border text-foreground/80 hover:border-accent-theme/60 hover:text-foreground'
+                      ? 'bg-accent-theme/15 border-accent-theme shadow-accent-glow text-foreground'
+                      : 'bg-glass-surface border-glass-border text-foreground/80 hover:border-accent-theme/50 hover:bg-accent-theme/5'
                   }`}
                 >
-                  {preset.label}
+                  {/* Aspect Ratio Miniature Wireframe Silhouette */}
+                  <div
+                    className="shrink-0 flex items-center justify-center rounded border border-current/40 bg-foreground/5"
+                    style={{
+                      width: '28px',
+                      height: '24px',
+                    }}
+                  >
+                    <div
+                      className="border border-current rounded-[1px] bg-current/20"
+                      style={{
+                        width:
+                          preset.numericRatio >= 1
+                            ? '20px'
+                            : `${Math.round(20 * preset.numericRatio)}px`,
+                        height:
+                          preset.numericRatio <= 1
+                            ? '18px'
+                            : `${Math.round(18 / preset.numericRatio)}px`,
+                      }}
+                    />
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold font-mono truncate">{preset.ratio}</span>
+                      <span className="text-[8px] font-mono uppercase text-muted-foreground">{preset.orientation}</span>
+                    </div>
+                    <div className="text-[9px] text-muted-foreground truncate">{preset.label}</div>
+                  </div>
                 </button>
               );
             })}
           </div>
-        </div>
 
-        {/* Numerical Width / Height Inputs */}
-        <div className="grid grid-cols-2 gap-2">
-          <div className="space-y-1">
-            <label className="text-[10px] text-muted-foreground font-mono">Width (px)</label>
-            <Input
-              type="number"
-              min={320}
-              max={7680}
-              step={10}
-              value={width}
-              onChange={(e) => {
-                const val = parseInt(e.target.value) || 1920;
-                IRStateManager.getInstance().updateProjectMeta({
-                  canvasSize: { w: val, h: height },
-                });
-              }}
-              className="h-6 text-[11px] font-mono bg-background/60 border-glass-border"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-[10px] text-muted-foreground font-mono">Height (px)</label>
-            <Input
-              type="number"
-              min={240}
-              max={4320}
-              step={10}
-              value={height}
-              onChange={(e) => {
-                const val = parseInt(e.target.value) || 1080;
-                IRStateManager.getInstance().updateProjectMeta({
-                  canvasSize: { w: width, h: val },
-                });
-              }}
-              className="h-6 text-[11px] font-mono bg-background/60 border-glass-border"
-            />
-          </div>
+          <p className="text-[9px] text-muted-foreground font-sans mt-1 leading-tight">
+            💡 <strong className="text-foreground">Optimal Quality:</strong> Canvas coordinates are authored in canonical {activeRatio} space. Exact output resolutions (720p, 1080p, 2K, 4K) are chosen at export.
+          </p>
         </div>
 
         {/* Global FPS Selector */}

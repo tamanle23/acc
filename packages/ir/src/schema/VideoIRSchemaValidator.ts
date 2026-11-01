@@ -1,4 +1,5 @@
 import type { VideoIRDocument, SequenceType, TrackType } from '../types/VideoIR';
+import { inferAspectRatioFromCanvasSize, ASPECT_RATIO_PRESETS } from '../standards/VideoStandardsCatalog';
 import { ModifierPluginRegistry } from '../plugins/ModifierPluginRegistry';
 
 export interface ValidationResult {
@@ -64,6 +65,14 @@ export class VideoIRSchemaValidator {
         d.meta.canvasSize.h <= 0
       ) {
         errors.push('"meta.canvasSize" must have positive integer dimensions w and h');
+      } else if (!d.meta.aspectRatio) {
+        // Auto-migration: infer aspect ratio if not explicitly specified
+        d.meta.aspectRatio = inferAspectRatioFromCanvasSize(d.meta.canvasSize.w, d.meta.canvasSize.h);
+      } else {
+        const allowedRatios = new Set(ASPECT_RATIO_PRESETS.map((p) => p.ratio));
+        if (!allowedRatios.has(d.meta.aspectRatio)) {
+          errors.push(`"meta.aspectRatio" must be one of: ${Array.from(allowedRatios).join(', ')}`);
+        }
       }
       if (d.meta.nextSequenceIndex !== undefined) {
         if (typeof d.meta.nextSequenceIndex !== 'number' || !Number.isInteger(d.meta.nextSequenceIndex) || d.meta.nextSequenceIndex < 1) {

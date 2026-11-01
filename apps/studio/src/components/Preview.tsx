@@ -308,7 +308,7 @@ function PreviewInner({
             panZoom.isPanToolActive || panZoom.isSpacePressed ? (panZoom.isPanning ? 'cursor-grabbing' : 'cursor-grab') : ''
           } ${isTelemetryCompanionOpen ? 'xl:max-w-[calc(100%-270px)]' : 'max-w-full'}`}
           style={{
-            aspectRatio: '16/9',
+            aspectRatio: `${width} / ${height}`,
             maxHeight: '68vh',
             maxWidth: isTelemetryCompanionOpen ? '72vw' : '82vw',
             backgroundImage: showCheckerboard
@@ -340,7 +340,10 @@ function PreviewInner({
           />
 
           {/* Safe Guides */}
-          <ViewportSafeGuides mode={safeGuidesMode} />
+          <ViewportSafeGuides
+            mode={safeGuidesMode === 'none' ? 'none' : 'auto'}
+            aspectRatio={irState.doc?.meta?.aspectRatio}
+          />
 
           {/* Drag-and-Drop Staging Overlay */}
           <StagingDropTargetOverlay isOver={isOver} isDragOver={isDragOver} dragCoords={dragCoords} />
@@ -352,6 +355,8 @@ function PreviewInner({
               selectedSeqId={selectedSeqId}
               activeSequences={activeSequences}
               currentFrame={currentFrame}
+              width={width}
+              height={height}
               isLocked={isLocked}
               transform={gizmo.transform}
               isDragging={gizmo.isDragging}

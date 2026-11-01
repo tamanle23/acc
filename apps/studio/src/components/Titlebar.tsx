@@ -8,6 +8,7 @@ import { Separator } from './ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { IRStateManager } from '../lib/ir/irState';
 import { useIRSelector } from '../lib/ir/useStudioStore';
+import { inferAspectRatioFromCanvasSize } from '@acc/ir';
 import { useTheme } from '../lib/theme/ThemeProvider';
 import { ShortcutsModal } from './ShortcutsModal';
 import { VisualIRJsonDebuggerModal } from './debugger/VisualIRJsonDebuggerModal';
@@ -129,6 +130,28 @@ export function Titlebar({
             >
               Universal Video IR V1.0
             </Badge>
+
+            {/* Clickable Base Aspect Ratio Pill */}
+            {(() => {
+              const meta = manager.getState().doc.meta;
+              const ratio = meta.aspectRatio || inferAspectRatioFromCanvasSize(meta.canvasSize.w, meta.canvasSize.h);
+              return (
+                <Tooltip content="Base Aspect Ratio — Click to configure in Inspector">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!isRightOpen && onToggleRight) onToggleRight();
+                      manager.setSelectedSequenceId(null);
+                      manager.setInspectorMode('timeline');
+                    }}
+                    className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-accent-theme/15 text-accent-theme border border-accent-theme/40 hover:bg-accent-theme/25 hover:border-accent-theme transition-all cursor-pointer shadow-accent-glow"
+                  >
+                    <span>{ratio}</span>
+                    <span className="text-[8px] opacity-75 font-normal">({meta.canvasSize.w}×{meta.canvasSize.h})</span>
+                  </button>
+                </Tooltip>
+              );
+            })()}
           </div>
           <span className="text-xs text-muted-foreground font-mono">
             {currentFrame} / {totalFrames} f ({(currentFrame / fps).toFixed(2)}s / {(totalFrames / fps).toFixed(2)}s @ {fps}fps)

@@ -5,6 +5,7 @@ import type {
 } from '../ModifierPluginRegistry';
 import type { ModifierTargetScope } from '../../types/modifiers';
 import type { SequenceType } from '../../types/VideoIR';
+import { getReferenceDimensionsForCanvas } from '../../standards/VideoStandardsCatalog';
 
 export type ShapeGeometryType =
   | 'rect'
@@ -140,15 +141,21 @@ export class ShapeModifierPlugin implements ModifierPlugin<ShapeModifierParams> 
     const canvasCtx = ctx.ctx;
     if (!canvasCtx) return;
 
+    const canvasW = ctx.width ?? (canvasCtx as any).canvas?.width ?? 1920;
+    const canvasH = ctx.height ?? (canvasCtx as any).canvas?.height ?? 1080;
+    const { refW, refH } = getReferenceDimensionsForCanvas(canvasW, canvasH);
+    const scaleX = canvasW / refW;
+    const scaleY = canvasH / refH;
+
     const geometry = params.geometry || (params as any).shapeType || 'rounded_rect';
-    const w = params.width ?? 320;
-    const h = params.height ?? 180;
+    const w = (params.width ?? 320) * scaleX;
+    const h = (params.height ?? 180) * scaleY;
     const halfW = w * 0.5;
     const halfH = h * 0.5;
 
     // Position origin at center of viewport (default: 50% width, 50% height) + offset
-    const originX = ctx.width * (params.normX ?? 0.5) + (params.x ?? 0);
-    const originY = ctx.height * (params.normY ?? 0.5) + (params.y ?? 0);
+    const originX = canvasW * (params.normX ?? 0.5) + (params.x ?? 0) * scaleX;
+    const originY = canvasH * (params.normY ?? 0.5) + (params.y ?? 0) * scaleY;
 
     canvasCtx.save();
     try {

@@ -11,6 +11,7 @@ import {
   evaluateSequenceMotion,
   type InterpolatedTransformState,
 } from '../../motion/DeterministicMotionEvaluator';
+import { getReferenceDimensionsForCanvas } from '../../standards/VideoStandardsCatalog';
 
 export interface TransformModifierParams {
   x?: number;
@@ -155,12 +156,16 @@ export class TransformModifierPlugin implements ModifierPlugin<TransformModifier
       return;
     }
 
+    const { refW, refH } = getReferenceDimensionsForCanvas(width, height);
+    const scaleX = width / refW;
+    const scaleY = height / refH;
+
     const anchorNormX = params.anchorPoint?.[0] ?? 0.5;
     const anchorNormY = params.anchorPoint?.[1] ?? 0.5;
     const anchorX = width * anchorNormX;
     const anchorY = height * anchorNormY;
 
-    canvasCtx.translate(anchorX + motion.x, anchorY + motion.y);
+    canvasCtx.translate(anchorX + motion.x * scaleX, anchorY + motion.y * scaleY);
     if (motion.rotation !== 0) {
       canvasCtx.rotate((motion.rotation * Math.PI) / 180);
     }
@@ -187,12 +192,16 @@ export class TransformModifierPlugin implements ModifierPlugin<TransformModifier
       return;
     }
 
+    const { refW, refH } = getReferenceDimensionsForCanvas(width, height);
+    const scaleX = width / refW;
+    const scaleY = height / refH;
+
     const anchorNormX = params.anchorPoint?.[0] ?? 0.5;
     const anchorNormY = params.anchorPoint?.[1] ?? 0.5;
     const anchorX = width * anchorNormX;
     const anchorY = height * anchorNormY;
 
-    canvasCtx.translate(anchorX + motion.x, anchorY + motion.y);
+    canvasCtx.translate(anchorX + motion.x * scaleX, anchorY + motion.y * scaleY);
     if (motion.rotation !== 0) {
       canvasCtx.rotate((motion.rotation * Math.PI) / 180);
     }
@@ -219,12 +228,16 @@ export class TransformModifierPlugin implements ModifierPlugin<TransformModifier
       return;
     }
 
+    const { refW, refH } = getReferenceDimensionsForCanvas(width, height);
+    const scaleX = width / refW;
+    const scaleY = height / refH;
+
     const anchorNormX = params.anchorPoint?.[0] ?? 0.5;
     const anchorNormY = params.anchorPoint?.[1] ?? 0.5;
     const anchorX = width * anchorNormX;
     const anchorY = height * anchorNormY;
 
-    canvasCtx.translate(anchorX + motion.x, anchorY + motion.y);
+    canvasCtx.translate(anchorX + motion.x * scaleX, anchorY + motion.y * scaleY);
     if (motion.rotation !== 0) {
       canvasCtx.rotate((motion.rotation * Math.PI) / 180);
     }

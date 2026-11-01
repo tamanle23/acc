@@ -7,6 +7,7 @@ import { RightSidebar } from './components/RightSidebar';
 import { Preview } from './components/Preview';
 import { Timeline } from './components/Timeline';
 import { ExportProgressModal } from './components/ExportProgressModal';
+import { ExportConfigModal } from './components/ExportConfigModal';
 import { SettingsModal } from './components/SettingsModal';
 import { TooltipProvider } from './components/ui';
 import { Toaster } from './components/ui/sonner';
@@ -41,6 +42,7 @@ function StudioWorkspace() {
   const [isRightOpen, setIsRightOpen] = useState(true);
   const [activeNav, setActiveNav] = useState<LeftNavTab>('vault');
 
+  const [isExportConfigOpen, setIsExportConfigOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState<number>(0);
   const exportAbortControllerRef = useRef<AbortController | null>(null);
@@ -126,14 +128,31 @@ function StudioWorkspace() {
     shuttle.togglePlay();
   };
 
-  const handleStartExport = async () => {
+  const handleOpenExportConfig = () => {
+    setIsExportConfigOpen(true);
+  };
+
+  const handleStartExport = async (config?: {
+    width?: number;
+    height?: number;
+    videoBitrate?: number;
+  }) => {
+    const exportWidth = config?.width ?? width;
+    const exportHeight = config?.height ?? height;
+    const exportBitrate = config?.videoBitrate ?? 4_000_000;
+
     const abortController = new AbortController();
     exportAbortControllerRef.current = abortController;
     try {
       setIsExporting(true);
       setExportProgress(0);
       const result = await ClientExportOrchestrator.exportToMp4({
-        irState, width, height, fps, totalFrames,
+        irState,
+        width: exportWidth,
+        height: exportHeight,
+        videoBitrate: exportBitrate,
+        fps,
+        totalFrames,
         signal: abortController.signal,
         onProgress: setExportProgress,
       });
@@ -141,7 +160,7 @@ function StudioWorkspace() {
       if (!result.cancelled) {
         if (result.buffer) downloadExportedMp4(result.buffer);
         toast.success('MP4 Export Completed!', {
-          description: `Rendered ${result.framesConsumed} frames (${(result.fileSizeBytes / 1024 / 1024).toFixed(2)} MB)`,
+          description: `Rendered ${result.framesConsumed} frames at ${exportWidth}x${exportHeight} (${(result.fileSizeBytes / 1024 / 1024).toFixed(2)} MB)`,
           action: result.buffer ? { label: 'Download Again', onClick: () => downloadExportedMp4(result.buffer!) } : undefined,
         });
       }
@@ -176,7 +195,7 @@ function StudioWorkspace() {
           currentFrame={currentFrame}
           totalFrames={totalFrames}
           isExporting={isExporting}
-          onStartExport={handleStartExport}
+          onStartExport={handleOpenExportConfig}
           onCancelExport={handleCancelExport}
           isLeftOpen={isLeftOpen}
           onToggleLeft={() => setIsLeftOpen(!isLeftOpen)}
@@ -229,6 +248,19 @@ function StudioWorkspace() {
                       isPlaying={isPlaying}
                       onTogglePlay={handleTogglePlay}
                       onScrub={handleScrub}
+                    />
+
+                    <ExportConfigModal
+                      open={isExportConfigOpen}
+                      onOpenChange={setIsExportConfigOpen}
+                      width={width}
+                      height={height}
+                      aspectRatio={irState.doc.meta.aspectRatio}
+                      fps={fps}
+                      totalFrames={totalFrames}
+                      onConfirmExport={({ width: w, height: h, videoBitrate }) => {
+                        handleStartExport({ width: w, height: h, videoBitrate });
+                      }}
                     />
 
                     <ExportProgressModal

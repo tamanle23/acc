@@ -10,6 +10,8 @@ export interface TransformGizmoOverlayProps {
   selectedSeqId: string | null;
   activeSequences: StudioSequence[];
   currentFrame: number;
+  width?: number;
+  height?: number;
   isLocked: boolean;
   transform: {
     x: number;
@@ -37,6 +39,8 @@ export function TransformGizmoOverlay({
   selectedSeqId,
   activeSequences,
   currentFrame,
+  width = 1920,
+  height = 1080,
   isLocked,
   transform,
   isDragging,
@@ -84,8 +88,8 @@ export function TransformGizmoOverlay({
         const curRot = activeInterp ? activeInterp.rotation : transform.rotation;
         const curOpacity = activeInterp ? activeInterp.opacity : 1.0;
 
-        const canvasW = 1920;
-        const canvasH = 1080;
+        const canvasW = width;
+        const canvasH = height;
         const transMod = selectedSeq?.modifiers?.find((m) => m.type === 'transform');
         const muX = typeof transMod?.params?.normX === 'number' ? transMod.params.normX : 0.5;
         const muY = typeof transMod?.params?.normY === 'number' ? transMod.params.normY : 0.5;
