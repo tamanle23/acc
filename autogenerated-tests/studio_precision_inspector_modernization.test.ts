@@ -133,7 +133,67 @@ describe('Studio Dynamic Property Editor & Precision Scrubber Suite', () => {
     });
   });
 
-  describe('3. Architectural Guardrails & Line Ceiling Compliance', () => {
+  describe('3. Accordion Collapse & Expansion State Mechanics', () => {
+    it('verifies collapsing an accordion section removes its aliases and collapses the item', () => {
+      // Simulate SequenceInspector's effectiveOpenSections and handleAccordionValueChange
+      const modifiers = [
+        { type: 'transform', params: {} },
+        { type: 'vfx/color_grading', params: {} },
+      ];
+      let openSections = ['transform', 'color', 'audio'];
+
+      const computeEffective = (openSecs: string[]) => {
+        const set = new Set<string>();
+        modifiers.forEach((m, idx) => {
+          const key = `${m.type}_${idx}`;
+          const secId = m.type === 'transform' ? 'transform' : 'color';
+          if (openSecs.includes(key) || openSecs.includes(secId) || openSecs.includes(m.type)) {
+            set.add(key);
+          }
+        });
+        return Array.from(set);
+      };
+
+      const handleValueChange = (nextOpenKeys: string[]) => {
+        const currentModifiers = modifiers.map((m, idx) => ({
+          key: `${m.type}_${idx}`,
+          type: m.type,
+          secId: m.type === 'transform' ? 'transform' : 'color',
+        }));
+
+        const closedModifiers = currentModifiers.filter((m) => !nextOpenKeys.includes(m.key));
+        const closedSet = new Set<string>();
+        closedModifiers.forEach((m) => {
+          closedSet.add(m.key);
+          closedSet.add(m.type);
+          closedSet.add(m.secId);
+        });
+
+        const updated = openSections.filter((s) => !closedSet.has(s));
+        nextOpenKeys.forEach((k) => {
+          if (!updated.includes(k)) updated.push(k);
+        });
+        openSections = updated;
+      };
+
+      // 1. Initial render: both are open
+      expect(computeEffective(openSections)).toEqual(['transform_0', 'vfx/color_grading_1']);
+
+      // 2. User collapses transform_0
+      handleValueChange(['vfx/color_grading_1']);
+      expect(computeEffective(openSections)).toEqual(['vfx/color_grading_1']);
+
+      // 3. User collapses remaining item vfx/color_grading_1
+      handleValueChange([]);
+      expect(computeEffective(openSections)).toEqual([]);
+
+      // 4. User re-opens transform_0
+      handleValueChange(['transform_0']);
+      expect(computeEffective(openSections)).toEqual(['transform_0']);
+    });
+  });
+
+  describe('4. Architectural Guardrails & Line Ceiling Compliance', () => {
     it('verifies RightSidebar.tsx maintains strict architectural line limit (< 350 lines)', () => {
       const rightSidebarPath = path.resolve('apps/studio/src/components/RightSidebar.tsx');
       const content = fs.readFileSync(rightSidebarPath, 'utf-8');

@@ -105,13 +105,43 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
     (selectedSeq?.modifiers || []).forEach((m, idx) => {
       const key = m.id || `${m.type}_${idx}`;
       const secId = getSectionIdForModifierType(m.type);
-      if (openSections.includes(key) || openSections.includes(secId) || openSections.includes(m.type)) {
+      if (searchQuery.trim() !== '') {
+        set.add(key);
+      } else if (openSections.includes(key) || openSections.includes(secId) || openSections.includes(m.type)) {
         set.add(key);
       }
     });
-    openSections.forEach((s) => set.add(s));
     return Array.from(set);
-  }, [openSections, selectedSeq?.modifiers]);
+  }, [openSections, selectedSeq?.modifiers, searchQuery]);
+
+  const handleAccordionValueChange = (nextOpenKeys: string[]) => {
+    const currentModifiers = (selectedSeq?.modifiers || []).map((m, idx) => ({
+      key: m.id || `${m.type}_${idx}`,
+      type: m.type,
+      secId: getSectionIdForModifierType(m.type),
+    }));
+
+    // Find which modifiers on this sequence were explicitly closed
+    const closedModifiers = currentModifiers.filter((m) => !nextOpenKeys.includes(m.key));
+    const closedSet = new Set<string>();
+    closedModifiers.forEach((m) => {
+      closedSet.add(m.key);
+      closedSet.add(m.type);
+      closedSet.add(m.secId);
+    });
+
+    // Retain all open section IDs that were NOT closed
+    const updated = openSections.filter((s) => !closedSet.has(s));
+
+    // Ensure all currently open keys are retained in openSections
+    nextOpenKeys.forEach((k) => {
+      if (!updated.includes(k)) {
+        updated.push(k);
+      }
+    });
+
+    setOpenSections(updated);
+  };
 
   if (!selectedSeq) {
     return (
@@ -751,7 +781,7 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
       <Accordion
         type="multiple"
         value={effectiveOpenSections}
-        onValueChange={setOpenSections}
+        onValueChange={handleAccordionValueChange}
         className="border-glass-border space-y-2"
       >
         {filteredModifiers.map((mod: ModifierNode, idx: number) => {

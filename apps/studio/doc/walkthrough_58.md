@@ -47,6 +47,10 @@ Modernized [`RightSidebar.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/st
 6. **Keyframe Animation Anchors**:
    - Implemented [`KeyframeAnchor.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/studio/src/components/inspector/KeyframeAnchor.tsx) with diamond indicator states and integrated into `NumberControlStrategy`.
 
+7. **Fixed Modifier Accordion Collapse & Expansion Synchronization**:
+   - Resolved an issue in [`SequenceInspector.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/studio/src/components/inspector/SequenceInspector.tsx) where `effectiveOpenSections` was polluted with raw section IDs (`secId`) and perpetually re-added collapsed item keys.
+   - Implemented `handleAccordionValueChange` to cleanly prune all aliases (`key`, `secId`, `type`) for explicitly closed modifiers, while auto-expanding matching items during active property search.
+
 ---
 
 ## 2. Verification Results
