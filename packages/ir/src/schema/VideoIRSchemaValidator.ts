@@ -626,11 +626,130 @@ export class VideoIRSchemaValidator {
       }
 
       case 'vfx/color_grading': {
-        const numParams = ['contrast', 'saturation', 'brightness', 'temperature', 'tint', 'vignette', 'exposure'];
+        const numParams = [
+          'contrast',
+          'saturation',
+          'brightness',
+          'temperature',
+          'tint',
+          'vignette',
+          'exposure',
+          'pivot',
+          'vibrance',
+          'highlights',
+          'shadows',
+          'whites',
+          'blacks',
+          'lutIntensity',
+          'vignetteAmount',
+          'vignetteMidpoint',
+          'vignetteFeather',
+        ];
         for (const np of numParams) {
           if (p[np] !== undefined && typeof p[np] !== 'number') {
             errors.push(`Modifier "vfx/color_grading" on ${context}: param "${np}" must be a number`);
           }
+        }
+        if (p.lut !== undefined && typeof p.lut !== 'string') {
+          errors.push(`Modifier "vfx/color_grading" on ${context}: param "lut" must be a string`);
+        }
+        if (p.colorWheels !== undefined && (typeof p.colorWheels !== 'object' || p.colorWheels === null)) {
+          errors.push(`Modifier "vfx/color_grading" on ${context}: param "colorWheels" must be an object`);
+        }
+        break;
+      }
+
+      case 'vfx/auto_reframe': {
+        if (p.enabled !== undefined && typeof p.enabled !== 'boolean') {
+          errors.push(`Modifier "${type}" on ${context}: enabled must be a boolean`);
+        }
+        if (p.targetAspectRatio !== undefined && typeof p.targetAspectRatio !== 'string') {
+          errors.push(`Modifier "${type}" on ${context}: targetAspectRatio must be a string`);
+        }
+        if (p.smoothingFactor !== undefined && (typeof p.smoothingFactor !== 'number' || p.smoothingFactor < 0 || p.smoothingFactor > 1)) {
+          errors.push(`Modifier "${type}" on ${context}: smoothingFactor must be a number between 0 and 1`);
+        }
+        if (p.motionDamping !== undefined && typeof p.motionDamping !== 'boolean') {
+          errors.push(`Modifier "${type}" on ${context}: motionDamping must be a boolean`);
+        }
+        if (p.visualGuide !== undefined && typeof p.visualGuide !== 'boolean') {
+          errors.push(`Modifier "${type}" on ${context}: visualGuide must be a boolean`);
+        }
+        break;
+      }
+
+      case 'vfx/partial': {
+        if (p.regions !== undefined && !Array.isArray(p.regions)) {
+          errors.push(`Modifier "${type}" on ${context}: regions must be an array`);
+        }
+        break;
+      }
+
+      case 'motion/vector_blur': {
+        if (p.shutterAngle !== undefined && typeof p.shutterAngle !== 'number') {
+          errors.push(`Modifier "${type}" on ${context}: shutterAngle must be a number`);
+        }
+        if (p.samples !== undefined && (typeof p.samples !== 'number' || p.samples < 1)) {
+          errors.push(`Modifier "${type}" on ${context}: samples must be a positive integer`);
+        }
+        break;
+      }
+
+      case 'shape/draw':
+      case 'shape/vector': {
+        if (p.geometry !== undefined && typeof p.geometry !== 'string') {
+          errors.push(`Modifier "${type}" on ${context}: geometry must be a string`);
+        }
+        if (p.width !== undefined && typeof p.width !== 'number') {
+          errors.push(`Modifier "${type}" on ${context}: width must be a number`);
+        }
+        if (p.height !== undefined && typeof p.height !== 'number') {
+          errors.push(`Modifier "${type}" on ${context}: height must be a number`);
+        }
+        if (p.fillColor !== undefined && typeof p.fillColor !== 'string') {
+          errors.push(`Modifier "${type}" on ${context}: fillColor must be a string`);
+        }
+        if (p.strokeWidth !== undefined && typeof p.strokeWidth !== 'number') {
+          errors.push(`Modifier "${type}" on ${context}: strokeWidth must be a number`);
+        }
+        break;
+      }
+
+      case 'generator/solid_backdrop': {
+        if (p.colorA !== undefined && typeof p.colorA !== 'string') {
+          errors.push(`Modifier "${type}" on ${context}: colorA must be a string`);
+        }
+        if (p.colorB !== undefined && typeof p.colorB !== 'string') {
+          errors.push(`Modifier "${type}" on ${context}: colorB must be a string`);
+        }
+        if (p.type !== undefined && !['solid', 'linear_gradient', 'radial_gradient'].includes(p.type)) {
+          errors.push(`Modifier "${type}" on ${context}: type must be solid, linear_gradient, or radial_gradient`);
+        }
+        if (p.angleDeg !== undefined && typeof p.angleDeg !== 'number') {
+          errors.push(`Modifier "${type}" on ${context}: angleDeg must be a number`);
+        }
+        break;
+      }
+
+      case 'timeline/photometric_bloom': {
+        if (p.luminanceThreshold !== undefined && typeof p.luminanceThreshold !== 'number') {
+          errors.push(`Modifier "${type}" on ${context}: luminanceThreshold must be a number`);
+        }
+        if (p.intensity !== undefined && typeof p.intensity !== 'number') {
+          errors.push(`Modifier "${type}" on ${context}: intensity must be a number`);
+        }
+        break;
+      }
+
+      case 'timeline/anamorphic_glare': {
+        if (p.threshold !== undefined && typeof p.threshold !== 'number') {
+          errors.push(`Modifier "${type}" on ${context}: threshold must be a number`);
+        }
+        if (p.streakLengthPx !== undefined && typeof p.streakLengthPx !== 'number') {
+          errors.push(`Modifier "${type}" on ${context}: streakLengthPx must be a number`);
+        }
+        if (p.intensity !== undefined && typeof p.intensity !== 'number') {
+          errors.push(`Modifier "${type}" on ${context}: intensity must be a number`);
         }
         break;
       }

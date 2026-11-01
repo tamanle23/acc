@@ -219,10 +219,8 @@ export class ModifierPluginRegistry {
       results = allPlugins.filter((p) => {
         if (p.targetScope === 'standalone') {
           if (hasGen) return false;
-          if (sequenceType === 'overlay' || (sequenceType === 'audio' && p.schema?.category === 'audio')) {
-            return true;
-          }
-          return false;
+          // Standalone plugins must explicitly allow the sequence type
+          return Boolean(p.allowedSequenceTypes && sequenceType && p.allowedSequenceTypes.includes(sequenceType));
         }
 
         if (p.targetScope !== 'sequence') return false;

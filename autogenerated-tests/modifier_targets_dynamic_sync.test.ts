@@ -68,13 +68,11 @@ describe('Iteration 55: Unified Modifier Target Model, Dynamic Registry Validati
   // Test Vector 3: timed_text/style Rename & Schema Validation
   it('should approve "timed_text/style" on timed_text tracks and reject legacy "text/style"', () => {
     const validDoc: VideoIRDocument = {
-      schemaVersion: '2.0.0',
+      version: '1.0.0-stable',
       meta: {
-        id: 'doc_valid_caption_sync',
-        title: 'Valid Caption Test',
-        durationSec: 5,
+        contentId: 'doc_valid_caption_sync',
         globalFps: 30,
-        resolution: { width: 1920, height: 1080 },
+        canvasSize: { w: 1920, h: 1080 },
       },
       tracks: [
         {
@@ -143,13 +141,11 @@ describe('Iteration 55: Unified Modifier Target Model, Dynamic Registry Validati
 
     // Standalone overlay sequence validation
     const docWithStandalone: VideoIRDocument = {
-      schemaVersion: '2.0.0',
+      version: '1.0.0-stable',
       meta: {
-        id: 'doc_standalone_backdrop',
-        title: 'Backdrop Generator Test',
-        durationSec: 4,
+        contentId: 'doc_standalone_backdrop',
         globalFps: 30,
-        resolution: { width: 1920, height: 1080 },
+        canvasSize: { w: 1920, h: 1080 },
       },
       tracks: [
         {

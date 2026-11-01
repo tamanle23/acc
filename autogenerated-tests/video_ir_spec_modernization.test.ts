@@ -19,14 +19,14 @@ describe('Video IR Spec Modernization Suite', () => {
     },
     modifiers: [
       {
-        type: 'vfx/color_grading',
-        target: ['video', 'image', 'overlay'],
-        params: { contrast: 1.1, saturation: 1.2 },
+        type: 'timeline/photometric_bloom',
+        target: ['video', 'overlay'],
+        params: { luminanceThreshold: 0.8, intensity: 1.0 },
       },
       {
-        type: 'audio/volume',
-        target: 'audio',
-        params: { volume: 0.95 },
+        type: 'timeline/anamorphic_glare',
+        target: ['video', 'overlay'],
+        params: { threshold: 0.85, streakLengthPx: 120 },
       },
     ],
     tracks: [
@@ -89,19 +89,19 @@ describe('Video IR Spec Modernization Suite', () => {
       {
         id: 'track-txt1',
         type: 'timed_text',
+        modifiers: [
+          {
+            type: 'timed_text/style',
+            target: 'text',
+            params: { fontSize: 32, color: '#ffffff' },
+          },
+        ],
         sequences: [
           {
             id: 'seq-txt1',
             type: 'text',
             time: { start: 0, duration: 90 },
             cues: [{ startOffsetMs: 0, endOffsetMs: 3000, text: 'Hello World' }],
-            modifiers: [
-              {
-                type: 'timed_text/style',
-                target: 'text',
-                params: { fontSize: 32, color: '#ffffff' },
-              },
-            ],
           },
         ],
       },
@@ -255,8 +255,8 @@ describe('Video IR Spec Modernization Suite', () => {
 
       expect(timeline.modifiers).toBeDefined();
       expect(timeline.modifiers!.length).toBe(2);
-      expect(timeline.modifiers![0].type).toBe('vfx/color_grading');
-      expect(timeline.modifiers![1].type).toBe('audio/volume');
+      expect(timeline.modifiers![0].type).toBe('timeline/photometric_bloom');
+      expect(timeline.modifiers![1].type).toBe('timeline/anamorphic_glare');
     });
 
     it('should compile sequences and propagate type and blendMode onto ResolvedSequence', async () => {

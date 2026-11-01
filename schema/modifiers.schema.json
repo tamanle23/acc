@@ -39,40 +39,77 @@
         "intro": {
           "type": "object",
           "properties": {
-            "durationSec": { "type": "number", "minimum": 0 },
+            "durationSec": {
+              "type": "number",
+              "minimum": 0
+            },
             "from": {},
             "to": {},
-            "ease": { "type": "string" }
+            "ease": {
+              "type": "string"
+            }
           },
-          "required": ["durationSec", "from", "ease"]
+          "required": [
+            "durationSec",
+            "from",
+            "ease"
+          ]
         },
         "steady": {
           "type": "object",
           "properties": {
-            "type": { "type": "string", "enum": ["hold", "drift", "pulse"] },
-            "intensity": { "type": "number" }
+            "type": {
+              "type": "string",
+              "enum": [
+                "hold",
+                "drift",
+                "pulse"
+              ]
+            },
+            "intensity": {
+              "type": "number"
+            }
           },
-          "required": ["type"]
+          "required": [
+            "type"
+          ]
         },
         "outro": {
           "type": "object",
           "properties": {
-            "durationSec": { "type": "number", "minimum": 0 },
+            "durationSec": {
+              "type": "number",
+              "minimum": 0
+            },
             "to": {},
-            "ease": { "type": "string" }
+            "ease": {
+              "type": "string"
+            }
           },
-          "required": ["durationSec", "to", "ease"]
+          "required": [
+            "durationSec",
+            "to",
+            "ease"
+          ]
         },
         "keyframes": {
           "type": "array",
           "items": {
             "type": "object",
             "properties": {
-              "timeSec": { "type": "number", "minimum": 0 },
+              "timeSec": {
+                "type": "number",
+                "minimum": 0
+              },
               "value": {},
-              "ease": { "type": "string" }
+              "ease": {
+                "type": "string"
+              }
             },
-            "required": ["timeSec", "value"]
+            "required": [
+              "timeSec",
+              "value"
+            ]
           }
         }
       }
@@ -80,39 +117,120 @@
     "TransformModifierParams": {
       "type": "object",
       "properties": {
-        "x": { "oneOf": [{ "type": "number" }, { "$ref": "#/definitions/TemporalCurve" }] },
-        "y": { "oneOf": [{ "type": "number" }, { "$ref": "#/definitions/TemporalCurve" }] },
-        "scale": { "oneOf": [{ "type": "number" }, { "$ref": "#/definitions/TemporalCurve" }] },
-        "rotation": { "oneOf": [{ "type": "number" }, { "$ref": "#/definitions/TemporalCurve" }] },
-        "opacity": { "oneOf": [{ "type": "number" }, { "$ref": "#/definitions/TemporalCurve" }] },
-        "normX": { "type": "number" },
-        "normY": { "type": "number" },
-        "ease": { "type": "string" },
+        "x": {
+          "oneOf": [
+            {
+              "type": "number"
+            },
+            {
+              "$ref": "#/definitions/TemporalCurve"
+            }
+          ]
+        },
+        "y": {
+          "oneOf": [
+            {
+              "type": "number"
+            },
+            {
+              "$ref": "#/definitions/TemporalCurve"
+            }
+          ]
+        },
+        "scale": {
+          "oneOf": [
+            {
+              "type": "number"
+            },
+            {
+              "$ref": "#/definitions/TemporalCurve"
+            }
+          ]
+        },
+        "rotation": {
+          "oneOf": [
+            {
+              "type": "number"
+            },
+            {
+              "$ref": "#/definitions/TemporalCurve"
+            }
+          ]
+        },
+        "opacity": {
+          "oneOf": [
+            {
+              "type": "number"
+            },
+            {
+              "$ref": "#/definitions/TemporalCurve"
+            }
+          ]
+        },
+        "normX": {
+          "type": "number"
+        },
+        "normY": {
+          "type": "number"
+        },
+        "ease": {
+          "type": "string"
+        },
         "animation": {
           "type": "object",
           "properties": {
-            "preset": { "type": "string", "enum": ["pop_in", "slide_left", "overshoot", "bounce", "drift"] },
+            "preset": {
+              "type": "string",
+              "enum": [
+                "pop_in",
+                "slide_left",
+                "overshoot",
+                "bounce",
+                "drift"
+              ]
+            },
             "intro": {
               "type": "object",
               "properties": {
-                "durationSec": { "type": "number" },
-                "ease": { "type": "string" },
-                "direction": { "type": "string" }
+                "durationSec": {
+                  "type": "number"
+                },
+                "ease": {
+                  "type": "string"
+                },
+                "direction": {
+                  "type": "string"
+                }
               }
             },
             "steady": {
               "type": "object",
               "properties": {
-                "type": { "type": "string", "enum": ["hold", "drift", "pulse"] },
-                "intensity": { "type": "number" }
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "hold",
+                    "drift",
+                    "pulse"
+                  ]
+                },
+                "intensity": {
+                  "type": "number"
+                }
               }
             },
             "outro": {
               "type": "object",
               "properties": {
-                "durationSec": { "type": "number" },
-                "ease": { "type": "string" },
-                "direction": { "type": "string" }
+                "durationSec": {
+                  "type": "number"
+                },
+                "ease": {
+                  "type": "string"
+                },
+                "direction": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -121,32 +239,54 @@
     },
     "DepthRelightingParams": {
       "type": "object",
-      "required": ["enabled"],
+      "required": [
+        "enabled"
+      ],
       "properties": {
-        "enabled": { "type": "boolean" },
+        "enabled": {
+          "type": "boolean"
+        },
         "lightPosition": {
           "type": "array",
-          "items": { "type": "number" },
+          "items": {
+            "type": "number"
+          },
           "minItems": 3,
           "maxItems": 3
         },
-        "diffuse": { "type": "number" },
-        "specular": { "type": "number" },
-        "shininess": { "type": "number" },
-        "ambient": { "type": "number" },
-        "rimIntensity": { "type": "number" },
+        "diffuse": {
+          "type": "number"
+        },
+        "specular": {
+          "type": "number"
+        },
+        "shininess": {
+          "type": "number"
+        },
+        "ambient": {
+          "type": "number"
+        },
+        "rimIntensity": {
+          "type": "number"
+        },
         "lightColor": {
           "oneOf": [
-            { "type": "string" },
+            {
+              "type": "string"
+            },
             {
               "type": "array",
-              "items": { "type": "number" },
+              "items": {
+                "type": "number"
+              },
               "minItems": 3,
               "maxItems": 3
             }
           ]
         },
-        "normalStrength": { "type": "number" }
+        "normalStrength": {
+          "type": "number"
+        }
       }
     },
     "Camera3DModifierParams": {
@@ -156,142 +296,421 @@
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["time", "position"],
+            "required": [
+              "time",
+              "position"
+            ],
             "properties": {
-              "time": { "type": "number", "minimum": 0, "maximum": 1 },
+              "time": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
               "position": {
                 "type": "array",
-                "items": { "type": "number" },
+                "items": {
+                  "type": "number"
+                },
                 "minItems": 3,
                 "maxItems": 3
               },
               "target": {
                 "type": "array",
-                "items": { "type": "number" },
+                "items": {
+                  "type": "number"
+                },
                 "minItems": 3,
                 "maxItems": 3
               },
-              "roll": { "type": "number" },
-              "fov": { "type": "number", "minimum": 1 },
-              "focalZ": { "type": "number", "minimum": 0, "maximum": 1 },
-              "focalAperture": { "type": "number", "minimum": 0, "maximum": 1 }
+              "roll": {
+                "type": "number"
+              },
+              "fov": {
+                "type": "number",
+                "minimum": 1
+              },
+              "focalZ": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "focalAperture": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
             }
           }
         },
         "rackFocus": {
           "type": "object",
           "properties": {
-            "enabled": { "type": "boolean" },
-            "focalZone": { "type": "string", "enum": ["foreground", "midground", "background", "custom"] },
-            "customFocalZ": { "type": "number" },
-            "aperture": { "type": "number" },
-            "blurMaxRadius": { "type": "number" }
+            "enabled": {
+              "type": "boolean"
+            },
+            "focalZone": {
+              "type": "string",
+              "enum": [
+                "foreground",
+                "midground",
+                "background",
+                "custom"
+              ]
+            },
+            "customFocalZ": {
+              "type": "number"
+            },
+            "aperture": {
+              "type": "number"
+            },
+            "blurMaxRadius": {
+              "type": "number"
+            }
           }
         },
-        "imagePath": { "type": "string" },
-        "depthImagePath": { "type": "string" },
-        "motionBlur": { "type": "boolean" }
+        "imagePath": {
+          "type": "string"
+        },
+        "depthImagePath": {
+          "type": "string"
+        },
+        "motionBlur": {
+          "type": "boolean"
+        }
       }
     },
     "Depth3DModifierParams": {
       "type": "object",
-      "required": ["mode"],
+      "required": [
+        "mode"
+      ],
       "properties": {
-        "mode": { "type": "string" },
-        "frameStyle": { "type": "string" },
-        "popOutIntensity": { "type": "number" },
-        "autoSegment": { "type": "boolean" },
-        "autoDepth": { "type": "boolean" },
+        "mode": {
+          "type": "string"
+        },
+        "frameStyle": {
+          "type": "string"
+        },
+        "popOutIntensity": {
+          "type": "number"
+        },
+        "autoSegment": {
+          "type": "boolean"
+        },
+        "autoDepth": {
+          "type": "boolean"
+        },
         "relighting": {
           "type": "object",
-          "required": ["enabled"],
+          "required": [
+            "enabled"
+          ],
           "properties": {
-            "enabled": { "type": "boolean" },
+            "enabled": {
+              "type": "boolean"
+            },
             "lightPosition": {
               "type": "array",
-              "items": { "type": "number" },
+              "items": {
+                "type": "number"
+              },
               "minItems": 3,
               "maxItems": 3
             },
             "lightColor": {
               "oneOf": [
-                { "type": "string" },
+                {
+                  "type": "string"
+                },
                 {
                   "type": "array",
-                  "items": { "type": "number" },
+                  "items": {
+                    "type": "number"
+                  },
                   "minItems": 3,
                   "maxItems": 3
                 }
               ]
             },
-            "diffuse": { "type": "number" },
-            "specular": { "type": "number" },
-            "shininess": { "type": "number" },
-            "ambient": { "type": "number" },
-            "rimIntensity": { "type": "number" },
-            "normalStrength": { "type": "number" }
+            "diffuse": {
+              "type": "number"
+            },
+            "specular": {
+              "type": "number"
+            },
+            "shininess": {
+              "type": "number"
+            },
+            "ambient": {
+              "type": "number"
+            },
+            "rimIntensity": {
+              "type": "number"
+            },
+            "normalStrength": {
+              "type": "number"
+            }
           }
         },
         "depthMesh": {
           "type": "object",
           "properties": {
-            "motion": { "type": "string" },
-            "displacementScale": { "type": "number" }
+            "motion": {
+              "type": "string"
+            },
+            "displacementScale": {
+              "type": "number"
+            }
           }
         },
-        "shadow": { "type": "boolean" },
-        "floatMotion": { "type": "boolean" },
-        "backdropBlur": { "type": "number" }
+        "shadow": {
+          "type": "boolean"
+        },
+        "floatMotion": {
+          "type": "boolean"
+        },
+        "backdropBlur": {
+          "type": "number"
+        }
       }
     },
     "ColorGradingModifierParams": {
       "type": "object",
+      "description": "Color correction and creative color grading parameters",
       "properties": {
-        "lut": { "type": "string" },
-        "contrast": { "type": "number" },
-        "saturation": { "type": "number" },
-        "brightness": { "type": "number" },
-        "temperature": { "type": "number" },
-        "tint": { "type": "number" },
-        "vignette": { "type": "number" },
-        "exposure": { "type": "number" }
+        "temperature": {
+          "type": "number",
+          "minimum": -100,
+          "maximum": 100,
+          "description": "Color Temperature (K)"
+        },
+        "tint": {
+          "type": "number",
+          "minimum": -100,
+          "maximum": 100,
+          "description": "Tint (Green / Magenta)"
+        },
+        "exposure": {
+          "type": "number",
+          "minimum": -3,
+          "maximum": 3,
+          "description": "Photometric Exposure EV"
+        },
+        "contrast": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 3,
+          "description": "Contrast around mid-gray pivot"
+        },
+        "pivot": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Contrast pivot"
+        },
+        "highlights": {
+          "type": "number",
+          "minimum": -100,
+          "maximum": 100,
+          "description": "Highlights rolloff"
+        },
+        "shadows": {
+          "type": "number",
+          "minimum": -100,
+          "maximum": 100,
+          "description": "Shadows rolloff"
+        },
+        "whites": {
+          "type": "number",
+          "minimum": -100,
+          "maximum": 100,
+          "description": "Whites anchor"
+        },
+        "blacks": {
+          "type": "number",
+          "minimum": -100,
+          "maximum": 100,
+          "description": "Blacks anchor"
+        },
+        "lut": {
+          "type": "string",
+          "description": "LUT Preset or identifier"
+        },
+        "lutIntensity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "LUT blend intensity [0, 1]"
+        },
+        "saturation": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 3,
+          "description": "Master saturation"
+        },
+        "vibrance": {
+          "type": "number",
+          "minimum": -100,
+          "maximum": 100,
+          "description": "Smart vibrance"
+        },
+        "vignetteAmount": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "description": "Vignette Amount"
+        },
+        "vignetteMidpoint": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 0.9,
+          "description": "Vignette Midpoint"
+        },
+        "vignetteFeather": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 1,
+          "description": "Vignette Feather"
+        },
+        "colorWheels": {
+          "type": "object",
+          "description": "3-Way Color Wheels (Lift, Gamma, Gain, Offset)",
+          "properties": {
+            "lift": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "number"
+                },
+                "y": {
+                  "type": "number"
+                },
+                "yLevel": {
+                  "type": "number"
+                }
+              }
+            },
+            "gamma": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "number"
+                },
+                "y": {
+                  "type": "number"
+                },
+                "yLevel": {
+                  "type": "number"
+                }
+              }
+            },
+            "gain": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "number"
+                },
+                "y": {
+                  "type": "number"
+                },
+                "yLevel": {
+                  "type": "number"
+                }
+              }
+            },
+            "offset": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "number"
+                },
+                "y": {
+                  "type": "number"
+                },
+                "yLevel": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        },
+        "brightness": {
+          "type": "number",
+          "description": "Legacy brightness offset"
+        },
+        "vignette": {
+          "type": "number",
+          "description": "Legacy vignette intensity"
+        }
       }
     },
     "ParticleVfxModifierParams": {
       "type": "object",
-      "required": ["type"],
+      "required": [
+        "type"
+      ],
       "properties": {
-        "type": { "type": "string" },
-        "variant": { "type": "string" },
-        "intensity": { "type": "number" },
-        "speed": { "type": "number" },
-        "opacity": { "type": "number" },
-        "particleCount": { "type": "number" },
-        "useSIMD": { "type": "boolean" },
+        "type": {
+          "type": "string"
+        },
+        "variant": {
+          "type": "string"
+        },
+        "intensity": {
+          "type": "number"
+        },
+        "speed": {
+          "type": "number"
+        },
+        "opacity": {
+          "type": "number"
+        },
+        "particleCount": {
+          "type": "number"
+        },
+        "useSIMD": {
+          "type": "boolean"
+        },
         "shaders": {
           "type": "object",
           "properties": {
             "chromaticAberration": {
               "type": "object",
               "properties": {
-                "enabled": { "type": "boolean" },
-                "offsetPx": { "type": "number" }
+                "enabled": {
+                  "type": "boolean"
+                },
+                "offsetPx": {
+                  "type": "number"
+                }
               }
             },
             "bloom": {
               "type": "object",
               "properties": {
-                "enabled": { "type": "boolean" },
-                "threshold": { "type": "number" },
-                "intensity": { "type": "number" }
+                "enabled": {
+                  "type": "boolean"
+                },
+                "threshold": {
+                  "type": "number"
+                },
+                "intensity": {
+                  "type": "number"
+                }
               }
             },
             "anamorphicFlare": {
               "type": "object",
               "properties": {
-                "enabled": { "type": "boolean" },
-                "intensity": { "type": "number" },
-                "tintColor": { "type": "string" }
+                "enabled": {
+                  "type": "boolean"
+                },
+                "intensity": {
+                  "type": "number"
+                },
+                "tintColor": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -301,51 +720,129 @@
     "HologramHudModifierParams": {
       "type": "object",
       "properties": {
-        "enabled": { "type": "boolean" },
-        "color": { "type": "string" },
-        "glitchIntensity": { "type": "number" },
-        "scanlines": { "type": "boolean" },
-        "flicker": { "type": "boolean" },
-        "opacity": { "type": "number" },
-        "bracketScale": { "type": "number" },
-        "bracketColor": { "type": "string" },
-        "reticleSpeed": { "type": "number" }
+        "enabled": {
+          "type": "boolean"
+        },
+        "color": {
+          "type": "string"
+        },
+        "glitchIntensity": {
+          "type": "number"
+        },
+        "scanlines": {
+          "type": "boolean"
+        },
+        "flicker": {
+          "type": "boolean"
+        },
+        "opacity": {
+          "type": "number"
+        },
+        "bracketScale": {
+          "type": "number"
+        },
+        "bracketColor": {
+          "type": "string"
+        },
+        "reticleSpeed": {
+          "type": "number"
+        }
       }
     },
     "BlendModeModifierParams": {
       "type": "object",
-      "required": ["mode"],
+      "required": [
+        "mode"
+      ],
       "properties": {
         "mode": {
           "type": "string",
-          "enum": ["normal", "multiply", "screen", "overlay", "add", "color_dodge", "soft_light"]
+          "enum": [
+            "normal",
+            "multiply",
+            "screen",
+            "overlay",
+            "add",
+            "color_dodge",
+            "soft_light"
+          ]
         },
-        "opacity": { "type": "number", "minimum": 0, "maximum": 1 }
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
       }
     },
     "TextStyleModifierParams": {
       "type": "object",
       "properties": {
-        "fontSize": { "type": "number" },
-        "fontFamily": { "type": "string" },
-        "fontWeight": { "oneOf": [{ "type": "string" }, { "type": "number" }] },
-        "color": { "type": "string" },
-        "letterSpacing": { "type": "number" },
-        "lineHeight": { "type": "number" },
-        "textAlign": { "type": "string", "enum": ["left", "center", "right"] },
-        "shadowColor": { "type": "string" },
-        "shadowBlur": { "type": "number" },
-        "shadowOffsetX": { "type": "number" },
-        "shadowOffsetY": { "type": "number" },
-        "strokeColor": { "type": "string" },
-        "strokeWidth": { "type": "number" },
+        "fontSize": {
+          "type": "number"
+        },
+        "fontFamily": {
+          "type": "string"
+        },
+        "fontWeight": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "color": {
+          "type": "string"
+        },
+        "letterSpacing": {
+          "type": "number"
+        },
+        "lineHeight": {
+          "type": "number"
+        },
+        "textAlign": {
+          "type": "string",
+          "enum": [
+            "left",
+            "center",
+            "right"
+          ]
+        },
+        "shadowColor": {
+          "type": "string"
+        },
+        "shadowBlur": {
+          "type": "number"
+        },
+        "shadowOffsetX": {
+          "type": "number"
+        },
+        "shadowOffsetY": {
+          "type": "number"
+        },
+        "strokeColor": {
+          "type": "string"
+        },
+        "strokeWidth": {
+          "type": "number"
+        },
         "activeWord": {
           "type": "object",
           "properties": {
-            "color": { "type": "string" },
-            "glowColor": { "type": "string" },
-            "glowRadius": { "type": "number" },
-            "scale": { "type": "number" }
+            "color": {
+              "type": "string"
+            },
+            "glowColor": {
+              "type": "string"
+            },
+            "glowRadius": {
+              "type": "number"
+            },
+            "scale": {
+              "type": "number"
+            }
           }
         }
       }
@@ -353,75 +850,171 @@
     "VolumeModifierParams": {
       "type": "object",
       "properties": {
-        "volume": { "type": "number" },
-        "fadeInSec": { "type": "number" },
-        "fadeOutSec": { "type": "number" },
-        "fadeCurve": { "type": "string", "enum": ["linear", "cosine", "exponential"] },
-        "muted": { "type": "boolean" }
+        "volume": {
+          "type": "number"
+        },
+        "fadeInSec": {
+          "type": "number"
+        },
+        "fadeOutSec": {
+          "type": "number"
+        },
+        "fadeCurve": {
+          "type": "string",
+          "enum": [
+            "linear",
+            "cosine",
+            "exponential"
+          ]
+        },
+        "muted": {
+          "type": "boolean"
+        }
       }
     },
     "PanModifierParams": {
       "type": "object",
-      "required": ["stereoPan"],
+      "required": [
+        "stereoPan"
+      ],
       "properties": {
-        "stereoPan": { "type": "number", "minimum": -1, "maximum": 1 }
+        "stereoPan": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1
+        }
       }
     },
     "FilterModifierParams": {
       "type": "object",
-      "required": ["filterType", "cutoffHz"],
+      "required": [
+        "filterType",
+        "cutoffHz"
+      ],
       "properties": {
-        "filterType": { "type": "string", "enum": ["lowpass", "highpass", "bandpass"] },
-        "cutoffHz": { "type": "number", "minimum": 20, "maximum": 20000 },
-        "q": { "type": "number" }
+        "filterType": {
+          "type": "string",
+          "enum": [
+            "lowpass",
+            "highpass",
+            "bandpass"
+          ]
+        },
+        "cutoffHz": {
+          "type": "number",
+          "minimum": 20,
+          "maximum": 20000
+        },
+        "q": {
+          "type": "number"
+        }
       }
     },
     "PitchModifierParams": {
       "type": "object",
       "properties": {
-        "playbackRate": { "type": "number" },
-        "detuneCents": { "type": "number" }
+        "playbackRate": {
+          "type": "number"
+        },
+        "detuneCents": {
+          "type": "number"
+        }
       }
     },
     "DynamicDuckingModifierParams": {
       "type": "object",
-      "required": ["duckingFactor"],
+      "required": [
+        "duckingFactor"
+      ],
       "properties": {
-        "duckingFactor": { "oneOf": [{ "type": "number" }, { "$ref": "#/definitions/TemporalCurve" }] },
-        "attackSec": { "type": "number" },
-        "releaseSec": { "type": "number" },
-        "attackEase": { "type": "string" },
-        "releaseEase": { "type": "string" },
-        "threshold": { "type": "number" }
+        "duckingFactor": {
+          "oneOf": [
+            {
+              "type": "number"
+            },
+            {
+              "$ref": "#/definitions/TemporalCurve"
+            }
+          ]
+        },
+        "attackSec": {
+          "type": "number"
+        },
+        "releaseSec": {
+          "type": "number"
+        },
+        "attackEase": {
+          "type": "string"
+        },
+        "releaseEase": {
+          "type": "string"
+        },
+        "threshold": {
+          "type": "number"
+        }
       }
     },
     "ProceduralSfxModifierParams": {
       "type": "object",
-      "required": ["synthType"],
+      "required": [
+        "synthType"
+      ],
       "properties": {
-        "synthType": { "type": "string" },
-        "durationSec": { "type": "number" },
-        "ducking": { "type": "number" },
-        "gain": { "type": "number" }
+        "synthType": {
+          "type": "string"
+        },
+        "durationSec": {
+          "type": "number"
+        },
+        "ducking": {
+          "type": "number"
+        },
+        "gain": {
+          "type": "number"
+        }
       }
     },
     "AVLinkModifierParams": {
       "type": "object",
-      "required": ["linkedSequenceId", "linkedTrackId"],
+      "required": [
+        "linkedSequenceId",
+        "linkedTrackId"
+      ],
       "properties": {
-        "linkedSequenceId": { "type": "string" },
-        "linkedTrackId": { "type": "string" },
-        "enabled": { "type": "boolean" },
-        "syncTrim": { "type": "boolean" }
+        "linkedSequenceId": {
+          "type": "string"
+        },
+        "linkedTrackId": {
+          "type": "string"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "syncTrim": {
+          "type": "boolean"
+        }
       }
     },
     "SplitEditModifierParams": {
       "type": "object",
-      "required": ["mode", "splitDurationFrames"],
+      "required": [
+        "mode",
+        "splitDurationFrames"
+      ],
       "properties": {
-        "mode": { "type": "string", "enum": ["j_cut", "l_cut"] },
-        "splitDurationFrames": { "type": "integer" },
-        "crossfadeAudio": { "type": "boolean" }
+        "mode": {
+          "type": "string",
+          "enum": [
+            "j_cut",
+            "l_cut"
+          ]
+        },
+        "splitDurationFrames": {
+          "type": "integer"
+        },
+        "crossfadeAudio": {
+          "type": "boolean"
+        }
       }
     },
     "TransitionModifierParams": {
@@ -496,8 +1089,7 @@
       ],
       "properties": {
         "type": {
-          "type": "string",
-          "description": "Modifier discriminator type identifier (e.g. 'vfx/camera_3d', 'transform', 'audio/volume')"
+          "$ref": "#/definitions/ModifierTypeEnum"
         },
         "target": {
           "$ref": "#/definitions/ModifierTarget"
@@ -508,6 +1100,1637 @@
           "additionalProperties": true
         }
       }
+    },
+    "AutoReframeModifierParams": {
+      "type": "object",
+      "description": "Parameter schema for vfx/auto_reframe modifier",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable Auto-Reframe"
+        },
+        "targetAspectRatio": {
+          "type": "string",
+          "enum": [
+            "9:16",
+            "1:1",
+            "4:5",
+            "16:9"
+          ],
+          "description": "Target Aspect Ratio"
+        },
+        "strategyId": {
+          "type": "string",
+          "description": "Detection & Tracking Strategy"
+        },
+        "smoothingFactor": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 0.95,
+          "description": "Tracking Smoothing"
+        },
+        "motionDamping": {
+          "type": "boolean",
+          "description": "Motion Damping"
+        },
+        "visualGuide": {
+          "type": "boolean",
+          "description": "Show Framing Guides"
+        }
+      }
+    },
+    "PartialVfxModifierParams": {
+      "type": "object",
+      "description": "Parameter schema for vfx/partial modifier",
+      "properties": {
+        "regions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "circle",
+                  "rect"
+                ]
+              },
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              },
+              "radius": {
+                "type": "number"
+              },
+              "width": {
+                "type": "number"
+              },
+              "height": {
+                "type": "number"
+              },
+              "intensity": {
+                "type": "number"
+              },
+              "color": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "Interactive localized regions for spotlights, chromatic glitch slices, blur, or spark emitters"
+        }
+      }
+    },
+    "GSAPMotionModifierParams": {
+      "type": "object",
+      "description": "Parameter schema for motion/gsap modifier",
+      "properties": {
+        "preset": {
+          "type": "string",
+          "enum": [
+            "none",
+            "pop_in",
+            "slide_left",
+            "bounce",
+            "overshoot",
+            "drift"
+          ],
+          "description": "Motion Preset"
+        },
+        "introDuration": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 2.5,
+          "description": "Intro Duration"
+        },
+        "outroDuration": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 2,
+          "description": "Outro Duration"
+        },
+        "ease": {
+          "oneOf": [
+            {
+              "type": "number"
+            },
+            {
+              "$ref": "#/definitions/TemporalCurve"
+            }
+          ],
+          "description": "GSAP Easing Curve"
+        }
+      }
+    },
+    "VectorMotionBlurModifierParams": {
+      "type": "object",
+      "description": "Parameter schema for motion/vector_blur modifier",
+      "properties": {
+        "shutterAngle": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 360,
+          "description": "Shutter Angle"
+        },
+        "samples": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 32,
+          "description": "Temporal Samples"
+        }
+      }
+    },
+    "ShapeDrawModifierParams": {
+      "type": "object",
+      "description": "Parameter schema for shape/draw modifier",
+      "properties": {
+        "geometry": {
+          "type": "string",
+          "enum": [
+            "rect",
+            "rounded_rect",
+            "circle",
+            "pill",
+            "star",
+            "hexagon",
+            "triangle",
+            "cross",
+            "frame"
+          ],
+          "description": "Vector Geometry"
+        },
+        "width": {
+          "type": "number",
+          "minimum": 10,
+          "maximum": 1920,
+          "description": "Shape Width"
+        },
+        "height": {
+          "type": "number",
+          "minimum": 10,
+          "maximum": 1080,
+          "description": "Shape Height"
+        },
+        "fillColor": {
+          "type": "string",
+          "description": "Fill Color"
+        },
+        "strokeWidth": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 24,
+          "description": "Stroke Thickness"
+        },
+        "strokeColor": {
+          "type": "string",
+          "description": "Stroke Color"
+        }
+      }
+    },
+    "ShapeVectorModifierParams": {
+      "type": "object",
+      "description": "Parameter schema for shape/vector modifier",
+      "properties": {
+        "geometry": {
+          "type": "string",
+          "enum": [
+            "rect",
+            "rounded_rect",
+            "circle",
+            "pill",
+            "star",
+            "hexagon",
+            "triangle",
+            "cross",
+            "frame"
+          ],
+          "description": "Vector Geometry"
+        },
+        "width": {
+          "type": "number",
+          "minimum": 10,
+          "maximum": 1920,
+          "description": "Shape Width"
+        },
+        "height": {
+          "type": "number",
+          "minimum": 10,
+          "maximum": 1080,
+          "description": "Shape Height"
+        },
+        "fillColor": {
+          "type": "string",
+          "description": "Fill Color"
+        },
+        "strokeWidth": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 24,
+          "description": "Stroke Thickness"
+        },
+        "strokeColor": {
+          "type": "string",
+          "description": "Stroke Color"
+        }
+      }
+    },
+    "SolidBackdropModifierParams": {
+      "type": "object",
+      "description": "Parameter schema for generator/solid_backdrop modifier",
+      "properties": {
+        "colorA": {
+          "type": "string",
+          "description": "Primary Color"
+        },
+        "colorB": {
+          "type": "string",
+          "description": "Secondary Color"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "solid",
+            "linear_gradient",
+            "radial_gradient"
+          ],
+          "description": "Fill Mode"
+        },
+        "angleDeg": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 360,
+          "description": "Gradient Angle"
+        },
+        "dither": {
+          "type": "boolean",
+          "description": "Apply Dithering"
+        }
+      }
+    },
+    "PhotometricBloomModifierParams": {
+      "type": "object",
+      "description": "Parameter schema for timeline/photometric_bloom modifier",
+      "properties": {
+        "luminanceThreshold": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Luminance Threshold"
+        },
+        "intensity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 5,
+          "description": "Bloom Intensity"
+        },
+        "tint": {
+          "type": "string",
+          "description": "Bloom Tint"
+        }
+      }
+    },
+    "AnamorphicGlareModifierParams": {
+      "type": "object",
+      "description": "Parameter schema for timeline/anamorphic_glare modifier",
+      "properties": {
+        "threshold": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Luminance Threshold"
+        },
+        "streakLengthPx": {
+          "type": "number",
+          "minimum": 10,
+          "maximum": 500,
+          "description": "Streak Flare Length"
+        },
+        "streakTint": {
+          "type": "string",
+          "description": "Optical Streak Tint"
+        },
+        "intensity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 5,
+          "description": "Streak Intensity"
+        }
+      }
+    },
+    "TimeSpaceModifierParams": {
+      "type": "object",
+      "description": "Parameter schema for time_space modifier",
+      "properties": {
+        "templateId": {
+          "type": "string",
+          "enum": [
+            "callout_leader",
+            "kinetic_title",
+            "particle_ambient",
+            "hud_tactical_reticle",
+            "callout_multitarget",
+            "network_plexus",
+            "audio_waveform_ring",
+            "cyber_lower_third",
+            "dynamic_countdown",
+            "energy_shield_hex",
+            "glitch_data_stream",
+            "parametric_superformula",
+            "audio_equalizer_spectrum"
+          ],
+          "description": "Motion Template"
+        }
+      }
+    },
+    "CalloutLeaderModifierParams": {
+      "type": "object",
+      "description": "Parameter schema for time_space/callout_leader modifier",
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "Callout Text"
+        },
+        "targetX": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "description": "Target X Position"
+        },
+        "targetY": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "description": "Target Y Position"
+        },
+        "labelX": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "description": "Label X Offset"
+        },
+        "labelY": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "description": "Label Y Offset"
+        },
+        "theme": {
+          "type": "string",
+          "enum": [
+            "cyberpunk",
+            "solar_flare",
+            "emerald_matrix",
+            "monochrome_titanium",
+            "synthwave_neon",
+            "tactical_amber"
+          ],
+          "description": "Aesthetic Theme"
+        },
+        "primaryColor": {
+          "type": "string",
+          "description": "Primary Accent Color"
+        },
+        "accentColor": {
+          "type": "string",
+          "description": "Secondary / Highlight Color"
+        },
+        "speedMultiplier": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 5,
+          "description": "Motion Speed Multiplier"
+        },
+        "scale": {
+          "type": "number",
+          "minimum": 0.2,
+          "maximum": 3,
+          "description": "Geometric Scale"
+        },
+        "strokeWidth": {
+          "type": "number",
+          "minimum": 0.5,
+          "maximum": 8,
+          "description": "Vector Stroke Width"
+        },
+        "boundary": {
+          "type": "string",
+          "enum": [
+            "loop",
+            "pingpong",
+            "clamp",
+            "once"
+          ],
+          "description": "Temporal Boundary Mode"
+        }
+      }
+    },
+    "CalloutMultiTargetModifierParams": {
+      "type": "object",
+      "description": "Parameter schema for time_space/callout_multitarget modifier",
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "Cluster Label"
+        },
+        "targetX": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "description": "Target X Position"
+        },
+        "targetY": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "description": "Target Y Position"
+        },
+        "theme": {
+          "type": "string",
+          "enum": [
+            "cyberpunk",
+            "solar_flare",
+            "emerald_matrix",
+            "monochrome_titanium",
+            "synthwave_neon",
+            "tactical_amber"
+          ],
+          "description": "Aesthetic Theme"
+        },
+        "primaryColor": {
+          "type": "string",
+          "description": "Primary Accent Color"
+        },
+        "accentColor": {
+          "type": "string",
+          "description": "Secondary / Highlight Color"
+        },
+        "speedMultiplier": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 5,
+          "description": "Motion Speed Multiplier"
+        },
+        "scale": {
+          "type": "number",
+          "minimum": 0.2,
+          "maximum": 3,
+          "description": "Geometric Scale"
+        },
+        "strokeWidth": {
+          "type": "number",
+          "minimum": 0.5,
+          "maximum": 8,
+          "description": "Vector Stroke Width"
+        },
+        "boundary": {
+          "type": "string",
+          "enum": [
+            "loop",
+            "pingpong",
+            "clamp",
+            "once"
+          ],
+          "description": "Temporal Boundary Mode"
+        }
+      }
+    },
+    "HUDReticleModifierParams": {
+      "type": "object",
+      "description": "Parameter schema for time_space/hud_reticle modifier",
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "Reticle Header"
+        },
+        "targetX": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "description": "Target X Position"
+        },
+        "targetY": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "description": "Target Y Position"
+        },
+        "theme": {
+          "type": "string",
+          "enum": [
+            "cyberpunk",
+            "solar_flare",
+            "emerald_matrix",
+            "monochrome_titanium",
+            "synthwave_neon",
+            "tactical_amber"
+          ],
+          "description": "Aesthetic Theme"
+        },
+        "primaryColor": {
+          "type": "string",
+          "description": "Primary Accent Color"
+        },
+        "accentColor": {
+          "type": "string",
+          "description": "Secondary / Highlight Color"
+        },
+        "speedMultiplier": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 5,
+          "description": "Motion Speed Multiplier"
+        },
+        "scale": {
+          "type": "number",
+          "minimum": 0.2,
+          "maximum": 3,
+          "description": "Geometric Scale"
+        },
+        "strokeWidth": {
+          "type": "number",
+          "minimum": 0.5,
+          "maximum": 8,
+          "description": "Vector Stroke Width"
+        },
+        "boundary": {
+          "type": "string",
+          "enum": [
+            "loop",
+            "pingpong",
+            "clamp",
+            "once"
+          ],
+          "description": "Temporal Boundary Mode"
+        }
+      }
+    },
+    "KineticTitleModifierParams": {
+      "type": "object",
+      "description": "Parameter schema for time_space/kinetic_title modifier",
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "Title Text"
+        },
+        "targetX": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "description": "Target X Position"
+        },
+        "targetY": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "description": "Target Y Position"
+        },
+        "theme": {
+          "type": "string",
+          "enum": [
+            "cyberpunk",
+            "solar_flare",
+            "emerald_matrix",
+            "monochrome_titanium",
+            "synthwave_neon",
+            "tactical_amber"
+          ],
+          "description": "Aesthetic Theme"
+        },
+        "primaryColor": {
+          "type": "string",
+          "description": "Primary Accent Color"
+        },
+        "accentColor": {
+          "type": "string",
+          "description": "Secondary / Highlight Color"
+        },
+        "speedMultiplier": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 5,
+          "description": "Motion Speed Multiplier"
+        },
+        "scale": {
+          "type": "number",
+          "minimum": 0.2,
+          "maximum": 3,
+          "description": "Geometric Scale"
+        },
+        "strokeWidth": {
+          "type": "number",
+          "minimum": 0.5,
+          "maximum": 8,
+          "description": "Vector Stroke Width"
+        },
+        "boundary": {
+          "type": "string",
+          "enum": [
+            "loop",
+            "pingpong",
+            "clamp",
+            "once"
+          ],
+          "description": "Temporal Boundary Mode"
+        }
+      }
+    },
+    "CyberLowerThirdModifierParams": {
+      "type": "object",
+      "description": "Parameter schema for time_space/cyber_lower_third modifier",
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "Headline / Name"
+        },
+        "subtitle": {
+          "type": "string",
+          "description": "Role / Subtitle"
+        },
+        "targetX": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "description": "Target X Position"
+        },
+        "targetY": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "description": "Target Y Position"
+        },
+        "theme": {
+          "type": "string",
+          "enum": [
+            "cyberpunk",
+            "solar_flare",
+            "emerald_matrix",
+            "monochrome_titanium",
+            "synthwave_neon",
+            "tactical_amber"
+          ],
+          "description": "Aesthetic Theme"
+        },
+        "primaryColor": {
+          "type": "string",
+          "description": "Primary Accent Color"
+        },
+        "accentColor": {
+          "type": "string",
+          "description": "Secondary / Highlight Color"
+        },
+        "speedMultiplier": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 5,
+          "description": "Motion Speed Multiplier"
+        },
+        "scale": {
+          "type": "number",
+          "minimum": 0.2,
+          "maximum": 3,
+          "description": "Geometric Scale"
+        },
+        "strokeWidth": {
+          "type": "number",
+          "minimum": 0.5,
+          "maximum": 8,
+          "description": "Vector Stroke Width"
+        },
+        "boundary": {
+          "type": "string",
+          "enum": [
+            "loop",
+            "pingpong",
+            "clamp",
+            "once"
+          ],
+          "description": "Temporal Boundary Mode"
+        }
+      }
+    },
+    "CountdownModifierParams": {
+      "type": "object",
+      "description": "Parameter schema for time_space/countdown modifier",
+      "properties": {
+        "targetX": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "description": "Target X Position"
+        },
+        "targetY": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "description": "Target Y Position"
+        },
+        "theme": {
+          "type": "string",
+          "enum": [
+            "cyberpunk",
+            "solar_flare",
+            "emerald_matrix",
+            "monochrome_titanium",
+            "synthwave_neon",
+            "tactical_amber"
+          ],
+          "description": "Aesthetic Theme"
+        },
+        "primaryColor": {
+          "type": "string",
+          "description": "Primary Accent Color"
+        },
+        "accentColor": {
+          "type": "string",
+          "description": "Secondary / Highlight Color"
+        },
+        "speedMultiplier": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 5,
+          "description": "Motion Speed Multiplier"
+        },
+        "scale": {
+          "type": "number",
+          "minimum": 0.2,
+          "maximum": 3,
+          "description": "Geometric Scale"
+        },
+        "strokeWidth": {
+          "type": "number",
+          "minimum": 0.5,
+          "maximum": 8,
+          "description": "Vector Stroke Width"
+        },
+        "boundary": {
+          "type": "string",
+          "enum": [
+            "loop",
+            "pingpong",
+            "clamp",
+            "once"
+          ],
+          "description": "Temporal Boundary Mode"
+        }
+      }
+    },
+    "NetworkPlexusModifierParams": {
+      "type": "object",
+      "description": "Parameter schema for time_space/network_plexus modifier",
+      "properties": {
+        "density": {
+          "type": "number",
+          "minimum": 8,
+          "maximum": 128,
+          "description": "Lattice / Particle Density"
+        },
+        "theme": {
+          "type": "string",
+          "enum": [
+            "cyberpunk",
+            "solar_flare",
+            "emerald_matrix",
+            "monochrome_titanium",
+            "synthwave_neon",
+            "tactical_amber"
+          ],
+          "description": "Aesthetic Theme"
+        },
+        "primaryColor": {
+          "type": "string",
+          "description": "Primary Accent Color"
+        },
+        "accentColor": {
+          "type": "string",
+          "description": "Secondary / Highlight Color"
+        },
+        "speedMultiplier": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 5,
+          "description": "Motion Speed Multiplier"
+        },
+        "scale": {
+          "type": "number",
+          "minimum": 0.2,
+          "maximum": 3,
+          "description": "Geometric Scale"
+        },
+        "strokeWidth": {
+          "type": "number",
+          "minimum": 0.5,
+          "maximum": 8,
+          "description": "Vector Stroke Width"
+        },
+        "boundary": {
+          "type": "string",
+          "enum": [
+            "loop",
+            "pingpong",
+            "clamp",
+            "once"
+          ],
+          "description": "Temporal Boundary Mode"
+        }
+      }
+    },
+    "AudioWaveformModifierParams": {
+      "type": "object",
+      "description": "Parameter schema for time_space/audio_waveform modifier",
+      "properties": {
+        "targetX": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "description": "Target X Position"
+        },
+        "targetY": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "description": "Target Y Position"
+        },
+        "density": {
+          "type": "number",
+          "minimum": 8,
+          "maximum": 128,
+          "description": "Lattice / Particle Density"
+        },
+        "theme": {
+          "type": "string",
+          "enum": [
+            "cyberpunk",
+            "solar_flare",
+            "emerald_matrix",
+            "monochrome_titanium",
+            "synthwave_neon",
+            "tactical_amber"
+          ],
+          "description": "Aesthetic Theme"
+        },
+        "primaryColor": {
+          "type": "string",
+          "description": "Primary Accent Color"
+        },
+        "accentColor": {
+          "type": "string",
+          "description": "Secondary / Highlight Color"
+        },
+        "speedMultiplier": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 5,
+          "description": "Motion Speed Multiplier"
+        },
+        "scale": {
+          "type": "number",
+          "minimum": 0.2,
+          "maximum": 3,
+          "description": "Geometric Scale"
+        },
+        "strokeWidth": {
+          "type": "number",
+          "minimum": 0.5,
+          "maximum": 8,
+          "description": "Vector Stroke Width"
+        },
+        "boundary": {
+          "type": "string",
+          "enum": [
+            "loop",
+            "pingpong",
+            "clamp",
+            "once"
+          ],
+          "description": "Temporal Boundary Mode"
+        }
+      }
+    },
+    "AudioSpectrumModifierParams": {
+      "type": "object",
+      "description": "Parameter schema for time_space/audio_spectrum modifier",
+      "properties": {
+        "targetX": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "description": "Target X Position"
+        },
+        "targetY": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "description": "Target Y Position"
+        },
+        "density": {
+          "type": "number",
+          "minimum": 8,
+          "maximum": 128,
+          "description": "Lattice / Particle Density"
+        },
+        "theme": {
+          "type": "string",
+          "enum": [
+            "cyberpunk",
+            "solar_flare",
+            "emerald_matrix",
+            "monochrome_titanium",
+            "synthwave_neon",
+            "tactical_amber"
+          ],
+          "description": "Aesthetic Theme"
+        },
+        "primaryColor": {
+          "type": "string",
+          "description": "Primary Accent Color"
+        },
+        "accentColor": {
+          "type": "string",
+          "description": "Secondary / Highlight Color"
+        },
+        "speedMultiplier": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 5,
+          "description": "Motion Speed Multiplier"
+        },
+        "scale": {
+          "type": "number",
+          "minimum": 0.2,
+          "maximum": 3,
+          "description": "Geometric Scale"
+        },
+        "boundary": {
+          "type": "string",
+          "enum": [
+            "loop",
+            "pingpong",
+            "clamp",
+            "once"
+          ],
+          "description": "Temporal Boundary Mode"
+        }
+      }
+    },
+    "SuperformulaModifierParams": {
+      "type": "object",
+      "description": "Parameter schema for time_space/superformula modifier",
+      "properties": {
+        "targetX": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "description": "Target X Position"
+        },
+        "targetY": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "description": "Target Y Position"
+        },
+        "density": {
+          "type": "number",
+          "minimum": 8,
+          "maximum": 128,
+          "description": "Lattice / Particle Density"
+        },
+        "theme": {
+          "type": "string",
+          "enum": [
+            "cyberpunk",
+            "solar_flare",
+            "emerald_matrix",
+            "monochrome_titanium",
+            "synthwave_neon",
+            "tactical_amber"
+          ],
+          "description": "Aesthetic Theme"
+        },
+        "primaryColor": {
+          "type": "string",
+          "description": "Primary Accent Color"
+        },
+        "accentColor": {
+          "type": "string",
+          "description": "Secondary / Highlight Color"
+        },
+        "speedMultiplier": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 5,
+          "description": "Motion Speed Multiplier"
+        },
+        "scale": {
+          "type": "number",
+          "minimum": 0.2,
+          "maximum": 3,
+          "description": "Geometric Scale"
+        },
+        "strokeWidth": {
+          "type": "number",
+          "minimum": 0.5,
+          "maximum": 8,
+          "description": "Vector Stroke Width"
+        },
+        "boundary": {
+          "type": "string",
+          "enum": [
+            "loop",
+            "pingpong",
+            "clamp",
+            "once"
+          ],
+          "description": "Temporal Boundary Mode"
+        }
+      }
+    },
+    "EnergyShieldModifierParams": {
+      "type": "object",
+      "description": "Parameter schema for time_space/energy_shield modifier",
+      "properties": {
+        "targetX": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "description": "Target X Position"
+        },
+        "targetY": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "description": "Target Y Position"
+        },
+        "theme": {
+          "type": "string",
+          "enum": [
+            "cyberpunk",
+            "solar_flare",
+            "emerald_matrix",
+            "monochrome_titanium",
+            "synthwave_neon",
+            "tactical_amber"
+          ],
+          "description": "Aesthetic Theme"
+        },
+        "primaryColor": {
+          "type": "string",
+          "description": "Primary Accent Color"
+        },
+        "accentColor": {
+          "type": "string",
+          "description": "Secondary / Highlight Color"
+        },
+        "speedMultiplier": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 5,
+          "description": "Motion Speed Multiplier"
+        },
+        "scale": {
+          "type": "number",
+          "minimum": 0.2,
+          "maximum": 3,
+          "description": "Geometric Scale"
+        },
+        "strokeWidth": {
+          "type": "number",
+          "minimum": 0.5,
+          "maximum": 8,
+          "description": "Vector Stroke Width"
+        },
+        "boundary": {
+          "type": "string",
+          "enum": [
+            "loop",
+            "pingpong",
+            "clamp",
+            "once"
+          ],
+          "description": "Temporal Boundary Mode"
+        }
+      }
+    },
+    "GlitchDataStreamModifierParams": {
+      "type": "object",
+      "description": "Parameter schema for time_space/glitch_data_stream modifier",
+      "properties": {
+        "density": {
+          "type": "number",
+          "minimum": 8,
+          "maximum": 128,
+          "description": "Lattice / Particle Density"
+        },
+        "theme": {
+          "type": "string",
+          "enum": [
+            "cyberpunk",
+            "solar_flare",
+            "emerald_matrix",
+            "monochrome_titanium",
+            "synthwave_neon",
+            "tactical_amber"
+          ],
+          "description": "Aesthetic Theme"
+        },
+        "primaryColor": {
+          "type": "string",
+          "description": "Primary Accent Color"
+        },
+        "accentColor": {
+          "type": "string",
+          "description": "Secondary / Highlight Color"
+        },
+        "speedMultiplier": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 5,
+          "description": "Motion Speed Multiplier"
+        },
+        "scale": {
+          "type": "number",
+          "minimum": 0.2,
+          "maximum": 3,
+          "description": "Geometric Scale"
+        },
+        "boundary": {
+          "type": "string",
+          "enum": [
+            "loop",
+            "pingpong",
+            "clamp",
+            "once"
+          ],
+          "description": "Temporal Boundary Mode"
+        }
+      }
+    },
+    "CymaticChladniModifierParams": {
+      "type": "object",
+      "description": "Parameter schema for time_space/cymatic_chladni modifier",
+      "properties": {
+        "targetX": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "description": "Target X Position"
+        },
+        "targetY": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "description": "Target Y Position"
+        },
+        "density": {
+          "type": "number",
+          "minimum": 8,
+          "maximum": 128,
+          "description": "Lattice / Particle Density"
+        },
+        "theme": {
+          "type": "string",
+          "enum": [
+            "cyberpunk",
+            "solar_flare",
+            "emerald_matrix",
+            "monochrome_titanium",
+            "synthwave_neon",
+            "tactical_amber"
+          ],
+          "description": "Aesthetic Theme"
+        },
+        "primaryColor": {
+          "type": "string",
+          "description": "Primary Accent Color"
+        },
+        "accentColor": {
+          "type": "string",
+          "description": "Secondary / Highlight Color"
+        },
+        "speedMultiplier": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 5,
+          "description": "Motion Speed Multiplier"
+        },
+        "scale": {
+          "type": "number",
+          "minimum": 0.2,
+          "maximum": 3,
+          "description": "Geometric Scale"
+        },
+        "strokeWidth": {
+          "type": "number",
+          "minimum": 0.5,
+          "maximum": 8,
+          "description": "Vector Stroke Width"
+        },
+        "boundary": {
+          "type": "string",
+          "enum": [
+            "loop",
+            "pingpong",
+            "clamp",
+            "once"
+          ],
+          "description": "Temporal Boundary Mode"
+        }
+      }
+    },
+    "StrangeAttractorModifierParams": {
+      "type": "object",
+      "description": "Parameter schema for time_space/strange_attractor modifier",
+      "properties": {
+        "targetX": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "description": "Target X Position"
+        },
+        "targetY": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "description": "Target Y Position"
+        },
+        "density": {
+          "type": "number",
+          "minimum": 8,
+          "maximum": 128,
+          "description": "Lattice / Particle Density"
+        },
+        "theme": {
+          "type": "string",
+          "enum": [
+            "cyberpunk",
+            "solar_flare",
+            "emerald_matrix",
+            "monochrome_titanium",
+            "synthwave_neon",
+            "tactical_amber"
+          ],
+          "description": "Aesthetic Theme"
+        },
+        "primaryColor": {
+          "type": "string",
+          "description": "Primary Accent Color"
+        },
+        "accentColor": {
+          "type": "string",
+          "description": "Secondary / Highlight Color"
+        },
+        "speedMultiplier": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 5,
+          "description": "Motion Speed Multiplier"
+        },
+        "scale": {
+          "type": "number",
+          "minimum": 0.2,
+          "maximum": 3,
+          "description": "Geometric Scale"
+        },
+        "boundary": {
+          "type": "string",
+          "enum": [
+            "loop",
+            "pingpong",
+            "clamp",
+            "once"
+          ],
+          "description": "Temporal Boundary Mode"
+        }
+      }
+    },
+    "RelativisticBlackHoleModifierParams": {
+      "type": "object",
+      "description": "Parameter schema for time_space/relativistic_blackhole modifier",
+      "properties": {
+        "targetX": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "description": "Target X Position"
+        },
+        "targetY": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "description": "Target Y Position"
+        },
+        "theme": {
+          "type": "string",
+          "enum": [
+            "cyberpunk",
+            "solar_flare",
+            "emerald_matrix",
+            "monochrome_titanium",
+            "synthwave_neon",
+            "tactical_amber"
+          ],
+          "description": "Aesthetic Theme"
+        },
+        "primaryColor": {
+          "type": "string",
+          "description": "Primary Accent Color"
+        },
+        "accentColor": {
+          "type": "string",
+          "description": "Secondary / Highlight Color"
+        },
+        "speedMultiplier": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 5,
+          "description": "Motion Speed Multiplier"
+        },
+        "scale": {
+          "type": "number",
+          "minimum": 0.2,
+          "maximum": 3,
+          "description": "Geometric Scale"
+        },
+        "strokeWidth": {
+          "type": "number",
+          "minimum": 0.5,
+          "maximum": 8,
+          "description": "Vector Stroke Width"
+        },
+        "boundary": {
+          "type": "string",
+          "enum": [
+            "loop",
+            "pingpong",
+            "clamp",
+            "once"
+          ],
+          "description": "Temporal Boundary Mode"
+        }
+      }
+    },
+    "TopographicContourModifierParams": {
+      "type": "object",
+      "description": "Parameter schema for time_space/topographic_contour modifier",
+      "properties": {
+        "targetX": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "description": "Target X Position"
+        },
+        "targetY": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "description": "Target Y Position"
+        },
+        "density": {
+          "type": "number",
+          "minimum": 8,
+          "maximum": 128,
+          "description": "Lattice / Particle Density"
+        },
+        "theme": {
+          "type": "string",
+          "enum": [
+            "cyberpunk",
+            "solar_flare",
+            "emerald_matrix",
+            "monochrome_titanium",
+            "synthwave_neon",
+            "tactical_amber"
+          ],
+          "description": "Aesthetic Theme"
+        },
+        "primaryColor": {
+          "type": "string",
+          "description": "Primary Accent Color"
+        },
+        "accentColor": {
+          "type": "string",
+          "description": "Secondary / Highlight Color"
+        },
+        "speedMultiplier": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 5,
+          "description": "Motion Speed Multiplier"
+        },
+        "scale": {
+          "type": "number",
+          "minimum": 0.2,
+          "maximum": 3,
+          "description": "Geometric Scale"
+        },
+        "strokeWidth": {
+          "type": "number",
+          "minimum": 0.5,
+          "maximum": 8,
+          "description": "Vector Stroke Width"
+        },
+        "boundary": {
+          "type": "string",
+          "enum": [
+            "loop",
+            "pingpong",
+            "clamp",
+            "once"
+          ],
+          "description": "Temporal Boundary Mode"
+        }
+      }
+    },
+    "HyperbolicPoincareModifierParams": {
+      "type": "object",
+      "description": "Parameter schema for time_space/hyperbolic_poincare modifier",
+      "properties": {
+        "targetX": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "description": "Target X Position"
+        },
+        "targetY": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "description": "Target Y Position"
+        },
+        "theme": {
+          "type": "string",
+          "enum": [
+            "cyberpunk",
+            "solar_flare",
+            "emerald_matrix",
+            "monochrome_titanium",
+            "synthwave_neon",
+            "tactical_amber"
+          ],
+          "description": "Aesthetic Theme"
+        },
+        "primaryColor": {
+          "type": "string",
+          "description": "Primary Accent Color"
+        },
+        "accentColor": {
+          "type": "string",
+          "description": "Secondary / Highlight Color"
+        },
+        "speedMultiplier": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 5,
+          "description": "Motion Speed Multiplier"
+        },
+        "scale": {
+          "type": "number",
+          "minimum": 0.2,
+          "maximum": 3,
+          "description": "Geometric Scale"
+        },
+        "strokeWidth": {
+          "type": "number",
+          "minimum": 0.5,
+          "maximum": 8,
+          "description": "Vector Stroke Width"
+        },
+        "boundary": {
+          "type": "string",
+          "enum": [
+            "loop",
+            "pingpong",
+            "clamp",
+            "once"
+          ],
+          "description": "Temporal Boundary Mode"
+        }
+      }
+    },
+    "KineticHarmonographModifierParams": {
+      "type": "object",
+      "description": "Parameter schema for time_space/kinetic_harmonograph modifier",
+      "properties": {
+        "targetX": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "description": "Target X Position"
+        },
+        "targetY": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "description": "Target Y Position"
+        },
+        "theme": {
+          "type": "string",
+          "enum": [
+            "cyberpunk",
+            "solar_flare",
+            "emerald_matrix",
+            "monochrome_titanium",
+            "synthwave_neon",
+            "tactical_amber"
+          ],
+          "description": "Aesthetic Theme"
+        },
+        "primaryColor": {
+          "type": "string",
+          "description": "Primary Accent Color"
+        },
+        "accentColor": {
+          "type": "string",
+          "description": "Secondary / Highlight Color"
+        },
+        "speedMultiplier": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 5,
+          "description": "Motion Speed Multiplier"
+        },
+        "scale": {
+          "type": "number",
+          "minimum": 0.2,
+          "maximum": 3,
+          "description": "Geometric Scale"
+        },
+        "strokeWidth": {
+          "type": "number",
+          "minimum": 0.5,
+          "maximum": 8,
+          "description": "Vector Stroke Width"
+        },
+        "boundary": {
+          "type": "string",
+          "enum": [
+            "loop",
+            "pingpong",
+            "clamp",
+            "once"
+          ],
+          "description": "Temporal Boundary Mode"
+        }
+      }
+    },
+    "ModifierTypeEnum": {
+      "type": "string",
+      "enum": [
+        "transform",
+        "vfx/depth_relighting",
+        "vfx/camera_3d",
+        "vfx/depth3d",
+        "vfx/auto_reframe",
+        "vfx/color_grading",
+        "vfx/partial",
+        "motion/gsap",
+        "motion/vector_blur",
+        "timed_text/style",
+        "shape/draw",
+        "shape/vector",
+        "sfx/procedural",
+        "sfx/dynamic_ducking",
+        "editorial/split_edit",
+        "transition/crossfade",
+        "transition/wipe",
+        "transition/push",
+        "transition/zoom",
+        "transition/dip",
+        "transition/glitch",
+        "transition/light_leak",
+        "transition/radial_wipe",
+        "transition/iris",
+        "overlay/blend_mode",
+        "overlay/canvas_particles",
+        "overlay/hologram_hud",
+        "generator/solid_backdrop",
+        "audio/volume",
+        "audio/pan",
+        "audio/filter",
+        "audio/pitch",
+        "timeline/photometric_bloom",
+        "timeline/anamorphic_glare",
+        "time_space",
+        "time_space/callout_leader",
+        "time_space/callout_multitarget",
+        "time_space/hud_reticle",
+        "time_space/kinetic_title",
+        "time_space/cyber_lower_third",
+        "time_space/countdown",
+        "time_space/network_plexus",
+        "time_space/audio_waveform",
+        "time_space/audio_spectrum",
+        "time_space/superformula",
+        "time_space/energy_shield",
+        "time_space/glitch_data_stream",
+        "time_space/cymatic_chladni",
+        "time_space/strange_attractor",
+        "time_space/relativistic_blackhole",
+        "time_space/topographic_contour",
+        "time_space/hyperbolic_poincare",
+        "time_space/kinetic_harmonograph"
+      ],
+      "description": "Canonical discriminator enum of all 53 registered modifier types"
     }
   }
 }
