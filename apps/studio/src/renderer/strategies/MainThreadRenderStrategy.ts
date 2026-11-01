@@ -119,13 +119,6 @@ export class MainThreadRenderStrategy implements IPreviewRenderStrategy {
     if (!ctx) return;
 
     const clearColor = options?.clearColor || '#000000';
-    if (clearColor === 'transparent') {
-      ctx.clearRect(0, 0, this.width, this.height);
-    } else {
-      ctx.fillStyle = clearColor;
-      ctx.fillRect(0, 0, this.width, this.height);
-    }
-
     const start = performance.now();
     const res = this.engine.renderFrame(frame, ctx, {
       textureCache: this.engine.getTextureCache(),

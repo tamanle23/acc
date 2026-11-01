@@ -128,6 +128,7 @@ let rafId: number | null = null;
 let lastRafTime = 0;
 let lastUiSyncTime = 0;
 let workerClock: DeterministicTimelineClock | null = null;
+let currentClearColor = '#000000';
 
 async function renderCurrentFrame(
   frame: number,
@@ -180,10 +181,10 @@ async function renderCurrentFrame(
     timeline: currentTimeline || undefined,
   });
 
-  for (const seq of activeSeqs) {
-    if (!seq.assetId) continue;
+  const frameResolutions = activeSeqs.map(async (seq) => {
+    if (!seq.assetId) return;
     const reader = videoReaders.get(seq.assetId);
-    if (!reader) continue;
+    if (!reader) return;
 
     const localFrame = Math.max(0, frame - (seq.startFrame ?? 0));
     const assetId = seq.assetId;
@@ -191,16 +192,11 @@ async function renderCurrentFrame(
     const useSequential = isPlaying || isSequentialPlayback;
     if (useSequential) {
       // 1. Zero-Alloc Sequential Playback Path via Circular Ping-Pong Buffer:
-      decoderPool.acquireLease(assetId, 1000).then(() => {
-        reader.requestSequentialFrame(localFrame, currentFps).then((canvasSlot) => {
-          if (!canvasSlot) return;
-          safeSetTexture(assetId, canvasSlot);
-          if (currentFrame === frame) {
-            texturesDirty = true;
-            renderCurrentFrame(currentFrame, lod, false, clearColor, debugMode);
-          }
-        });
-      });
+      await decoderPool.acquireLease(assetId, 1000);
+      const canvasSlot = await reader.requestSequentialFrame(localFrame, currentFps);
+      if (canvasSlot) {
+        safeSetTexture(assetId, canvasSlot);
+      }
     } else {
       // 2. Scrubbing / Paused Path:
       // Cache in strict LRU scrub cache
@@ -208,33 +204,22 @@ async function renderCurrentFrame(
       if (cachedBmp && (cachedBmp.width === undefined || cachedBmp.width > 0)) {
         safeSetTexture(seq.assetId, cachedBmp);
       } else {
-        decoderPool.acquireLease(assetId, 1000).then(() => {
-          reader.requestFrame(localFrame, currentFps, isScrubbing).then((bmp) => {
-            if (bmp && (bmp.width === undefined || bmp.width > 0)) {
-              memoryManager.set(assetId, localFrame, bmp);
-              safeSetTexture(assetId, bmp);
-              if (currentFrame === frame) {
-                texturesDirty = true;
-                renderCurrentFrame(currentFrame, lod, false, clearColor, debugMode);
-              }
-            }
-          });
-        });
+        await decoderPool.acquireLease(assetId, 1000);
+        const bmp = await reader.requestFrame(localFrame, currentFps, isScrubbing);
+        if (bmp && (bmp.width === undefined || bmp.width > 0)) {
+          memoryManager.set(assetId, localFrame, bmp);
+          safeSetTexture(assetId, bmp);
+        }
       }
     }
-  }
+  });
+
+  await Promise.all(frameResolutions);
 
   ctx.save();
   if (lod < 1.0) {
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'low';
-  }
-
-  if (clearColor === 'transparent') {
-    ctx.clearRect(0, 0, w, h);
-  } else {
-    ctx.fillStyle = clearColor || '#000000';
-    ctx.fillRect(0, 0, w, h);
   }
 
   const workerAssetResolver = {
@@ -324,7 +309,7 @@ function playbackLoop(now: number) {
   }
 
   // Active playback renders at 0.5x Dynamic LOD for maximum smoothness
-  renderCurrentFrame(currentFrame, 0.5, false);
+  void renderCurrentFrame(currentFrame, 0.5, false, currentClearColor, undefined, true);
 
   // Throttle React UI state synchronization to 15 Hz (~66ms) to eliminate React lag
   if (now - lastUiSyncTime >= 66) {
@@ -347,7 +332,7 @@ function stopPlayback() {
   }
   // Parked hero frame: Render crystal-clear 1.0x full LOD
   texturesDirty = true;
-  renderCurrentFrame(currentFrame, 1.0, false);
+  void renderCurrentFrame(currentFrame, 1.0, false, currentClearColor);
 }
 
 function syncAssetSources(assets: Record<string, { src?: string; type?: string }>) {
@@ -510,14 +495,19 @@ self.onmessage = async (e: MessageEvent) => {
     }
 
     case 'renderFrame': {
-      currentFrame = data.frame;
+      if (typeof data.frame === 'number') {
+        currentFrame = data.frame;
+      }
+      if (data.clearColor) {
+        currentClearColor = data.clearColor;
+      }
       const isScrub = Boolean(data.isScrubbing);
       const isPlay = Boolean(data.isPlaying);
-      renderCurrentFrame(
+      void renderCurrentFrame(
         currentFrame,
         data.lod ?? 1.0,
         isScrub,
-        data.clearColor ?? '#000000',
+        data.clearColor ?? currentClearColor,
         data.debugMode,
         isPlay
       );

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'bun:test';
+import { describe, it, expect, beforeAll } from 'bun:test';
 import {
   IRCanvasCompositor,
   type IAssetSourceResolver,
@@ -7,9 +7,14 @@ import {
   type ResolvedTimeline,
   type ResolvedTrack,
 } from '../packages/ir/src';
-import { UniversalCanvasProvider } from '@acc/effect-engines';
+import { UniversalCanvasProvider } from '@acc/core-isomorphic';
+import { NapiCanvasAdapter } from '../packages/core/src/native';
 
 describe('Iteration 10 Phase 2: Canonical IRCanvasCompositor', () => {
+  beforeAll(() => {
+    UniversalCanvasProvider.registerAdapter(new NapiCanvasAdapter());
+  });
+
   const pluginRegistry = registerCoreModifierPlugins(ModifierPluginRegistry.createIsolated());
 
   function createMockTimeline(): ResolvedTimeline {

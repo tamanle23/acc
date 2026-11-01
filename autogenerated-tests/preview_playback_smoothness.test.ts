@@ -61,12 +61,11 @@ describe('Iteration 60: preview playback smoothness', () => {
     expect(calls).toEqual([3, 4, 4, 4]);
   });
 
-  it('Virtual Scratch Canvas Sizing: scratch canvas requested at (bufferW, bufferH)', () => {
+  it('Virtual Scratch Canvas Sizing: scratch canvas requested at decoupled project resolution (scratchW, scratchH)', () => {
     const src = read('packages/ir/src/renderer/shared/IRCanvasCompositor.ts');
-    expect(src).toContain('const scratchW = isVirtualScaled ? bufferW : width;');
-    expect(src).toContain('const scratchH = isVirtualScaled ? bufferH : height;');
+    expect(src).toContain('const scratchW = width;');
+    expect(src).toContain('const scratchH = height;');
     expect(src).toContain('getFrameScratchContext(scratchW, scratchH)');
-    expect(src).not.toContain('getFrameScratchContext(width, height)');
   });
 
   it('Worker readback: OffscreenCanvas uses willReadFrequently: true', () => {

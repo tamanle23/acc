@@ -348,8 +348,8 @@ function PreviewInner({
           {/* Drag-and-Drop Staging Overlay */}
           <StagingDropTargetOverlay isOver={isOver} isDragOver={isDragOver} dragCoords={dragCoords} />
 
-          {/* 2D Vector Transform Gizmo */}
-          {hasTransformModifier && (
+          {/* 2D Vector Transform Gizmo (hidden during active playback to eliminate visual jitter) */}
+          {hasTransformModifier && !isPlaying && (
             <TransformGizmoOverlay
               key={selectedSeqId || 'no-seq-gizmo'}
               selectedSeqId={selectedSeqId}

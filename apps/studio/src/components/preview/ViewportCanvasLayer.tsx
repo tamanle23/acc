@@ -23,7 +23,6 @@ export function ViewportCanvasLayer({
           isPanToolActive || isSpacePressed ? 'cursor-grab active:cursor-grabbing' : 'cursor-crosshair'
         }`}
         style={{
-          aspectRatio: '16/9',
           backgroundColor: '#000000',
         }}
       />
@@ -33,9 +32,6 @@ export function ViewportCanvasLayer({
         id="studio-overlay-canvas"
         ref={overlayCanvasRef}
         className="absolute inset-0 w-full h-full object-contain pointer-events-none z-10"
-        style={{
-          aspectRatio: '16/9',
-        }}
       />
     </>
   );
