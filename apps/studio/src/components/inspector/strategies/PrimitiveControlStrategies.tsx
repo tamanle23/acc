@@ -4,6 +4,7 @@ import { Slider } from '../../ui/slider';
 import { Switch } from '../../ui/switch';
 import type { ParamFieldDescriptor } from '@acc/ir';
 import { EasingCurveSelector } from '../../EasingCurveSelector';
+import { ScrubbableNumberInput } from '../ScrubbableNumberInput';
 
 export interface ControlStrategyProps {
   descriptor: ParamFieldDescriptor;
@@ -14,8 +15,9 @@ export interface ControlStrategyProps {
 
 /**
  * Strategy 1: NumberControlStrategy
- * Renders a clean synchronized slider + numerical input with unit badges.
- * Applies values statically at the sequence level without per-frame keyframe branching.
+ * Renders a studio-grade synchronized virtual scrub input + range slider.
+ * Supports horizontal click-drag scrubbing (Shift: 10x, Alt: 0.1x), double-click direct text
+ * with safe math expressions (e.g. 1080/2), and double-click reset to defaults.
  */
 export const NumberControlStrategy: React.FC<ControlStrategyProps> = ({
   descriptor,
@@ -34,49 +36,28 @@ export const NumberControlStrategy: React.FC<ControlStrategyProps> = ({
       ? value
       : defaultVal;
 
-  const [localVal, setLocalVal] = React.useState(String(numericVal));
-
-  React.useEffect(() => {
-    setLocalVal(String(numericVal));
-  }, [numericVal]);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (disabled) return;
-    setLocalVal(e.target.value);
-    const num = parseFloat(e.target.value);
-    if (!Number.isNaN(num)) {
-      const clamped = Math.max(min, Math.min(max, num));
-      onChange(clamped);
-    }
-  };
-
   return (
-    <div className={`space-y-1 ${disabled ? 'pointer-events-none' : ''}`}>
+    <div className={`space-y-1.5 ${disabled ? 'pointer-events-none opacity-60' : ''}`}>
       <div className="flex justify-between items-center text-[11px]">
-        <div className="flex items-center gap-1.5">
-          <span
-            onDoubleClick={() => !disabled && onChange(defaultVal)}
-            className={`text-muted-foreground hover:text-accent-theme select-none ${
-              disabled ? 'cursor-not-allowed' : 'cursor-pointer'
-            } transition-colors`}
-            title={disabled ? undefined : 'Double-click to reset to default'}
-          >
-            {descriptor.label}
-          </span>
-        </div>
-        <div className="flex items-center gap-1">
-          <Input
-            type="number"
-            step={step}
-            value={localVal}
-            disabled={disabled}
-            onChange={handleInputChange}
-            className="w-14 h-5 text-[10px] text-right font-mono px-1 py-0 border-glass-border bg-glass-surface text-foreground"
-          />
-          {descriptor.unit && (
-            <span className="text-[10px] text-muted-foreground font-mono">{descriptor.unit}</span>
-          )}
-        </div>
+        <span
+          onDoubleClick={() => !disabled && onChange(defaultVal)}
+          className={`text-muted-foreground hover:text-accent-theme select-none truncate ${
+            disabled ? 'cursor-not-allowed' : 'cursor-pointer'
+          } transition-colors`}
+          title={disabled ? undefined : `Double-click to reset (${defaultVal})`}
+        >
+          {descriptor.label}
+        </span>
+        <ScrubbableNumberInput
+          value={numericVal}
+          min={min}
+          max={max}
+          step={step}
+          unit={descriptor.unit}
+          defaultValue={defaultVal}
+          disabled={disabled}
+          onChange={onChange}
+        />
       </div>
       <Slider
         min={min}

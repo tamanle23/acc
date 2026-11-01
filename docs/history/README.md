@@ -81,3 +81,4 @@
 | 415 | [Fix Studio Preview Playback Blinking and Black Strobe](./415_fix_preview_playback_blinking.md) | Completed |
 | 416 | [Video IR & Modifiers Schema-First Parity, 9-Component Governance & Automation Pipeline](./416_modifiers_schema_sync_and_enforcement.md) | Completed |
 | 417 | [Studio Preview Dimensions and Level of Detail (LOD) Architecture](./417_studio_preview_dimensions_and_lod_architecture.md) | Completed |
+| 418 | [Studio RightSidebar & Dynamic Property Inspector Modernization](./418_studio_right_sidebar_and_property_editor_modernization.md) | Completed |

@@ -36,6 +36,7 @@ import { IRStateManager } from '../../lib/ir/irState';
 import type { StudioSequence, StudioTrack } from '../../lib/ir/studioTypes';
 import { ModifierPluginRegistry, type ModifierNode } from '@acc/ir';
 import { CueTimelineDialog } from './CueTimelineDialog';
+import { ModifierCardHeader } from './ModifierCardHeader';
 
 export interface SequenceInspectorProps {
   selectedSeq: StudioSequence | null | undefined;
@@ -47,6 +48,8 @@ export interface SequenceInspectorProps {
   openSections?: string[];
   onOpenSectionsChange?: (sections: string[]) => void;
   onAddEffectClick?: () => void;
+  searchQuery?: string;
+  isBypassAll?: boolean;
 }
 
 export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
@@ -59,6 +62,8 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
   openSections: externalOpenSections,
   onOpenSectionsChange,
   onAddEffectClick,
+  searchQuery = '',
+  isBypassAll = false,
 }) => {
   const [copiedId, setCopiedId] = useState(false);
   const [internalLocked, setInternalLocked] = useState(false);
@@ -100,13 +105,43 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
     (selectedSeq?.modifiers || []).forEach((m, idx) => {
       const key = m.id || `${m.type}_${idx}`;
       const secId = getSectionIdForModifierType(m.type);
-      if (openSections.includes(key) || openSections.includes(secId) || openSections.includes(m.type)) {
+      if (searchQuery.trim() !== '') {
+        set.add(key);
+      } else if (openSections.includes(key) || openSections.includes(secId) || openSections.includes(m.type)) {
         set.add(key);
       }
     });
-    openSections.forEach((s) => set.add(s));
     return Array.from(set);
-  }, [openSections, selectedSeq?.modifiers]);
+  }, [openSections, selectedSeq?.modifiers, searchQuery]);
+
+  const handleAccordionValueChange = (nextOpenKeys: string[]) => {
+    const currentModifiers = (selectedSeq?.modifiers || []).map((m, idx) => ({
+      key: m.id || `${m.type}_${idx}`,
+      type: m.type,
+      secId: getSectionIdForModifierType(m.type),
+    }));
+
+    // Find which modifiers on this sequence were explicitly closed
+    const closedModifiers = currentModifiers.filter((m) => !nextOpenKeys.includes(m.key));
+    const closedSet = new Set<string>();
+    closedModifiers.forEach((m) => {
+      closedSet.add(m.key);
+      closedSet.add(m.type);
+      closedSet.add(m.secId);
+    });
+
+    // Retain all open section IDs that were NOT closed
+    const updated = openSections.filter((s) => !closedSet.has(s));
+
+    // Ensure all currently open keys are retained in openSections
+    nextOpenKeys.forEach((k) => {
+      if (!updated.includes(k)) {
+        updated.push(k);
+      }
+    });
+
+    setOpenSections(updated);
+  };
 
   if (!selectedSeq) {
     return (
@@ -119,6 +154,19 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
   const selectedSeqId = selectedSeq.id;
   const modifiers: ModifierNode[] = selectedSeq.modifiers || [];
   const standaloneMod = modifiers.find((m) => ModifierPluginRegistry.getInstance().get(m.type)?.targetScope === 'standalone');
+
+  const filteredModifiers = React.useMemo(() => {
+    if (!searchQuery.trim()) return modifiers;
+    const q = searchQuery.toLowerCase().trim();
+    return modifiers.filter((mod) => {
+      const catalogEntry = MODIFIER_PRESENTATION_CATALOG[mod.type];
+      const title = catalogEntry?.name || mod.type;
+      const matchesTitle = title.toLowerCase().includes(q);
+      const matchesType = mod.type.toLowerCase().includes(q);
+      const matchesParams = Object.keys(mod.params || {}).some((k) => k.toLowerCase().includes(q));
+      return matchesTitle || matchesType || matchesParams;
+    });
+  }, [modifiers, searchQuery]);
 
   const handleCopyId = () => {
     navigator.clipboard?.writeText(selectedSeqId);
@@ -733,16 +781,16 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
       <Accordion
         type="multiple"
         value={effectiveOpenSections}
-        onValueChange={setOpenSections}
+        onValueChange={handleAccordionValueChange}
         className="border-glass-border space-y-2"
       >
-        {modifiers.map((mod: ModifierNode, idx: number) => {
+        {filteredModifiers.map((mod: ModifierNode, idx: number) => {
           const modKey = mod.id || `${mod.type}_${idx}`;
           const sectionId = getSectionIdForModifierType(mod.type);
           const catalogEntry = MODIFIER_PRESENTATION_CATALOG[mod.type];
           const Icon = catalogEntry?.icon || Sparkles;
           const title = catalogEntry?.name || mod.type.split('/').pop() || mod.type;
-          const isEnabled = mod.params?.enabled !== false;
+          const isEnabled = mod.params?.enabled !== false && !isBypassAll;
 
           return (
             <AccordionItem
@@ -753,35 +801,28 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
               <AccordionTrigger
                 actions={
                   <div className="flex items-center gap-1">
-                    {/* Reset button if available */}
-                    {catalogEntry?.defaultParams && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        disabled={isLocked}
-                        className="h-6 w-6 text-muted-foreground hover:text-foreground cursor-pointer disabled:cursor-not-allowed"
-                        onClick={() =>
-                          !isLocked &&
-                          updateModifierParams(mod.type, {
-                            ...catalogEntry.defaultParams,
-                            enabled: isEnabled,
-                          })
-                        }
-                        title="Reset modifier"
-                      >
-                        <RotateCcw className="w-3 h-3" />
-                      </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      disabled={isLocked}
-                      className="h-6 w-6 text-muted-foreground hover:text-destructive cursor-pointer disabled:cursor-not-allowed"
-                      onClick={() => !isLocked && removeModifier(mod.type)}
-                      title="Remove modifier"
-                    >
-                      <Trash2 className="w-3 h-3 text-destructive" />
-                    </Button>
+                    <ModifierCardHeader
+                      modifier={mod}
+                      index={idx}
+                      totalModifiers={modifiers.length}
+                      catalogEntry={catalogEntry}
+                      isLocked={isLocked}
+                      onMoveUp={() =>
+                        IRStateManager.getInstance().reorderModifier(selectedSeqId, mod.type, 'up')
+                      }
+                      onMoveDown={() =>
+                        IRStateManager.getInstance().reorderModifier(selectedSeqId, mod.type, 'down')
+                      }
+                      onReset={() =>
+                        !isLocked &&
+                        catalogEntry?.defaultParams &&
+                        updateModifierParams(mod.type, {
+                          ...catalogEntry.defaultParams,
+                          enabled: isEnabled,
+                        })
+                      }
+                      onRemove={() => !isLocked && removeModifier(mod.type)}
+                    />
                     <Switch
                       checked={isEnabled}
                       disabled={isLocked}
@@ -824,7 +865,7 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
                 <DynamicModifierInspector
                   modifierType={mod.type}
                   params={mod.params || {}}
-                  disabled={isLocked || !isEnabled}
+                  disabled={isLocked || !isEnabled || isBypassAll}
                   onChange={(nextParams) => !isLocked && updateModifierParams(mod.type, nextParams)}
                 />
               </AccordionContent>

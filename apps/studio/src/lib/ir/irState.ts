@@ -36,6 +36,7 @@ import { RippleMoveSequenceCommand } from '../commands/RippleMoveSequenceCommand
 import { SplitSequenceCommand } from '../commands/SplitSequenceCommand';
 import { UpdateModifierCommand } from '../commands/UpdateModifierCommand';
 import { RemoveModifierCommand } from '../commands/RemoveModifierCommand';
+import { ReorderModifierCommand } from '../commands/ReorderModifierCommand';
 import { AddSequenceCommand, type AddSequenceOptions } from '../commands/AddSequenceCommand';
 import { AddLinkedAVSequenceCommand, type AddLinkedAVSequenceOptions } from '../commands/AddLinkedAVSequenceCommand';
 import { DuplicateSequenceCommand } from '../commands/DuplicateSequenceCommand';
@@ -537,6 +538,10 @@ export class IRStateManager {
 
   public removeModifier(sequenceId: string, modifierType: string): void {
     this.dispatch(new RemoveModifierCommand(sequenceId, modifierType));
+  }
+
+  public reorderModifier(sequenceId: string, modifierType: string, direction: 'up' | 'down'): void {
+    this.dispatch(new ReorderModifierCommand(sequenceId, modifierType, direction));
   }
 
   public addSequence(
