@@ -359,6 +359,9 @@ async function main() {
       try {
         mainWindow.show();
         mainWindow.activate();
+        if (process.platform === "win32") {
+          bringToForeground(mainWindow.ptr);
+        }
         return mainWindow;
       } catch {
         mainWindow = null;
@@ -377,9 +380,17 @@ async function main() {
         titleBarStyle: "default",
       });
 
-      // Explicitly reveal and activate window
+      // Explicitly reveal, navigate, and activate window
       win.show();
       win.activate();
+      try {
+        win.webview.loadURL(dashboardUrl);
+      } catch {}
+
+      if (process.platform === "win32") {
+        bringToForeground(win.ptr);
+      }
+
       console.log(`[Supervisor] BrowserWindow created successfully! ID: ${win.id}, Webview ID: ${win.webviewId}`);
 
       win.on("close", () => {
@@ -394,6 +405,21 @@ async function main() {
       console.error("[Supervisor] FATAL: Failed to instantiate BrowserWindow:", winErr);
       throw winErr;
     }
+  }
+
+  function bringToForeground(hwndPtr: any) {
+    if (!hwndPtr) return;
+    try {
+      const { dlopen, FFIType } = require("bun:ffi");
+      const user32 = dlopen("user32.dll", {
+        SetForegroundWindow: { args: [FFIType.ptr], returns: FFIType.bool },
+        BringWindowToTop: { args: [FFIType.ptr], returns: FFIType.bool },
+        ShowWindow: { args: [FFIType.ptr, FFIType.i32], returns: FFIType.bool },
+      });
+      user32.symbols.ShowWindow(hwndPtr, 9); // SW_RESTORE
+      user32.symbols.BringWindowToTop(hwndPtr);
+      user32.symbols.SetForegroundWindow(hwndPtr);
+    } catch {}
   }
 
   function getTrayMenuItems(): MenuItemConfig[] {
@@ -475,12 +501,12 @@ async function main() {
     if (tray) {
       try {
         tray.remove();
-      } catch {}
+      } catch { }
     }
     if (mainWindow) {
       try {
         mainWindow.close();
-      } catch {}
+      } catch { }
     }
     await supervisorEngine.stopAll();
     server.stop();
