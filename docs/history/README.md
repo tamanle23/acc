@@ -83,3 +83,4 @@
 | 417 | [Studio Preview Dimensions and Level of Detail (LOD) Architecture](./417_studio_preview_dimensions_and_lod_architecture.md) | Completed |
 | 418 | [Studio RightSidebar & Dynamic Property Inspector Modernization](./418_studio_right_sidebar_and_property_editor_modernization.md) | Completed |
 | 419 | [Studio First-Load Indicator & Performance-Tuned Initialization Sequence](./419_studio_first_load_indicator_and_performance_initialization.md) | Completed |
+| 420 | [Standalone Text Overlay Modifier & Typography Bank Migration](./420_standalone_text_overlay_modifier_and_typography_bank_migration.md) | Completed |

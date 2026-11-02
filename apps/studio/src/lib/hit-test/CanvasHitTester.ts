@@ -59,13 +59,40 @@ export class CanvasHitTester {
     const modifiers = seq.modifiers || [];
     const transMod = modifiers.find((m: ModifierNode) => m.type === 'transform');
     const shapeMod = modifiers.find((m: ModifierNode) => m.type === 'shape/vector' || m.type === 'shape/draw');
+    const textDrawMod = modifiers.find((m: ModifierNode) => m.type === 'text/draw' || m.type === 'text/overlay');
     const textMod = modifiers.find((m: ModifierNode) => m.type === 'timed_text/style' || m.type === 'text/style');
 
     const tp = (transMod?.params || {}) as Record<string, unknown>;
     const normX = typeof tp.normX === 'number' && Number.isFinite(tp.normX) ? tp.normX : 0.5;
     const normY = typeof tp.normY === 'number' && Number.isFinite(tp.normY) ? tp.normY : 0.5;
 
-    // 1. Text & Subtitles archetype
+    // 1. Standalone Text & Title Overlay archetype ('text/draw')
+    if (textDrawMod) {
+      const p = (textDrawMod.params || {}) as Record<string, unknown>;
+      const text = typeof p.text === 'string' ? p.text : seq.name || 'Title';
+      const lines = text.split('\n');
+      const maxLineLen = Math.max(...lines.map((l) => l.length), 1);
+      const fontSize = typeof p.fontSize === 'number' && Number.isFinite(p.fontSize) ? p.fontSize : 72;
+      const charWidthApprox = fontSize * 0.55;
+      const rawW = maxLineLen * charWidthApprox + 40;
+      const rawH = lines.length * (fontSize * 1.25) + 24;
+      const scale = typeof tp.scale === 'number' && Number.isFinite(tp.scale) ? tp.scale : 1.0;
+
+      return {
+        sequenceId: seq.id,
+        sequenceType: 'text',
+        trackIndex,
+        trackId,
+        normX,
+        normY,
+        normWidth: Math.min(1.0, Math.max(0.06, (rawW / 1920) * scale)),
+        normHeight: Math.min(1.0, Math.max(0.04, (rawH / 1080) * scale)),
+        label: `Text: "${text.slice(0, 20)}${text.length > 20 ? '...' : ''}"`,
+        zIndex: 100 + trackIndex,
+      };
+    }
+
+    // 2. Subtitles & Timed Text archetype
     if (textMod || (seq.cues && seq.cues.length > 0) || seq.type === 'text') {
       const p = (textMod?.params || {}) as Record<string, unknown>;
       const marginV = typeof p.marginV === 'number' ? p.marginV : 65;

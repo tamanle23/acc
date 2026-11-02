@@ -69,7 +69,16 @@ export function TransformGizmoOverlay({
       onPointerUp={onHandlePointerUp}
       onPointerCancel={onHandlePointerCancel}
       onDoubleClick={() => {
-        if (selectedSeq?.cues && selectedSeq.cues.length > 0 && onStartEditingCue) {
+        const textMod = selectedSeq?.modifiers?.find(
+          (m) => m.type === 'text/draw' || m.type === 'text/overlay'
+        );
+        if (textMod && onStartEditingCue) {
+          onStartEditingCue({
+            sequenceId: selectedSeq.id,
+            cueIndex: 0,
+            text: (textMod.params as any)?.text ?? selectedSeq.name ?? '',
+          });
+        } else if (selectedSeq?.cues && selectedSeq.cues.length > 0 && onStartEditingCue) {
           onStartEditingCue({
             sequenceId: selectedSeq.id,
             cueIndex: 0,

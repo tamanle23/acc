@@ -11,6 +11,7 @@ export type {
   GSAPMotionModifierParams,
   ShapeDrawModifierParams,
   ShapeVectorModifierParams,
+  TextDrawModifierParams,
   DepthRelightingParams,
   Camera3DModifierParams,
   Depth3DModifierParams,
@@ -59,6 +60,7 @@ import type {
   PartialVfxModifierParams,
   GSAPMotionModifierParams,
   ShapeDrawModifierParams,
+  TextDrawModifierParams,
   Camera3DModifierParams,
   Depth3DModifierParams,
   ColorGradingModifierParams,
@@ -266,6 +268,7 @@ export type StandardModifierNode =
   | TypedModifierNode<'time_space/hyperbolic_poincare', 'video' | 'image' | 'overlay' | SequenceType[], HyperbolicPoincareModifierParams>
   | TypedModifierNode<'time_space/kinetic_harmonograph', 'video' | 'image' | 'overlay' | SequenceType[], KineticHarmonographModifierParams>
   | TypedModifierNode<'timed_text/style' | 'text/style', 'text' | SequenceType[], TextStyleModifierParams>
+  | TypedModifierNode<'text/draw' | 'text/overlay', 'overlay' | 'text' | 'video' | 'image' | SequenceType[], TextDrawModifierParams>
   | TypedModifierNode<'motion/vector_blur', 'video' | 'image' | SequenceType[], VectorMotionBlurModifierParams>
   | TypedModifierNode<'generator/solid_backdrop', 'overlay' | SequenceType[], SolidBackdropModifierParams>
   | TypedModifierNode<'timeline/photometric_bloom', 'video' | 'overlay' | SequenceType[], PhotometricBloomModifierParams>

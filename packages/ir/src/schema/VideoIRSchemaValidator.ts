@@ -506,12 +506,12 @@ export class VideoIRSchemaValidator {
     }
   }
 
-  private static validateModifierParams(
+  public static validateModifierParams(
     type: string,
     p: Record<string, any>,
-    context: string,
-    errors: string[]
-  ): void {
+    context: string = 'root',
+    errors: string[] = []
+  ): { valid: boolean; errors: string[] } {
     switch (type) {
       case 'transform':
       case 'transform/scale': {
@@ -715,6 +715,29 @@ export class VideoIRSchemaValidator {
         break;
       }
 
+      case 'text/draw':
+      case 'text/overlay': {
+        if (!p.text || typeof p.text !== 'string' || p.text.trim().length === 0) {
+          errors.push(`Modifier "${type}" on ${context}: text must be a non-empty string`);
+        }
+        if (p.fontSize !== undefined && (typeof p.fontSize !== 'number' || p.fontSize <= 0)) {
+          errors.push(`Modifier "${type}" on ${context}: fontSize must be a positive number`);
+        }
+        if (p.fontFamily !== undefined && typeof p.fontFamily !== 'string') {
+          errors.push(`Modifier "${type}" on ${context}: fontFamily must be a string`);
+        }
+        if (p.textAlign !== undefined && !['left', 'center', 'right'].includes(p.textAlign)) {
+          errors.push(`Modifier "${type}" on ${context}: textAlign must be 'left', 'center', or 'right'`);
+        }
+        if (p.letterSpacing !== undefined && typeof p.letterSpacing !== 'number') {
+          errors.push(`Modifier "${type}" on ${context}: letterSpacing must be a number`);
+        }
+        if (p.strokeWidth !== undefined && (typeof p.strokeWidth !== 'number' || p.strokeWidth < 0)) {
+          errors.push(`Modifier "${type}" on ${context}: strokeWidth must be a non-negative number`);
+        }
+        break;
+      }
+
       case 'generator/solid_backdrop': {
         if (p.colorA !== undefined && typeof p.colorA !== 'string') {
           errors.push(`Modifier "${type}" on ${context}: colorA must be a string`);
@@ -812,52 +835,6 @@ export class VideoIRSchemaValidator {
           if (typeof p.activeWord !== 'object' || p.activeWord === null) {
             errors.push(`Modifier "timed_text/style" on ${context}: activeWord must be an object`);
           }
-        }
-        break;
-      }
-
-      case 'motion/vector_blur': {
-        if (p.shutterAngle !== undefined && (typeof p.shutterAngle !== 'number' || p.shutterAngle < 0 || p.shutterAngle > 360)) {
-          errors.push(`Modifier "motion/vector_blur" on ${context}: shutterAngle must be a number between 0 and 360`);
-        }
-        if (p.samples !== undefined && (typeof p.samples !== 'number' || p.samples < 1)) {
-          errors.push(`Modifier "motion/vector_blur" on ${context}: samples must be an integer >= 1`);
-        }
-        break;
-      }
-
-      case 'generator/solid_backdrop': {
-        if (!p.colorA || typeof p.colorA !== 'string') {
-          errors.push(`Modifier "generator/solid_backdrop" on ${context}: colorA must be a non-empty string`);
-        }
-        if (p.colorB !== undefined && typeof p.colorB !== 'string') {
-          errors.push(`Modifier "generator/solid_backdrop" on ${context}: colorB must be a string`);
-        }
-        if (p.type !== undefined && !['solid', 'linear_gradient', 'radial_gradient'].includes(p.type)) {
-          errors.push(`Modifier "generator/solid_backdrop" on ${context}: type must be 'solid', 'linear_gradient', or 'radial_gradient'`);
-        }
-        break;
-      }
-
-      case 'timeline/photometric_bloom': {
-        if (p.luminanceThreshold !== undefined && (typeof p.luminanceThreshold !== 'number' || p.luminanceThreshold < 0 || p.luminanceThreshold > 1)) {
-          errors.push(`Modifier "timeline/photometric_bloom" on ${context}: luminanceThreshold must be a number between 0.0 and 1.0`);
-        }
-        if (p.intensity !== undefined && (typeof p.intensity !== 'number' || p.intensity < 0)) {
-          errors.push(`Modifier "timeline/photometric_bloom" on ${context}: intensity must be a non-negative number`);
-        }
-        break;
-      }
-
-      case 'timeline/anamorphic_glare': {
-        if (p.threshold !== undefined && (typeof p.threshold !== 'number' || p.threshold < 0 || p.threshold > 1)) {
-          errors.push(`Modifier "timeline/anamorphic_glare" on ${context}: threshold must be a number between 0.0 and 1.0`);
-        }
-        if (p.streakLengthPx !== undefined && (typeof p.streakLengthPx !== 'number' || p.streakLengthPx <= 0)) {
-          errors.push(`Modifier "timeline/anamorphic_glare" on ${context}: streakLengthPx must be a positive number`);
-        }
-        if (p.intensity !== undefined && (typeof p.intensity !== 'number' || p.intensity < 0)) {
-          errors.push(`Modifier "timeline/anamorphic_glare" on ${context}: intensity must be a non-negative number`);
         }
         break;
       }
@@ -1059,5 +1036,7 @@ export class VideoIRSchemaValidator {
         // as long as their params is an object (already validated above).
         break;
     }
+
+    return { valid: errors.length === 0, errors };
   }
 }

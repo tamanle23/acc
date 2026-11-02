@@ -38,8 +38,8 @@ export class UpdateTextCueCommand implements ICommand {
               this.previousText = seq.cues[this.cueIndex].text;
             }
             seq.cues[this.cueIndex].text = this.newText;
-          } else {
-            // If cues array didn't exist or was empty, initialize it
+          } else if (!seq.modifiers?.some((m) => m.type === 'text/draw' || m.type === 'text/overlay')) {
+            // If cues array didn't exist or was empty, initialize it only if not a text/draw sequence
             if (!seq.cues) seq.cues = [];
             if (this.previousText === null) {
               this.previousText = '';
@@ -51,11 +51,19 @@ export class UpdateTextCueCommand implements ICommand {
             };
           }
 
-          // 2. Also update timed_text/style modifier params if text is cached there
+          // 2. Also update text/draw or timed_text/style modifier params if text is cached there
           if (seq.modifiers) {
             const styleMod = seq.modifiers.find((m) => m.type === 'timed_text/style' || m.type === 'text/style');
             if (styleMod && styleMod.params) {
               const params = styleMod.params as Record<string, unknown>;
+              if (this.previousModifierText === null && typeof params.text === 'string') {
+                this.previousModifierText = params.text;
+              }
+              params.text = this.newText;
+            }
+            const textDrawMod = seq.modifiers.find((m) => m.type === 'text/draw' || m.type === 'text/overlay');
+            if (textDrawMod && textDrawMod.params) {
+              const params = textDrawMod.params as Record<string, unknown>;
               if (this.previousModifierText === null && typeof params.text === 'string') {
                 this.previousModifierText = params.text;
               }
@@ -84,6 +92,10 @@ export class UpdateTextCueCommand implements ICommand {
             const styleMod = seq.modifiers.find((m) => m.type === 'timed_text/style' || m.type === 'text/style');
             if (styleMod && styleMod.params) {
               (styleMod.params as Record<string, unknown>).text = this.previousModifierText;
+            }
+            const textDrawMod = seq.modifiers.find((m) => m.type === 'text/draw' || m.type === 'text/overlay');
+            if (textDrawMod && textDrawMod.params) {
+              (textDrawMod.params as Record<string, unknown>).text = this.previousModifierText;
             }
           }
           return copy;

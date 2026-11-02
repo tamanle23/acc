@@ -423,7 +423,14 @@ function PreviewInner({
         onUpdateText={(text) => setEditingCue((prev) => (prev ? { ...prev, text } : null))}
         onCommit={() => {
           if (editingCue) {
-            IRStateManager.getInstance().updateTextCue(editingCue.sequenceId, editingCue.cueIndex, editingCue.text);
+            const allSeqs = irState.timeline?.tracks?.flatMap((t: any) => t.sequences || []) || [];
+            const seq = allSeqs.find((s: any) => s.id === editingCue.sequenceId);
+            const textMod = seq?.modifiers?.find((m: any) => m.type === 'text/draw' || m.type === 'text/overlay');
+            if (textMod) {
+              IRStateManager.getInstance().updateModifier(editingCue.sequenceId, textMod.type, { text: editingCue.text });
+            } else {
+              IRStateManager.getInstance().updateTextCue(editingCue.sequenceId, editingCue.cueIndex, editingCue.text);
+            }
             setEditingCue(null);
           }
         }}

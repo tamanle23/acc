@@ -363,6 +363,60 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
       },
     },
   },
+  'text/draw': {
+    name: 'Overlay Text & Title',
+    category: 'text',
+    icon: Type,
+    supportedTrackTypes: ['video', 'timed_text'],
+    defaultParams: {
+      enabled: true,
+      text: 'ENTER TITLE',
+      fontFamily: 'Inter, -apple-system, sans-serif',
+      fontSize: 56,
+      fontWeight: 700,
+      textColor: '#ffffff',
+      strokeColor: '#000000',
+      strokeWidth: 0,
+      glowColor: '#00d4ff',
+      glowBlur: 0,
+      shadowColor: '#000000',
+      shadowBlur: 0,
+      letterSpacing: 0,
+      lineHeight: 1.25,
+      textAlign: 'center',
+      backgroundColor: 'transparent',
+      paddingX: 0,
+      paddingY: 0,
+      borderRadius: 0,
+    },
+  },
+  'text/overlay': {
+    name: 'Overlay Text & Title',
+    category: 'text',
+    icon: Type,
+    supportedTrackTypes: ['video', 'timed_text'],
+    defaultParams: {
+      enabled: true,
+      text: 'ENTER TITLE',
+      fontFamily: 'Inter, -apple-system, sans-serif',
+      fontSize: 56,
+      fontWeight: 700,
+      textColor: '#ffffff',
+      strokeColor: '#000000',
+      strokeWidth: 0,
+      glowColor: '#00d4ff',
+      glowBlur: 0,
+      shadowColor: '#000000',
+      shadowBlur: 0,
+      letterSpacing: 0,
+      lineHeight: 1.25,
+      textAlign: 'center',
+      backgroundColor: 'transparent',
+      paddingX: 0,
+      paddingY: 0,
+      borderRadius: 0,
+    },
+  },
   'text/style': {
     name: 'Typography & Karaoke Glow (Legacy)',
     category: 'text',
@@ -1143,6 +1197,9 @@ export function getSectionIdForModifierType(type: string): string {
     case 'timed_text/style':
     case 'text/style':
       return 'typography';
+    case 'text/draw':
+    case 'text/overlay':
+      return 'text_draw';
     case 'motion/vector_blur':
       return 'motion';
     case 'generator/solid_backdrop':
