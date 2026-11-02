@@ -14,7 +14,7 @@ An in-depth systems audit across `apps/studio` revealed 7 critical architectural
 2. `PreviewWorkerCoordinator.reset()` abandons in-flight promises without rejecting them.
 3. Multiple uncoordinated `window.addEventListener('keydown')` listeners collide on `Cmd+K` vs `KeyK`, `Delete`, and `Space`.
 4. `IRStateManager.dispatch()` triggers un-awaited asynchronous compilations susceptible to out-of-order race conditions.
-5. `useShuttleEngine.ts` throttles playhead ticks to 15 FPS before calling `StudioPlayheadController.seek()`, causing 60 FPS canvas and needle animation to stutter.
+5. `useShuttleEngine.ts` throttles playhead ticks to 15 FPS before calling `PlayheadController.seek()`, causing 60 FPS canvas and needle animation to stutter.
 6. `TimelineCommandDispatcher` retains unbounded history, while commands execute 60+ synchronous `JSON.parse(JSON.stringify(doc))` deep clones.
 7. `AudioAssetCache` retains uncompressed PCM in RAM instead of streaming via OPFS (`ContentCacheRegistry`), and duplicates `AudioContext`.
 

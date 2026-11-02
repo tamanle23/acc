@@ -1,13 +1,228 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ACC Studio Preview — Dedicated NLE</title>
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  </head>
-  <body class="bg-slate-50 text-slate-900 antialiased h-screen overflow-hidden">
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<html lang="en" class="dark">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ACC Studio Preview — Dedicated NLE</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <style id="boot-splash-style">
+    #app-boot-splash {
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 50% 42%, rgba(6, 182, 212, 0.12) 0%, transparent 60%), #020617cc;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: #f8fafc;
+      will-change: opacity;
+    }
+
+    .splash-card {
+      width: min(90vw, 380px);
+      padding: 36px 32px 30px;
+      border-radius: 16px;
+      background: rgba(15, 23, 42, 0.72);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 20px 50px -10px rgba(0, 0, 0, 0.7);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .splash-logo-container {
+      width: 56px;
+      height: 56px;
+      margin-bottom: 18px;
+      filter: drop-shadow(0 0 16px rgba(6, 182, 212, 0.6));
+      animation: splash-pulse 2.8s ease-in-out infinite;
+      will-change: transform, opacity;
+    }
+
+    .splash-logo-svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .splash-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      color: #f1f5f9;
+      margin-bottom: 6px;
+    }
+
+    .splash-badge {
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      color: #06b6d4;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      background: rgba(6, 182, 212, 0.12);
+      border: 1px solid rgba(6, 182, 212, 0.28);
+    }
+
+    .splash-progress-track {
+      width: 100%;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 9999px;
+      overflow: hidden;
+      position: relative;
+      margin-bottom: 16px;
+    }
+
+    .splash-progress-bar {
+      position: absolute;
+      inset: 0;
+      width: 50%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, #06b6d4, #8b5cf6, transparent);
+      border-radius: 9999px;
+      animation: splash-shimmer 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+      will-change: transform;
+    }
+
+    .splash-status {
+      font-size: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      color: #94a3b8;
+      min-height: 18px;
+      transition: color 0.2s ease;
+    }
+
+    .splash-reload-btn {
+      margin-top: 14px;
+      font-size: 11px;
+      font-family: system-ui, -apple-system, sans-serif;
+      font-weight: 500;
+      color: #06b6d4;
+      background: rgba(6, 182, 212, 0.12);
+      border: 1px solid rgba(6, 182, 212, 0.35);
+      padding: 5px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      outline: none;
+    }
+
+    .splash-reload-btn:hover {
+      background: rgba(6, 182, 212, 0.24);
+      border-color: rgba(6, 182, 212, 0.6);
+    }
+
+    @keyframes splash-pulse {
+
+      0%,
+      100% {
+        transform: scale(1);
+        opacity: 0.92;
+      }
+
+      50% {
+        transform: scale(1.05);
+        opacity: 1;
+      }
+    }
+
+    @keyframes splash-shimmer {
+      0% {
+        transform: translateX(-100%);
+      }
+
+      100% {
+        transform: translateX(250%);
+      }
+    }
+
+    @keyframes splash-fade-out {
+      0% {
+        opacity: 1;
+      }
+
+      100% {
+        opacity: 0;
+      }
+    }
+
+    #app-boot-splash.splash-hidden,
+    .splash-hidden {
+      animation: splash-fade-out var(--splash-outro-duration, 800ms) cubic-bezier(0.4, 0, 0.2, 1) forwards;
+      pointer-events: none;
+      opacity: 0;
+    }
+
+    #app-boot-splash.splash-hidden .splash-card,
+    .splash-hidden .splash-card {
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+
+      .splash-logo-container,
+      .splash-progress-bar {
+        animation: none !important;
+      }
+
+      .splash-progress-bar {
+        width: 100% !important;
+        opacity: 0.6;
+      }
+    }
+  </style>
+</head>
+
+<body class="bg-[#020617] text-slate-100 antialiased h-screen overflow-hidden">
+  <!-- Tier 1: Instant Pre-Hydration Zero-JS Splash -->
+  <div id="app-boot-splash" role="status" aria-live="polite" aria-label="Loading ACC Studio Workstation">
+    <div class="splash-card">
+      <div class="splash-logo-container">
+        <svg class="splash-logo-svg" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="24" cy="24" r="21" stroke="rgba(6, 182, 212, 0.35)" stroke-width="1.5" stroke-dasharray="3 3" />
+          <circle cx="24" cy="24" r="15" stroke="#06b6d4" stroke-width="2" />
+          <path d="M20 16L32 24L20 32V16Z" fill="#06b6d4" />
+        </svg>
+      </div>
+      <div class="splash-title">ACC STUDIO</div>
+      <div class="splash-badge">PRO NLE • WEBCODECS &amp; IR ENGINE</div>
+      <div class="splash-progress-track">
+        <div class="splash-progress-bar"></div>
+      </div>
+      <div id="splash-status-text" class="splash-status">Initializing workstation...</div>
+      <button id="splash-reload-btn" class="splash-reload-btn" onclick="window.location.reload()" style="display:none;">
+        Reload Workstation
+      </button>
+    </div>
+  </div>
+  <script>
+    (function () {
+      window.__studioBootStartTime = performance.now();
+      var t1 = setTimeout(function () {
+        var el = document.getElementById('splash-status-text');
+        if (el) el.textContent = 'Loading video & audio subsystems...';
+      }, 5000);
+      var t2 = setTimeout(function () {
+        var el = document.getElementById('splash-status-text');
+        if (el) el.textContent = 'Taking longer than usual...';
+        var btn = document.getElementById('splash-reload-btn');
+        if (btn) btn.style.display = 'inline-block';
+      }, 10000);
+      window.__studioBootTimers = [t1, t2];
+    })();
+  </script>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
 </html>

@@ -5,8 +5,9 @@ import {
   type IPreviewRenderStrategy,
 } from '../../renderer/strategies';
 import { PreviewWorkerCoordinator } from '../../renderer/PreviewWorkerCoordinator';
-import { StudioPlayheadController } from '../../lib/playhead/StudioPlayheadController';
+import { PlayheadController } from '../../lib/playhead/PlayheadController';
 import { AssetTextureCache } from '../../lib/textures/AssetTextureCache';
+import { StudioBootController } from '../../lib/boot/StudioBootController';
 import type { WorkerRenderOptions } from '../../renderer/workers/PreviewWorkerBridge';
 
 export interface UseViewportRenderStrategyOptions {
@@ -89,6 +90,7 @@ export function useViewportRenderStrategy({
         strategy.onReady(() => {
           setIsReady(true);
           setAssetTick((t) => t + 1);
+          StudioBootController.notifyCanvasReady();
         });
       }
     }
@@ -147,7 +149,7 @@ export function useViewportRenderStrategy({
   // High-frequency subscription for smooth 60fps playhead animation without React rerenders
   const lastDispatchedFrameRef = useRef(-1);
   useEffect(() => {
-    return StudioPlayheadController.getInstance().subscribeHighFrequency((frame, playing) => {
+    return PlayheadController.getInstance().subscribeHighFrequency((frame, playing) => {
       const strategy = strategyRef.current;
       if (strategy && strategy.isReady) {
         if (playing && frame === lastDispatchedFrameRef.current) return;
@@ -166,7 +168,7 @@ export function useViewportRenderStrategy({
     const strategy = strategyRef.current;
     if (!strategy?.onFrameRendered) return;
     return strategy.onFrameRendered((frame, latencyMs) => {
-      StudioPlayheadController.getInstance().recordFrameRendered(frame, latencyMs);
+      PlayheadController.getInstance().recordFrameRendered(frame, latencyMs);
     });
   }, [isReady]);
 

@@ -5,8 +5,8 @@ Comprehensive performance tuning of the Studio Preview player and timeline scrub
 
 ## Changes Implemented
 
-### 1. Observer Pattern: `StudioPlayheadController`
-- Added `apps/studio/src/lib/playhead/StudioPlayheadController.ts`:
+### 1. Observer Pattern: `PlayheadController`
+- Added `apps/studio/src/lib/playhead/PlayheadController.ts`:
   - **High-Frequency Stream (60fps)**: Dispatches instant frame updates directly to canvas renderers and the timeline playhead needle without triggering React reconciliations.
   - **Low-Frequency Stream (~10 Hz / on-stop)**: Throttled updates to React component state (`currentFrame` in `App.tsx`) to keep clip inspectors and titlebars in sync without causing frame drops during active playback.
 

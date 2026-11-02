@@ -13,7 +13,7 @@ import { normalizeTracksList } from '../lib/ir/studioTypes';
 import { WebAudioEngine } from '../lib/audio/WebAudioEngine';
 import { useShuttleEngine, type UseShuttleEngineReturn } from '../lib/shuttle/useShuttleEngine';
 import { snapToDiscreteFrame } from '../lib/shuttle/shuttleTypes';
-import { StudioPlayheadController } from '../lib/playhead/StudioPlayheadController';
+import { PlayheadController } from '../lib/playhead/PlayheadController';
 import {
   TimelineCommandDispatcher,
   RazorCutCommand,
@@ -161,7 +161,7 @@ function TimelineInner({
     const needle = playheadNeedleRef.current;
     if (!needle) return;
 
-    return StudioPlayheadController.getInstance().subscribeHighFrequency((frame, isPlaying, fractionalFrame) => {
+    return PlayheadController.getInstance().subscribeHighFrequency((frame, isPlaying, fractionalFrame) => {
       // Sub-frame gliding during playback; discrete integer frame when parked/scrubbing.
       const activeFrame = isPlaying && fractionalFrame !== undefined ? fractionalFrame : frame;
       const leftPx = 208 + activeFrame * pixelsPerFrame;

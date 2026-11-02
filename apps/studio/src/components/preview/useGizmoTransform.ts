@@ -6,7 +6,7 @@ import {
   type StudioSequence,
 } from '../../lib/ir/studioTypes';
 import type { ModifierNode, ResolvedTimeline, VideoIRDocument } from '@acc/ir';
-import { StudioPlayheadController } from '../../lib/playhead/StudioPlayheadController';
+import { PlayheadController } from '../../lib/playhead/PlayheadController';
 import {
   Gizmo2DTransformation,
   type BoundingBox2D,
@@ -75,7 +75,7 @@ export function useGizmoTransform({
     const seq = allSeqs.find((s) => s.id === selectedSeqId);
 
     if (seq) {
-      const playheadController = StudioPlayheadController.getInstance();
+      const playheadController = PlayheadController.getInstance();
       const isPaused = !playheadController.getIsPlaying();
       const currentNeedleFrame = playheadController.getFrame();
       const seqStart = getSequenceStartFrame(seq);
@@ -122,7 +122,7 @@ export function useGizmoTransform({
       e.stopPropagation();
       try {
         (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-      } catch {}
+      } catch { }
 
       dragStartCoordsRef.current = { clientX: e.clientX, clientY: e.clientY };
       setIsDragging(true);
@@ -212,7 +212,7 @@ export function useGizmoTransform({
       e.stopPropagation();
       try {
         (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
-      } catch {}
+      } catch { }
 
       dragStartCoordsRef.current = null;
       const finalTransform = latestTransformRef.current || transform;

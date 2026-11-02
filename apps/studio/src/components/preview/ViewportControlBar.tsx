@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { Tooltip } from '../ui/tooltip';
 import { SnappingGuide } from '../../lib/gizmo';
-import { StudioPlayheadController } from '../../lib/playhead/StudioPlayheadController';
+import { PlayheadController } from '../../lib/playhead/PlayheadController';
 
 export type PreviewResolutionMode = 'auto' | 1.0 | 0.5 | 0.25;
 
@@ -100,7 +100,7 @@ export const ViewportControlBar: React.FC<ViewportControlBarProps> = ({
       return;
     }
 
-    return StudioPlayheadController.getInstance().subscribeTelemetry((measuredFps, latencyMs) => {
+    return PlayheadController.getInstance().subscribeTelemetry((measuredFps, latencyMs) => {
       setLiveFps(measuredFps);
       setFrameLatency(latencyMs);
     });
@@ -135,10 +135,10 @@ export const ViewportControlBar: React.FC<ViewportControlBarProps> = ({
               {previewResolution === 'auto'
                 ? `Auto (${virtualHeight ? `${virtualHeight}p` : '540p'})`
                 : previewResolution === 1.0
-                ? `Full (${height}p)`
-                : previewResolution === 0.5
-                ? `Half (${Math.round(height * 0.5)}p)`
-                : `Quarter (${Math.round(height * 0.25)}p)`}
+                  ? `Full (${height}p)`
+                  : previewResolution === 0.5
+                    ? `Half (${Math.round(height * 0.5)}p)`
+                    : `Quarter (${Math.round(height * 0.25)}p)`}
             </span>
           </button>
         )}
@@ -168,13 +168,12 @@ export const ViewportControlBar: React.FC<ViewportControlBarProps> = ({
         >
           <Activity className="w-2.5 h-2.5 text-accent-theme" />
           <span
-            className={`font-bold ${
-              liveFps >= fps * 0.95
-                ? 'text-emerald-400'
-                : liveFps >= fps * 0.75
+            className={`font-bold ${liveFps >= fps * 0.95
+              ? 'text-emerald-400'
+              : liveFps >= fps * 0.75
                 ? 'text-amber-400'
                 : 'text-rose-400'
-            }`}
+              }`}
           >
             {isPlaying ? `${liveFps.toFixed(1)} FPS` : `${fps} FPS`}
           </span>
@@ -333,11 +332,10 @@ export const ViewportControlBar: React.FC<ViewportControlBarProps> = ({
               type="button"
               onClick={onCycleVisionPass}
               aria-label={`Vision pass mode: ${visionPassMode}`}
-              className={`px-2 py-1 rounded-full border text-[10px] font-mono flex items-center gap-1 transition-all cursor-pointer ${
-                visionPassMode !== 'composite'
-                  ? 'border-cyan-400 bg-cyan-500/20 text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.4)]'
-                  : 'border-glass-border text-foreground/60 hover:text-foreground hover:bg-foreground/10'
-              }`}
+              className={`px-2 py-1 rounded-full border text-[10px] font-mono flex items-center gap-1 transition-all cursor-pointer ${visionPassMode !== 'composite'
+                ? 'border-cyan-400 bg-cyan-500/20 text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.4)]'
+                : 'border-glass-border text-foreground/60 hover:text-foreground hover:bg-foreground/10'
+                }`}
             >
               <ScanEye className="w-3.5 h-3.5" />
               <span className="uppercase tracking-wider font-semibold">{visionPassMode}</span>
@@ -349,11 +347,10 @@ export const ViewportControlBar: React.FC<ViewportControlBarProps> = ({
               type="button"
               onClick={onToggleDepthHeatmap}
               aria-label={showDepthHeatmap ? 'Disable depth heatmap' : 'Enable depth heatmap'}
-              className={`p-1.5 rounded-full border transition-all cursor-pointer ${
-                showDepthHeatmap
-                  ? 'border-cyan-400 bg-cyan-500/20 text-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.4)]'
-                  : 'border-glass-border text-foreground/40 hover:text-foreground hover:bg-foreground/10'
-              }`}
+              className={`p-1.5 rounded-full border transition-all cursor-pointer ${showDepthHeatmap
+                ? 'border-cyan-400 bg-cyan-500/20 text-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.4)]'
+                : 'border-glass-border text-foreground/40 hover:text-foreground hover:bg-foreground/10'
+                }`}
             >
               <ScanEye className="w-3.5 h-3.5" />
             </button>

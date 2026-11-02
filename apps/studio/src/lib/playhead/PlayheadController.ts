@@ -1,5 +1,5 @@
 /**
- * StudioPlayheadController:
+ * PlayheadController:
  * High-performance Observer / Subscribable Playhead State Controller for Studio.
  * Decouples 60fps frame advancement from React reconciliation overhead
  * (incorporating architectural patterns from Twick & Motion Canvas).
@@ -10,8 +10,8 @@ export type PlayheadSubscriber = (
   fractionalFrame?: number
 ) => void;
 
-export class StudioPlayheadController {
-  private static instance: StudioPlayheadController;
+export class PlayheadController {
+  private static instance: PlayheadController;
 
   private currentFrame = 0;
   private currentFractionalFrame = 0;
@@ -27,13 +27,13 @@ export class StudioPlayheadController {
   private lastLowFreqSyncTime = 0;
   private lowFreqSyncIntervalMs = 250; // ~4 Hz React updates during playback
 
-  private constructor() {}
+  private constructor() { }
 
-  public static getInstance(): StudioPlayheadController {
-    if (!StudioPlayheadController.instance) {
-      StudioPlayheadController.instance = new StudioPlayheadController();
+  public static getInstance(): PlayheadController {
+    if (!PlayheadController.instance) {
+      PlayheadController.instance = new PlayheadController();
     }
-    return StudioPlayheadController.instance;
+    return PlayheadController.instance;
   }
 
   public getFrame = (): number => {
@@ -140,7 +140,7 @@ export class StudioPlayheadController {
       try {
         sub(this.currentFrame, this.isPlaying, this.currentFractionalFrame);
       } catch (err) {
-        console.error('[StudioPlayheadController] HighFreq subscriber error:', err);
+        console.error('[PlayheadController] HighFreq subscriber error:', err);
       }
     }
 
@@ -157,7 +157,7 @@ export class StudioPlayheadController {
       try {
         sub(this.currentFrame, this.isPlaying, this.currentFractionalFrame);
       } catch (err) {
-        console.error('[StudioPlayheadController] LowFreq subscriber error:', err);
+        console.error('[PlayheadController] LowFreq subscriber error:', err);
       }
     }
   }
