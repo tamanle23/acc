@@ -94,9 +94,9 @@ function StudioWorkspace() {
     onSequenceInserted: handleSequenceInserted,
   });
 
-  // Dismiss pre-hydration boot splash after double-rAF first-paint synchronization
+  // Dismiss pre-hydration boot splash after preview worker warms up & first-paint synchronization
   useEffect(() => {
-    StudioBootController.dismiss();
+    StudioBootController.waitForEngineWarmup();
   }, []);
 
   // Sync PlayheadController configuration

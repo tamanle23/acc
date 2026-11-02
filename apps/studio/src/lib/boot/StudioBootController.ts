@@ -8,6 +8,8 @@
 
 export class StudioBootController {
   private static dismissed = false;
+  private static canvasReady = false;
+  private static canvasReadyResolvers: Array<() => void> = [];
 
   /**
    * Updates the boot splash status readout if visible.
@@ -18,6 +20,70 @@ export class StudioBootController {
     if (el) {
       el.textContent = message;
     }
+  }
+
+  /**
+   * Signals that the viewport canvas worker has initialized and rendered its first frame.
+   */
+  static notifyCanvasReady(): void {
+    this.canvasReady = true;
+    const resolvers = [...this.canvasReadyResolvers];
+    this.canvasReadyResolvers = [];
+    resolvers.forEach((r) => r());
+  }
+
+  /**
+   * Returns a promise that resolves when the viewport canvas worker is ready, or falls back gracefully on timeout.
+   */
+  static waitForCanvas(timeoutMs = 3000): Promise<boolean> {
+    if (this.canvasReady) return Promise.resolve(true);
+
+    return new Promise<boolean>((resolve) => {
+      let timer: ReturnType<typeof setTimeout> | null = null;
+      const onReady = () => {
+        if (timer) clearTimeout(timer);
+        resolve(true);
+      };
+      this.canvasReadyResolvers.push(onReady);
+
+      if (timeoutMs > 0) {
+        timer = setTimeout(() => {
+          const idx = this.canvasReadyResolvers.indexOf(onReady);
+          if (idx !== -1) this.canvasReadyResolvers.splice(idx, 1);
+          resolve(false);
+        }, timeoutMs);
+      }
+    });
+  }
+
+  /**
+   * Orchestrates the engine warmup sequence before dismissing the splash:
+   * 1. Updates splash status to "Warming up preview worker & neural engines..."
+   * 2. Waits for PreviewWorkerCoordinator sidecar worker warmup (with timeout fallback).
+   * 3. Waits for Viewport Canvas worker initialization (with timeout fallback).
+   * 4. Updates splash status to "Ready".
+   * 5. Triggers smooth double-rAF first-paint dismissal.
+   */
+  static async waitForEngineWarmup(options?: {
+    workerTimeoutMs?: number;
+    canvasTimeoutMs?: number;
+  }): Promise<void> {
+    if (this.dismissed) return;
+
+    this.updateStatus('Warming up preview worker & neural engines...');
+
+    try {
+      const { PreviewWorkerCoordinator } = await import('../../renderer/PreviewWorkerCoordinator');
+      await Promise.all([
+        PreviewWorkerCoordinator.getInstance().waitForWarmup(options?.workerTimeoutMs ?? 3500),
+        this.waitForCanvas(options?.canvasTimeoutMs ?? 2500),
+      ]);
+    } catch {
+      // Graceful fallback: never let an error trap the splash screen
+    }
+
+    this.updateStatus('Ready');
+    await this.dismiss();
   }
 
   /**
@@ -106,5 +172,7 @@ export class StudioBootController {
    */
   static _reset(): void {
     this.dismissed = false;
+    this.canvasReady = false;
+    this.canvasReadyResolvers = [];
   }
 }

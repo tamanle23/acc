@@ -18,10 +18,16 @@ Engineered an enterprise-grade **Two-Tier Hybrid Boot Splash Architecture** and 
    - Employed **GPU-compositor-only properties** (`transform`, `opacity` with `will-change`) so the animated logo pulse and progress shimmer run at a silky 60 FPS even while V8 is 100% pegged compiling the 2.1 MB JavaScript bundle.
    - Enforced WCAG 2.2 AA accessibility with `role="status"`, `aria-live="polite"`, `aria-label="Loading ACC Studio Workstation"`, and `@media (prefers-reduced-motion: reduce)` fallbacks.
 
-2. **Tier 2: React Lifecycle Handoff & Double-rAF First-Paint Synchronization (`StudioBootController.ts`)**:
+2. **Tier 2: React Lifecycle Handoff & Preview Worker Warmup Synchronization (`StudioBootController.ts`)**:
    - Implemented [`StudioBootController.ts`](file:///c:/Users/Admin/workspace/git/acc/apps/studio/src/lib/boot/StudioBootController.ts).
-   - Utilizes a **Double `requestAnimationFrame`** pattern to guarantee the Viewport Canvas and Timeline rulers have completed their first paint before the 400ms crossfade begins (`opacity: 0, transform: scale(1.02)`).
+   - Orchestrates `waitForEngineWarmup()`:
+     - Updates status text to `"Warming up preview worker & neural engines..."`.
+     - Awaits `PreviewWorkerCoordinator.getInstance().waitForWarmup()` (sidecar worker warmup).
+     - Awaits Viewport Canvas offscreen worker initialization (`StudioBootController.notifyCanvasReady()` inside `useViewportRenderStrategy.ts`).
+     - Updates status to `"Ready"`.
+     - Utilizes a **Double `requestAnimationFrame`** pattern to guarantee the freshly drawn canvas frame has painted to the screen before the 400ms crossfade begins (`opacity: 0, transform: scale(1.02)`).
    - Automatically unlinks `#app-boot-splash` and its inline `<style id="boot-splash-style">` from the DOM after 420ms, completely freeing compositor and memory layers.
+   - Built-in simulation flags: `?splash=hold` (freeze permanently for visual styling) and `?splash=<ms>` (delay dismissal by specified milliseconds).
 
 3. **React UI Performance Tuning & Code-Splitting (`App.tsx`)**:
    - Replaced eager imports of heavy on-demand modals with `React.lazy()` wrapped in `<Suspense fallback={null}>`:

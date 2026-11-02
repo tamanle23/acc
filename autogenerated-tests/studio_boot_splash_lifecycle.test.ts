@@ -228,6 +228,42 @@ describe('Studio Boot Splash & First-Load Lifecycle Suite', () => {
       await dismissPromise;
       expect(mockSplashEl.classList.contains('splash-hidden')).toBe(true);
     });
+    it('orchestrates preview worker warmup and canvas notification before dismissing', async () => {
+      // Setup removeChild mock for DOM cleanup
+      mockSplashEl.parentNode.removeChild = (child: MockElement) => {
+        elementsById.delete(child.id);
+        return child;
+      };
+      mockStyleEl.parentNode.removeChild = (child: MockElement) => {
+        elementsById.delete(child.id);
+        return child;
+      };
+
+      const warmupPromise = StudioBootController.waitForEngineWarmup({
+        workerTimeoutMs: 50,
+        canvasTimeoutMs: 50,
+      });
+
+      // Status should update to warming up
+      expect(mockStatusEl.textContent).toContain('Warming up preview worker');
+
+      // Notify canvas ready
+      StudioBootController.notifyCanvasReady();
+
+      await warmupPromise;
+
+      // Status should have updated to Ready before dismissal
+      expect(document.getElementById('app-boot-splash')).toBeNull();
+    });
+
+    it('verifies PreviewWorkerCoordinator.waitForWarmup resolves cleanly', async () => {
+      const { PreviewWorkerCoordinator } = await import('../apps/studio/src/renderer/PreviewWorkerCoordinator');
+      const coordinator = PreviewWorkerCoordinator.getInstance();
+
+      const warmed = await coordinator.waitForWarmup(100);
+      expect(warmed).toBe(true);
+      expect(coordinator.getIsWarmedUp()).toBe(true);
+    });
   });
 
   describe('3. React UI Performance Tuning & Code-Splitting in App.tsx', () => {
@@ -245,8 +281,8 @@ describe('Studio Boot Splash & First-Load Lifecycle Suite', () => {
       expect(appContent).toContain('<ExportConfigModal');
       expect(appContent).toContain('<ExportProgressModal');
 
-      // StudioBootController must be called in StudioWorkspace
-      expect(appContent).toContain('StudioBootController.dismiss()');
+      // StudioBootController.waitForEngineWarmup must be called in StudioWorkspace
+      expect(appContent).toContain('StudioBootController.waitForEngineWarmup()');
     });
   });
 });

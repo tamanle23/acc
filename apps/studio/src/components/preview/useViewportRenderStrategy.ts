@@ -7,6 +7,7 @@ import {
 import { PreviewWorkerCoordinator } from '../../renderer/PreviewWorkerCoordinator';
 import { PlayheadController } from '../../lib/playhead/PlayheadController';
 import { AssetTextureCache } from '../../lib/textures/AssetTextureCache';
+import { StudioBootController } from '../../lib/boot/StudioBootController';
 import type { WorkerRenderOptions } from '../../renderer/workers/PreviewWorkerBridge';
 
 export interface UseViewportRenderStrategyOptions {
@@ -89,6 +90,7 @@ export function useViewportRenderStrategy({
         strategy.onReady(() => {
           setIsReady(true);
           setAssetTick((t) => t + 1);
+          StudioBootController.notifyCanvasReady();
         });
       }
     }
