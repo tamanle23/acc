@@ -25,5 +25,6 @@
 ## Verification
 - Validated Electrobun view compilation and packaging via `electrobun build`.
 - Validated Electrobun configuration via `electrobun config`.
-- Verified pure CLI launch via `electrobun dev`.
+- Verified window lifecycle with explicit `win.show()` and `win.activate()` presentation.
+- Added graceful fallback and normalized Win32 filesystem paths for tray icon activation.
 

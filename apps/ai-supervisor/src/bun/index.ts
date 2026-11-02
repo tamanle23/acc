@@ -339,11 +339,17 @@ async function main() {
   const dashboardUrl = `http://127.0.0.1:${server.port}`;
 
   function getTrayIcon(color: "green" | "yellow" | "red"): string {
-    const icoPath = path.join(assetsDir, `tray-${color}.ico`);
-    if (fs.existsSync(icoPath)) {
-      return icoPath;
+    const candidatePaths = [
+      path.resolve(PATHS.VIEWS_FOLDER, "main", `tray-${color}.ico`),
+      path.resolve(process.cwd(), "src", "assets", `tray-${color}.ico`),
+      path.resolve(import.meta.dir, "..", "assets", `tray-${color}.ico`),
+    ];
+    for (const cand of candidatePaths) {
+      if (fs.existsSync(cand)) {
+        return path.normalize(cand);
+      }
     }
-    return `views://main/tray-${color}.ico`;
+    return "";
   }
 
   let mainWindow: BrowserWindow | null = null;
@@ -359,24 +365,34 @@ async function main() {
       }
     }
 
-    const win = new BrowserWindow({
-      title: "ACC Control Plane",
-      url: dashboardUrl,
-      frame: {
-        width: 1200,
-        height: 820,
-      },
-      titleBarStyle: "default",
-    });
+    console.log("[Supervisor] Instantiating BrowserWindow for URL:", dashboardUrl);
+    try {
+      const win = new BrowserWindow({
+        title: "ACC Control Plane",
+        url: dashboardUrl,
+        frame: {
+          width: 1200,
+          height: 820,
+        },
+        titleBarStyle: "default",
+      });
 
-    win.on("close", () => {
-      if (mainWindow === win) {
-        mainWindow = null;
-      }
-    });
+      // Explicitly reveal and activate window
+      win.show();
+      win.activate();
 
-    mainWindow = win;
-    return win;
+      win.on("close", () => {
+        if (mainWindow === win) {
+          mainWindow = null;
+        }
+      });
+
+      mainWindow = win;
+      return win;
+    } catch (winErr) {
+      console.error("[Supervisor] FATAL: Failed to instantiate BrowserWindow:", winErr);
+      throw winErr;
+    }
   }
 
   function getTrayMenuItems(): MenuItemConfig[] {
@@ -393,28 +409,36 @@ async function main() {
 
   let tray: Tray | null = null;
   try {
+    const trayIconPath = getTrayIcon(supervisorEngine.getTrayColor());
     tray = new Tray({
       title: "ACC Control Plane",
-      image: getTrayIcon(supervisorEngine.getTrayColor()),
+      image: trayIconPath,
     });
-    tray.setMenu(getTrayMenuItems());
+    if (tray.id && tray.visible) {
+      tray.setMenu(getTrayMenuItems());
 
-    tray.on("tray-clicked", (event: any) => {
-      const action = event?.data?.action;
-      if (!action || action === "open-dashboard") {
-        openDashboardWindow();
-      } else if (action === "purge-vram") {
-        supervisorEngine.purgeAllVram();
-      } else if (action === "restart-all") {
-        supervisorEngine.stopAll().then(() => supervisorEngine.startAll());
-      } else if (action === "check-update") {
-        updateManager.checkForUpdates();
-      } else if (action === "quit") {
-        shutdown();
-      }
-    });
+      tray.on("tray-clicked", (event: any) => {
+        const action = event?.data?.action;
+        if (!action || action === "open-dashboard") {
+          openDashboardWindow();
+        } else if (action === "purge-vram") {
+          supervisorEngine.purgeAllVram();
+        } else if (action === "restart-all") {
+          supervisorEngine.stopAll().then(() => supervisorEngine.startAll());
+        } else if (action === "check-update") {
+          updateManager.checkForUpdates();
+        } else if (action === "quit") {
+          shutdown();
+        }
+      });
+      console.log("[Supervisor] Electrobun Tray initialized successfully! id =", tray.id);
+    } else {
+      console.warn("[Supervisor] Electrobun Tray creation did not activate. Continuing in windowed mode.");
+      tray = null;
+    }
   } catch (trayErr) {
-    console.warn("[Supervisor] Failed to initialize Electrobun Tray:", trayErr);
+    console.warn("[Supervisor] Electrobun Tray unavailable:", trayErr);
+    tray = null;
   }
 
   const isMinimized = process.argv.includes("--minimized");
@@ -423,7 +447,7 @@ async function main() {
   }
 
   supervisorEngine.onStatusChange((_states, color) => {
-    if (tray) {
+    if (tray && tray.visible) {
       try {
         tray.setImage(getTrayIcon(color));
         tray.setTitle(`ACC (${color})`);
@@ -434,7 +458,9 @@ async function main() {
   });
 
   // 8. Start Fleet & Inverted Telemetry Stream Consumers
+  console.log("[Supervisor] [DEBUG] Starting supervisorEngine.startAll()...");
   await supervisorEngine.startAll();
+  console.log("[Supervisor] [DEBUG] supervisorEngine.startAll() completed.");
 
   const pythonStreamConsumer = new PythonGrpcStreamConsumer("127.0.0.1", config.pythonPort);
   pythonStreamConsumer.start();
