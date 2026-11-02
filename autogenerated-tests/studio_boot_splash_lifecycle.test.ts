@@ -170,7 +170,7 @@ describe('Studio Boot Splash & First-Load Lifecycle Suite', () => {
         return rafCalls;
       };
 
-      const dismissPromise = StudioBootController.dismiss();
+      const dismissPromise = StudioBootController.dismiss(0);
 
       // Let the RAFs fire
       await new Promise((r) => setTimeout(r, 15));
@@ -192,7 +192,7 @@ describe('Studio Boot Splash & First-Load Lifecycle Suite', () => {
         return child;
       };
 
-      // Wait for removal timeout (420ms)
+      // Wait for removal timeout (750ms)
       await dismissPromise;
 
       // Both splash element and style element should be pruned from DOM to free GPU memory
@@ -201,15 +201,15 @@ describe('Studio Boot Splash & First-Load Lifecycle Suite', () => {
     });
 
     it('is idempotent and ignores redundant dismissal invocations', async () => {
-      await StudioBootController.dismiss();
-      const secondCall = StudioBootController.dismiss();
+      await StudioBootController.dismiss(0);
+      const secondCall = StudioBootController.dismiss(0);
       expect(secondCall).resolves.toBeUndefined();
     });
 
     it('holds splash indefinitely when ?splash=hold query parameter is present', async () => {
       (window as any).location = { search: '?splash=hold' };
 
-      await StudioBootController.dismiss();
+      await StudioBootController.dismiss(0);
 
       // Splash must NOT have .splash-hidden added and must remain visible in the DOM
       expect(mockSplashEl.classList.contains('splash-hidden')).toBe(false);
@@ -219,7 +219,7 @@ describe('Studio Boot Splash & First-Load Lifecycle Suite', () => {
     it('delays splash dismissal when ?splash=<ms> numeric parameter is present', async () => {
       (window as any).location = { search: '?splash=50' };
 
-      const dismissPromise = StudioBootController.dismiss();
+      const dismissPromise = StudioBootController.dismiss(0);
 
       // Immediately after call, dismissal has not happened yet due to the delay
       expect(mockSplashEl.classList.contains('splash-hidden')).toBe(false);
@@ -228,7 +228,8 @@ describe('Studio Boot Splash & First-Load Lifecycle Suite', () => {
       await dismissPromise;
       expect(mockSplashEl.classList.contains('splash-hidden')).toBe(true);
     });
-    it('orchestrates preview worker warmup and canvas notification before dismissing', async () => {
+
+    it('orchestrates preview worker warmup, minimum dwell time, and canvas notification before dismissing', async () => {
       // Setup removeChild mock for DOM cleanup
       mockSplashEl.parentNode.removeChild = (child: MockElement) => {
         elementsById.delete(child.id);
@@ -242,6 +243,8 @@ describe('Studio Boot Splash & First-Load Lifecycle Suite', () => {
       const warmupPromise = StudioBootController.waitForEngineWarmup({
         workerTimeoutMs: 50,
         canvasTimeoutMs: 50,
+        minDurationMs: 50, // Shortened for unit test speed
+        settleDelayMs: 10,
       });
 
       // Status should update to warming up
@@ -254,6 +257,30 @@ describe('Studio Boot Splash & First-Load Lifecycle Suite', () => {
 
       // Status should have updated to Ready before dismissal
       expect(document.getElementById('app-boot-splash')).toBeNull();
+    });
+
+    it('enforces minimum dwell duration to prevent rushed/jarring splash outro', async () => {
+      // Setup removeChild mock
+      mockSplashEl.parentNode.removeChild = (child: MockElement) => {
+        elementsById.delete(child.id);
+        return child;
+      };
+      mockStyleEl.parentNode.removeChild = (child: MockElement) => {
+        elementsById.delete(child.id);
+        return child;
+      };
+
+      const start = performance.now();
+      await StudioBootController.waitForEngineWarmup({
+        workerTimeoutMs: 10,
+        canvasTimeoutMs: 10,
+        minDurationMs: 250, // Test custom duration
+        settleDelayMs: 50,
+      });
+      const duration = performance.now() - start;
+
+      // Must have waited at least 250ms dwell + 50ms settle
+      expect(duration).toBeGreaterThanOrEqual(280);
     });
 
     it('verifies PreviewWorkerCoordinator.waitForWarmup resolves cleanly', async () => {

@@ -57,16 +57,19 @@ export class StudioBootController {
   }
 
   /**
-   * Orchestrates the engine warmup sequence before dismissing the splash:
+   * Orchestrates the engine warmup sequence before smoothly dismissing the splash:
    * 1. Updates splash status to "Warming up preview worker & neural engines..."
    * 2. Waits for PreviewWorkerCoordinator sidecar worker warmup (with timeout fallback).
    * 3. Waits for Viewport Canvas worker initialization (with timeout fallback).
-   * 4. Updates splash status to "Ready".
-   * 5. Triggers smooth double-rAF first-paint dismissal.
+   * 4. Enforces a minimum dwell time (at least 2.5 seconds by default) to prevent jarring/rushed outro.
+   * 5. Updates splash status to "Ready" with a brief visual settling beat.
+   * 6. Triggers smooth 700ms cinematic crossfade dismissal & unlinks DOM elements.
    */
   static async waitForEngineWarmup(options?: {
     workerTimeoutMs?: number;
     canvasTimeoutMs?: number;
+    minDurationMs?: number;
+    settleDelayMs?: number;
   }): Promise<void> {
     if (this.dismissed) return;
 
@@ -82,16 +85,34 @@ export class StudioBootController {
       // Graceful fallback: never let an error trap the splash screen
     }
 
+    // Enforce minimum dwell time (at least 2.5s) to guarantee an unhurried, calm brand presentation
+    const minDuration = options?.minDurationMs ?? 2500;
+    const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    const startTime = (typeof window !== 'undefined' && (window as any)?.__studioBootStartTime) ?? now;
+    const elapsed = now - startTime;
+    const remainingMs = Math.max(0, minDuration - elapsed);
+
+    if (remainingMs > 0) {
+      await new Promise((r) => setTimeout(r, remainingMs));
+    }
+
     this.updateStatus('Ready');
-    await this.dismiss();
+
+    // Visual settle pause (default: 250ms) so "Ready" status is perceived before the smooth outro
+    const settleDelay = options?.settleDelayMs ?? 250;
+    if (settleDelay > 0) {
+      await new Promise((r) => setTimeout(r, settleDelay));
+    }
+
+    await this.dismiss(0);
   }
 
   /**
    * Synchronizes with first paint via double requestAnimationFrame,
-   * triggers the smooth 400ms fade/scale dismissal, and unlinks
+   * triggers the smooth 700ms cinematic fade/scale/blur dismissal, and unlinks
    * the splash element and its critical stylesheet from the DOM.
    */
-  static dismiss(): Promise<void> {
+  static dismiss(minDisplayDurationMs = 2500): Promise<void> {
     if (this.dismissed) return Promise.resolve();
     this.dismissed = true;
 
@@ -112,6 +133,13 @@ export class StudioBootController {
 
     const simulatedDelayMs = splashParam && !isNaN(Number(splashParam)) ? Number(splashParam) : 0;
 
+    // Calculate remaining minimum dwell time
+    const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    const startTime = (typeof window !== 'undefined' && (window as any)?.__studioBootStartTime) ?? now;
+    const elapsed = now - startTime;
+    const remainingMs = Math.max(0, minDisplayDurationMs - elapsed);
+    const totalDelayMs = Math.max(remainingMs, simulatedDelayMs);
+
     return new Promise<void>((resolve) => {
       const splashEl = document.getElementById('app-boot-splash');
       if (!splashEl) {
@@ -129,7 +157,7 @@ export class StudioBootController {
 
         splashEl.classList.add('splash-hidden');
 
-        // Transition duration is 400ms in CSS; remove DOM elements at 420ms
+        // Transition duration is 700ms in CSS; remove DOM elements at 750ms
         setTimeout(() => {
           try {
             if (splashEl.parentNode) {
@@ -143,7 +171,7 @@ export class StudioBootController {
             // Ignore edge-case removal errors
           }
           resolve();
-        }, 420);
+        }, 750);
       };
 
       const scheduleDismiss = () => {
@@ -159,8 +187,8 @@ export class StudioBootController {
         }
       };
 
-      if (simulatedDelayMs > 0) {
-        setTimeout(scheduleDismiss, simulatedDelayMs);
+      if (totalDelayMs > 0) {
+        setTimeout(scheduleDismiss, totalDelayMs);
       } else {
         scheduleDismiss();
       }

@@ -22,10 +22,13 @@ To provide instant feedback on cold boot without layout shifts or FOUC:
    - Renders in $< 10\text{ ms}$ before any Vite bundles are fetched.
    - **Compositor-Only 60 FPS**: Uses strictly GPU-accelerated CSS properties (`transform`, `opacity` with `will-change`) so the breathing aperture logo and shimmer rail stay fluid while V8 compiles the main JavaScript bundle.
    - **WCAG 2.2 AA Accessibility**: `role="status"`, `aria-live="polite"`, `aria-label="Loading ACC Studio Workstation"`, and `@media (prefers-reduced-motion: reduce)` fallbacks.
-2. **Tier 2 (React Lifecycle & First-Paint Synchronization)**:
+2. **Tier 2 (React Lifecycle, Engine Warmup & Smooth Outro Synchronization)**:
    - Orchestrated by [`StudioBootController.ts`](./src/lib/boot/StudioBootController.ts).
-   - Uses a **Double `requestAnimationFrame`** pattern to guarantee the Viewport Canvas and Timeline rulers have completed their first paint before fading out over 400ms (`opacity: 0, transform: scale(1.02)`).
-   - Unlinks `#app-boot-splash` and its `<style>` tag from the DOM after 420ms, freeing GPU memory layers.
+   - Awaits `PreviewWorkerCoordinator.waitForWarmup()` and Viewport Canvas worker initialization.
+   - **Minimum 2.5s Dwell Time**: Enforces at least 2.5 seconds total display time (`minDurationMs = 2500`) to guarantee an unhurried, calm brand presentation even on ultra-fast cached loads.
+   - **Status Settle Beat**: Gives `"Ready"` a brief 250ms visual pause so the user perceives the system status before dismissal.
+   - **Smooth Outro Transition**: Features a 700ms cinematic ease curve (`cubic-bezier(0.22, 1, 0.36, 1)`) with subtle outward scale expansion (`scale(1.025)`), depth blur (`filter: blur(6px)`), and card settle (`scale(0.985)`) to eliminate abruptness and visual hustle.
+   - Unlinks `#app-boot-splash` and its `<style>` tag from the DOM after 750ms, freeing GPU memory layers.
 
 ---
 

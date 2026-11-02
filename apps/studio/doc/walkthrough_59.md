@@ -25,8 +25,11 @@ Engineered an enterprise-grade **Two-Tier Hybrid Boot Splash Architecture** and 
      - Awaits `PreviewWorkerCoordinator.getInstance().waitForWarmup()` (sidecar worker warmup).
      - Awaits Viewport Canvas offscreen worker initialization (`StudioBootController.notifyCanvasReady()` inside `useViewportRenderStrategy.ts`).
      - Updates status to `"Ready"`.
-     - Utilizes a **Double `requestAnimationFrame`** pattern to guarantee the freshly drawn canvas frame has painted to the screen before the 400ms crossfade begins (`opacity: 0, transform: scale(1.02)`).
-   - Automatically unlinks `#app-boot-splash` and its inline `<style id="boot-splash-style">` from the DOM after 420ms, completely freeing compositor and memory layers.
+     - Enforces **minimum 2.5 seconds total dwell time** (`minDurationMs = 2500`) to guarantee an unhurried, calm brand presentation.
+     - Gives `"Ready"` status a 250ms visual pause before starting the outro.
+     - Utilizes a **Double `requestAnimationFrame`** pattern to guarantee the freshly drawn canvas frame has painted to the screen.
+     - Triggers an ultra-smooth **700ms cinematic outro** (`cubic-bezier(0.22, 1, 0.36, 1)`) with subtle scale expansion (`scale(1.025)`), depth blur (`filter: blur(6px)`), and card settle (`scale(0.985)`) to eliminate visual hustle.
+   - Automatically unlinks `#app-boot-splash` and its inline `<style id="boot-splash-style">` from the DOM after 750ms, completely freeing compositor and memory layers.
    - Built-in simulation flags: `?splash=hold` (freeze permanently for visual styling) and `?splash=<ms>` (delay dismissal by specified milliseconds).
 
 3. **React UI Performance Tuning & Code-Splitting (`App.tsx`)**:
