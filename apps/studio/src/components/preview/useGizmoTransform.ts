@@ -23,7 +23,7 @@ export interface TransformState {
 }
 
 export interface GizmoTelemetry {
-  mode: 'move' | 'scale' | 'rotate' | null;
+  mode: 'move' | 'scale' | 'rotate' | 'anchor' | null;
   deltaX: number;
   deltaY: number;
   widthPx: number;
@@ -31,6 +31,21 @@ export interface GizmoTelemetry {
   scale: number;
   rotation: number;
   activeGuides: SnappingGuide[];
+  anchorPoint?: [number, number];
+  gizmoTool?: 'move' | 'anchor';
+}
+
+export interface GizmoHUDControls {
+  tool: 'move' | 'anchor';
+  snapEnabled: boolean;
+  axisLock: boolean;
+  centerScale: boolean;
+  anchorPoint: [number, number];
+  setTool: (t: 'move' | 'anchor') => void;
+  setSnapEnabled: (s: boolean | ((prev: boolean) => boolean)) => void;
+  setAxisLock: (l: boolean | ((prev: boolean) => boolean)) => void;
+  setCenterScale: (c: boolean | ((prev: boolean) => boolean)) => void;
+  setAnchorPoint: (p: [number, number]) => void;
 }
 
 export interface UseGizmoTransformOptions {
@@ -40,6 +55,7 @@ export interface UseGizmoTransformOptions {
   isLocked: boolean;
   timeline?: ResolvedTimeline | null;
   doc?: VideoIRDocument | null;
+  activeSequences?: StudioSequence[];
   previewEngine?: {
     setEphemeralTransformOverride?: (sequenceId: string, override: any) => void;
   } | null;
@@ -53,6 +69,7 @@ export function useGizmoTransform({
   isLocked,
   timeline,
   doc,
+  activeSequences = [],
   previewEngine,
   onRenderFrame,
 }: UseGizmoTransformOptions) {
@@ -73,6 +90,19 @@ export function useGizmoTransform({
     scale: 1.0,
     rotation: 0,
   });
+
+  // Studio Pro NLE HUD Controls & Mode States
+  const [gizmoTool, setGizmoTool] = useState<'move' | 'anchor'>('move');
+  const [snapEnabled, setSnapEnabled] = useState(true);
+  const [axisLock, setAxisLock] = useState(false);
+  const [centerScale, setCenterScale] = useState(true);
+  const [anchorPoint, setAnchorPoint] = useState<[number, number]>([0.5, 0.5]);
+  const [startAnchorPoint, setStartAnchorPoint] = useState<[number, number]>([0.5, 0.5]);
+  const latestAnchorPointRef = useRef<[number, number]>(anchorPoint);
+
+  useEffect(() => {
+    latestAnchorPointRef.current = anchorPoint;
+  }, [anchorPoint]);
 
   // Resolve active selected sequence
   const allSeqs: StudioSequence[] = useMemo(() => {
@@ -132,6 +162,14 @@ export function useGizmoTransform({
           scale: typeof p.scale === 'number' ? p.scale : 1.0,
           rotation: typeof p.rotation === 'number' ? p.rotation : 0,
         });
+        if (Array.isArray(p.anchorPoint) && p.anchorPoint.length === 2) {
+          const pt: [number, number] = [Number(p.anchorPoint[0]), Number(p.anchorPoint[1])];
+          setAnchorPoint(pt);
+          latestAnchorPointRef.current = pt;
+        } else {
+          setAnchorPoint([0.5, 0.5]);
+          latestAnchorPointRef.current = [0.5, 0.5];
+        }
         return;
       }
     }
@@ -142,6 +180,8 @@ export function useGizmoTransform({
       scale: 1.0,
       rotation: 0,
     });
+    setAnchorPoint([0.5, 0.5]);
+    latestAnchorPointRef.current = [0.5, 0.5];
   }, [selectedSeqId, selectedSeq]);
 
   const dragStartCoordsRef = useRef<{ clientX: number; clientY: number } | null>(null);
@@ -163,11 +203,12 @@ export function useGizmoTransform({
       setIsDragging(true);
       setActiveHandle(handleType);
       setStartTransform({ ...transform });
+      setStartAnchorPoint([...anchorPoint]);
 
-      const mode = handleType === 'body' ? 'move' : handleType === 'rotate' ? 'rotate' : 'scale';
-      overlayRef.current.setActiveInteraction(handleType, mode);
+      const mode = handleType === 'anchor' ? 'anchor' : handleType === 'body' ? 'move' : handleType === 'rotate' ? 'rotate' : 'scale';
+      overlayRef.current.setActiveInteraction(handleType, mode === 'anchor' ? 'move' : mode);
     },
-    [isLocked, transform]
+    [isLocked, transform, anchorPoint]
   );
 
   const handlePointerMove = useCallback(
@@ -207,14 +248,42 @@ export function useGizmoTransform({
       const isCorner = activeHandle === 'tl' || activeHandle === 'tr' || activeHandle === 'bl' || activeHandle === 'br';
       const lockAspectRatio = isCorner ? !e.shiftKey : false;
 
+      // Dynamic Sibling Harvesting for Magnetic Snapping
+      const siblingBoxes: SiblingGuideBox[] = (activeSequences || [])
+        .filter((s) => s.id !== selectedSeqId)
+        .map((s) => {
+          const b = CanvasHitTester.resolveSequenceBounds(s as any, width, height, 8);
+          return {
+            id: s.id,
+            label: s.name || b.label || 'Sibling',
+            normX: b.normX,
+            normY: b.normY,
+            normWidth: b.normWidth,
+            normHeight: b.normHeight,
+          };
+        });
+
+      // Keyboard modifiers & HUD toggles
+      const disableSnapping = !snapEnabled || e.ctrlKey || e.metaKey;
+      const isAxisLocked = axisLock || (activeHandle === 'body' && e.shiftKey);
+      const isCenterScaling = centerScale || e.altKey;
+
       const dragRes = Gizmo2DTransformation.computeDragTransform(
         startNormBox,
         activeHandle,
         currentPointerNorm,
         startPointerNorm,
         lockAspectRatio,
-        false
+        disableSnapping,
+        siblingBoxes,
+        isCenterScaling,
+        isAxisLocked
       );
+
+      if (dragRes.anchorResult) {
+        latestAnchorPointRef.current = dragRes.anchorResult;
+        setAnchorPoint(dragRes.anchorResult);
+      }
 
       const guides = dragRes.snapResult?.activeGuides || [];
       setActiveGuides(guides);
@@ -232,7 +301,15 @@ export function useGizmoTransform({
       overlayRef.current.update(newNormBox, guides);
 
       // Update Live Telemetry HUD state
-      const currentMode = activeHandle === 'body' ? 'move' : activeHandle === 'rotate' ? 'rotate' : 'scale';
+      const currentMode =
+        activeHandle === 'anchor'
+          ? 'anchor'
+          : activeHandle === 'body'
+          ? 'move'
+          : activeHandle === 'rotate'
+          ? 'rotate'
+          : 'scale';
+
       setTelemetry({
         mode: currentMode,
         deltaX: newTransform.x,
@@ -242,6 +319,8 @@ export function useGizmoTransform({
         scale: newTransform.scale,
         rotation: newTransform.rotation,
         activeGuides: guides,
+        anchorPoint: dragRes.anchorResult || latestAnchorPointRef.current,
+        gizmoTool,
       });
 
       if (previewEngine?.setEphemeralTransformOverride && selectedSeqId) {
@@ -264,6 +343,11 @@ export function useGizmoTransform({
       targetBounds,
       width,
       height,
+      activeSequences,
+      snapEnabled,
+      axisLock,
+      centerScale,
+      gizmoTool,
       previewEngine,
       onRenderFrame,
     ]
@@ -279,8 +363,12 @@ export function useGizmoTransform({
 
       dragStartCoordsRef.current = null;
       const finalTransform = latestTransformRef.current || transform;
+      const finalAnchor = latestAnchorPointRef.current || anchorPoint;
       if (selectedSeqId && !isLocked) {
-        IRStateManager.getInstance().updateModifier(selectedSeqId, 'transform', { ...finalTransform });
+        IRStateManager.getInstance().updateModifier(selectedSeqId, 'transform', {
+          ...finalTransform,
+          anchorPoint: finalAnchor,
+        });
       }
       if (previewEngine?.setEphemeralTransformOverride && selectedSeqId) {
         previewEngine.setEphemeralTransformOverride(selectedSeqId, null);
@@ -292,7 +380,7 @@ export function useGizmoTransform({
       setTelemetry(null);
       overlayRef.current.setActiveInteraction(null, null);
     },
-    [isDragging, selectedSeqId, isLocked, transform, previewEngine, onRenderFrame]
+    [isDragging, selectedSeqId, isLocked, transform, anchorPoint, previewEngine, onRenderFrame]
   );
 
   // Studio Keyboard Nudging & Shortcuts
@@ -357,6 +445,18 @@ export function useGizmoTransform({
     activeHandle,
     activeGuides,
     telemetry,
+    hudControls: {
+      tool: gizmoTool,
+      snapEnabled,
+      axisLock,
+      centerScale,
+      anchorPoint,
+      setTool: setGizmoTool,
+      setSnapEnabled,
+      setAxisLock,
+      setCenterScale,
+      setAnchorPoint,
+    },
     handlePointerDown,
     handlePointerMove,
     handlePointerUp,

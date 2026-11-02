@@ -4,6 +4,7 @@ export * from './ContextualActionPill';
 export * from './TelemetryCompanionCard';
 export * from './TransformHandles';
 export * from './InlineTextEditorModal';
+export * from './InPlaceTextEditor';
 export * from './UniversalCanvasHitOverlay';
 export * from './StagingDropTargetOverlay';
 export * from './TransformGizmoOverlay';
