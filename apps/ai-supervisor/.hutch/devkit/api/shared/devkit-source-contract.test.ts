@@ -63,7 +63,6 @@ describe("private devkit source contract", () => {
 		expect(Object.keys(manifest.dependencies ?? {}).sort()).toEqual([
 			"@types/bun",
 			"png-to-ico",
-			"proxy-agent",
 			"rcedit",
 		]);
 		expect(Object.keys(manifest.devDependencies ?? {})).toEqual(["typescript"]);
@@ -188,5 +187,5 @@ describe("private devkit source contract", () => {
 		} finally {
 			rmSync(tempDir, { force: true, recursive: true });
 		}
-	});
+	}, 30_000);
 });

@@ -7,7 +7,12 @@
     "esModuleInterop": true,
     "jsx": "preserve",
     "jsxImportSource": "solid-js",
-    "types": ["bun-types"],
+    "types": ["@types/bun", "@types/node"],
+    "paths": {
+      "electrobun": ["./.hutch/devkit/api/sdks/main/index.ts"],
+      "electrobun/bun": ["./.hutch/devkit/api/sdks/main/index.ts"],
+      "electrobun/*": ["./.hutch/devkit/api/sdks/main/entries/*", "./.hutch/devkit/api/sdks/main/*", "./.hutch/devkit/*"]
+    },
     "strict": true,
     "skipLibCheck": true,
     "noEmit": true

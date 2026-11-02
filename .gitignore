@@ -57,6 +57,7 @@ __pycache__/
 *.pyc
 pnpm-lock.yaml
 *.bun-build
+.cottontail-tmp/
 
 **/tmp/
 tmp/

@@ -10,7 +10,7 @@
 import path from "node:path";
 import fs from "node:fs";
 import os from "node:os";
-import { type IProcessRunner, defaultProcessRunner } from "./platform/IProcessRunner";
+import { type IProcessRunner, defaultProcessRunner } from "./IProcessRunner.js";
 
 const APP_NAME = "ACCControlPlane";
 const APP_LABEL = "com.acc.ai-supervisor";

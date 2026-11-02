@@ -1,6 +1,6 @@
 import os from "node:os";
 import type { HardwareTierOption } from "./configStore.js";
-import { type IProcessRunner, defaultProcessRunner } from "./platform/IProcessRunner.js";
+import { type IProcessRunner, defaultProcessRunner } from "./IProcessRunner.js";
 
 export type HardwareTier = "tier1" | "tier2" | "tier3" | "tier4" | "tier5";
 

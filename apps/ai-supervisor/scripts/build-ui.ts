@@ -82,7 +82,7 @@ async function buildUI() {
   const inputCss = path.join(srcUiDir, "index.css");
   const outputCss = path.join(distUiDir, "index.css");
   const tailwindProc = spawn(
-    ["bunx", "@tailwindcss/cli", "-i", inputCss, "-o", outputCss, "--minify"],
+    ["bun", "x", "@tailwindcss/cli", "-i", inputCss, "-o", outputCss, "--minify"],
     {
       cwd: appRoot,
       stdout: "ignore",

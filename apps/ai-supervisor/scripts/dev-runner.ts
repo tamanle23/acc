@@ -23,8 +23,8 @@ const uiWatch = spawn(["bun", "run", "scripts/build-ui.ts", "--watch"], {
   stderr: "inherit",
 });
 
-// 3. Spawn Supervisor backend process with --watch
-const appProc = spawn(["bun", "--watch", "run", "src/bun/index.ts"], {
+// 3. Spawn Electrobun dev host process
+const appProc = spawn(["bun", "run", "dev:electrobun"], {
   cwd: appRoot,
   stdout: "inherit",
   stderr: "inherit",

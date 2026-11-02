@@ -1,4 +1,4 @@
-import { type IProcessRunner, defaultProcessRunner } from "../platform/IProcessRunner.js";
+import { type IProcessRunner, defaultProcessRunner } from "../IProcessRunner.js";
 import { telemetryBroker } from "./TelemetryEventBroker.js";
 
 export interface ProcessResourceStats {

@@ -8,8 +8,7 @@ import { logManager } from "./LogManager.js";
 import { supervisorEngine, findRepoRoot } from "./SupervisorEngine.js";
 import { updateManager } from "./UpdateManager.js";
 import { setStartupEnabled, getStartupStatus } from "./StartupManager.js";
-import { NativeTrayBridge } from "./NativeTrayBridge.js";
-import { WindowHost } from "./WindowHost.js";
+import { BrowserWindow, Tray, type MenuItemConfig } from "electrobun/bun";
 import { telemetryBroker } from "./telemetry/TelemetryEventBroker.js";
 import { PythonGrpcStreamConsumer } from "./telemetry/PythonGrpcStreamConsumer.js";
 import { WorkerSseStreamConsumer } from "./telemetry/WorkerSseStreamConsumer.js";
@@ -355,35 +354,103 @@ async function main() {
 
   console.log(`[Supervisor] Control Plane Dashboard: http://127.0.0.1:${server.port}`);
 
-  // 7. Launch Native System Tray & Window Host
+  // 7. Launch Native System Tray & Window Host via Pure Electrobun
   const assetsDir = path.join(import.meta.dir, "..", "assets");
   const dashboardUrl = `http://127.0.0.1:${server.port}`;
-  const windowHost = new WindowHost({ url: dashboardUrl });
 
-  const trayBridge = new NativeTrayBridge({
-    iconDir: assetsDir,
-    initialColor: supervisorEngine.getTrayColor(),
-    onOpenDashboard: () => {
-      windowHost.open();
-    },
-    onPurgeVram: () => supervisorEngine.purgeAllVram(),
-    onRestartAll: async () => {
-      await supervisorEngine.stopAll();
-      await supervisorEngine.startAll();
-    },
-    onCheckUpdate: () => updateManager.checkForUpdates(),
-    onExit: () => shutdown(),
-  });
-  const trayStarted = await trayBridge.start();
+  function getTrayIcon(color: "green" | "yellow" | "red"): string {
+    const icoPath = path.join(assetsDir, `tray-${color}.ico`);
+    if (fs.existsSync(icoPath)) {
+      return icoPath;
+    }
+    return `views://main/tray-${color}.ico`;
+  }
+
+  let mainWindow: BrowserWindow | null = null;
+
+  function openDashboardWindow(): BrowserWindow {
+    if (mainWindow) {
+      try {
+        mainWindow.show();
+        mainWindow.activate();
+        return mainWindow;
+      } catch {
+        mainWindow = null;
+      }
+    }
+
+    const win = new BrowserWindow({
+      title: "ACC Control Plane",
+      url: dashboardUrl,
+      frame: {
+        width: 1200,
+        height: 820,
+      },
+      titleBarStyle: "default",
+    });
+
+    win.on("close", () => {
+      if (mainWindow === win) {
+        mainWindow = null;
+      }
+    });
+
+    mainWindow = win;
+    return win;
+  }
+
+  function getTrayMenuItems(): MenuItemConfig[] {
+    return [
+      { type: "normal", label: "Open Dashboard", action: "open-dashboard" },
+      { type: "normal", label: "Purge All VRAM", action: "purge-vram" },
+      { type: "normal", label: "Restart Services", action: "restart-all" },
+      { type: "divider" },
+      { type: "normal", label: "Check for Updates...", action: "check-update" },
+      { type: "divider" },
+      { type: "normal", label: "Quit", action: "quit" },
+    ];
+  }
+
+  let tray: Tray | null = null;
+  try {
+    tray = new Tray({
+      title: "ACC Control Plane",
+      image: getTrayIcon(supervisorEngine.getTrayColor()),
+    });
+    tray.setMenu(getTrayMenuItems());
+
+    tray.on("tray-clicked", (event: any) => {
+      const action = event?.data?.action;
+      if (!action || action === "open-dashboard") {
+        openDashboardWindow();
+      } else if (action === "purge-vram") {
+        supervisorEngine.purgeAllVram();
+      } else if (action === "restart-all") {
+        supervisorEngine.stopAll().then(() => supervisorEngine.startAll());
+      } else if (action === "check-update") {
+        updateManager.checkForUpdates();
+      } else if (action === "quit") {
+        shutdown();
+      }
+    });
+  } catch (trayErr) {
+    console.warn("[Supervisor] Failed to initialize Electrobun Tray:", trayErr);
+  }
 
   const isMinimized = process.argv.includes("--minimized");
-  if (!isMinimized || !trayStarted) {
-    await windowHost.open();
+  if (!isMinimized || !tray) {
+    openDashboardWindow();
   }
 
   supervisorEngine.onStatusChange((_states, color) => {
-    trayBridge.setIcon(color);
-    trayBridge.setTooltip(`ACC Control Plane - ${color === "green" ? "Healthy" : color === "yellow" ? "Processing" : "Alert"}`);
+    if (tray) {
+      try {
+        tray.setImage(getTrayIcon(color));
+        tray.setTitle(`ACC (${color})`);
+      } catch (err) {
+        console.warn("[Supervisor] Failed to update Electrobun tray icon:", err);
+      }
+    }
   });
 
   // 8. Start Fleet & Inverted Telemetry Stream Consumers
@@ -400,8 +467,16 @@ async function main() {
     console.log("\n[Supervisor] Shutting down all supervised services...");
     pythonStreamConsumer.stop();
     workerStreamConsumer.stop();
-    trayBridge.stop();
-    windowHost.close();
+    if (tray) {
+      try {
+        tray.remove();
+      } catch {}
+    }
+    if (mainWindow) {
+      try {
+        mainWindow.close();
+      } catch {}
+    }
     await supervisorEngine.stopAll();
     server.stop();
     process.exit(0);
