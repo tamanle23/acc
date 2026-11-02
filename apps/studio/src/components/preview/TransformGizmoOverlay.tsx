@@ -96,6 +96,26 @@ export function TransformGizmoOverlay({
           sequenceType: 'video',
         });
 
+  const activeInterp =
+    !isDragging && selectedSeq && previewEngine
+      ? previewEngine.getActiveInterpolatedTransform(selectedSeq, currentFrame)
+      : null;
+  const curX = activeInterp ? activeInterp.x : transform.x;
+  const curY = activeInterp ? activeInterp.y : transform.y;
+  const curScale = activeInterp
+    ? ((activeInterp as any).scale ?? (activeInterp as any).scaleX ?? transform.scale)
+    : transform.scale;
+  const curRot = activeInterp ? activeInterp.rotation : transform.rotation;
+  const curOpacity = activeInterp ? activeInterp.opacity : 1.0;
+
+  const canvasW = width;
+  const canvasH = height;
+
+  const percentX = (bounds.normX + curX / canvasW) * 100;
+  const percentY = (bounds.normY + curY / canvasH) * 100;
+  const widthPercent = bounds.normWidth * 100;
+  const heightPercent = bounds.normHeight * 100;
+
   return (
     <TransformBodyDraggable
       isLocked={isLocked}
@@ -121,36 +141,14 @@ export function TransformGizmoOverlay({
           });
         }
       }}
-      style={(() => {
-        const activeInterp =
-          !isDragging && selectedSeq && previewEngine
-            ? previewEngine.getActiveInterpolatedTransform(selectedSeq, currentFrame)
-            : null;
-        const curX = activeInterp ? activeInterp.x : transform.x;
-        const curY = activeInterp ? activeInterp.y : transform.y;
-        const curScale = activeInterp
-          ? ((activeInterp as any).scale ?? (activeInterp as any).scaleX ?? transform.scale)
-          : transform.scale;
-        const curRot = activeInterp ? activeInterp.rotation : transform.rotation;
-        const curOpacity = activeInterp ? activeInterp.opacity : 1.0;
-
-        const canvasW = width;
-        const canvasH = height;
-
-        const percentX = (bounds.normX + curX / canvasW) * 100;
-        const percentY = (bounds.normY + curY / canvasH) * 100;
-        const widthPercent = bounds.normWidth * 100;
-        const heightPercent = bounds.normHeight * 100;
-
-        return {
-          left: `${percentX}%`,
-          top: `${percentY}%`,
-          width: `${widthPercent}%`,
-          height: `${heightPercent}%`,
-          transform: `translate(-50%, -50%) scale(${curScale}) rotate(${curRot}deg)`,
-          opacity: curOpacity,
-        };
-      })()}
+      style={{
+        left: `${percentX}%`,
+        top: `${percentY}%`,
+        width: `${widthPercent}%`,
+        height: `${heightPercent}%`,
+        transform: `translate(-50%, -50%) scale(${curScale}) rotate(${curRot}deg)`,
+        opacity: curOpacity,
+      }}
       className={`absolute border-2 ${
         isLocked
           ? 'border-amber-400/80 bg-amber-500/5 cursor-not-allowed shadow-[0_0_20px_rgba(245,158,11,0.25)]'
