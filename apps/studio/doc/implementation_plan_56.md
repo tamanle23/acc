@@ -18,11 +18,11 @@ Even though telemetry displays 60 FPS playback, the preview in Studio suffers fr
   * Ensure high-frequency playhead subscriber alone drives canvas rendering during playback.
 
 ### Phase 2: High-Frequency Sub-Frame Needle Gliding & Frame Deduplication
-* In `apps/studio/src/lib/playhead/StudioPlayheadController.ts`:
+* In `apps/studio/src/lib/playhead/PlayheadController.ts`:
   * Add `fractionalFrame` to `PlayheadSubscriber` and `seek(frame, immediateUiSync, fractionalFrame)`.
   * Throttle `notifyLowFreq` to 250ms during playback to reduce React reconciliation by 60%.
 * In `apps/studio/src/lib/shuttle/useShuttleEngine.ts`:
-  * Track raw continuous frame and pass both discrete and fractional frames to `StudioPlayheadController.seek()`.
+  * Track raw continuous frame and pass both discrete and fractional frames to `PlayheadController.seek()`.
   * Guard audio context running state.
 * In `apps/studio/src/components/Timeline.tsx`:
   * Bind needle position to `fractionalFrame ?? frame` during active playback for 60/120 Hz gliding.
@@ -42,7 +42,7 @@ Even though telemetry displays 60 FPS playback, the preview in Studio suffers fr
 
 ## File Changes
 * `apps/studio/src/components/preview/useViewportRenderStrategy.ts`
-* `apps/studio/src/lib/playhead/StudioPlayheadController.ts`
+* `apps/studio/src/lib/playhead/PlayheadController.ts`
 * `apps/studio/src/lib/shuttle/useShuttleEngine.ts`
 * `apps/studio/src/components/Timeline.tsx`
 * `apps/studio/src/renderer/strategies/WorkerRenderStrategy.ts`

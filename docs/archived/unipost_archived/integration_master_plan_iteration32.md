@@ -25,7 +25,7 @@ When clicking **Play** in `@acc/studio`, playback runs for ~2–5 seconds and th
 ┌─────────────────────────────────────────────────────────────┐
 │                       MAIN UI THREAD                        │
 │                                                             │
-│  [StudioPlayheadController] <──> [DeterministicTimelineClock]│
+│  [PlayheadController] <──> [DeterministicTimelineClock]│
 │         │                                                   │
 │         ├─► High-Frequency Tick (60fps postMessage)         │
 │         │                                                   │

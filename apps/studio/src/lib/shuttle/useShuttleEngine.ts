@@ -7,7 +7,7 @@ import {
 } from './shuttleTypes';
 import { WebAudioEngine } from '../audio/WebAudioEngine';
 import { DeterministicTimelineClock } from '../clock/DeterministicTimelineClock';
-import { StudioPlayheadController } from '../playhead/StudioPlayheadController';
+import { PlayheadController } from '../playhead/PlayheadController';
 import type { IRState } from '../ir/irState';
 
 export interface UseShuttleEngineOptions {
@@ -171,14 +171,14 @@ export function useShuttleEngine({
       if (targetFrame >= endFrame && currentSpeed > 0) {
         const discreteFrame = snapToDiscreteFrame(endFrame);
         currentFrameRef.current = discreteFrame;
-        StudioPlayheadController.getInstance().seek(discreteFrame, true);
+        PlayheadController.getInstance().seek(discreteFrame, true);
         onScrubRef.current(discreteFrame);
         setSpeed(0);
         return;
       } else if (targetFrame <= 0 && currentSpeed < 0) {
         const discreteFrame = 0;
         currentFrameRef.current = discreteFrame;
-        StudioPlayheadController.getInstance().seek(discreteFrame, true);
+        PlayheadController.getInstance().seek(discreteFrame, true);
         onScrubRef.current(discreteFrame);
         setSpeed(0);
         return;
@@ -189,7 +189,7 @@ export function useShuttleEngine({
       currentFrameRef.current = discreteFrame;
 
       // Advance high-frequency render subscribers (Canvas & Needle) on EVERY RAF frame at full 60 FPS
-      StudioPlayheadController.getInstance().seek(discreteFrame, false, rawFractionalFrame);
+      PlayheadController.getInstance().seek(discreteFrame, false, rawFractionalFrame);
 
       // Throttle React state update to ~4 Hz (every 250ms) during continuous playback,
       // preventing continuous 60 Hz React reconciliation overhead

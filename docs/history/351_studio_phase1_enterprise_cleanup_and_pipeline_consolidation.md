@@ -43,4 +43,4 @@ Consolidated duplicate worker and texture cache layers into single authoritative
 - [x] Verify unit tests and Vite production build
 
 ## Enhancement
-Proceed to Phase 2 (`useSyncExternalStore` selector hooks for `IRStateManager` & `StudioPlayheadController`, fixing un-subscribed state reads in `Titlebar.tsx` and `ModifierControlStrategies.tsx`, and eliminating `any` types across sequence/track/drag contracts).
+Proceed to Phase 2 (`useSyncExternalStore` selector hooks for `IRStateManager` & `PlayheadController`, fixing un-subscribed state reads in `Titlebar.tsx` and `ModifierControlStrategies.tsx`, and eliminating `any` types across sequence/track/drag contracts).

@@ -1,6 +1,6 @@
 import { useRef, useSyncExternalStore } from 'react';
 import { IRStateManager, type IRState } from './irState';
-import { StudioPlayheadController } from '../playhead/StudioPlayheadController';
+import { PlayheadController } from '../playhead/PlayheadController';
 
 /**
  * React 19 external store hook returning the full IRState snapshot.
@@ -39,11 +39,11 @@ export function useIRSelector<T>(
 }
 
 /**
- * React 19 external store hook subscribed to StudioPlayheadController's
+ * React 19 external store hook subscribed to PlayheadController's
  * low-frequency (~10 Hz during playback, immediate on seek/stop) frame updates.
  */
 export function usePlayheadFrame(): number {
-  const controller = StudioPlayheadController.getInstance();
+  const controller = PlayheadController.getInstance();
   return useSyncExternalStore(
     controller.subscribeLowFrequency,
     controller.getFrame,
@@ -52,10 +52,10 @@ export function usePlayheadFrame(): number {
 }
 
 /**
- * React 19 external store hook subscribed to StudioPlayheadController's playing state.
+ * React 19 external store hook subscribed to PlayheadController's playing state.
  */
 export function usePlayheadIsPlaying(): boolean {
-  const controller = StudioPlayheadController.getInstance();
+  const controller = PlayheadController.getInstance();
   return useSyncExternalStore(
     controller.subscribeLowFrequency,
     controller.getIsPlaying,

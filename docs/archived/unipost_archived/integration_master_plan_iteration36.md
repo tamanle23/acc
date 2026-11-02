@@ -118,7 +118,7 @@ flowchart TD
 - **File:** `apps/studio/src/lib/vision/StudioVisionPipelineManager.ts`
 - Singleton orchestrator managing the vision worker lifecycle:
   - Schedules `WARMUP` via `window.requestIdleCallback` on startup.
-  - Observes `StudioPlayheadController`: when playback pauses, queues frame processing tasks for the active sequence.
+  - Observes `PlayheadController`: when playback pauses, queues frame processing tasks for the active sequence.
   - Emits cache invalidation events when modifier parameters change.
 
 ---

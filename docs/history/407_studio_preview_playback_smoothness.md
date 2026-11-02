@@ -7,7 +7,7 @@ Playback stutter despite a 60 FPS badge: stale async React `renderFrame` dispatc
 `docs/iterations/master_implementation_plan_iteration_60.md` + companion `docs/preview_playback_smoothness_and_decoupling_plan.md`.
 
 ## Changes
-- `StudioPlayheadController`: `fractionalFrame` on `seek()` and subscribers; low-freq sync 250 ms.
+- `PlayheadController`: `fractionalFrame` on `seek()` and subscribers; low-freq sync 250 ms.
 - `useShuttleEngine`: raw fractional + discrete frame; audio-master only when `WebAudioEngine.isContextRunning()` (new); React scrub throttle 250 ms.
 - `Timeline.tsx`: needle glides on fractional frame during playback.
 - `useViewportRenderStrategy`: React render pass suppressed while playing; `lastDispatchedFrameRef` dedupe.

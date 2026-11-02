@@ -42,7 +42,7 @@ flowchart TD
 
     subgraph Reactive_Store_Bridge [Zustand / useSyncExternalStore Bridge]
         StudioStore[Studio State (IR Document & Timeline)]
-        PlayheadCtrl[StudioPlayheadController (High-Frequency Direct RAF)]
+        PlayheadCtrl[PlayheadController (High-Frequency Direct RAF)]
         CanvasTracker[CanvasTransferTracker (WeakSet Memory Safe)]
     end
 

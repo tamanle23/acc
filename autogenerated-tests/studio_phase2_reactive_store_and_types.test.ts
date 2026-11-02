@@ -13,7 +13,7 @@ import {
   type StudioSequence,
   type StudioTrack,
 } from '../apps/studio/src/lib/ir/studioTypes';
-import { StudioPlayheadController } from '../apps/studio/src/lib/playhead/StudioPlayheadController';
+import { PlayheadController } from '../apps/studio/src/lib/playhead/PlayheadController';
 import { AddLinkedAVSequenceCommand } from '../apps/studio/src/lib/commands/AddLinkedAVSequenceCommand';
 import { UpdateProjectMetaCommand } from '../apps/studio/src/lib/commands/UpdateProjectMetaCommand';
 
@@ -160,9 +160,9 @@ describe('Studio Phase 2: Reactive Store (useSyncExternalStore) & Strict TypeScr
     });
   });
 
-  describe('4. StudioPlayheadController Bound Methods for useSyncExternalStore', () => {
+  describe('4. PlayheadController Bound Methods for useSyncExternalStore', () => {
     it('exposes bound getFrame, getIsPlaying, and subscribeLowFrequency methods', () => {
-      const controller = StudioPlayheadController.getInstance();
+      const controller = PlayheadController.getInstance();
       controller.setConfig(30, 500);
 
       const { getFrame, getIsPlaying, subscribeLowFrequency } = controller;

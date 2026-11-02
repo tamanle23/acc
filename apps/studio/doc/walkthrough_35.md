@@ -22,7 +22,7 @@
 ## Summary of Changes
 1. **Reactive External Store Hooks (`useStudioStore.ts` & `studioTypes.ts`)**:
    - Created `useIRState()`, `useIRSelector(selector, isEqual)`, `usePlayheadFrame()`, and `usePlayheadIsPlaying()` using React 19 `useSyncExternalStore`.
-   - Updated `IRStateManager` and `StudioPlayheadController` with bound `subscribe`/`getSnapshot` methods and synchronous immutable state updates on `dispatch`, `undo`, `redo`, `switchTemplate`, and `loadFromJSON`.
+   - Updated `IRStateManager` and `PlayheadController` with bound `subscribe`/`getSnapshot` methods and synchronous immutable state updates on `dispatch`, `undo`, `redo`, `switchTemplate`, and `loadFromJSON`.
 2. **Stale State & Schema Mismatch Bug Fixes**:
    - Fixed `Titlebar.tsx` so `canUndo`, `canRedo`, and `activeTemplate` subscribe via `useIRSelector`.
    - Fixed `NumberControlStrategy` in `ModifierControlStrategies.tsx` to subscribe to `usePlayheadFrame()` and `useIRSelector` for live keyframe diamond detection.

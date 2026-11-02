@@ -192,9 +192,9 @@ While the high-level architecture implements sophisticated non-linear editing (N
 - **Locations:**
   - `apps/studio/src/lib/shuttle/useShuttleEngine.ts` (lines 180–188)
   - `apps/studio/src/App.tsx` (lines 94–102)
-  - `apps/studio/src/lib/playhead/StudioPlayheadController.ts` (lines 83–95)
+  - `apps/studio/src/lib/playhead/PlayheadController.ts` (lines 83–95)
 - **Mechanism:**
-  `StudioPlayheadController` separates subscribers into `subscribeHighFrequency` (60 FPS direct canvas/needle blits) and `subscribeLowFrequency` (throttled 10 Hz React updates).
+  `PlayheadController` separates subscribers into `subscribeHighFrequency` (60 FPS direct canvas/needle blits) and `subscribeLowFrequency` (throttled 10 Hz React updates).
   However, in `useShuttleEngine.ts`, the 60 FPS RAF loop only calls `onScrub(frame)` every **66ms (~15 FPS)**:
   ```ts
   if (now - lastUiSyncTime >= 66) {
@@ -202,7 +202,7 @@ While the high-level architecture implements sophisticated non-linear editing (N
     onScrubRef.current(discreteFrame);
   }
   ```
-  `onScrub` is the **only** caller invoking `StudioPlayheadController.seek()`. Consequently, `highFreqSubscribers` only fires at 15 FPS instead of 60 FPS, causing canvas rendering and timeline needle animation to stutter during playback.
+  `onScrub` is the **only** caller invoking `PlayheadController.seek()`. Consequently, `highFreqSubscribers` only fires at 15 FPS instead of 60 FPS, causing canvas rendering and timeline needle animation to stutter during playback.
 
 ---
 
@@ -212,10 +212,10 @@ While the high-level architecture implements sophisticated non-linear editing (N
 - **Locations:**
   - `apps/studio/src/lib/ir/useStudioStore.ts` (lines 19–39)
   - `apps/studio/src/lib/ir/irState.ts` (lines 99–105)
-  - `apps/studio/src/lib/playhead/StudioPlayheadController.ts` (lines 59–78)
+  - `apps/studio/src/lib/playhead/PlayheadController.ts` (lines 59–78)
 - **Violations:**
   1. **Synchronous Notification Inside Subscribe:**
-     In `irState.ts` (line 101) and `StudioPlayheadController.ts` (lines 62, 74), `subscribe` calls the callback synchronously:
+     In `irState.ts` (line 101) and `PlayheadController.ts` (lines 62, 74), `subscribe` calls the callback synchronously:
      ```ts
      this.subscribers.add(callback);
      callback(this.state); // Synchronous invocation during subscribe
@@ -335,7 +335,7 @@ While the high-level architecture implements sophisticated non-linear editing (N
 | **P0** | **Uncoordinated Keyboard Listeners** | Consolidate all keyboard handling into a centralized `StudioKeyboardManager` with a focused priority stack (Modal > Active Tool > Transport > Workspace). |
 | **P1** | **Async Compilation Race** (`IRStateManager.recompile`) | Introduce a monotonically increasing revision counter or AbortController to discard out-of-order DAG compilation results. |
 | **P1** | **Coordinator Task Invalidation** | Incorporate a hash of `modifier.params` into `taskKey` (`${targetId}:${modifier.type}:${contentHash}`). Reject pending promises on `reset()`. |
-| **P1** | **60 FPS Playhead Decoupling** | Ensure `useShuttleEngine` calls `StudioPlayheadController.seek()` on **every** RAF frame tick, and only throttle React state setters (`usePlayheadFrame`). |
+| **P1** | **60 FPS Playhead Decoupling** | Ensure `useShuttleEngine` calls `PlayheadController.seek()` on **every** RAF frame tick, and only throttle React state setters (`usePlayheadFrame`). |
 | **P2** | **AudioContext Singleton Consolidation** | Unify `WebAudioEngine` and `AudioAssetCache` to share a single, lazily initialized `AudioContext` provider. |
 | **P2** | **Replace `JSON.parse(JSON.stringify)`** | Refactor command classes to use structural cloning via `cloneIR()` or shallow path updates. |
 | **P2** | **OPFS Lock Release & Cleanup** | Ensure `opfsWritable.close()` / `abort()` is called in `finally` blocks during cancelled exports, and purge scratch files upon task completion. |

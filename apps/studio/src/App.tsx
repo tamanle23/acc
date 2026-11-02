@@ -24,7 +24,7 @@ import { ThemeProvider } from './lib/theme/ThemeProvider';
 import { WebAudioEngine } from './lib/audio/WebAudioEngine';
 import { useShuttleEngine } from './lib/shuttle/useShuttleEngine';
 import { snapToDiscreteFrame } from './lib/shuttle/shuttleTypes';
-import { StudioPlayheadController } from './lib/playhead/StudioPlayheadController';
+import { PlayheadController } from './lib/playhead/PlayheadController';
 import { useWorkspaceDnd } from './lib/dnd/useWorkspaceDnd';
 import {
   ClientExportOrchestrator,
@@ -85,14 +85,14 @@ function StudioWorkspace() {
     onSequenceInserted: handleSequenceInserted,
   });
 
-  // Sync StudioPlayheadController configuration
+  // Sync PlayheadController configuration
   useEffect(() => {
-    StudioPlayheadController.getInstance().setConfig(fps, totalFrames);
+    PlayheadController.getInstance().setConfig(fps, totalFrames);
   }, [fps, totalFrames]);
 
   // Subscribe low-frequency updates to sync React state (e.g. for clip inspector) without per-frame re-renders
   useEffect(() => {
-    return StudioPlayheadController.getInstance().subscribeLowFrequency((frame) => {
+    return PlayheadController.getInstance().subscribeLowFrequency((frame) => {
       setCurrentFrame(frame);
       currentFrameRef.current = frame;
     });
@@ -102,7 +102,7 @@ function StudioWorkspace() {
     const discrete = snapToDiscreteFrame(frame);
     const clamped = Math.max(0, Math.min(discrete, totalFrames));
     currentFrameRef.current = clamped;
-    StudioPlayheadController.getInstance().seek(clamped, !shuttle.isPlaying);
+    PlayheadController.getInstance().seek(clamped, !shuttle.isPlaying);
     if (!shuttle.isPlaying) {
       WebAudioEngine.getInstance().playScrubFeedback(clamped, fps, irState);
     }
@@ -121,7 +121,7 @@ function StudioWorkspace() {
   const isPlaying = shuttle.isPlaying;
 
   useEffect(() => {
-    StudioPlayheadController.getInstance().setIsPlaying(isPlaying);
+    PlayheadController.getInstance().setIsPlaying(isPlaying);
   }, [isPlaying]);
 
   const handleTogglePlay = () => {

@@ -28,10 +28,10 @@ This iteration resolves these architectural bottlenecks across `@acc/studio` and
 flowchart TD
     subgraph ShuttleLoop ["useShuttleEngine RAF Tick (60 Hz)"]
         Clock["DeterministicTimelineClock\n(audio_master / monotonic)"] --> TargetFrame["rawFractionalFrame (e.g. 14.48)\ndiscreteFrame (e.g. 14)"]
-        TargetFrame --> SeekCall["StudioPlayheadController.seek(discrete, immediate=false, fractional)"]
+        TargetFrame --> SeekCall["PlayheadController.seek(discrete, immediate=false, fractional)"]
     end
 
-    subgraph Controller ["StudioPlayheadController"]
+    subgraph Controller ["PlayheadController"]
         SeekCall --> HighFreqSubscribers["High-Frequency Observers"]
         SeekCall --> LowFreqThrottle{"now - lastSync >= 250ms?"}
         LowFreqThrottle -- Yes --> ReactState["App.tsx setCurrentFrame\n(Throttled ~4 Hz)"]
@@ -77,7 +77,7 @@ $$\text{Dispatch Render} \iff F_k \neq F_{k-1} \lor \text{speed changed} \lor \t
 
 ## 5. Concrete File/Class Signatures
 
-### `StudioPlayheadController.ts`
+### `PlayheadController.ts`
 ```ts
 export type PlayheadSubscriber = (
   frame: number,
@@ -85,7 +85,7 @@ export type PlayheadSubscriber = (
   fractionalFrame?: number
 ) => void;
 
-export class StudioPlayheadController {
+export class PlayheadController {
   private currentFrame = 0;
   private currentFractionalFrame = 0;
   private isPlaying = false;
@@ -100,7 +100,7 @@ export class StudioPlayheadController {
 // RAF tick calculation:
 const rawFractionalFrame = targetFrame;
 const discreteFrame = snapToDiscreteFrame(targetFrame);
-StudioPlayheadController.getInstance().seek(discreteFrame, false, rawFractionalFrame);
+PlayheadController.getInstance().seek(discreteFrame, false, rawFractionalFrame);
 ```
 
 ### `IRCanvasCompositor.ts`
@@ -121,7 +121,7 @@ if (isVirtualScaled) {
 - [ ] **Phase 1: Viewport Render Strategy & Async Race Suppression**
   - Suppress async React `renderFrame` in `useViewportRenderStrategy.ts` during active playback.
 - [ ] **Phase 2: High-Frequency Continuous Playhead & Deduplication**
-  - Update `StudioPlayheadController.seek()` with `fractionalFrame`.
+  - Update `PlayheadController.seek()` with `fractionalFrame`.
   - Update `Timeline.tsx` needle translation for continuous 60/120 Hz glide.
   - Deduplicate render dispatches in `useShuttleEngine.ts` and `WorkerRenderStrategy.ts`.
 - [ ] **Phase 3: Virtual Scratch Canvas Scaling in Compositor**
