@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { DndContext, DragOverlay, pointerWithin } from '@dnd-kit/core';
 import { AlertCircle } from 'lucide-react';
 import { Titlebar } from './components/Titlebar';
@@ -6,9 +6,18 @@ import { LeftSidebar, DragOverlayPreview, type LeftNavTab } from './components/L
 import { RightSidebar } from './components/RightSidebar';
 import { Preview } from './components/Preview';
 import { Timeline } from './components/Timeline';
-import { ExportProgressModal } from './components/ExportProgressModal';
-import { ExportConfigModal } from './components/ExportConfigModal';
-import { SettingsModal } from './components/SettingsModal';
+import { StudioBootController } from './lib/boot/StudioBootController';
+
+// Performance optimization (react-ui-performance-tuning): Lazy-load on-demand modals to reduce initial bundle TTI
+const ExportProgressModal = React.lazy(() =>
+  import('./components/ExportProgressModal').then((m) => ({ default: m.ExportProgressModal }))
+);
+const ExportConfigModal = React.lazy(() =>
+  import('./components/ExportConfigModal').then((m) => ({ default: m.ExportConfigModal }))
+);
+const SettingsModal = React.lazy(() =>
+  import('./components/SettingsModal').then((m) => ({ default: m.SettingsModal }))
+);
 import { TooltipProvider } from './components/ui';
 import { Toaster } from './components/ui/sonner';
 import { toast } from 'sonner';
@@ -24,7 +33,7 @@ import { ThemeProvider } from './lib/theme/ThemeProvider';
 import { WebAudioEngine } from './lib/audio/WebAudioEngine';
 import { useShuttleEngine } from './lib/shuttle/useShuttleEngine';
 import { snapToDiscreteFrame } from './lib/shuttle/shuttleTypes';
-import { PlayheadController } from './lib/playhead/PlayheadController';
+import { PlayheadController } from './lib/playhead/StudioPlayheadController';
 import { useWorkspaceDnd } from './lib/dnd/useWorkspaceDnd';
 import {
   ClientExportOrchestrator,
@@ -84,6 +93,11 @@ function StudioWorkspace() {
     timelineZoomScale,
     onSequenceInserted: handleSequenceInserted,
   });
+
+  // Dismiss pre-hydration boot splash after double-rAF first-paint synchronization
+  useEffect(() => {
+    StudioBootController.dismiss();
+  }, []);
 
   // Sync PlayheadController configuration
   useEffect(() => {
@@ -187,7 +201,9 @@ function StudioWorkspace() {
       onDragEnd={handleDragEnd}
     >
       <div className="flex flex-col h-screen select-none liquid-ambient-mesh bg-background text-foreground transition-colors duration-200">
-        <SettingsModal />
+        <Suspense fallback={null}>
+          <SettingsModal />
+        </Suspense>
         {/* 1. Top Titlebar */}
         <Titlebar
           projectTitle={irState.doc.meta.contentId}
@@ -250,24 +266,26 @@ function StudioWorkspace() {
                       onScrub={handleScrub}
                     />
 
-                    <ExportConfigModal
-                      open={isExportConfigOpen}
-                      onOpenChange={setIsExportConfigOpen}
-                      width={width}
-                      height={height}
-                      aspectRatio={irState.doc.meta.aspectRatio}
-                      fps={fps}
-                      totalFrames={totalFrames}
-                      onConfirmExport={({ width: w, height: h, videoBitrate }) => {
-                        handleStartExport({ width: w, height: h, videoBitrate });
-                      }}
-                    />
+                    <Suspense fallback={null}>
+                      <ExportConfigModal
+                        open={isExportConfigOpen}
+                        onOpenChange={setIsExportConfigOpen}
+                        width={width}
+                        height={height}
+                        aspectRatio={irState.doc.meta.aspectRatio}
+                        fps={fps}
+                        totalFrames={totalFrames}
+                        onConfirmExport={({ width: w, height: h, videoBitrate }) => {
+                          handleStartExport({ width: w, height: h, videoBitrate });
+                        }}
+                      />
 
-                    <ExportProgressModal
-                      isExporting={isExporting}
-                      exportProgress={exportProgress}
-                      onCancelExport={handleCancelExport}
-                    />
+                      <ExportProgressModal
+                        isExporting={isExporting}
+                        exportProgress={exportProgress}
+                        onCancelExport={handleCancelExport}
+                      />
+                    </Suspense>
                   </div>
                 </ResizablePanel>
 
