@@ -160,12 +160,20 @@ export class TransformModifierPlugin implements ModifierPlugin<TransformModifier
     const scaleX = width / refW;
     const scaleY = height / refH;
 
-    const anchorNormX = typeof params.normX === 'number' && Number.isFinite(params.normX)
+    const textMod = sequence?.modifiers?.find((m) => m.type === 'text/draw' || m.type === 'text/overlay');
+    const shapeMod = sequence?.modifiers?.find((m) => m.type === 'shape/draw' || m.type === 'shape/vector');
+    const childNormX = (textMod?.params as any)?.normX ?? (shapeMod?.params as any)?.normX;
+    const childNormY = (textMod?.params as any)?.normY ?? (shapeMod?.params as any)?.normY;
+
+    const baseNormX = typeof params.normX === 'number' && Number.isFinite(params.normX)
       ? params.normX
-      : (params.anchorPoint?.[0] ?? 0.5);
-    const anchorNormY = typeof params.normY === 'number' && Number.isFinite(params.normY)
+      : (typeof childNormX === 'number' && Number.isFinite(childNormX) ? childNormX : (params.anchorPoint?.[0] ?? 0.5));
+    const baseNormY = typeof params.normY === 'number' && Number.isFinite(params.normY)
       ? params.normY
-      : (params.anchorPoint?.[1] ?? 0.5);
+      : (typeof childNormY === 'number' && Number.isFinite(childNormY) ? childNormY : (params.anchorPoint?.[1] ?? 0.5));
+
+    const anchorNormX = baseNormX;
+    const anchorNormY = baseNormY;
     const anchorX = width * anchorNormX;
     const anchorY = height * anchorNormY;
 

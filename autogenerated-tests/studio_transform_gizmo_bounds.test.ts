@@ -155,6 +155,79 @@ describe('Studio Transform Gizmo Bounds & Alignment Suite', () => {
       // Canvas clip space must translate to (960, 864) = (0.5 * 1920, 0.8 * 1080)
       expect(operations).toContain('translate(960,864)');
     });
+
+    it('inherits normX and normY from transform modifier when omitted on text/draw (Typography Preset contract)', () => {
+      const plugin = new TextModifierPlugin();
+      const operations: string[] = [];
+
+      const mockCtx = {
+        save: () => {},
+        restore: () => {},
+        translate: (x: number, y: number) => operations.push(`translate(${Math.round(x)},${Math.round(y)})`),
+        fillText: () => {},
+        strokeText: () => {},
+        measureText: (text: string) => ({ width: text.length * 15, actualBoundingBoxAscent: 15, actualBoundingBoxDescent: 5 }),
+      } as any;
+
+      const clipContext = {
+        ctx: mockCtx,
+        width: 1920,
+        height: 1080,
+        frame: 0,
+        localFrame: 45,
+        sequence: {
+          id: 'test-text-preset',
+          type: 'overlay',
+          modifiers: [{ type: 'transform', params: { normX: 0.5, normY: 0.45 } }],
+        } as any,
+      };
+
+      // Notice params has NO normX or normY (exactly like TYPOGRAPHY_PRESETS)
+      plugin.renderClipSpace(clipContext, {
+        text: '24K GOLD EPIC TITLE',
+        fontSize: 56,
+      });
+
+      // Canvas clip space must translate to (960, 486) = (0.5 * 1920, 0.45 * 1080), NEVER defaulting blindly to (960, 540)
+      expect(operations).toContain('translate(960,486)');
+    });
+
+    it('anchors TransformModifierPlugin around child text/draw normX and normY when omitted on transform', () => {
+      const plugin = new TransformModifierPlugin();
+      const operations: string[] = [];
+
+      const mockCtx = {
+        translate: (x: number, y: number) => operations.push(`translate(${Math.round(x)},${Math.round(y)})`),
+        rotate: (r: number) => operations.push(`rotate(${r})`),
+        scale: (sx: number, sy: number) => operations.push(`scale(${sx},${sy})`),
+        globalAlpha: 1,
+      };
+
+      const clipContext = {
+        ctx: mockCtx,
+        width: 1920,
+        height: 1080,
+        localFrame: 45,
+        sequence: {
+          durationFrames: 90,
+          modifiers: [
+            { type: 'transform', params: { scale: 1.0, rotation: 0 } },
+            { type: 'text/draw', params: { text: 'Sub-Header', normX: 0.3, normY: 0.25 } },
+          ],
+        } as any,
+      } as any;
+
+      plugin.renderClipSpace(clipContext, {
+        x: 0,
+        y: 0,
+        scale: 1.0,
+        rotation: 0,
+      });
+
+      // Anchor must be (0.3 * 1920, 0.25 * 1080) = (576, 270)
+      expect(operations).toContain('translate(576,270)');
+      expect(operations).toContain('translate(-576,-270)');
+    });
   });
 
   describe('Gizmo2DTransformation Pro NLE Interactions', () => {
