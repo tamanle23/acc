@@ -86,7 +86,7 @@ export class StudioBootController {
     }
 
     // Enforce minimum dwell time (at least 2.5s) to guarantee an unhurried, calm brand presentation
-    const minDuration = options?.minDurationMs ?? 2500;
+    const minDuration = options?.minDurationMs ?? 1000;
     const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
     const startTime = (typeof window !== 'undefined' && (window as any)?.__studioBootStartTime) ?? now;
     const elapsed = now - startTime;
@@ -184,14 +184,14 @@ export class StudioBootController {
                 { opacity: 0 }
               ],
               {
-                duration: 600,
+                duration: 1500,
                 easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
                 fill: 'forwards',
               }
             );
             animation.onfinish = cleanup;
             // Safety timeout in case animation finish event is dropped
-            setTimeout(cleanup, 650);
+            setTimeout(cleanup, 1500);
           } catch {
             setTimeout(cleanup, 620);
           }
