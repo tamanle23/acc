@@ -201,6 +201,41 @@ describe('Studio Boot Splash & First-Load Lifecycle Suite', () => {
       expect(document.getElementById('boot-splash-style')).toBeNull();
     });
 
+    it('animates opacity via Web Animations API (element.animate) during dismissal when supported', async () => {
+      let animateKeyframes: any = null;
+      let animateOptions: any = null;
+      let onFinishCallback: any = null;
+
+      (mockSplashEl as any).animate = (keyframes: any, options: any) => {
+        animateKeyframes = keyframes;
+        animateOptions = options;
+        return {
+          set onfinish(cb: any) {
+            onFinishCallback = cb;
+            // Trigger finish immediately for test resolution
+            setTimeout(cb, 10);
+          },
+        };
+      };
+
+      mockSplashEl.parentNode.removeChild = (child: MockElement) => {
+        elementsById.delete(child.id);
+        return child;
+      };
+      mockStyleEl.parentNode.removeChild = (child: MockElement) => {
+        elementsById.delete(child.id);
+        return child;
+      };
+
+      await StudioBootController.dismiss(0);
+
+      // Must have invoked animate with opacity 1 -> 0
+      expect(animateKeyframes).toEqual([{ opacity: 1 }, { opacity: 0 }]);
+      expect(animateOptions.duration).toBe(600);
+      expect(animateOptions.fill).toBe('forwards');
+      expect(document.getElementById('app-boot-splash')).toBeNull();
+    });
+
     it('is idempotent and ignores redundant dismissal invocations', async () => {
       await StudioBootController.dismiss(0);
       const secondCall = StudioBootController.dismiss(0);

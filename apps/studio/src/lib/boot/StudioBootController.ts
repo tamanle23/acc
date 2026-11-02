@@ -155,10 +155,10 @@ export class StudioBootController {
           win.__studioBootTimers = [];
         }
 
-        splashEl.classList.add('splash-hidden');
-
-        // Transition duration is 600ms in CSS; remove DOM elements at 620ms
-        setTimeout(() => {
+        let cleanedUp = false;
+        const cleanup = () => {
+          if (cleanedUp) return;
+          cleanedUp = true;
           try {
             if (splashEl.parentNode) {
               splashEl.parentNode.removeChild(splashEl);
@@ -171,7 +171,34 @@ export class StudioBootController {
             // Ignore edge-case removal errors
           }
           resolve();
-        }, 620);
+        };
+
+        splashEl.classList.add('splash-hidden');
+
+        // Animate opacity using Web Animations API for smooth, hardware-accelerated dismissal
+        if (typeof (splashEl as any).animate === 'function') {
+          try {
+            const animation = (splashEl as any).animate(
+              [
+                { opacity: 1 },
+                { opacity: 0 }
+              ],
+              {
+                duration: 600,
+                easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
+                fill: 'forwards',
+              }
+            );
+            animation.onfinish = cleanup;
+            // Safety timeout in case animation finish event is dropped
+            setTimeout(cleanup, 650);
+          } catch {
+            setTimeout(cleanup, 620);
+          }
+        } else {
+          // Fallback for test runners and legacy environments without Element.animate
+          setTimeout(cleanup, 620);
+        }
       };
 
       const scheduleDismiss = () => {

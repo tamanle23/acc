@@ -17,7 +17,6 @@
       background: radial-gradient(circle at 50% 42%, rgba(6, 182, 212, 0.12) 0%, transparent 60%), #020617;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       color: #f8fafc;
-      transition: opacity 600ms cubic-bezier(0.4, 0, 0.2, 1);
       will-change: opacity;
     }
 
@@ -34,9 +33,6 @@
       flex-direction: column;
       align-items: center;
       text-align: center;
-      transition: opacity 450ms cubic-bezier(0.4, 0, 0.2, 1),
-                  transform 450ms cubic-bezier(0.4, 0, 0.2, 1);
-      will-change: opacity, transform;
     }
 
     .splash-logo-container {
@@ -149,14 +145,27 @@
       }
     }
 
-    .splash-hidden {
-      opacity: 0;
-      pointer-events: none;
+    @keyframes splash-fade-out {
+      0% {
+        opacity: 1;
+      }
+
+      100% {
+        opacity: 0;
+      }
     }
 
-    .splash-hidden .splash-card {
+    #app-boot-splash.splash-hidden,
+    .splash-hidden {
+      animation: splash-fade-out 600ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      pointer-events: none;
       opacity: 0;
-      transform: scale(0.97);
+    }
+
+    #app-boot-splash.splash-hidden .splash-card,
+    .splash-hidden .splash-card {
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -171,12 +180,10 @@
         opacity: 0.6;
       }
 
-      #app-boot-splash,
-      .splash-card,
-      .splash-hidden,
-      .splash-hidden .splash-card {
+      #app-boot-splash.splash-hidden,
+      .splash-hidden {
+        animation-duration: 200ms !important;
         transition: opacity 200ms ease !important;
-        transform: none !important;
       }
     }
   </style>
