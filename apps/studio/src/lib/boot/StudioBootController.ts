@@ -33,14 +33,20 @@ export class StudioBootController {
       return Promise.resolve();
     }
 
-    return new Promise<void>((resolve) => {
-      // Clear slow-network timers to prevent late status triggers
-      const win = window as any;
-      if (Array.isArray(win.__studioBootTimers)) {
-        win.__studioBootTimers.forEach((timerId: number) => clearTimeout(timerId));
-        win.__studioBootTimers = [];
-      }
+    // Developer simulation query param: ?splash=hold or ?splash=5000 (delay in ms)
+    const searchParams = typeof window !== 'undefined' && window.location?.search
+      ? new URLSearchParams(window.location.search)
+      : null;
+    const splashParam = searchParams?.get('splash');
 
+    if (splashParam === 'hold' || splashParam === 'preview') {
+      // Hold splash indefinitely for visual inspection and UI styling
+      return Promise.resolve();
+    }
+
+    const simulatedDelayMs = splashParam && !isNaN(Number(splashParam)) ? Number(splashParam) : 0;
+
+    return new Promise<void>((resolve) => {
       const splashEl = document.getElementById('app-boot-splash');
       if (!splashEl) {
         resolve();
@@ -48,6 +54,13 @@ export class StudioBootController {
       }
 
       const performDismiss = () => {
+        // Clear slow-network timers to prevent late status triggers
+        const win = window as any;
+        if (Array.isArray(win.__studioBootTimers)) {
+          win.__studioBootTimers.forEach((timerId: number) => clearTimeout(timerId));
+          win.__studioBootTimers = [];
+        }
+
         splashEl.classList.add('splash-hidden');
 
         // Transition duration is 400ms in CSS; remove DOM elements at 420ms
@@ -67,15 +80,23 @@ export class StudioBootController {
         }, 420);
       };
 
-      if (typeof window.requestAnimationFrame === 'function') {
-        // Double-rAF ensures Viewport Canvas and Timeline rulers have completed their first paint
-        window.requestAnimationFrame(() => {
+      const scheduleDismiss = () => {
+        if (typeof window.requestAnimationFrame === 'function') {
+          // Double-rAF ensures Viewport Canvas and Timeline rulers have completed their first paint
           window.requestAnimationFrame(() => {
-            performDismiss();
+            window.requestAnimationFrame(() => {
+              performDismiss();
+            });
           });
-        });
+        } else {
+          performDismiss();
+        }
+      };
+
+      if (simulatedDelayMs > 0) {
+        setTimeout(scheduleDismiss, simulatedDelayMs);
       } else {
-        performDismiss();
+        scheduleDismiss();
       }
     });
   }

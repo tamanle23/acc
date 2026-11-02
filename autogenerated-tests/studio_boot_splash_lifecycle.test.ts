@@ -205,6 +205,29 @@ describe('Studio Boot Splash & First-Load Lifecycle Suite', () => {
       const secondCall = StudioBootController.dismiss();
       expect(secondCall).resolves.toBeUndefined();
     });
+
+    it('holds splash indefinitely when ?splash=hold query parameter is present', async () => {
+      (window as any).location = { search: '?splash=hold' };
+
+      await StudioBootController.dismiss();
+
+      // Splash must NOT have .splash-hidden added and must remain visible in the DOM
+      expect(mockSplashEl.classList.contains('splash-hidden')).toBe(false);
+      expect(document.getElementById('app-boot-splash')).not.toBeNull();
+    });
+
+    it('delays splash dismissal when ?splash=<ms> numeric parameter is present', async () => {
+      (window as any).location = { search: '?splash=50' };
+
+      const dismissPromise = StudioBootController.dismiss();
+
+      // Immediately after call, dismissal has not happened yet due to the delay
+      expect(mockSplashEl.classList.contains('splash-hidden')).toBe(false);
+
+      // Wait for delay + dismissal timeout
+      await dismissPromise;
+      expect(mockSplashEl.classList.contains('splash-hidden')).toBe(true);
+    });
   });
 
   describe('3. React UI Performance Tuning & Code-Splitting in App.tsx', () => {
