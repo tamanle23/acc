@@ -8,7 +8,7 @@ import { logManager } from "./LogManager.js";
 import { supervisorEngine, findRepoRoot } from "./SupervisorEngine.js";
 import { updateManager } from "./UpdateManager.js";
 import { setStartupEnabled, getStartupStatus } from "./StartupManager.js";
-import { BrowserWindow, Tray, type MenuItemConfig } from "electrobun/bun";
+import { BrowserWindow, Tray, PATHS, type MenuItemConfig } from "electrobun/bun";
 import { telemetryBroker } from "./telemetry/TelemetryEventBroker.js";
 import { PythonGrpcStreamConsumer } from "./telemetry/PythonGrpcStreamConsumer.js";
 import { WorkerSseStreamConsumer } from "./telemetry/WorkerSseStreamConsumer.js";
@@ -75,34 +75,10 @@ async function main() {
     freeMemoryMb: Math.round(os.freemem() / (1024 * 1024)),
   });
 
-  // 5. Ensure Solid UI Build is Ready
-  const distUiDir = path.join(import.meta.dir, "..", "..", "dist", "ui");
-  const viewsDir = path.join(import.meta.dir, "..", "views");
-  const fallbackHtmlFile = path.join(viewsDir, "index.html");
-
-  const isDistUiMissing =
-    !fs.existsSync(distUiDir) ||
-    !fs.existsSync(path.join(distUiDir, "app.js")) ||
-    !fs.existsSync(path.join(distUiDir, "index.html"));
-
-  if (isDistUiMissing) {
-    console.log("[Supervisor] SolidJS UI bundle not found in dist/ui. Auto-building via scripts/build-ui.ts...");
-    try {
-      const buildScriptPath = path.join(import.meta.dir, "..", "..", "scripts", "build-ui.ts");
-      if (fs.existsSync(buildScriptPath)) {
-        const buildProc = Bun.spawnSync(["bun", "run", buildScriptPath], {
-          cwd: path.join(import.meta.dir, "..", ".."),
-        });
-        if (buildProc.exitCode === 0) {
-          console.log("[Supervisor] SolidJS UI successfully built into dist/ui.");
-        } else {
-          console.warn("[Supervisor] Failed to auto-build SolidJS UI, falling back to legacy views/index.html");
-        }
-      }
-    } catch (buildErr) {
-      console.warn("[Supervisor] Auto-build attempt encountered error:", buildErr);
-    }
-  }
+  // 5. Frontend View Directory Resolution (Electrobun Packaged Views)
+  const viewsMainDir = path.join(PATHS.VIEWS_FOLDER, "main");
+  const localViewsDir = path.join(import.meta.dir, "..", "views", "main");
+  const fallbackHtmlFile = path.join(import.meta.dir, "..", "views", "index.html");
 
   // 6. Launch Embedded HTTP Server (REST + Server-Sent Events SSE)
   const server = Bun.serve({
@@ -316,12 +292,16 @@ async function main() {
         return Response.json({ config: updated }, { headers: corsHeaders });
       }
 
-      // Serve Frontend Views (SolidJS + Ark UI + Tailwind bundle from dist/ui)
+      // Serve Frontend Views from Electrobun Packaged Views
       const pathname = url.pathname === "/" ? "/index.html" : url.pathname;
-      const distFilePath = path.join(distUiDir, pathname.slice(1));
+      const targetPaths = [
+        path.join(viewsMainDir, pathname.slice(1)),
+        path.join(localViewsDir, pathname.slice(1)),
+      ];
+      const foundPath = targetPaths.find((p) => fs.existsSync(p) && fs.statSync(p).isFile());
 
-      if (fs.existsSync(distFilePath) && fs.statSync(distFilePath).isFile()) {
-        const ext = path.extname(distFilePath);
+      if (foundPath) {
+        const ext = path.extname(foundPath);
         const mimeTypes: Record<string, string> = {
           ".html": "text/html; charset=utf-8",
           ".js": "application/javascript; charset=utf-8",
@@ -331,7 +311,7 @@ async function main() {
           ".json": "application/json",
         };
         const contentType = mimeTypes[ext] || "application/octet-stream";
-        return new Response(Bun.file(distFilePath), {
+        return new Response(Bun.file(foundPath), {
           headers: {
             "Content-Type": contentType,
             "Cache-Control": ext === ".html" ? "no-cache" : "public, max-age=31536000",

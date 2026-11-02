@@ -5,20 +5,25 @@
 
 ## Plan
 1. Completely remove all legacy multi-platform scripts (`tray_runner.*`, `webview_host.*`, `compile-native.ts`) and subprocess wrappers (`WindowHost`, `NativeTrayBridge`, `src/bun/platform/`).
-2. Integrate pure Electrobun APIs (`BrowserWindow`, `Tray`, `MenuItemConfig`) directly into `src/bun/index.ts`.
-3. Support dynamic tray icon state updates, menu dispatching (`Open Dashboard`, `Purge All VRAM`, `Restart Services`, `Check for Updates...`, `Quit`), and singleton window management.
-4. Align `package.json`, `scripts/dev-runner.ts`, and `tsconfig.json` with the Electrobun Devkit workflow.
+2. Eliminate outer wrapper scripts (`build-ui.ts`, `dev-runner.ts`) and switch purely to the official Electrobun CLI (`electrobun dev`, `electrobun build`).
+3. Leverage Electrobun's built-in view bundler (`views: { main: { entrypoint: "src/ui/index.tsx" } }`) to compile SolidJS and Tailwind CSS v4 directly into packaged view bundles.
+4. Integrate pure Electrobun APIs (`BrowserWindow`, `Tray`, `PATHS`, `MenuItemConfig`) directly into `src/bun/index.ts`.
+5. Support dynamic tray icon state updates, menu dispatching (`Open Dashboard`, `Purge All VRAM`, `Restart Services`, `Check for Updates...`, `Quit`), and singleton window management.
+6. Align `package.json` and `tsconfig.json` with the Electrobun Devkit workflow.
 
 ## Changes
-- **Updated** `apps/ai-supervisor/src/bun/index.ts`: Direct integration of `BrowserWindow` and `Tray` from `electrobun/bun`.
+- **Updated** `apps/ai-supervisor/src/bun/index.ts`: Direct integration of `BrowserWindow`, `Tray`, and `PATHS.VIEWS_FOLDER` from `electrobun/bun`. Removed legacy `isDistUiMissing` auto-build subshell.
+- **Configured** `apps/ai-supervisor/electrobun.config.ts`: Configured `views.main` entrypoint to `src/ui/index.tsx` and copied `src/views/main/index.html` to `views/main/index.html`.
+- **Removed** `apps/ai-supervisor/scripts/build-ui.ts` & `scripts/dev-runner.ts` (the entire `scripts/` directory).
 - **Removed** `apps/ai-supervisor/src/bun/NativeTrayBridge.ts` & `WindowHost.ts`.
 - **Removed** `apps/ai-supervisor/src/bun/platform/` directory.
 - **Removed** `apps/ai-supervisor/src/assets/tray_runner.*` & `webview_host.*`.
 - **Removed** `apps/ai-supervisor/scripts/compile-native.ts`.
-- **Updated** `apps/ai-supervisor/package.json` & `scripts/dev-runner.ts`.
+- **Updated** `apps/ai-supervisor/package.json`: Pure electrobun CLI scripts (`"dev": "electrobun dev"`, `"build": "electrobun build"`).
 - **Updated** `apps/ai-supervisor/tsconfig.json` with devkit path mappings.
 
 ## Verification
-- Built UI bundle via `bun run scripts/build-ui.ts`.
+- Validated Electrobun view compilation and packaging via `electrobun build`.
 - Validated Electrobun configuration via `electrobun config`.
-- Verified build and launch via `electrobun dev`.
+- Verified pure CLI launch via `electrobun dev`.
+

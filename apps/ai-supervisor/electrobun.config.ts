@@ -23,10 +23,10 @@ const config: ElectrobunConfig = {
   build: {
     mainProcess: "bun",
     views: {
-      main: { entrypoint: "src/views/index.html" },
+      main: { entrypoint: "src/ui/index.tsx" },
     },
     copy: {
-      "src/views/index.html": "views/main/index.html",
+      "src/views/main/index.html": "views/main/index.html",
       "src/assets/tray-green.ico": "views/main/tray-green.ico",
       "src/assets/tray-yellow.ico": "views/main/tray-yellow.ico",
       "src/assets/tray-red.ico": "views/main/tray-red.ico",

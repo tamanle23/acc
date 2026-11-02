@@ -68,18 +68,23 @@ flowchart TD
   - `apps/ai-supervisor/src/assets/webview_host_linux.py`
   - `apps/ai-supervisor/src/assets/bin/` (and compiled swift binaries)
   - `apps/ai-supervisor/scripts/compile-native.ts`
+  - `apps/ai-supervisor/scripts/build-ui.ts`
+  - `apps/ai-supervisor/scripts/dev-runner.ts` (the entire `scripts/` directory)
 
-### 3. Update Build & Dev Tooling
+### 3. Pure Electrobun CLI & View Bundling Alignment
+- Configure `apps/ai-supervisor/electrobun.config.ts`:
+  - `build.views.main.entrypoint`: `"src/ui/index.tsx"` (Electrobun's built-in view bundler automatically bundles SolidJS and Tailwind CSS v4 into `views/main/index.js` and `views/main/index.css`).
+  - `build.copy`: Copies `"src/views/main/index.html"` and icons to `views/main/`.
 - Update `apps/ai-supervisor/package.json`:
-  - Remove `compile:native`.
-  - Wire `dev` to `scripts/dev-runner.ts` (which spawns `electrobun dev` and `build-ui.ts --watch`).
-  - Wire `dev:app` to `electrobun dev`.
-  - Wire `build` to `bun run build:ui && electrobun build`.
-  - Wire `start` to `electrobun dev`.
-- Update `apps/ai-supervisor/scripts/dev-runner.ts`:
-  - Replace `spawn(["bun", "--watch", "run", "src/bun/index.ts"])` with `spawn(["bun", "run", "electrobun", "dev"])`.
+  - Pure CLI commands:
+    - `"dev": "electrobun dev"`
+    - `"start": "electrobun dev"`
+    - `"build": "electrobun build"`
+- Update `apps/ai-supervisor/src/bun/index.ts`:
+  - Serve views directly from `PATHS.VIEWS_FOLDER/main`.
+  - Remove all legacy `dist/ui` references and background build subshells.
 - Update `apps/ai-supervisor/tsconfig.json`:
-  - Path mappings for `electrobun` and `electrobun/bun` to `.hutch/devkit/api/sdks/main/index.ts`.
+  - Path mappings for `electrobun` and `electrobun/bun` to devkit.
 
 ---
 
@@ -88,3 +93,4 @@ flowchart TD
 2. Electrobun Config Validation: `pnpm --filter @acc/ai-supervisor exec electrobun config`
 3. SolidJS UI Build: `bun run apps/ai-supervisor/scripts/build-ui.ts`
 4. Dev Runner Smoke Test: Verify Electrobun launcher boots and mounts native tray & window.
+
