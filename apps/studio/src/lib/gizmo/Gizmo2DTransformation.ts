@@ -478,7 +478,8 @@ export class Gizmo2DTransformation {
     disableSnapping: boolean = false,
     siblingBoxes: SiblingGuideBox[] = [],
     centerScale: boolean = true,
-    axisLock: boolean = false
+    axisLock: boolean = false,
+    anchorPoint: [number, number] = [0.5, 0.5]
   ): { box: BoundingBox2D; snapResult?: SnapResult; anchorResult?: [number, number] } {
     if (handle === 'anchor') {
       const rad = (-startBox.rotation * Math.PI) / 180;
@@ -535,8 +536,18 @@ export class Gizmo2DTransformation {
     }
 
     if (handle === 'rotate') {
-      const currentAngleRad = Math.atan2(currentPointer.y - startBox.y, currentPointer.x - startBox.x);
-      const startAngleRad = Math.atan2(startPointer.y - startBox.y, startPointer.x - startBox.x);
+      const rad = (startBox.rotation * Math.PI) / 180;
+      const cosR = Math.cos(rad);
+      const sinR = Math.sin(rad);
+
+      const unrotatedDx = (anchorPoint[0] - 0.5) * startBox.width;
+      const unrotatedDy = (anchorPoint[1] - 0.5) * startBox.height;
+
+      const pivotX = startBox.x + unrotatedDx * cosR - unrotatedDy * sinR;
+      const pivotY = startBox.y + unrotatedDx * sinR + unrotatedDy * cosR;
+
+      const currentAngleRad = Math.atan2(currentPointer.y - pivotY, currentPointer.x - pivotX);
+      const startAngleRad = Math.atan2(startPointer.y - pivotY, startPointer.x - pivotX);
 
       let deltaDeg = ((currentAngleRad - startAngleRad) * 180) / Math.PI;
       let newRot = (startBox.rotation + deltaDeg) % 360;

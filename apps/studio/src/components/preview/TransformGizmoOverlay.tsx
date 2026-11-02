@@ -111,8 +111,11 @@ export function TransformGizmoOverlay({
   const canvasW = width;
   const canvasH = height;
 
-  const percentX = (bounds.normX + curX / canvasW) * 100;
-  const percentY = (bounds.normY + curY / canvasH) * 100;
+  const anchor = hudControls?.anchorPoint || [0.5, 0.5];
+  const pivotNormX = bounds.normX + (anchor[0] - 0.5) * bounds.normWidth + curX / canvasW;
+  const pivotNormY = bounds.normY + (anchor[1] - 0.5) * bounds.normHeight + curY / canvasH;
+  const pivotPercentX = pivotNormX * 100;
+  const pivotPercentY = pivotNormY * 100;
   const widthPercent = bounds.normWidth * 100;
   const heightPercent = bounds.normHeight * 100;
 
@@ -142,11 +145,12 @@ export function TransformGizmoOverlay({
         }
       }}
       style={{
-        left: `${percentX}%`,
-        top: `${percentY}%`,
+        left: `${pivotPercentX}%`,
+        top: `${pivotPercentY}%`,
         width: `${widthPercent}%`,
         height: `${heightPercent}%`,
-        transform: `translate(-50%, -50%) scale(${curScale}) rotate(${curRot}deg)`,
+        transformOrigin: `${anchor[0] * 100}% ${anchor[1] * 100}%`,
+        transform: `translate(${-anchor[0] * 100}%, ${-anchor[1] * 100}%) scale(${curScale}) rotate(${curRot}deg)`,
         opacity: curOpacity,
       }}
       className={`absolute border-2 ${

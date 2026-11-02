@@ -228,6 +228,46 @@ describe('Studio Transform Gizmo Bounds & Alignment Suite', () => {
       expect(operations).toContain('translate(576,270)');
       expect(operations).toContain('translate(-576,-270)');
     });
+
+    it('anchors and rotates TransformModifierPlugin around custom anchorPoint pivot (e.g. top-left [0, 0]) instead of center', () => {
+      const plugin = new TransformModifierPlugin();
+      const operations: string[] = [];
+
+      const mockCtx = {
+        translate: (x: number, y: number) => operations.push(`translate(${Math.round(x)},${Math.round(y)})`),
+        rotate: (r: number) => operations.push(`rotate(${r})`),
+        scale: (sx: number, sy: number) => operations.push(`scale(${sx},${sy})`),
+        globalAlpha: 1,
+      };
+
+      const clipContext = {
+        ctx: mockCtx,
+        width: 1920,
+        height: 1080,
+        localFrame: 45,
+        sequence: {
+          durationFrames: 90,
+          modifiers: [
+            { type: 'transform', params: { normX: 0.5, normY: 0.5, normWidth: 0.2, normHeight: 0.1, anchorPoint: [0.0, 0.0], rotation: 45 } },
+          ],
+        } as any,
+      } as any;
+
+      plugin.renderClipSpace(clipContext, {
+        normX: 0.5,
+        normY: 0.5,
+        normWidth: 0.2,
+        normHeight: 0.1,
+        anchorPoint: [0.0, 0.0],
+        rotation: 45,
+        scale: 1.0,
+      });
+
+      // Pivot: X = 1920 * (0.5 - 0.5 * 0.2) = 1920 * 0.4 = 768
+      // Pivot: Y = 1080 * (0.5 - 0.5 * 0.1) = 1080 * 0.45 = 486
+      expect(operations).toContain('translate(768,486)');
+      expect(operations).toContain('translate(-768,-486)');
+    });
   });
 
   describe('Gizmo2DTransformation Pro NLE Interactions', () => {

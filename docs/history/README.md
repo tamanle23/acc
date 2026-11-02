@@ -88,3 +88,4 @@
 | 422 | [Studio Viewport In-Place Text Editing, Sibling Smart Guides & HUD Anchor Tool](./422_studio_in_place_text_smart_guides_anchor_tool.md) | Completed |
 | 423 | [Eliminate Multi-Platform Tray and Window Scripts for Pure Electrobun](./423_eliminate_multiplatform_tray_and_window_scripts_for_pure_electrobun.md) | Completed |
 | 424 | [Harmonize Text, Shape, and Transform Modifier Coordinates & Precision Gizmo Bounds](./424_harmonize_gizmo_bounds_and_modifier_coordinates.md) | Completed |
+| 425 | [Fix Anchor Point Pivot Rotation and Scaling in Transform Modifier & Viewport Gizmo](./425_fix_anchor_point_pivot_rotation_and_scale.md) | Completed |

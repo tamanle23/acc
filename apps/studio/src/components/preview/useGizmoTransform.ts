@@ -277,7 +277,8 @@ export function useGizmoTransform({
         disableSnapping,
         siblingBoxes,
         isCenterScaling,
-        isAxisLocked
+        isAxisLocked,
+        latestAnchorPointRef.current
       );
 
       if (dragRes.anchorResult) {
@@ -330,6 +331,9 @@ export function useGizmoTransform({
           scaleX: newTransform.scale,
           scaleY: newTransform.scale,
           rotation: newTransform.rotation,
+          anchorPoint: latestAnchorPointRef.current,
+          normWidth: targetBounds.normWidth,
+          normHeight: targetBounds.normHeight,
         });
         onRenderFrame?.();
       }
@@ -368,6 +372,8 @@ export function useGizmoTransform({
         IRStateManager.getInstance().updateModifier(selectedSeqId, 'transform', {
           ...finalTransform,
           anchorPoint: finalAnchor,
+          normWidth: targetBounds.normWidth,
+          normHeight: targetBounds.normHeight,
         });
       }
       if (previewEngine?.setEphemeralTransformOverride && selectedSeqId) {
