@@ -160,8 +160,12 @@ export class TransformModifierPlugin implements ModifierPlugin<TransformModifier
     const scaleX = width / refW;
     const scaleY = height / refH;
 
-    const anchorNormX = params.anchorPoint?.[0] ?? 0.5;
-    const anchorNormY = params.anchorPoint?.[1] ?? 0.5;
+    const anchorNormX = typeof params.normX === 'number' && Number.isFinite(params.normX)
+      ? params.normX
+      : (params.anchorPoint?.[0] ?? 0.5);
+    const anchorNormY = typeof params.normY === 'number' && Number.isFinite(params.normY)
+      ? params.normY
+      : (params.anchorPoint?.[1] ?? 0.5);
     const anchorX = width * anchorNormX;
     const anchorY = height * anchorNormY;
 
@@ -169,8 +173,10 @@ export class TransformModifierPlugin implements ModifierPlugin<TransformModifier
     if (motion.rotation !== 0) {
       canvasCtx.rotate((motion.rotation * Math.PI) / 180);
     }
-    if (motion.scale !== 1.0) {
-      canvasCtx.scale(motion.scale, motion.scale);
+    const scaleFactorX = typeof params.scaleX === 'number' && Number.isFinite(params.scaleX) ? params.scaleX : motion.scale;
+    const scaleFactorY = typeof params.scaleY === 'number' && Number.isFinite(params.scaleY) ? params.scaleY : motion.scale;
+    if (scaleFactorX !== 1.0 || scaleFactorY !== 1.0) {
+      canvasCtx.scale(scaleFactorX, scaleFactorY);
     }
     canvasCtx.translate(-anchorX, -anchorY);
 
@@ -196,8 +202,12 @@ export class TransformModifierPlugin implements ModifierPlugin<TransformModifier
     const scaleX = width / refW;
     const scaleY = height / refH;
 
-    const anchorNormX = params.anchorPoint?.[0] ?? 0.5;
-    const anchorNormY = params.anchorPoint?.[1] ?? 0.5;
+    const anchorNormX = typeof params.normX === 'number' && Number.isFinite(params.normX)
+      ? params.normX
+      : (params.anchorPoint?.[0] ?? 0.5);
+    const anchorNormY = typeof params.normY === 'number' && Number.isFinite(params.normY)
+      ? params.normY
+      : (params.anchorPoint?.[1] ?? 0.5);
     const anchorX = width * anchorNormX;
     const anchorY = height * anchorNormY;
 
@@ -205,8 +215,10 @@ export class TransformModifierPlugin implements ModifierPlugin<TransformModifier
     if (motion.rotation !== 0) {
       canvasCtx.rotate((motion.rotation * Math.PI) / 180);
     }
-    if (motion.scale !== 1.0) {
-      canvasCtx.scale(motion.scale, motion.scale);
+    const scaleFactorX = typeof params.scaleX === 'number' && Number.isFinite(params.scaleX) ? params.scaleX : motion.scale;
+    const scaleFactorY = typeof params.scaleY === 'number' && Number.isFinite(params.scaleY) ? params.scaleY : motion.scale;
+    if (scaleFactorX !== 1.0 || scaleFactorY !== 1.0) {
+      canvasCtx.scale(scaleFactorX, scaleFactorY);
     }
     canvasCtx.translate(-anchorX, -anchorY);
 
@@ -232,8 +244,12 @@ export class TransformModifierPlugin implements ModifierPlugin<TransformModifier
     const scaleX = width / refW;
     const scaleY = height / refH;
 
-    const anchorNormX = params.anchorPoint?.[0] ?? 0.5;
-    const anchorNormY = params.anchorPoint?.[1] ?? 0.5;
+    const anchorNormX = typeof params.normX === 'number' && Number.isFinite(params.normX)
+      ? params.normX
+      : (params.anchorPoint?.[0] ?? 0.5);
+    const anchorNormY = typeof params.normY === 'number' && Number.isFinite(params.normY)
+      ? params.normY
+      : (params.anchorPoint?.[1] ?? 0.5);
     const anchorX = width * anchorNormX;
     const anchorY = height * anchorNormY;
 
@@ -241,8 +257,10 @@ export class TransformModifierPlugin implements ModifierPlugin<TransformModifier
     if (motion.rotation !== 0) {
       canvasCtx.rotate((motion.rotation * Math.PI) / 180);
     }
-    if (motion.scale !== 1.0) {
-      canvasCtx.scale(motion.scale, motion.scale);
+    const scaleFactorX = typeof params.scaleX === 'number' && Number.isFinite(params.scaleX) ? params.scaleX : motion.scale;
+    const scaleFactorY = typeof params.scaleY === 'number' && Number.isFinite(params.scaleY) ? params.scaleY : motion.scale;
+    if (scaleFactorX !== 1.0 || scaleFactorY !== 1.0) {
+      canvasCtx.scale(scaleFactorX, scaleFactorY);
     }
     canvasCtx.translate(-anchorX, -anchorY);
 

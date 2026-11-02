@@ -278,19 +278,14 @@ export class TextModifierPlugin implements ModifierPlugin<TextDrawModifierParams
     const textAlign = params.textAlign ?? 'center';
 
     // Position origin:
-    // If a transform modifier is present on the sequence, it already translated the origin.
-    // If no preceding transform modifier exists, position origin at [normX, normY] + offset.
-    const hasPrecedingTransform = sequence.modifiers?.some(
-      (m) => m.type === 'transform' || m.type === 'motion/gsap'
-    );
+    // Translate origin to [normX, normY] in canvas space + offset.
+    // When a preceding transform modifier exists, it applies its affine matrix around (normX, normY).
+    const originX = canvasW * (params.normX ?? 0.5) + (params.x ?? 0) * scaleX;
+    const originY = canvasH * (params.normY ?? 0.5) + (params.y ?? 0) * scaleY;
 
     canvasCtx.save();
     try {
-      if (!hasPrecedingTransform) {
-        const originX = canvasW * (params.normX ?? 0.5) + (params.x ?? 0) * scaleX;
-        const originY = canvasH * (params.normY ?? 0.5) + (params.y ?? 0) * scaleY;
-        canvasCtx.translate(originX, originY);
-      }
+      canvasCtx.translate(originX, originY);
 
       canvasCtx.font = fontSpec;
       canvasCtx.textBaseline = 'middle';

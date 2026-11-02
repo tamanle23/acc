@@ -357,6 +357,8 @@ function PreviewInner({
               isLocked={isLocked}
               transform={gizmo.transform}
               isDragging={gizmo.isDragging}
+              telemetry={gizmo.telemetry}
+              targetBounds={gizmo.targetBounds}
               previewEngine={renderStrategy.previewEngine}
               onHandlePointerDown={gizmo.handlePointerDown}
               onHandlePointerMove={gizmo.handlePointerMove}

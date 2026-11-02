@@ -84,3 +84,4 @@
 | 418 | [Studio RightSidebar & Dynamic Property Inspector Modernization](./418_studio_right_sidebar_and_property_editor_modernization.md) | Completed |
 | 419 | [Studio First-Load Indicator & Performance-Tuned Initialization Sequence](./419_studio_first_load_indicator_and_performance_initialization.md) | Completed |
 | 420 | [Standalone Text Overlay Modifier & Typography Bank Migration](./420_standalone_text_overlay_modifier_and_typography_bank_migration.md) | Completed |
+| 421 | [Transform Gizmo Studio-Grade Elevation & Dynamic Bounds Alignment](./421_transform_gizmo_studio_grade_elevation.md) | Completed |

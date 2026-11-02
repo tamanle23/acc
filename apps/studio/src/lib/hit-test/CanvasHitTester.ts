@@ -14,9 +14,18 @@ export interface SequenceHitRegion {
   readonly zIndex: number;
 }
 
+export interface SequenceBounds {
+  readonly normX: number; // center 0..1
+  readonly normY: number; // center 0..1
+  readonly normWidth: number; // 0..1 (unscaled base width)
+  readonly normHeight: number; // 0..1 (unscaled base height)
+  readonly label: string;
+  readonly sequenceType: 'video' | 'image' | 'text' | 'shape' | 'audio' | 'overlay';
+}
+
 /**
  * CanvasHitTester:
- * Computes normalized [0..1] bounding hit boxes for active sequences in the preview viewport.
+ * Computes normalized [0..1] bounding hit boxes and studio transform bounds for active sequences in the preview viewport.
  * Enables clicking directly on subtitles, shapes, images, and videos to activate their Sequence Inspector.
  */
 export class CanvasHitTester {
@@ -49,13 +58,15 @@ export class CanvasHitTester {
   }
 
   /**
-   * Resolves the hit-box geometry based on sequence archetype and modifiers.
+   * Resolves exact unscaled normalized bounds (0..1) for a sequence across all archetypes.
+   * Supports configurable visual breathing padding (default: 8px) for studio-grade gizmo wrapping.
    */
-  public static resolveSequenceRegion(
+  public static resolveSequenceBounds(
     seq: ResolvedSequence,
-    trackIndex: number,
-    trackId: string
-  ): SequenceHitRegion | null {
+    canvasWidth: number = 1920,
+    canvasHeight: number = 1080,
+    paddingPx: number = 8
+  ): SequenceBounds {
     const modifiers = seq.modifiers || [];
     const transMod = modifiers.find((m: ModifierNode) => m.type === 'transform');
     const shapeMod = modifiers.find((m: ModifierNode) => m.type === 'shape/vector' || m.type === 'shape/draw');
@@ -63,8 +74,8 @@ export class CanvasHitTester {
     const textMod = modifiers.find((m: ModifierNode) => m.type === 'timed_text/style' || m.type === 'text/style');
 
     const tp = (transMod?.params || {}) as Record<string, unknown>;
-    const normX = typeof tp.normX === 'number' && Number.isFinite(tp.normX) ? tp.normX : 0.5;
-    const normY = typeof tp.normY === 'number' && Number.isFinite(tp.normY) ? tp.normY : 0.5;
+    const defaultNormX = typeof tp.normX === 'number' && Number.isFinite(tp.normX) ? tp.normX : 0.5;
+    const defaultNormY = typeof tp.normY === 'number' && Number.isFinite(tp.normY) ? tp.normY : 0.5;
 
     // 1. Standalone Text & Title Overlay archetype ('text/draw')
     if (textDrawMod) {
@@ -72,116 +83,131 @@ export class CanvasHitTester {
       const text = typeof p.text === 'string' ? p.text : seq.name || 'Title';
       const lines = text.split('\n');
       const maxLineLen = Math.max(...lines.map((l) => l.length), 1);
-      const fontSize = typeof p.fontSize === 'number' && Number.isFinite(p.fontSize) ? p.fontSize : 72;
-      const charWidthApprox = fontSize * 0.55;
-      const rawW = maxLineLen * charWidthApprox + 40;
-      const rawH = lines.length * (fontSize * 1.25) + 24;
-      const scale = typeof tp.scale === 'number' && Number.isFinite(tp.scale) ? tp.scale : 1.0;
+      const fontSize = typeof p.fontSize === 'number' && Number.isFinite(p.fontSize) ? p.fontSize : 56;
+
+      const scaleBase = Math.min(canvasWidth / 1920, canvasHeight / 1080);
+      const scaledFont = Math.max(8, fontSize * scaleBase);
+      const charWidthApprox = scaledFont * 0.58;
+      const letterSpacing = (typeof p.letterSpacing === 'number' ? p.letterSpacing : 0) * scaleBase;
+      const lineHeight = typeof p.lineHeight === 'number' ? p.lineHeight : 1.25;
+      const padX = (typeof p.paddingX === 'number' ? p.paddingX : 0) * (canvasWidth / 1920);
+      const padY = (typeof p.paddingY === 'number' ? p.paddingY : 0) * (canvasHeight / 1080);
+
+      const rawW = maxLineLen * (charWidthApprox + letterSpacing) + padX * 2 + paddingPx * 2;
+      const rawH = (lines.length - 1) * (scaledFont * lineHeight) + scaledFont + padY * 2 + paddingPx * 2;
 
       return {
-        sequenceId: seq.id,
-        sequenceType: 'text',
-        trackIndex,
-        trackId,
-        normX,
-        normY,
-        normWidth: Math.min(1.0, Math.max(0.06, (rawW / 1920) * scale)),
-        normHeight: Math.min(1.0, Math.max(0.04, (rawH / 1080) * scale)),
+        normX: typeof p.normX === 'number' && Number.isFinite(p.normX) ? p.normX : defaultNormX,
+        normY: typeof p.normY === 'number' && Number.isFinite(p.normY) ? p.normY : defaultNormY,
+        normWidth: Math.min(1.0, Math.max(0.06, rawW / canvasWidth)),
+        normHeight: Math.min(1.0, Math.max(0.04, rawH / canvasHeight)),
         label: `Text: "${text.slice(0, 20)}${text.length > 20 ? '...' : ''}"`,
-        zIndex: 100 + trackIndex,
+        sequenceType: 'text',
       };
     }
 
     // 2. Subtitles & Timed Text archetype
     if (textMod || (seq.cues && seq.cues.length > 0) || seq.type === 'text') {
       const p = (textMod?.params || {}) as Record<string, unknown>;
-      const marginV = typeof p.marginV === 'number' ? p.marginV : 65;
-      const marginVNorm = marginV / 1080;
       const cueText = seq.cues?.[0]?.text || seq.name || 'Subtitle';
       const textLen = Math.max(10, Math.min(80, cueText.length));
-      const normW = Math.min(0.85, Math.max(0.25, (textLen * 18) / 1920));
-      const normH = 0.08; // ~86px height on 1080p
+      const normW = Math.min(0.85, Math.max(0.25, (textLen * 18 + paddingPx * 2) / canvasWidth));
+      const normH = Math.min(0.2, Math.max(0.05, (86 + paddingPx * 2) / canvasHeight));
+
+      const marginV = typeof p.marginV === 'number' ? p.marginV : 65;
+      const marginVNorm = marginV / canvasHeight;
 
       let yPos = 1.0 - marginVNorm - normH / 2;
       if (p.position === 'top') yPos = marginVNorm + normH / 2;
       else if (p.position === 'center') yPos = 0.5;
 
-      const offsetX = typeof tp.x === 'number' ? tp.x / 1920 : 0;
-      const offsetY = typeof tp.y === 'number' ? tp.y / 1080 : 0;
-      const scale = typeof tp.scale === 'number' ? tp.scale : 1.0;
-
       return {
-        sequenceId: seq.id,
-        sequenceType: 'text',
-        trackIndex,
-        trackId,
-        normX: Math.max(0, Math.min(1, (typeof tp.normX === 'number' ? tp.normX : 0.5) + offsetX)),
-        normY: Math.max(0, Math.min(1, yPos + offsetY)),
-        normWidth: normW * scale,
-        normHeight: normH * scale,
+        normX: defaultNormX,
+        normY: yPos,
+        normWidth: normW,
+        normHeight: normH,
         label: `Subtitle: "${cueText.slice(0, 20)}${cueText.length > 20 ? '...' : ''}"`,
-        zIndex: 100 + trackIndex,
+        sequenceType: 'text',
       };
     }
 
     // 3. Vector Shapes archetype
     if (shapeMod) {
       const sp = (shapeMod.params || {}) as Record<string, unknown>;
-      const rawW = typeof sp.width === 'number' ? sp.width : 320;
-      const rawH = typeof sp.height === 'number' ? sp.height : 180;
+      const rawW = (typeof sp.width === 'number' ? sp.width : 320) + paddingPx * 2;
+      const rawH = (typeof sp.height === 'number' ? sp.height : 180) + paddingPx * 2;
       return {
-        sequenceId: seq.id,
+        normX: typeof sp.normX === 'number' && Number.isFinite(sp.normX) ? sp.normX : defaultNormX,
+        normY: typeof sp.normY === 'number' && Number.isFinite(sp.normY) ? sp.normY : defaultNormY,
+        normWidth: Math.min(1.0, Math.max(0.04, rawW / canvasWidth)),
+        normHeight: Math.min(1.0, Math.max(0.04, rawH / canvasHeight)),
+        label: `Shape: ${typeof sp.geometry === 'string' ? sp.geometry : (typeof sp.shapeType === 'string' ? sp.shapeType : 'vector')}`,
         sequenceType: 'shape',
-        trackIndex,
-        trackId,
-        normX,
-        normY,
-        normWidth: Math.max(0.04, rawW / 1920),
-        normHeight: Math.max(0.04, rawH / 1080),
-        label: `Shape: ${typeof sp.shapeType === 'string' ? sp.shapeType : 'vector'}`,
-        zIndex: 50 + trackIndex,
       };
     }
 
     // 4. Procedural Visual Overlays (e.g. particles, rain, snow, HUDs)
     if (seq.type === 'overlay' || modifiers.some((m: ModifierNode) => m.type.startsWith('overlay/'))) {
       return {
-        sequenceId: seq.id,
-        sequenceType: 'overlay',
-        trackIndex,
-        trackId,
-        normX,
-        normY,
+        normX: defaultNormX,
+        normY: defaultNormY,
         normWidth: 0.95,
         normHeight: 0.95,
         label: `Overlay: ${seq.name || seq.id}`,
-        zIndex: 20 + trackIndex,
+        sequenceType: 'overlay',
       };
     }
 
-    // 5. Visual Media / Video / Image archetype (Exclude pure audio tracks)
-    if (
-      seq.type === 'video' ||
-      seq.type === 'image' ||
-      (seq.assetId && !trackId.includes('audio') && !trackId.includes('a1') && !trackId.includes('a2'))
-    ) {
-      const scale = typeof tp.scale === 'number' && Number.isFinite(tp.scale) ? tp.scale : 1.0;
-      const resolvedType: SequenceHitRegion['sequenceType'] =
-        seq.type === 'image' ? 'image' : 'video';
-      return {
-        sequenceId: seq.id,
-        sequenceType: resolvedType,
-        trackIndex,
-        trackId,
-        normX,
-        normY,
-        normWidth: Math.min(1.0, 0.9 * scale),
-        normHeight: Math.min(1.0, 0.9 * scale),
-        label: seq.name || seq.id,
-        zIndex: 10 + trackIndex,
-      };
+    // 5. Visual Media / Video / Image archetype
+    const resolvedType: SequenceBounds['sequenceType'] = seq.type === 'image' ? 'image' : 'video';
+    return {
+      normX: defaultNormX,
+      normY: defaultNormY,
+      normWidth: 1.0,
+      normHeight: 1.0,
+      label: seq.name || seq.id,
+      sequenceType: resolvedType,
+    };
+  }
+
+  /**
+   * Resolves the hit-box geometry based on sequence archetype and modifiers.
+   */
+  public static resolveSequenceRegion(
+    seq: ResolvedSequence,
+    trackIndex: number,
+    trackId: string
+  ): SequenceHitRegion | null {
+    // Exclude pure audio tracks
+    if (trackId.includes('audio') || trackId.includes('a1') || trackId.includes('a2')) {
+      return null;
     }
 
-    return null;
+    const bounds = this.resolveSequenceBounds(seq, 1920, 1080, 0);
+    const modifiers = seq.modifiers || [];
+    const transMod = modifiers.find((m: ModifierNode) => m.type === 'transform');
+    const tp = (transMod?.params || {}) as Record<string, unknown>;
+
+    const offsetX = typeof tp.x === 'number' ? tp.x / 1920 : 0;
+    const offsetY = typeof tp.y === 'number' ? tp.y / 1080 : 0;
+    const scale = typeof tp.scale === 'number' && Number.isFinite(tp.scale) ? tp.scale : 1.0;
+
+    let zBase = 10;
+    if (bounds.sequenceType === 'text') zBase = 100;
+    else if (bounds.sequenceType === 'shape') zBase = 50;
+    else if (bounds.sequenceType === 'overlay') zBase = 20;
+
+    return {
+      sequenceId: seq.id,
+      sequenceType: bounds.sequenceType,
+      trackIndex,
+      trackId,
+      normX: Math.max(0, Math.min(1, bounds.normX + offsetX)),
+      normY: Math.max(0, Math.min(1, bounds.normY + offsetY)),
+      normWidth: Math.min(1.0, bounds.normWidth * scale),
+      normHeight: Math.min(1.0, bounds.normHeight * scale),
+      label: bounds.label,
+      zIndex: zBase + trackIndex,
+    };
   }
 }
