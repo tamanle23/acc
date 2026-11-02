@@ -14,8 +14,9 @@ describe('Studio Boot Splash & First-Load Lifecycle Suite', () => {
       // Must NOT contain bg-slate-50 (which caused the blinding white flash on cold boot)
       expect(htmlContent).not.toContain('bg-slate-50');
 
-      // Must initialize body with deep obsidian canvas styling
-      expect(htmlContent).toContain('bg-[#070a13]');
+      // Must initialize html with dark class and body with deep slate-950 obsidian canvas styling
+      expect(htmlContent).toContain('<html lang="en" class="dark">');
+      expect(htmlContent).toContain('bg-[#020617]');
       expect(htmlContent).toContain('text-slate-100');
     });
 

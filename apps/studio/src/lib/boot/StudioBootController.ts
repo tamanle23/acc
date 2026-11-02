@@ -157,7 +157,7 @@ export class StudioBootController {
 
         splashEl.classList.add('splash-hidden');
 
-        // Transition duration is 700ms in CSS; remove DOM elements at 750ms
+        // Transition duration is 600ms in CSS; remove DOM elements at 620ms
         setTimeout(() => {
           try {
             if (splashEl.parentNode) {
@@ -171,7 +171,7 @@ export class StudioBootController {
             // Ignore edge-case removal errors
           }
           resolve();
-        }, 750);
+        }, 620);
       };
 
       const scheduleDismiss = () => {
