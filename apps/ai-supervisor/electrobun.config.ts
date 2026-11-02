@@ -6,6 +6,7 @@ export interface ElectrobunConfig {
   };
   build: {
     mainProcess: string;
+    bun?: { entrypoint: string };
     views: Record<string, { entrypoint: string }>;
     copy?: Record<string, string>;
   };
@@ -22,6 +23,7 @@ const config: ElectrobunConfig = {
   },
   build: {
     mainProcess: "bun",
+    bun: { entrypoint: "src/bun/index.ts" },
     views: {
       main: { entrypoint: "src/ui/index.tsx" },
     },

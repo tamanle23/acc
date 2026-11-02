@@ -380,6 +380,7 @@ async function main() {
       // Explicitly reveal and activate window
       win.show();
       win.activate();
+      console.log(`[Supervisor] BrowserWindow created successfully! ID: ${win.id}, Webview ID: ${win.webviewId}`);
 
       win.on("close", () => {
         if (mainWindow === win) {
@@ -458,9 +459,7 @@ async function main() {
   });
 
   // 8. Start Fleet & Inverted Telemetry Stream Consumers
-  console.log("[Supervisor] [DEBUG] Starting supervisorEngine.startAll()...");
   await supervisorEngine.startAll();
-  console.log("[Supervisor] [DEBUG] supervisorEngine.startAll() completed.");
 
   const pythonStreamConsumer = new PythonGrpcStreamConsumer("127.0.0.1", config.pythonPort);
   pythonStreamConsumer.start();
