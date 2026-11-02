@@ -231,8 +231,36 @@ describe('Studio Boot Splash & First-Load Lifecycle Suite', () => {
 
       // Must have invoked animate with opacity 1 -> 0
       expect(animateKeyframes).toEqual([{ opacity: 1 }, { opacity: 0 }]);
-      expect(animateOptions.duration).toBe(600);
+      expect(animateOptions.duration).toBe(800);
       expect(animateOptions.fill).toBe('forwards');
+      expect(document.getElementById('app-boot-splash')).toBeNull();
+    });
+
+    it('respects custom outro duration (e.g. 3000ms) without getting capped or cut off', async () => {
+      let animateOptions: any = null;
+
+      (mockSplashEl as any).animate = (keyframes: any, options: any) => {
+        animateOptions = options;
+        return {
+          set onfinish(cb: any) {
+            setTimeout(cb, 10);
+          },
+        };
+      };
+
+      mockSplashEl.parentNode.removeChild = (child: MockElement) => {
+        elementsById.delete(child.id);
+        return child;
+      };
+      mockStyleEl.parentNode.removeChild = (child: MockElement) => {
+        elementsById.delete(child.id);
+        return child;
+      };
+
+      await StudioBootController.dismiss(0, 3000);
+
+      expect(animateOptions.duration).toBe(3000);
+      expect(animateOptions.easing).toBe('cubic-bezier(0.4, 0, 0.2, 1)');
       expect(document.getElementById('app-boot-splash')).toBeNull();
     });
 

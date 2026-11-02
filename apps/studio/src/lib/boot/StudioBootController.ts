@@ -70,6 +70,7 @@ export class StudioBootController {
     canvasTimeoutMs?: number;
     minDurationMs?: number;
     settleDelayMs?: number;
+    outroDurationMs?: number;
   }): Promise<void> {
     if (this.dismissed) return;
 
@@ -86,7 +87,7 @@ export class StudioBootController {
     }
 
     // Enforce minimum dwell time (at least 2.5s) to guarantee an unhurried, calm brand presentation
-    const minDuration = options?.minDurationMs ?? 1000;
+    const minDuration = options?.minDurationMs ?? 2500;
     const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
     const startTime = (typeof window !== 'undefined' && (window as any)?.__studioBootStartTime) ?? now;
     const elapsed = now - startTime;
@@ -104,15 +105,18 @@ export class StudioBootController {
       await new Promise((r) => setTimeout(r, settleDelay));
     }
 
-    await this.dismiss(0);
+    await this.dismiss(0, options?.outroDurationMs);
   }
 
   /**
    * Synchronizes with first paint via double requestAnimationFrame,
-   * triggers the smooth 700ms cinematic fade/scale/blur dismissal, and unlinks
+   * triggers the smooth cinematic fade dismissal, and unlinks
    * the splash element and its critical stylesheet from the DOM.
+   *
+   * @param minDisplayDurationMs Minimum total splash dwell time in ms (default: 2500)
+   * @param customOutroDurationMs Outro dissolve duration in ms (default: 800)
    */
-  static dismiss(minDisplayDurationMs = 2500): Promise<void> {
+  static dismiss(minDisplayDurationMs = 2500, customOutroDurationMs?: number): Promise<void> {
     if (this.dismissed) return Promise.resolve();
     this.dismissed = true;
 
@@ -120,7 +124,10 @@ export class StudioBootController {
       return Promise.resolve();
     }
 
-    // Developer simulation query param: ?splash=hold or ?splash=5000 (delay in ms)
+    // Developer simulation query params:
+    // ?splash=hold (freeze indefinitely)
+    // ?splash=5000 (delay start in ms)
+    // ?splash_outro=3000 or ?outro=3000 (outro duration in ms)
     const searchParams = typeof window !== 'undefined' && window.location?.search
       ? new URLSearchParams(window.location.search)
       : null;
@@ -132,6 +139,10 @@ export class StudioBootController {
     }
 
     const simulatedDelayMs = splashParam && !isNaN(Number(splashParam)) ? Number(splashParam) : 0;
+
+    const outroParam = searchParams?.get('splash_outro') || searchParams?.get('outro');
+    const simulatedOutroMs = outroParam && !isNaN(Number(outroParam)) ? Number(outroParam) : null;
+    const outroDuration = customOutroDurationMs ?? simulatedOutroMs ?? 800;
 
     // Calculate remaining minimum dwell time
     const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
@@ -173,6 +184,13 @@ export class StudioBootController {
           resolve();
         };
 
+        // Synchronize CSS variable so stylesheet fallback and inline rules match exactly
+        try {
+          splashEl.style.setProperty('--splash-outro-duration', `${outroDuration}ms`);
+        } catch {
+          // Ignore CSSStyleDeclaration error in simulated test environments
+        }
+
         splashEl.classList.add('splash-hidden');
 
         // Animate opacity using Web Animations API for smooth, hardware-accelerated dismissal
@@ -184,20 +202,21 @@ export class StudioBootController {
                 { opacity: 0 }
               ],
               {
-                duration: 1500,
-                easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
+                duration: outroDuration,
+                // Gentle, balanced ease-in-out curve for visible progression across entire duration
+                easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
                 fill: 'forwards',
               }
             );
             animation.onfinish = cleanup;
-            // Safety timeout in case animation finish event is dropped
-            setTimeout(cleanup, 1500);
+            // Safety timeout dynamically matching outroDuration
+            setTimeout(cleanup, outroDuration + 100);
           } catch {
-            setTimeout(cleanup, 620);
+            setTimeout(cleanup, outroDuration + 50);
           }
         } else {
           // Fallback for test runners and legacy environments without Element.animate
-          setTimeout(cleanup, 620);
+          setTimeout(cleanup, outroDuration + 50);
         }
       };
 

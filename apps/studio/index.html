@@ -157,7 +157,7 @@
 
     #app-boot-splash.splash-hidden,
     .splash-hidden {
-      animation: splash-fade-out 600ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      animation: splash-fade-out var(--splash-outro-duration, 800ms) cubic-bezier(0.4, 0, 0.2, 1) forwards;
       pointer-events: none;
       opacity: 0;
     }
@@ -178,12 +178,6 @@
       .splash-progress-bar {
         width: 100% !important;
         opacity: 0.6;
-      }
-
-      #app-boot-splash.splash-hidden,
-      .splash-hidden {
-        animation-duration: 200ms !important;
-        transition: opacity 200ms ease !important;
       }
     }
   </style>
