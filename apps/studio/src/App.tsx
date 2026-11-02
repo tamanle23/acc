@@ -33,7 +33,7 @@ import { ThemeProvider } from './lib/theme/ThemeProvider';
 import { WebAudioEngine } from './lib/audio/WebAudioEngine';
 import { useShuttleEngine } from './lib/shuttle/useShuttleEngine';
 import { snapToDiscreteFrame } from './lib/shuttle/shuttleTypes';
-import { PlayheadController } from './lib/playhead/StudioPlayheadController';
+import { PlayheadController } from './lib/playhead/PlayheadController';
 import { useWorkspaceDnd } from './lib/dnd/useWorkspaceDnd';
 import {
   ClientExportOrchestrator,
