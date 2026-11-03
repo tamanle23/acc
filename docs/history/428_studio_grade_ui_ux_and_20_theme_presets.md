@@ -165,7 +165,21 @@ The previous UI/UX of `@acc/studio` lacked studio-grade visual refinement and ad
 - [x] Phase 6: Add Adaptive Auto-Collapse and Zen Mode to App.tsx
 - [x] Phase 7: Add Active Orbital Loader and Rotating Aperture Animation to Boot Splash Logo
 - [x] Phase 8: Synchronize Splash Modal Styling with System Theme Manager and Pre-Hydration Bootstrap
-- [x] Phase 9: Author test suite and verify 0 schema drift & production build
+- [x] Phase 9: Eliminate Dynamic Accent Color Override & Enforce Strict Single Theme Control
+- [x] Phase 10: Author test suite and verify 0 schema drift & production build
+
+## Refinement: Elimination of Dynamic Accent Override (Single Theme Control Mandate)
+- **Problem**: Previously, Studio supported both 20 Curated Theme Presets and an independent "Dynamic Accent Color Override" setting (`cyan`, `violet`, `emerald`, `amber`, `rose`). This created duplicated theme control, where selecting a theme preset (such as Cyberpunk 2077 or Dracula Pro) could have its curated primary and accent colors clobbered by the dynamic accent selector or leftover `[data-accent]` CSS rules.
+- **Resolution**:
+  1. **Strict Separation of Concerns**:
+     - **Theme Palette (20 Curated Presets)**: Exclusively governs all color tokens (`--primary`, `--ring`, `--accent-primary`, `--color-brand-accent`, `--accent-glow`, `--background`, `--foreground`, `--card`, `--border`, etc.).
+     - **Glass Refraction Profiles**: ONLY dictate liquid glass physics (`glassStyle`: `'specular' | 'frosted' | 'cyber'`, `blurIntensity`: `'low' | 'medium' | 'high'`).
+     - **Cyber Glass Finish**: Derives its specular rim highlight and chromatic glow shadow directly from the active preset's `tokens.accentPrimary`.
+  2. **Elimination of Duplicated Controls**:
+     - Removed `[data-accent="..."]` CSS selector overrides from `apps/studio/src/index.css`.
+     - Removed the "Dynamic Accent Color Override" UI section and `ACCENT_COLORS` array from `apps/studio/src/components/SettingsModal.tsx`.
+     - Streamlined `ThemeProvider.tsx` and pre-hydration `#splash-theme-init` in `apps/studio/index.html` to remove `data-accent` attributes and obsolete lookup tables.
+     - Updated all automated test suites (`studio_20_theme_presets_and_responsive_layout.test.ts`, `studio_boot_splash_lifecycle.test.ts`, `studio_liquid_glass_theme.test.ts`, `studio_theme_unification.test.ts`) to enforce zero `data-accent` leakage and strict single-control theme fidelity.
 
 ## Enhancement
 Future iterations may introduce:

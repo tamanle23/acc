@@ -8,6 +8,7 @@ import {
 export type ThemeMode = 'dark' | 'light';
 export type GlassStyle = 'specular' | 'frosted' | 'cyber';
 export type BlurIntensity = 'low' | 'medium' | 'high';
+/** @deprecated Dynamic accent override removed in favor of pure theme palette control */
 export type AccentColor = 'cyan' | 'violet' | 'emerald' | 'amber' | 'rose';
 
 export interface ThemePreferences {
@@ -15,7 +16,8 @@ export interface ThemePreferences {
   mode: ThemeMode;
   glassStyle: GlassStyle;
   blurIntensity: BlurIntensity;
-  accentColor: AccentColor;
+  /** @deprecated Dynamic accent override removed in favor of pure theme palette control */
+  accentColor?: string;
 }
 
 export interface ThemeContextValue {
@@ -33,7 +35,6 @@ export const DEFAULT_THEME_PREFERENCES: ThemePreferences = {
   mode: 'dark',
   glassStyle: 'specular',
   blurIntensity: 'medium',
-  accentColor: 'cyan',
 };
 
 // Alias for test compatibility
@@ -75,50 +76,11 @@ function loadSavedPreferences(): ThemePreferences {
       blurIntensity: ['low', 'medium', 'high'].includes(parsed.blurIntensity)
         ? parsed.blurIntensity
         : DEFAULT_THEME_PREFERENCES.blurIntensity,
-      accentColor: ['cyan', 'violet', 'emerald', 'amber', 'rose'].includes(parsed.accentColor)
-        ? parsed.accentColor
-        : DEFAULT_THEME_PREFERENCES.accentColor,
     };
   } catch {
     return { ...DEFAULT_THEME_PREFERENCES, presetId: 'obsidian' };
   }
 }
-
-export const ACCENT_CONFIGS: Record<
-  AccentColor,
-  { label: string; hex: string; hsl: string; glow: string }
-> = {
-  cyan: {
-    label: 'Cyan',
-    hex: '#06b6d4',
-    hsl: '189 94% 43%',
-    glow: 'rgba(6, 182, 212, 0.4)',
-  },
-  violet: {
-    label: 'Violet',
-    hex: '#8b5cf6',
-    hsl: '258 90% 66%',
-    glow: 'rgba(139, 92, 246, 0.4)',
-  },
-  emerald: {
-    label: 'Emerald',
-    hex: '#10b981',
-    hsl: '160 84% 39%',
-    glow: 'rgba(16, 185, 129, 0.4)',
-  },
-  amber: {
-    label: 'Amber',
-    hex: '#f59e0b',
-    hsl: '38 92% 50%',
-    glow: 'rgba(245, 158, 11, 0.4)',
-  },
-  rose: {
-    label: 'Rose',
-    hex: '#f43f5e',
-    hsl: '350 89% 60%',
-    glow: 'rgba(244, 63, 94, 0.4)',
-  },
-};
 
 export function applyThemeToDocument(preferences: ThemePreferences): void {
   if (typeof document === 'undefined') return;
@@ -137,9 +99,8 @@ export function applyThemeToDocument(preferences: ThemePreferences): void {
   root.setAttribute('data-theme-preset', preset.id);
   root.setAttribute('data-glass-style', preferences.glassStyle);
   root.setAttribute('data-blur-intensity', preferences.blurIntensity);
-  root.setAttribute('data-accent', preferences.accentColor);
 
-  // 1. Inject Preset Semantic Tokens into Tailwind v4 @theme variables
+  // 1. Theme Palette Exclusively Controls Color Theme
   const t = preset.tokens;
   root.style.setProperty('--background', t.background);
   root.style.setProperty('--foreground', t.foreground);
@@ -157,19 +118,15 @@ export function applyThemeToDocument(preferences: ThemePreferences): void {
   root.style.setProperty('--destructive-foreground', t.destructiveForeground);
   root.style.setProperty('--border', t.border);
   root.style.setProperty('--input', t.input);
+  root.style.setProperty('--primary', t.primary);
+  root.style.setProperty('--ring', t.ring);
+  root.style.setProperty('--accent-primary', t.accentPrimary);
+  root.style.setProperty('--color-brand-accent', t.colorBrandAccent);
+  root.style.setProperty('--accent-glow', t.accentGlow);
 
-  // 2. Dynamic Accent Colors synchronized with shadcn --primary and --ring
-  const accentCfg = ACCENT_CONFIGS[preferences.accentColor] || ACCENT_CONFIGS.cyan;
-  root.style.setProperty('--primary', accentCfg.hsl);
-  root.style.setProperty('--ring', accentCfg.hsl);
-  root.style.setProperty('--accent-primary', accentCfg.hex);
-  root.style.setProperty('--color-brand-accent', accentCfg.hex);
-  root.style.setProperty('--accent-glow', accentCfg.glow);
-
-  // 3. Liquid Glass Decoupled Layers
+  // 2. Glass Refraction Profiles ONLY Dictate Liquid Glass Effect
   root.style.setProperty('--glass-bg', t.glassBg);
 
-  // Decoupled Optical Glass Finish Physics
   if (preferences.glassStyle === 'frosted') {
     root.style.setProperty('--glass-specular', 'none');
     root.style.setProperty('--glass-border', t.glassBorder);
@@ -181,16 +138,16 @@ export function applyThemeToDocument(preferences: ThemePreferences): void {
   } else if (preferences.glassStyle === 'cyber') {
     root.style.setProperty(
       '--glass-specular',
-      `inset 0 1px 0 0 color-mix(in srgb, ${accentCfg.hex} 30%, transparent)`
+      `inset 0 1px 0 0 color-mix(in srgb, ${t.accentPrimary} 30%, transparent)`
     );
-    root.style.setProperty('--glass-border-highlight', accentCfg.hex);
+    root.style.setProperty('--glass-border-highlight', t.accentPrimary);
     root.style.setProperty(
       '--glass-border',
-      `color-mix(in srgb, ${accentCfg.hex} 45%, transparent)`
+      `color-mix(in srgb, ${t.accentPrimary} 45%, transparent)`
     );
     root.style.setProperty(
       '--glass-shadow',
-      `0 0 24px -4px color-mix(in srgb, ${accentCfg.hex} 30%, transparent)`
+      `0 0 24px -4px color-mix(in srgb, ${t.accentPrimary} 30%, transparent)`
     );
   } else {
     // 'specular' (Default native specular sheen with sharpened rim)
@@ -213,7 +170,7 @@ export function applyThemeToDocument(preferences: ThemePreferences): void {
     root.style.setProperty('--ambient-mesh', t.ambientMesh);
   }
 
-  // 4. Studio Splash Modal System Theme Synchronization
+  // 3. Studio Splash Modal System Theme Synchronization
   root.style.setProperty(
     '--splash-backdrop-bg',
     isDark ? '#020617cc' : 'rgba(241, 245, 249, 0.88)'
@@ -221,7 +178,7 @@ export function applyThemeToDocument(preferences: ThemePreferences): void {
   root.style.setProperty(
     '--splash-ambient-mesh',
     t.ambientMesh ||
-      `radial-gradient(circle at 50% 42%, color-mix(in srgb, ${accentCfg.hex} 14%, transparent) 0%, transparent 60%)`
+      `radial-gradient(circle at 50% 42%, color-mix(in srgb, ${t.accentPrimary} 14%, transparent) 0%, transparent 60%)`
   );
 }
 

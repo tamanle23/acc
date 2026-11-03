@@ -89,7 +89,9 @@ describe('Studio Boot Splash & First-Load Lifecycle Suite', () => {
       expect(htmlContent).toContain("data-theme-preset");
       expect(htmlContent).toContain("data-glass-style");
       expect(htmlContent).toContain("data-blur-intensity");
-      expect(htmlContent).toContain("data-accent");
+      // Verify elimination of duplicated dynamic accent color override in bootstrapper
+      expect(htmlContent).not.toContain("data-accent");
+      expect(htmlContent).toContain("var presets = {");
 
       // Liquid Glass design tokens consistency
       expect(htmlContent).toContain('--accent-primary');

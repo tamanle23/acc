@@ -16,7 +16,6 @@ import {
   type ThemeMode,
   type GlassStyle,
   type BlurIntensity,
-  type AccentColor,
   type ThemePresetCategory,
   type StudioThemePreset,
 } from '../lib/theme';
@@ -48,14 +47,6 @@ const BLUR_INTENSITIES: { id: BlurIntensity; label: string; px: string }[] = [
   { id: 'low', label: 'Low', px: '6px' },
   { id: 'medium', label: 'Medium', px: '18px' },
   { id: 'high', label: 'High', px: '40px' },
-];
-
-const ACCENT_COLORS: { id: AccentColor; label: string; hex: string }[] = [
-  { id: 'cyan', label: 'Cyan', hex: '#06b6d4' },
-  { id: 'violet', label: 'Violet', hex: '#8b5cf6' },
-  { id: 'emerald', label: 'Emerald', hex: '#10b981' },
-  { id: 'amber', label: 'Amber', hex: '#f59e0b' },
-  { id: 'rose', label: 'Rose', hex: '#f43f5e' },
 ];
 
 export function SettingsModal() {
@@ -376,38 +367,7 @@ export function SettingsModal() {
             </div>
           </div>
 
-          {/* 4. Accent Color Overrides */}
-          <div className="space-y-2 border-t border-glass-border pt-4">
-            <label className="font-semibold text-foreground/90 tracking-wide uppercase text-[11px] flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-accent-theme shadow-accent-glow" />
-              Dynamic Accent Color Override
-            </label>
-            <div className="grid grid-cols-5 gap-2">
-              {ACCENT_COLORS.map((accent) => (
-                <button
-                  key={accent.id}
-                  type="button"
-                  onClick={() => setTheme({ accentColor: accent.id })}
-                  aria-pressed={preferences.accentColor === accent.id}
-                  data-active={preferences.accentColor === accent.id}
-                  className="glass-pill p-2 rounded-lg flex items-center gap-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-accent-theme focus-visible:outline-hidden transition-all"
-                >
-                  <span
-                    className="w-3.5 h-3.5 rounded-full border border-glass-border shrink-0 shadow-xs"
-                    style={{ backgroundColor: accent.hex }}
-                  />
-                  <span className="font-medium text-foreground text-[11px] truncate">
-                    {accent.label}
-                  </span>
-                  {preferences.accentColor === accent.id && (
-                    <Check className="w-3 h-3 text-accent-theme ml-auto shrink-0" />
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* 5. Cache & Storage Maintenance */}
+          {/* 4. Cache & Storage Maintenance */}
           <div className="space-y-2 border-t border-glass-border pt-4">
             <label className="font-semibold text-foreground/90 tracking-wide uppercase text-[11px] flex items-center gap-1.5">
               <HardDrive className="w-3.5 h-3.5 text-accent-theme" />
@@ -470,7 +430,7 @@ export function SettingsModal() {
                   {activePreset.name} ({preferences.mode.toUpperCase()})
                 </div>
                 <div className="text-[11px] text-muted-foreground font-mono mt-0.5">
-                  glass: {preferences.glassStyle} • blur: {preferences.blurIntensity} • accent: {preferences.accentColor}
+                  preset: {activePreset.name} • glass: {preferences.glassStyle} • blur: {preferences.blurIntensity}
                 </div>
               </div>
               <button

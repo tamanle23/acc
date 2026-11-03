@@ -70,3 +70,11 @@ We have delivered a studio-grade UI/UX transformation across `@acc/studio`:
 - Total primary suite: **100 passed, 0 failed** across 9 test suites.
 - Schema Drift: 0 drift (`bun run scripts/generate-ir-schemas.ts --check`).
 - Vite Production Build: Completed cleanly in 12.00s (`pnpm --filter @acc/studio build`).
+
+### 7. Pure Theme Palette Governance & Elimination of Dynamic Accent Override
+- **Single Source of Truth**: The 20 curated theme presets exclusively control color themes (`--primary`, `--ring`, `--accent-primary`, `--color-brand-accent`, `--accent-glow`), while Glass Refraction profiles (Specular, Frosted, Cyber) exclusively dictate liquid glass optical physics.
+- **Removed Duplicate Overrides**:
+  - Completely removed the "Dynamic Accent Color Override" UI section and `ACCENT_COLORS` array from `SettingsModal.tsx`.
+  - Removed `[data-accent="..."]` CSS selector overrides from `index.css`.
+  - In `ThemeProvider.tsx` and pre-hydration `#splash-theme-init`, removed `data-accent` DOM attributes and obsolete accent lookup maps.
+  - Cyber glass finish now directly and harmoniously derives its neon specular highlight and chromatic drop shadow from the active preset's curated `tokens.accentPrimary`.

@@ -184,19 +184,30 @@ describe('Studio 20 Curated Theme Presets & Responsive Layout Architecture (Task
       expect(mockStyleProperties.get('--glass-border-highlight')).toBe(obsidian.tokens.glassBorder);
       expect(mockStyleProperties.get('--glass-shadow')).toBe('0 6px 20px 0 rgba(0, 0, 0, 0.4)');
 
-      // 2. Cyber Glow: accent-tinted rim highlight, cyber border, and chromatic glow shadow
+      // 2. Cyber Glow: preset-governed rim highlight, cyber border, and chromatic glow shadow (derived directly from preset tokens)
+      applyThemeToDocument({
+        presetId: 'dracula-pro',
+        mode: 'dark',
+        glassStyle: 'cyber',
+        blurIntensity: 'medium',
+      });
+
+      const dracula = getThemePreset('dracula-pro');
+      expect(mockAttributes.get('data-glass-style')).toBe('cyber');
+      expect(mockStyleProperties.get('--glass-border-highlight')).toBe(dracula.tokens.accentPrimary);
+      expect(mockStyleProperties.get('--glass-specular')).toContain(dracula.tokens.accentPrimary);
+      expect(mockStyleProperties.get('--glass-shadow')).toContain(dracula.tokens.accentPrimary);
+
+      // Verify that obsidian with cyber finish strictly uses obsidian.tokens.accentPrimary (#06b6d4)
       applyThemeToDocument({
         presetId: 'obsidian',
         mode: 'dark',
         glassStyle: 'cyber',
         blurIntensity: 'medium',
-        accentColor: 'violet',
       });
-
-      expect(mockAttributes.get('data-glass-style')).toBe('cyber');
-      expect(mockStyleProperties.get('--glass-border-highlight')).toBe('#8b5cf6');
-      expect(mockStyleProperties.get('--glass-specular')).toContain('#8b5cf6');
-      expect(mockStyleProperties.get('--glass-shadow')).toContain('#8b5cf6');
+      expect(mockStyleProperties.get('--glass-border-highlight')).toBe(obsidian.tokens.accentPrimary);
+      expect(mockStyleProperties.get('--glass-specular')).toContain(obsidian.tokens.accentPrimary);
+      expect(mockStyleProperties.get('--glass-shadow')).toContain(obsidian.tokens.accentPrimary);
 
       // 3. Specular Sheen: native preset specular reflection restored
       applyThemeToDocument({
@@ -259,6 +270,10 @@ describe('Studio 20 Curated Theme Presets & Responsive Layout Architecture (Task
       expect(modalCode).toContain('bg-glass-surface');
       expect(modalCode).toContain('border-t-glass-border-highlight');
       expect(modalCode).not.toContain('shadow-2xl backdrop-blur-2xl');
+
+      // Verify elimination of duplicated dynamic accent color control
+      expect(modalCode).not.toContain('Dynamic Accent Color Override');
+      expect(modalCode).not.toContain('ACCENT_COLORS');
     });
 
     it('Titlebar.tsx includes ThemeQuickSwitcher and Zen Mode toggle', () => {

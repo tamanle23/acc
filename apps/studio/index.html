@@ -287,49 +287,37 @@
         if (p.presetId) root.setAttribute('data-theme-preset', p.presetId);
         if (p.glassStyle) root.setAttribute('data-glass-style', p.glassStyle);
         if (p.blurIntensity) root.setAttribute('data-blur-intensity', p.blurIntensity);
-        if (p.accentColor) root.setAttribute('data-accent', p.accentColor);
-
-        var accents = {
-          cyan: { hex: '#06b6d4', hsl: '189 94% 43%', glow: 'rgba(6, 182, 212, 0.4)' },
-          violet: { hex: '#8b5cf6', hsl: '258 90% 66%', glow: 'rgba(139, 92, 246, 0.4)' },
-          emerald: { hex: '#10b981', hsl: '160 84% 39%', glow: 'rgba(16, 185, 129, 0.4)' },
-          amber: { hex: '#f59e0b', hsl: '38 92% 50%', glow: 'rgba(245, 158, 11, 0.4)' },
-          rose: { hex: '#f43f5e', hsl: '350 89% 60%', glow: 'rgba(244, 63, 94, 0.4)' }
-        };
-        var a = accents[p.accentColor] || accents.cyan;
-        root.style.setProperty('--accent-primary', a.hex);
-        root.style.setProperty('--color-brand-accent', a.hex);
-        root.style.setProperty('--accent-glow', a.glow);
-        root.style.setProperty('--primary', a.hsl);
-        root.style.setProperty('--ring', a.hsl);
 
         var presets = {
-          'obsidian': { bg: 'rgba(11, 17, 33, 0.72)', border: 'rgba(255, 255, 255, 0.12)' },
-          'tokyo-night': { bg: 'rgba(26, 27, 38, 0.75)', border: 'rgba(255, 255, 255, 0.08)' },
-          'catppuccin-mocha': { bg: 'rgba(30, 30, 46, 0.75)', border: 'rgba(255, 255, 255, 0.08)' },
-          'catppuccin-latte': { bg: 'rgba(239, 241, 245, 0.82)', border: 'rgba(76, 79, 105, 0.12)' },
-          'dracula-pro': { bg: 'rgba(40, 42, 54, 0.75)', border: 'rgba(255, 255, 255, 0.08)' },
-          'nord-frost': { bg: 'rgba(46, 52, 64, 0.75)', border: 'rgba(255, 255, 255, 0.08)' },
-          'one-dark-pro': { bg: 'rgba(33, 37, 43, 0.75)', border: 'rgba(255, 255, 255, 0.08)' },
-          'github-dark-dimmed': { bg: 'rgba(13, 17, 23, 0.75)', border: 'rgba(255, 255, 255, 0.08)' },
-          'github-light-modern': { bg: 'rgba(255, 255, 255, 0.85)', border: 'rgba(31, 35, 40, 0.12)' },
-          'monokai-pro': { bg: 'rgba(45, 42, 46, 0.75)', border: 'rgba(255, 255, 255, 0.08)' },
-          'cyberpunk-2077': { bg: 'rgba(0, 11, 30, 0.82)', border: 'rgba(0, 240, 255, 0.35)' },
-          'synthwave-84': { bg: 'rgba(38, 35, 53, 0.78)', border: 'rgba(255, 126, 219, 0.35)' },
-          'solarized-dark': { bg: 'rgba(0, 43, 54, 0.75)', border: 'rgba(255, 255, 255, 0.08)' },
-          'solarized-light': { bg: 'rgba(253, 246, 227, 0.85)', border: 'rgba(101, 123, 131, 0.15)' },
-          'gruvbox-dark': { bg: 'rgba(40, 40, 40, 0.75)', border: 'rgba(255, 255, 255, 0.08)' },
-          'rose-pine': { bg: 'rgba(25, 23, 36, 0.75)', border: 'rgba(255, 255, 255, 0.08)' },
-          'horizon-dark': { bg: 'rgba(28, 30, 38, 0.75)', border: 'rgba(255, 255, 255, 0.08)' },
-          'ayu-mirage': { bg: 'rgba(31, 36, 48, 0.75)', border: 'rgba(255, 255, 255, 0.08)' },
-          'midnight-oled': { bg: 'rgba(0, 0, 0, 0.85)', border: 'rgba(255, 255, 255, 0.08)' },
-          'vesper-noir': { bg: 'rgba(16, 16, 16, 0.8)', border: 'rgba(255, 255, 255, 0.08)' }
+          'obsidian': { bg: 'rgba(11, 17, 33, 0.72)', border: 'rgba(255, 255, 255, 0.12)', primary: '#06b6d4', glow: 'rgba(6, 182, 212, 0.4)', hsl: '189 94% 43%' },
+          'tokyo-night': { bg: 'rgba(26, 27, 38, 0.75)', border: 'rgba(255, 255, 255, 0.08)', primary: '#7aa2f7', glow: 'rgba(122, 162, 247, 0.4)', hsl: '225 73% 57%' },
+          'catppuccin-mocha': { bg: 'rgba(30, 30, 46, 0.75)', border: 'rgba(255, 255, 255, 0.08)', primary: '#cba6f7', glow: 'rgba(203, 166, 247, 0.4)', hsl: '267 84% 81%' },
+          'catppuccin-latte': { bg: 'rgba(239, 241, 245, 0.82)', border: 'rgba(76, 79, 105, 0.12)', primary: '#8839ef', glow: 'rgba(136, 57, 239, 0.3)', hsl: '267 84% 58%' },
+          'dracula-pro': { bg: 'rgba(40, 42, 54, 0.75)', border: 'rgba(255, 255, 255, 0.08)', primary: '#bd93f9', glow: 'rgba(189, 147, 249, 0.4)', hsl: '265 89% 78%' },
+          'nord-frost': { bg: 'rgba(46, 52, 64, 0.75)', border: 'rgba(255, 255, 255, 0.08)', primary: '#88c0d0', glow: 'rgba(136, 192, 208, 0.4)', hsl: '193 43% 67%' },
+          'one-dark-pro': { bg: 'rgba(33, 37, 43, 0.75)', border: 'rgba(255, 255, 255, 0.08)', primary: '#61afef', glow: 'rgba(97, 175, 239, 0.4)', hsl: '207 82% 66%' },
+          'github-dark-dimmed': { bg: 'rgba(13, 17, 23, 0.75)', border: 'rgba(255, 255, 255, 0.08)', primary: '#58a6ff', glow: 'rgba(88, 166, 255, 0.4)', hsl: '212 100% 67%' },
+          'github-light-modern': { bg: 'rgba(255, 255, 255, 0.85)', border: 'rgba(31, 35, 40, 0.12)', primary: '#0969da', glow: 'rgba(9, 105, 218, 0.3)', hsl: '213 92% 45%' },
+          'monokai-pro': { bg: 'rgba(45, 42, 46, 0.75)', border: 'rgba(255, 255, 255, 0.08)', primary: '#ffd866', glow: 'rgba(255, 216, 102, 0.4)', hsl: '45 100% 70%' },
+          'cyberpunk-2077': { bg: 'rgba(0, 11, 30, 0.82)', border: 'rgba(0, 240, 255, 0.35)', primary: '#00f0ff', glow: 'rgba(0, 240, 255, 0.45)', hsl: '180 100% 50%' },
+          'synthwave-84': { bg: 'rgba(38, 35, 53, 0.78)', border: 'rgba(255, 126, 219, 0.35)', primary: '#ff7edb', glow: 'rgba(255, 126, 219, 0.45)', hsl: '317 100% 74%' },
+          'solarized-dark': { bg: 'rgba(0, 43, 54, 0.75)', border: 'rgba(255, 255, 255, 0.08)', primary: '#268bd2', glow: 'rgba(38, 139, 210, 0.4)', hsl: '205 69% 49%' },
+          'solarized-light': { bg: 'rgba(253, 246, 227, 0.85)', border: 'rgba(101, 123, 131, 0.15)', primary: '#268bd2', glow: 'rgba(38, 139, 210, 0.3)', hsl: '205 69% 49%' },
+          'gruvbox-dark': { bg: 'rgba(40, 40, 40, 0.75)', border: 'rgba(255, 255, 255, 0.08)', primary: '#fe8019', glow: 'rgba(254, 128, 25, 0.4)', hsl: '27 98% 54%' },
+          'rose-pine': { bg: 'rgba(25, 23, 36, 0.75)', border: 'rgba(255, 255, 255, 0.08)', primary: '#ebbcba', glow: 'rgba(235, 188, 186, 0.4)', hsl: '2 55% 83%' },
+          'horizon-dark': { bg: 'rgba(28, 30, 38, 0.75)', border: 'rgba(255, 255, 255, 0.08)', primary: '#e95678', glow: 'rgba(233, 86, 120, 0.4)', hsl: '346 76% 63%' },
+          'ayu-mirage': { bg: 'rgba(31, 36, 48, 0.75)', border: 'rgba(255, 255, 255, 0.08)', primary: '#ffcc66', glow: 'rgba(255, 204, 102, 0.4)', hsl: '40 100% 70%' },
+          'midnight-oled': { bg: 'rgba(0, 0, 0, 0.85)', border: 'rgba(255, 255, 255, 0.08)', primary: '#38bdf8', glow: 'rgba(56, 189, 248, 0.4)', hsl: '199 89% 60%' },
+          'vesper-noir': { bg: 'rgba(16, 16, 16, 0.8)', border: 'rgba(255, 255, 255, 0.08)', primary: '#ffc799', glow: 'rgba(255, 199, 153, 0.4)', hsl: '27 100% 80%' }
         };
-        var pr = presets[p.presetId];
-        if (pr) {
-          root.style.setProperty('--glass-bg', pr.bg);
-          root.style.setProperty('--glass-border', pr.border);
-        }
+        var pr = presets[p.presetId] || presets['obsidian'];
+        root.style.setProperty('--accent-primary', pr.primary);
+        root.style.setProperty('--color-brand-accent', pr.primary);
+        root.style.setProperty('--accent-glow', pr.glow);
+        root.style.setProperty('--primary', pr.hsl);
+        root.style.setProperty('--ring', pr.hsl);
+        root.style.setProperty('--glass-bg', pr.bg);
+        root.style.setProperty('--glass-border', pr.border);
 
         if (p.blurIntensity === 'low') root.style.setProperty('--glass-blur', 'blur(6px)');
         else if (p.blurIntensity === 'high') root.style.setProperty('--glass-blur', 'blur(40px)');
@@ -339,10 +327,10 @@
           root.style.setProperty('--glass-specular', 'none');
           root.style.setProperty('--glass-shadow', isDark ? '0 6px 20px 0 rgba(0, 0, 0, 0.4)' : '0 4px 16px 0 rgba(0, 0, 0, 0.05)');
         } else if (p.glassStyle === 'cyber') {
-          root.style.setProperty('--glass-specular', 'inset 0 1px 0 0 color-mix(in srgb, ' + a.hex + ' 30%, transparent)');
-          root.style.setProperty('--glass-border-highlight', a.hex);
-          root.style.setProperty('--glass-border', 'color-mix(in srgb, ' + a.hex + ' 45%, transparent)');
-          root.style.setProperty('--glass-shadow', '0 0 24px -4px color-mix(in srgb, ' + a.hex + ' 30%, transparent)');
+          root.style.setProperty('--glass-specular', 'inset 0 1px 0 0 color-mix(in srgb, ' + pr.primary + ' 30%, transparent)');
+          root.style.setProperty('--glass-border-highlight', pr.primary);
+          root.style.setProperty('--glass-border', 'color-mix(in srgb, ' + pr.primary + ' 45%, transparent)');
+          root.style.setProperty('--glass-shadow', '0 0 24px -4px color-mix(in srgb, ' + pr.primary + ' 30%, transparent)');
         }
       } catch (e) {}
     })();
