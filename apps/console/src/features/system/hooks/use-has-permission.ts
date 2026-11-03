@@ -1,118 +1,126 @@
 import { useMemo } from 'react';
-import { useAuthStore } from '@/stores/auth-store';
+import { useSpringAuthStore } from '@/features/spring-auth';
 import { useSandboxStore } from '@/core/sandbox/store/sandbox-store';
 import { DEFAULT_SANDBOX_PERSONAS } from '@/core/sandbox/store/sandbox-store';
 
 /**
  * Standard system and tenant role-to-permission mappings for client authorization checks.
  */
-const ROLE_PERMISSIONS_FALLBACK: Record<string, string[]> = {
+export const ROLE_PERMISSIONS_FALLBACK: Record<string, string[]> = {
   ROLE_SYSTEM_ROOT: [
     'platform:fleet:read',
     'platform:fleet:mutate',
-    'platform:fleet:circuit_trip',
+    'platform:fleet:trip_circuit',
     'platform:tenant:assume',
-    'platform:tenant:suspend',
-    'platform:tenant:purge:request',
-    'platform:tenant:purge:approve',
-    'platform:quotas:override',
+    'platform:tenant:purge',
+    'platform:quotas:manage',
     'platform:roles:manage',
-    'platform:users:lock',
-    'platform:workflow:submit',
-    'platform:workflow:verify',
-    'platform:workflow:approve',
-    'platform:workflow:reject',
+    'platform:users:manage',
+    'platform:dlq:manage',
+    'platform:workers:manage',
     'metadata:schema:read',
     'metadata:schema:write',
     'metadata:blueprint:package',
     'metadata:blueprint:provision',
     'metadata:cache:evict',
-    'platform:security:inspect',
-    'platform:audit:verify',
-    'platform:compliance:export',
-    'platform:dlq:manage',
-    'billing:tier:override',
-    'billing:manual:invoice',
-    'billing:reconcile',
-    'tenant:feature:grant',
-    'platform:kyc:verify',
-    'platform:kyc:approve',
-    'org:workspace:read',
-    'org:workspace:mutate',
-    'org:member:invite',
-    'org:member:manage',
-    'org:billing:read',
-    'org:billing:upgrade',
     'entity:record:read',
     'entity:record:create',
     'entity:record:update',
     'entity:record:delete',
-    'org:workflow:submit',
-    'org:workflow:approve',
-    'org:audit:read',
+    'entity:record:export',
+    'workspace:settings:read',
+    'workspace:settings:manage',
+    'workspace:members:read',
+    'workspace:members:manage',
+    'workflow:definition:read',
+    'workflow:definition:manage',
+    'workflow:execution:read',
+    'workflow:execution:submit',
+    'workflow:approval:execute',
+    'audit:log:read',
+    'audit:hash:verify',
+    'audit:compliance:export',
+    'billing:subscription:read',
+    'billing:subscription:upgrade',
+    'billing:tier:override',
+    'billing:invoice:adjust',
   ],
   ROLE_SYSTEM_SUPPORT: [
     'platform:fleet:read',
     'platform:tenant:assume',
-    'platform:security:inspect',
-    'platform:audit:verify',
-    'platform:compliance:export',
+    'platform:dlq:manage',
     'metadata:schema:read',
-    'org:audit:read',
     'entity:record:read',
+    'workspace:settings:read',
+    'workspace:members:read',
+    'audit:log:read',
   ],
   ROLE_WORKSPACE_OWNER: [
-    'org:workspace:read',
-    'org:workspace:mutate',
-    'org:member:invite',
-    'org:member:manage',
-    'org:billing:read',
-    'org:billing:upgrade',
+    'workspace:settings:read',
+    'workspace:settings:manage',
+    'workspace:members:read',
+    'workspace:members:manage',
+    'metadata:schema:read',
+    'metadata:schema:write',
+    'metadata:blueprint:provision',
     'entity:record:read',
     'entity:record:create',
     'entity:record:update',
     'entity:record:delete',
-    'org:workflow:submit',
-    'org:workflow:approve',
-    'org:audit:read',
-    'metadata:schema:read',
+    'entity:record:export',
+    'workflow:definition:read',
+    'workflow:definition:manage',
+    'workflow:execution:read',
+    'workflow:execution:submit',
+    'workflow:approval:execute',
+    'audit:log:read',
+    'billing:subscription:read',
+    'billing:subscription:upgrade',
   ],
   ROLE_OPERATIONS_MANAGER: [
-    'org:workspace:read',
+    'workspace:settings:read',
+    'metadata:schema:read',
     'entity:record:read',
     'entity:record:create',
     'entity:record:update',
     'entity:record:delete',
-    'org:workflow:submit',
-    'org:audit:read',
-    'metadata:schema:read',
+    'entity:record:export',
+    'workflow:definition:read',
+    'workflow:execution:read',
+    'workflow:execution:submit',
+    'workflow:approval:execute',
+    'audit:log:read',
   ],
   ROLE_STANDARD_MEMBER: [
-    'org:workspace:read',
+    'workspace:settings:read',
     'entity:record:read',
     'entity:record:create',
     'entity:record:update',
-    'org:workflow:submit',
+    'workflow:execution:read',
+    'workflow:execution:submit',
   ],
   ROLE_AUDITOR: [
-    'org:workspace:read',
-    'entity:record:read',
-    'org:audit:read',
+    'workspace:settings:read',
+    'workspace:members:read',
     'metadata:schema:read',
+    'entity:record:read',
+    'audit:log:read',
+    'audit:hash:verify',
+    'audit:compliance:export',
   ],
 };
 
 /**
  * Custom hook to verify whether the active user possesses a given permission atom.
- * Aggregates assigned roles and resolves against the sandbox persona in dev mode.
+ * Prioritizes backend-hydrated permission claims in useSpringAuthStore.
  */
 export function useHasPermission(permissionCode: string): boolean {
-  const authUser = useAuthStore((s) => s.auth.user);
+  const authUser = useSpringAuthStore((s) => s.user);
   const isSandboxEnabled = useSandboxStore((s) => s.enabled);
   const activePersonaId = useSandboxStore((s) => s.activePersonaId);
 
   return useMemo(() => {
-    // 1. In Dev Mode with Sandbox, infer permissions from active persona
+    // 1. In Dev Mode with Sandbox active, infer permissions from active persona
     if (import.meta.env.DEV && isSandboxEnabled && activePersonaId) {
       if (activePersonaId === 'system') return true; // Sovereign root custodian holds all permissions
 
@@ -125,14 +133,19 @@ export function useHasPermission(permissionCode: string): boolean {
       }
     }
 
-    // 2. Production auth store resolution
-    if (authUser?.role) {
-      if (authUser.role.includes('ROLE_SYSTEM_ROOT') || authUser.role.includes('ROLE_SOVEREIGN_ADMIN')) {
+    // 2. Production auth session profile resolution
+    if (authUser) {
+      if (authUser.isSovereign || authUser.roles?.includes('ROLE_SYSTEM_ROOT')) {
         return true;
       }
-      for (const r of authUser.role) {
-        const perms = ROLE_PERMISSIONS_FALLBACK[r];
-        if (perms && perms.includes(permissionCode)) return true;
+      if (authUser.permissions && authUser.permissions.includes(permissionCode as any)) {
+        return true;
+      }
+      if (authUser.roles) {
+        for (const r of authUser.roles) {
+          const perms = ROLE_PERMISSIONS_FALLBACK[r];
+          if (perms && perms.includes(permissionCode)) return true;
+        }
       }
     }
 
@@ -144,7 +157,7 @@ export function useHasPermission(permissionCode: string): boolean {
  * Hook to retrieve all active permission atoms for the current user/persona.
  */
 export function useActivePermissions(): Set<string> {
-  const authUser = useAuthStore((s) => s.auth.user);
+  const authUser = useSpringAuthStore((s) => s.user);
   const isSandboxEnabled = useSandboxStore((s) => s.enabled);
   const activePersonaId = useSandboxStore((s) => s.activePersonaId);
 
@@ -156,17 +169,24 @@ export function useActivePermissions(): Set<string> {
       return permSet;
     }
 
-    const roles: string[] = [];
     if (import.meta.env.DEV && isSandboxEnabled && activePersonaId) {
       const persona = DEFAULT_SANDBOX_PERSONAS[activePersonaId];
-      if (persona?.roles) roles.push(...persona.roles);
-    } else if (authUser?.role) {
-      roles.push(...authUser.role);
-    }
-
-    for (const r of roles) {
-      const perms = ROLE_PERMISSIONS_FALLBACK[r];
-      if (perms) perms.forEach((p) => permSet.add(p));
+      if (persona?.roles) {
+        for (const r of persona.roles) {
+          const perms = ROLE_PERMISSIONS_FALLBACK[r];
+          if (perms) perms.forEach((p) => permSet.add(p));
+        }
+      }
+    } else if (authUser) {
+      if (authUser.permissions) {
+        authUser.permissions.forEach((p) => permSet.add(p));
+      }
+      if (authUser.roles) {
+        for (const r of authUser.roles) {
+          const perms = ROLE_PERMISSIONS_FALLBACK[r];
+          if (perms) perms.forEach((p) => permSet.add(p));
+        }
+      }
     }
 
     return permSet;

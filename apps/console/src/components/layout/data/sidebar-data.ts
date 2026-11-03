@@ -79,7 +79,8 @@ export const useSidebarData = (): SidebarData => {
   const assumedTenant = typeof window !== 'undefined' ? localStorage.getItem('acc_assumed_tenant') : null;
   const isAssumed = Boolean(assumedTenant && assumedTenant !== 'SYSTEM');
   const isSovereign = Boolean(
-    user?.roles?.includes('ROLE_SYSTEM_CUSTODIAN') ||
+    user?.isSovereign ||
+    user?.roles?.includes('ROLE_SYSTEM_ROOT') ||
     activePersonaId === 'system'
   );
 

@@ -130,3 +130,12 @@ springApiClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+/**
+ * Fetch strongly-typed security profile for current authenticated session.
+ * Hydrates useSpringAuthStore without browser-side JWT decoding.
+ */
+export async function fetchAuthenticationProfile(): Promise<import('@acc/client').AuthenticationProfile> {
+  const { data } = await springApiClient.get<import('@acc/client').AuthenticationProfile>('/auth/me');
+  return data;
+}

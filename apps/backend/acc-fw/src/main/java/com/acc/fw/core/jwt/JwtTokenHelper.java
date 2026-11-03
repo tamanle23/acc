@@ -97,9 +97,19 @@ public class JwtTokenHelper implements Serializable {
                   .map(o -> (List<String>)o)
                   .orElse(List.of());
 
-    return Stream.concat(authorities.stream(), permissions.stream())
+    List<String> roles = Optional.ofNullable(claims.get("roles"))
+                  .filter(Objects::nonNull)
+                  .map(o -> (List<String>)o)
+                  .orElse(List.of());
+
+    return Stream.concat(Stream.concat(authorities.stream(), permissions.stream()), roles.stream())
                  .distinct()
-                 .map(SimpleGrantedAuthority::new)
+                 .map(authStr -> {
+                     if (authStr.startsWith("ROLE_")) {
+                         return new SimpleGrantedAuthority(authStr.toUpperCase());
+                     }
+                     return new SimpleGrantedAuthority(authStr.toLowerCase());
+                 })
                  .collect(Collectors.toList());
   }
 
@@ -183,7 +193,23 @@ public class JwtTokenHelper implements Serializable {
     claims.put(CLAIM_KEY_AUDIENCE, userAgent);
     claims.put(CLAIM_KEY_CREATED, new Date());
     claims.put(CLAIM_KEY_USER_DETAILS, userDetails);
+    String tenantId = com.acc.fw.tenancy.TenantContextHolder.getTenantId();
+    if (StringUtils.isNotBlank(tenantId)) {
+      claims.put(CLAIM_KEY_TENANT_ID, tenantId);
+      claims.put("tenantId", tenantId);
+    }
     if(CollectionUtils.isNotEmpty(userDetails.getAuthorities())){
+      List<String> roles = userDetails.getAuthorities().stream()
+          .map(GrantedAuthority::getAuthority)
+          .filter(a -> a.startsWith("ROLE_"))
+          .collect(Collectors.toList());
+      List<String> permissions = userDetails.getAuthorities().stream()
+          .map(GrantedAuthority::getAuthority)
+          .filter(a -> !a.startsWith("ROLE_"))
+          .map(String::toLowerCase)
+          .collect(Collectors.toList());
+      claims.put("roles", roles);
+      claims.put(CLAIM_KEY_PERMISSIONS, permissions);
       claims.put(CLAIM_KEY_AUTHORITIES, userDetails.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList()));
     }
     return getAuthenticationToken(claims);

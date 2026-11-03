@@ -15,4 +15,6 @@ public interface TokenService {
       RequestWrapper<ContextHeader, AuthenticationToken> request);
 
   void logout();
+
+  com.acc.system.dto.AuthenticationProfileDto getAuthenticationProfile(com.acc.service.authentication.UserDetailsImpl userDetails);
 }

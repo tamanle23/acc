@@ -102,4 +102,48 @@ public class TokenServiceImpl extends CommonReponseBuilder implements TokenServi
   @Override
   public void logout() {
   }
+
+  @Override
+  public com.acc.system.dto.AuthenticationProfileDto getAuthenticationProfile(UserDetailsImpl userDetails) {
+    if (userDetails == null) {
+      throw BusinessException.create().add(ErrorCodes.ERROR_LOGIN_INVALID_CREDENTIALS).setHttpCode(HttpStatus.UNAUTHORIZED.value());
+    }
+    String username = userDetails.getUsername();
+    String userId = userDetails.getUid();
+    String tenantId = com.acc.fw.tenancy.TenantContextHolder.getTenantId();
+    if (org.apache.commons.lang3.StringUtils.isBlank(tenantId)) {
+      tenantId = "SYSTEM";
+    }
+
+    java.util.List<String> roles = userDetails.getAuthorities() != null
+        ? userDetails.getAuthorities().stream()
+            .map(org.springframework.security.core.GrantedAuthority::getAuthority)
+            .filter(a -> a.startsWith("ROLE_"))
+            .collect(java.util.stream.Collectors.toList())
+        : java.util.Collections.emptyList();
+
+    java.util.List<String> permissions = userDetails.getAuthorities() != null
+        ? userDetails.getAuthorities().stream()
+            .map(org.springframework.security.core.GrantedAuthority::getAuthority)
+            .filter(a -> !a.startsWith("ROLE_"))
+            .map(String::toLowerCase)
+            .collect(java.util.stream.Collectors.toList())
+        : java.util.Collections.emptyList();
+
+    boolean isSovereign = roles.contains(com.acc.core.constant.CanonicalRoles.ROLE_SYSTEM_ROOT)
+        || roles.contains(com.acc.core.constant.CanonicalRoles.ROLE_SYSTEM_SUPPORT)
+        || "SYSTEM".equalsIgnoreCase(tenantId);
+
+    java.util.List<String> activeFeatures = java.util.List.of("auth", "metadata", "users", "workflows", "billing");
+
+    return com.acc.system.dto.AuthenticationProfileDto.builder()
+        .userId(userId != null ? userId : username)
+        .username(username)
+        .tenantId(tenantId)
+        .sovereign(isSovereign)
+        .roles(roles)
+        .permissions(permissions)
+        .activeFeatures(activeFeatures)
+        .build();
+  }
 }

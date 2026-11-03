@@ -67,6 +67,9 @@ public class User extends BaseModel {
   @Enumerated(EnumType.STRING)
   private UserType type;
 
+  @jakarta.persistence.Column(columnDefinition = "TEXT")
+  private String preferences;
+
   @Fetch(FetchMode.JOIN)
   @JsonIgnore
   @ManyToOne(fetch=FetchType.LAZY)

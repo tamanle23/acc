@@ -1,6 +1,5 @@
 import { create } from 'zustand';
-import { decodeJwt } from './utils/jwt';
-import type { AuthState } from './types';
+import type { AuthState, AuthenticationProfile } from './types';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { useSandboxStore } from '../../core/sandbox/store/sandbox-store';
 
@@ -17,23 +16,25 @@ export const useSpringAuthStore = create<AuthState>()(
       isHydrating: true, // Start in hydrating mode
       isSandbox: false,
       setTokens: (access: string, refresh: string) => {
-        const user = decodeJwt(access);
         if (refresh) {
           localStorage.setItem(REFRESH_STORAGE_KEY, refresh);
         }
         const isSandbox = Boolean(
-          user?.isSandbox ||
           access?.endsWith('.mock_signature') ||
           refresh?.startsWith('mock_refresh_token_')
         );
-        const tenantId = (user?.tenantId as string) || (user?.tid as string) || null;
         set({
           accessToken: access,
           refreshToken: refresh,
-          user,
-          currentTenantId: tenantId,
-          isAuthenticated: !!user,
+          isAuthenticated: Boolean(access),
           isSandbox,
+        });
+      },
+      setUser: (user: AuthenticationProfile | null) => {
+        set({
+          user,
+          currentTenantId: user?.tenantId || null,
+          isAuthenticated: Boolean(user),
         });
       },
       setHydrating: (val: boolean) => set({ isHydrating: val }),

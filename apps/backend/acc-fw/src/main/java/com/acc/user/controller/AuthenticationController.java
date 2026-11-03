@@ -54,6 +54,13 @@ public class AuthenticationController extends CommonController {
     return tokenService.refreshToken(this.extractRequest(authenticationToken));
   }
 
+  @org.springframework.web.bind.annotation.GetMapping(value = "me")
+  @org.springframework.security.access.prepost.PreAuthorize("isAuthenticated()")
+  public ResponseWrapper<ContextHeader, com.acc.system.dto.AuthenticationProfileDto> me(
+      @org.springframework.security.core.annotation.AuthenticationPrincipal com.acc.service.authentication.UserDetailsImpl userDetails) {
+    return success(tokenService.getAuthenticationProfile(userDetails));
+  }
+
   @PatchMapping(value="/logout")
   public ResponseEntity<Object> logout(HttpServletResponse response) {
     tokenService.logout();

@@ -75,7 +75,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     }
     if (permissions != null) {
       for (String permission : permissions) {
-        GrantedAuthority authority = new SimpleGrantedAuthority(permission.toUpperCase());
+        GrantedAuthority authority = new SimpleGrantedAuthority(permission.toLowerCase());
         authorities.add(authority);
       }
     }

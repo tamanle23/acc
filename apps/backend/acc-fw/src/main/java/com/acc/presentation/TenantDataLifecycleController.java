@@ -39,7 +39,7 @@ public class TenantDataLifecycleController {
      * Prevents JVM heap exhaustion by utilizing non-blocking line-delimited streaming chunks.
      */
     @GetMapping("/{tenantId}/export")
-    @PreAuthorize("hasAuthority('METADATA_SCHEMA_READ') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('metadata:schema:read')")
     public void exportTenantArchive(
             @PathVariable String tenantId,
             HttpServletResponse response) throws IOException {
@@ -59,7 +59,7 @@ public class TenantDataLifecycleController {
      * for GDPR Article 20 data portability.
      */
     @GetMapping("/{tenantId}/export-stream")
-    @PreAuthorize("hasAuthority('METADATA_SCHEMA_READ') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('metadata:schema:read')")
     public ResponseEntity<StreamingResponseBody> exportTenantArchiveStream(
             @PathVariable String tenantId) {
 
@@ -81,7 +81,7 @@ public class TenantDataLifecycleController {
      * Returns an immutable, anonymized Certificate of Erasure audit receipt.
      */
     @PostMapping("/{tenantId}/purge")
-    @PreAuthorize("hasRole('ADMIN') or hasAuthority('TENANT_COMPLIANCE_PURGE')")
+    @PreAuthorize("hasAuthority('platform:tenant:purge')")
     public ResponseEntity<ResponseWrapper<ContextHeader, CertificateOfErasure>> purgeTenant(
             @PathVariable String tenantId,
             Authentication authentication) {

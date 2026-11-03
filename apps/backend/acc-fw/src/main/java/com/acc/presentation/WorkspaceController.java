@@ -47,7 +47,7 @@ public class WorkspaceController {
      * Create a new workspace within current tenant.
      */
     @PostMapping
-    @PreAuthorize("hasAuthority('METADATA_SCHEMA_WRITE') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('workspace:settings:manage')")
     public ResponseEntity<ResponseWrapper<ContextHeader, WorkspaceDto>> createWorkspace(
             @Valid @RequestBody CreateWorkspaceRequest request) {
         WorkspaceDto created = workspaceService.createWorkspace(request);
@@ -58,7 +58,7 @@ public class WorkspaceController {
      * Update an existing workspace's details.
      */
     @PutMapping("/{uid}")
-    @PreAuthorize("hasAuthority('METADATA_SCHEMA_WRITE') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('workspace:settings:manage')")
     public ResponseEntity<ResponseWrapper<ContextHeader, WorkspaceDto>> updateWorkspace(
             @PathVariable String uid,
             @Valid @RequestBody UpdateWorkspaceRequest request) {
@@ -70,7 +70,7 @@ public class WorkspaceController {
      * Set a workspace as the tenant's active default workspace.
      */
     @PutMapping("/{uid}/default")
-    @PreAuthorize("hasAuthority('METADATA_SCHEMA_WRITE') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('workspace:settings:manage')")
     public ResponseEntity<ResponseWrapper<ContextHeader, WorkspaceDto>> setDefaultWorkspace(
             @PathVariable String uid) {
         WorkspaceDto updated = workspaceService.setDefaultWorkspace(uid);
@@ -81,7 +81,7 @@ public class WorkspaceController {
      * Soft-delete a workspace (strictly rejected if default, immutable, or sole workspace).
      */
     @DeleteMapping("/{uid}")
-    @PreAuthorize("hasAuthority('METADATA_SCHEMA_WRITE') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('workspace:settings:manage')")
     public ResponseEntity<ResponseWrapper<ContextHeader, Void>> deleteWorkspace(@PathVariable String uid) {
         workspaceService.deleteWorkspace(uid);
         return responseBuilder.success();
