@@ -7,31 +7,63 @@ interface WorkflowExecutionsKpiBarProps {
   executions: WorkflowExecution[];
 }
 
-export const WorkflowExecutionsKpiBar: React.FC<WorkflowExecutionsKpiBarProps> = ({ executions }) => {
-  const inProgress = executions.filter(
-    (e) => e.status === 'IN_PROGRESS' || e.status === 'RUNNING' || e.status === 'SCHEDULED'
-  ).length;
+/**
+ * WorkflowExecutionsKpiBar renders telemetry summary cards for in-flight,
+ * completed, failed units, average execution duration, and unique lease owners.
+ *
+ * Performance Optimizations:
+ * 1. Single-Pass Aggregation: Replaced 6 separate array iterations (.filter, .map, .reduce)
+ *    and temporary intermediate array allocations with a single O(N) loop inside `useMemo`.
+ * 2. Component Memoization: Wrapped with React.memo to prevent unnecessary re-renders
+ *    and recalculations when parent states change (such as active tab switching in the parent page).
+ */
+export const WorkflowExecutionsKpiBar: React.FC<WorkflowExecutionsKpiBarProps> = React.memo(({ executions }) => {
+  const { inProgress, failed, successRate, avgDuration, activeWorkers } = React.useMemo(() => {
+    let inProgCount = 0;
+    let completedCount = 0;
+    let failedCount = 0;
+    let totalDurationMs = 0;
+    let validDurationsCount = 0;
+    const workersSet = new Set<string>();
 
-  const completed = executions.filter(
-    (e) => e.status === 'COMPLETED' || e.status === 'done'
-  ).length;
+    for (const e of executions) {
+      const status = e.status;
+      if (status === 'IN_PROGRESS' || status === 'RUNNING' || status === 'SCHEDULED') {
+        inProgCount++;
+      } else if (status === 'COMPLETED' || status === 'done') {
+        completedCount++;
+      } else if (status === 'FAILED' || status === 'TIMED_OUT') {
+        failedCount++;
+      }
 
-  const failed = executions.filter(
-    (e) => e.status === 'FAILED' || e.status === 'TIMED_OUT'
-  ).length;
+      if (typeof e.durationMs === 'number' && e.durationMs > 0) {
+        totalDurationMs += e.durationMs;
+        validDurationsCount++;
+      }
 
-  const total = executions.length;
-  const successRate = total > 0 ? Math.round((completed / (completed + failed || 1)) * 100) : 100;
+      if (e.leaseOwner) {
+        workersSet.add(e.leaseOwner);
+      }
+    }
 
-  const durations = executions
-    .map((e) => e.durationMs)
-    .filter((d): d is number => typeof d === 'number' && d > 0);
-  const avgDuration =
-    durations.length > 0 ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length) : 340;
+    const total = executions.length;
+    const computedSuccessRate =
+      total > 0 ? Math.round((completedCount / (completedCount + failedCount || 1)) * 100) : 100;
 
-  const activeWorkers = new Set(
-    executions.map((e) => e.leaseOwner).filter((o): o is string => Boolean(o))
-  ).size || 3;
+    const computedAvgDuration =
+      validDurationsCount > 0 ? Math.round(totalDurationMs / validDurationsCount) : 340;
+
+    const computedActiveWorkers = workersSet.size || 3;
+
+    return {
+      inProgress: inProgCount,
+      completed: completedCount,
+      failed: failedCount,
+      successRate: computedSuccessRate,
+      avgDuration: computedAvgDuration,
+      activeWorkers: computedActiveWorkers,
+    };
+  }, [executions]);
 
   return (
     <div
@@ -120,4 +152,4 @@ export const WorkflowExecutionsKpiBar: React.FC<WorkflowExecutionsKpiBarProps> =
       </div>
     </div>
   );
-};
+});
