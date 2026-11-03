@@ -315,7 +315,7 @@ function PreviewInner({
 
       {/* Dynamic Viewport: Canvas Cell + Dockable Telemetry Companion */}
       <div
-        className={`w-full flex-1 flex flex-col xl:flex-row items-center justify-center gap-4 px-2 py-1 max-w-full overflow-hidden ${isTelemetryCompanionOpen ? 'xl:justify-between' : 'justify-center'
+        className={`w-full flex-1 flex flex-col xl:flex-row items-center justify-center gap-4 px-2 pt-1 pb-14 max-w-full overflow-hidden ${isTelemetryCompanionOpen ? 'xl:justify-between' : 'justify-center'
           }`}
       >
         <div
@@ -419,19 +419,6 @@ function PreviewInner({
               onCancel={() => setEditingCue(null)}
             />
           )}
-
-          {/* Floating Studio Quick Playback Transport HUD */}
-          <ViewportQuickTransport
-            isPlaying={isPlaying}
-            onTogglePlay={onTogglePlay}
-            currentFrame={currentFrame}
-            totalFrames={totalFrames}
-            fps={fps}
-            onScrub={onScrub}
-            zoomLevel={panZoom.zoomLevel}
-            onSetZoomLevel={panZoom.setZoomLevel}
-            onResetPan={panZoom.resetPan}
-          />
         </div>
 
         {/* Telemetry Companion Card */}
@@ -464,6 +451,19 @@ function PreviewInner({
           </div>
         )}
       </div>
+
+      {/* Floating Studio Quick Playback Transport HUD - Docked bottom center OUTSIDE canvas viewport */}
+      <ViewportQuickTransport
+        isPlaying={isPlaying}
+        onTogglePlay={onTogglePlay}
+        currentFrame={currentFrame}
+        totalFrames={totalFrames}
+        fps={fps}
+        onScrub={onScrub}
+        zoomLevel={panZoom.zoomLevel}
+        onSetZoomLevel={panZoom.setZoomLevel}
+        onResetPan={panZoom.resetPan}
+      />
     </div>
   );
 }

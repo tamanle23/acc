@@ -14,7 +14,9 @@ We have delivered a studio-grade UI/UX transformation across `@acc/studio`:
 - **Settings Modal Gallery**: Visual grid of all 20 themes with 4-color preview swatches and live material inspection.
 
 ### 3. Floating Quick Playback Transport HUD
-- `ViewportQuickTransport.tsx`: Floating pill (`glass-panel px-4 py-2 rounded-full`) docked at bottom center of the canvas with:
+- `ViewportQuickTransport.tsx`: Floating pill (`glass-panel px-4 py-2 rounded-full`) docked at bottom center of the Preview workspace outside of the canvas viewport:
+  - Decoupled from canvas pan/zoom transforms and overflow clipping.
+  - Reserved bottom clearance (`pb-14`) to prevent video occlusion.
   - Step Backward (1 frame)
   - Play / Pause (`Space`)
   - Step Forward (1 frame)

@@ -1,4 +1,5 @@
 import React from 'react';
+import { cn } from 'cn';
 import {
   Play,
   Pause,
@@ -22,6 +23,7 @@ export interface ViewportQuickTransportProps {
   zoomLevel?: 'fit' | 0.5 | 1.0 | 2.0;
   onSetZoomLevel?: (zoom: 'fit' | 0.5 | 1.0 | 2.0) => void;
   onResetPan?: () => void;
+  className?: string;
 }
 
 export const ViewportQuickTransport: React.FC<ViewportQuickTransportProps> = ({
@@ -34,6 +36,7 @@ export const ViewportQuickTransport: React.FC<ViewportQuickTransportProps> = ({
   zoomLevel = 'fit',
   onSetZoomLevel,
   onResetPan,
+  className,
 }) => {
   const handleStepBack = () => {
     if (onScrub) onScrub(Math.max(0, currentFrame - 1));
@@ -46,7 +49,12 @@ export const ViewportQuickTransport: React.FC<ViewportQuickTransportProps> = ({
   const smpte = RationalTime.fromFrame(currentFrame, fps).toSMPTE(fps);
 
   return (
-    <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 pointer-events-auto transition-all">
+    <div
+      className={cn(
+        "absolute bottom-3.5 left-1/2 -translate-x-1/2 z-20 pointer-events-auto transition-all",
+        className
+      )}
+    >
       <div className="glass-panel px-4 py-2 rounded-full flex items-center gap-3 shadow-glass border border-glass-border">
         {/* Step Backward 1 Frame */}
         <Tooltip content="Step Backward 1 Frame (ArrowLeft)">

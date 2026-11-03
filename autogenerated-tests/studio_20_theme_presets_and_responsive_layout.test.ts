@@ -294,6 +294,26 @@ describe('Studio 20 Curated Theme Presets & Responsive Layout Architecture (Task
       expect(code).toContain('handleStepForward');
     });
 
+    it('Preview.tsx docks ViewportQuickTransport bottom center outside of canvas viewport', () => {
+      const previewPath = path.join(rootDir, 'apps/studio/src/components/Preview.tsx');
+      const previewCode = fs.readFileSync(previewPath, 'utf8');
+
+      // Must mount ViewportQuickTransport
+      expect(previewCode).toContain('ViewportQuickTransport');
+
+      // Must be outside the inner canvas viewport wrapper
+      const canvasIndex = previewCode.indexOf('isolate rounded-xl overflow-hidden');
+      const canvasCloseIndex = previewCode.indexOf('</div>\n\n        {/* Telemetry Companion Card */}');
+      const transportIndex = previewCode.indexOf('<ViewportQuickTransport');
+
+      expect(canvasIndex).toBeGreaterThan(0);
+      expect(canvasCloseIndex).toBeGreaterThan(canvasIndex);
+      expect(transportIndex).toBeGreaterThan(canvasCloseIndex);
+
+      // Viewport container must reserve bottom padding so canvas is never occluded
+      expect(previewCode).toContain('pb-14');
+    });
+
     it('Toolbar.tsx implements progressive collapse for responsive viewports', () => {
       const toolbarCode = fs.readFileSync(
         path.join(rootDir, 'apps/studio/src/components/timeline/Toolbar.tsx'),
