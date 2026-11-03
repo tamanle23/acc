@@ -255,23 +255,69 @@ export const ViewportControlBar: React.FC<ViewportControlBarProps> = ({
         {/* Divider */}
         <div className="h-4 w-px bg-glass-border shrink-0 mx-0.5" />
 
-        {/* 7. Active Transform Coordinates Readout (Full LOD inline, medium/compact in popover) */}
-        {selectedSeqId && lod === 'full' && (
-          <Tooltip
-            content={`Transform: X: ${transform.x}px | Y: ${transform.y}px | Scale: ${transform.scale.toFixed(2)}x | Rotation: ${transform.rotation}°`}
-          >
-            <div className="glass-card px-2.5 py-1 rounded-full text-foreground/90 border border-accent-theme/40 font-mono text-[10px] flex items-center gap-1.5 shadow-xs backdrop-blur-md shrink-0">
-              <Move className="w-3 h-3 text-accent-theme" />
-              <span>
-                X: {transform.x}px | Y: {transform.y}px | S: {transform.scale.toFixed(2)}x | R: {transform.rotation}°
-              </span>
-              {activeGuides.length > 0 && (
-                <span className="text-accent-theme font-semibold ml-1">
-                  [Snap: {activeGuides.map((g) => g.label).join(', ')}]
-                </span>
-              )}
-            </div>
-          </Tooltip>
+        {/* 7. Active Transform Coordinates Readout (Strict fixed-width container with tabular numbers to prevent bar jitter) */}
+        {lod === 'full' && (
+          selectedSeqId ? (
+            <Tooltip
+              content={
+                activeGuides.length > 0
+                  ? `Transform: X: ${transform.x}px | Y: ${transform.y}px | Scale: ${transform.scale.toFixed(2)}x | Rotation: ${transform.rotation}° • Snap: ${activeGuides.map((g) => g.label).join(', ')}`
+                  : `Transform: X: ${transform.x}px | Y: ${transform.y}px | Scale: ${transform.scale.toFixed(2)}x | Rotation: ${transform.rotation}°`
+              }
+            >
+              <div className="glass-card px-2.5 py-1 rounded-full text-foreground/90 border border-accent-theme/40 font-mono text-[10px] flex items-center justify-between shadow-xs backdrop-blur-md w-[248px] shrink-0 select-none">
+                <div className="flex items-center gap-1 shrink-0">
+                  <Move className="w-3 h-3 text-accent-theme shrink-0" />
+                  <span className="text-muted-foreground/70 text-[9px] font-medium">X</span>
+                  <span className="tabular-nums font-mono w-[34px] text-right inline-block text-foreground">
+                    {Math.round(transform.x)}
+                  </span>
+                </div>
+
+                <div className="h-3 w-px bg-glass-border shrink-0" />
+
+                <div className="flex items-center gap-1 shrink-0">
+                  <span className="text-muted-foreground/70 text-[9px] font-medium">Y</span>
+                  <span className="tabular-nums font-mono w-[34px] text-right inline-block text-foreground">
+                    {Math.round(transform.y)}
+                  </span>
+                </div>
+
+                <div className="h-3 w-px bg-glass-border shrink-0" />
+
+                <div className="flex items-center gap-1 shrink-0">
+                  <span className="text-muted-foreground/70 text-[9px] font-medium">S</span>
+                  <span className="tabular-nums font-mono w-[30px] text-right inline-block text-foreground">
+                    {transform.scale.toFixed(2)}
+                  </span>
+                </div>
+
+                <div className="h-3 w-px bg-glass-border shrink-0" />
+
+                <div className="flex items-center gap-1 shrink-0">
+                  <span className="text-muted-foreground/70 text-[9px] font-medium">R</span>
+                  <span className="tabular-nums font-mono w-[26px] text-right inline-block text-foreground">
+                    {Math.round(transform.rotation)}°
+                  </span>
+                </div>
+
+                <div
+                  title={activeGuides.length > 0 ? `Snapping: ${activeGuides.map((g) => g.label).join(', ')}` : 'Snapping idle'}
+                  className={cn(
+                    "w-2 h-2 rounded-full shrink-0 transition-colors ml-0.5",
+                    activeGuides.length > 0 ? "bg-accent-theme shadow-accent-glow animate-pulse" : "bg-muted-foreground/20"
+                  )}
+                />
+              </div>
+            </Tooltip>
+          ) : (
+            <Tooltip content="No layer selected. Click a canvas element or timeline clip to view and edit transform coordinates.">
+              <div className="glass-card px-2.5 py-1 rounded-full text-muted-foreground/50 border border-glass-border font-mono text-[10px] flex items-center justify-center gap-1.5 shadow-xs w-[248px] shrink-0 select-none">
+                <Move className="w-3 h-3 text-muted-foreground/30 shrink-0" />
+                <span className="text-[10px] tracking-wide uppercase">No Layer Selected</span>
+              </div>
+            </Tooltip>
+          )
         )}
 
         {/* 8. Zoom Presets Segmented Pill */}

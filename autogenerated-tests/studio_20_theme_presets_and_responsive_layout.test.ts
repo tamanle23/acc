@@ -365,6 +365,10 @@ describe('Studio 20 Curated Theme Presets & Responsive Layout Architecture (Task
       expect(code).toContain("lod === 'full'");
       expect(code).toContain("lod !== 'full'");
       expect(code).toContain('Popover');
+
+      // Transform Coordinates Readout must have strict fixed-width and tabular numbers to eliminate gizmo drag jitter
+      expect(code).toContain('w-[248px] shrink-0');
+      expect(code).toContain('tabular-nums font-mono');
     });
 
     it('ViewportQuickTransport.tsx implements adaptive LOD support', () => {

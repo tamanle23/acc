@@ -16,6 +16,7 @@ We have delivered a studio-grade UI/UX transformation across `@acc/studio`:
 ### 3. Floating Quick Playback Transport HUD & Floating Viewport Control Bar
 - **Top-Center ViewportControlBar**: Refactored into a floating glass capsule docked at `top-3 left-1/2 -translate-x-1/2` of `Preview.tsx` outside of the canvas viewport.
   - **Zero Horizontal Scrolling**: Removed `overflow-x-auto`. Operates with strict LOD-tier based component folding.
+  - **Jitter-Free Transform Coordinates Readout**: Rigid fixed-width card (`w-[248px] shrink-0`) with tabular numeric column slots (`tabular-nums font-mono w-[34px]`) and fixed magnetic snap indicator dot (`w-2 h-2 rounded-full`). Retains identical `w-[248px]` dimension when unselected (`NO LAYER SELECTED`), completely eliminating bar resizing and wobble during gizmo dragging.
   - **Tools Popover**: On compact and medium tiers, secondary tools collapse into an elegant glass Popover menu (`Sliders` / `MoreHorizontal`), maintaining 100% feature parity without bar overflow.
 - **Bottom-Center ViewportQuickTransport**: Floating pill (`glass-panel px-4 py-2 rounded-full`) docked at `bottom-3.5 left-1/2 -translate-x-1/2` of `Preview.tsx` outside of the canvas viewport:
   - Decoupled from canvas pan/zoom transforms and overflow clipping.
