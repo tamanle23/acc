@@ -32,6 +32,123 @@ To provide instant feedback on cold boot without layout shifts or FOUC:
 
 ---
 
+## 🎯 Spatial Coordinate System & Transform Architecture
+
+Studio implements a dual-space geometric architecture ensuring 1:1 pixel-accurate alignment between the HTML5 2D canvas renderer and the interactive [`TransformGizmoOverlay`](./src/components/preview/TransformGizmoOverlay.tsx).
+
+### 1. Canvas Space: `normX` and `normY`
+
+**`normX`** and **`normY`** are normalized coordinates ($0.0 \dots 1.0$) defining the **geometric center position** of an object relative to the canvas/viewport dimensions:
+
+$$\text{Canvas X} = \text{canvasWidth} \times \text{normX} + x$$
+$$\text{Canvas Y} = \text{canvasHeight} \times \text{normY} + y$$
+
+Where:
+- $\text{normX} \in [0.0, 1.0]$: Horizontal ratio across the canvas width.
+- $\text{normY} \in [0.0, 1.0]$: Vertical ratio across the canvas height.
+- $x, y$: Pixel offsets added on top of the normalized origin (e.g. from mouse dragging in the viewport).
+
+#### Coordinate Map Reference:
+
+| `normX` | `normY` | Location on Canvas | Common Studio Use Case |
+| :---: | :---: | :--- | :--- |
+| **`0.5`** | **`0.5`** | **Exact Center** | Centered titles, main video footage, hero vector shapes |
+| **`0.5`** | **`0.45`** | **Upper Center** | Cinematic film titles (optical vertical balance) |
+| **`0.5`** | **`0.20`** | **Top Center** | Chapter headers, top banner titles |
+| **`0.25`** | **`0.82`** | **Lower-Left** | News/broadcast Lower Thirds, speaker badges |
+| **`0.5`** | **`0.88`** | **Bottom Center** | Subtitles, captions, timed text |
+| **`0.0`** | **`0.0`** | **Top-Left Corner** | Corner watermarks, channel bug logos |
+| **`1.0`** | **`1.0`** | **Bottom-Right Corner** | Lower-right call-to-actions, timestamps |
+
+#### Why Normalized Coordinates Instead of Raw Pixels?
+1. **Resolution Independence**: Elements stay positioned correctly whether rendered at **720p**, **1080p**, **4K**, or **9:16 vertical mobile (1080×1920)** without recalibrating pixel offsets.
+2. **Aspect Ratio Agility**: When switching between 16:9 widescreen, 9:16 vertical, and 1:1 square, layouts maintain their proportional placement.
+3. **Unified Coordinate Inheritance**: Both `TextModifierPlugin` and `ShapeModifierPlugin` inherit `normX` and `normY` from the sequence's `transform` modifier if omitted from the draw modifier parameters, preventing origin drift across typography presets.
+
+---
+
+### 2. Object Space: `anchorPoint` (Pivot) vs. Position (`normX`, `normY`)
+
+| Property | Coordinate Space | Purpose | Example Values |
+| :--- | :--- | :--- | :--- |
+| **`normX`, `normY`** | **Canvas Space** $(0 \dots 1 \text{ Viewport})$ | **Where the object is placed** on the screen. | `[0.5, 0.5]` = screen center<br>`[0.25, 0.82]` = lower-third |
+| **`anchorPoint`** (Pivot) | **Object Space** $(0 \dots 1 \text{ Object})$ | **Which point inside the object** acts as the pivot for rotation and scaling. | `[0.5, 0.5]` = object center<br>`[0.0, 0.0]` = top-left corner<br>`[0.0, 0.5]` = left edge (hinge) |
+
+#### Mathematical Formulation:
+Let an object have unscaled dimensions $W, H$ (or normalized $normWidth, normHeight$). For any normalized anchor $(a_x, a_y) \in [0, 1] \times [0, 1]$, the canvas pivot point before rotation is:
+
+$$\text{pivotNormX} = \text{normX} + (a_x - 0.5) \times \text{normWidth}$$
+$$\text{pivotNormY} = \text{normY} + (a_y - 0.5) \times \text{normHeight}$$
+
+#### Affine Matrix Execution:
+- **Canvas 2D ([`TransformModifierPlugin.ts`](./src/../../packages/ir/src/plugins/transform/TransformModifierPlugin.ts))**:
+  ```ts
+  canvasCtx.translate(pivotX + motion.x * scaleX, pivotY + motion.y * scaleY);
+  canvasCtx.rotate((motion.rotation * Math.PI) / 180);
+  canvasCtx.scale(scaleFactorX, scaleFactorY);
+  canvasCtx.translate(-pivotX, -pivotY);
+  ```
+- **Viewport Gizmo ([`TransformGizmoOverlay.tsx`](./src/components/preview/TransformGizmoOverlay.tsx))**:
+  ```tsx
+  style={{
+    left: `${pivotPercentX}%`,
+    top: `${pivotPercentY}%`,
+    width: `${widthPercent}%`,
+    height: `${heightPercent}%`,
+    transformOrigin: `${anchor[0] * 100}% ${anchor[1] * 100}%`,
+    transform: `translate(${-anchor[0] * 100}%, ${-anchor[1] * 100}%) scale(${curScale}) rotate(${curRot}deg)`,
+  }}
+  ```
+- **Gizmo Rotation Drag Math ([`Gizmo2DTransformation.ts`](./src/lib/gizmo/Gizmo2DTransformation.ts))**:
+  When dragging rotation handles, `Math.atan2` calculates pointer angle relative to the rotated pivot pin rather than the geometric center, guaranteeing smooth swinging around arbitrary anchors (e.g. door hinge, pendulum).
+
+---
+
+### 3. Dynamic Typography Bounds & Plate Wrapping
+
+[`CanvasHitTester.resolveSequenceBounds`](./src/lib/hit-test/CanvasHitTester.ts) ensures the gizmo wraps text and background plates tightly:
+- **Offscreen Canvas Measurement**: Evaluates exact text metrics via `ctx.measureText` in browser environments, with a high-precision typographic heuristic fallback in headless environments.
+- **Plate Padding Distinction**: Adds badge padding (`padX * 2`, `padY * 2`) to the bounding box **only when a background plate is active** (`backgroundColor !== 'transparent'`). For plain text, wraps glyphs directly with the standard 8px breathing padding.
+
+---
+
+## ⏱️ Temporal Engine & Frame Addressing (0-Indexed Standard)
+
+Studio is strictly **0-indexed** across all timeline calculations, rendering loops, and timecode systems.
+
+### Temporal Invariants:
+1. **First Frame Index is `0`**:
+   - Frame `0` represents timestamp $t = 0.000\text{ seconds}$ ($0\,\mu\text{s}$ decoder offset).
+   - SMPTE timecode at Frame `0`: **`00:00:00:00`** (`HH:MM:SS:FF`).
+2. **Half-Open Interval Convention $[ \text{startFrame}, \text{endFrame} )$**:
+   - Sequences operate on $[ \text{startFrame}, \text{endFrame} )$.
+   - Active condition: `clampedFrame >= seq.startFrame && clampedFrame < seq.endFrame`.
+   - A 90-frame sequence starting at 0 spans frames `0` through `89`. At frame `90`, the playhead transitions to the next cut.
+3. **Playhead Clamping**:
+   - [`PlayheadController.ts`](./src/lib/playhead/PlayheadController.ts) enforces `clamped = Math.max(0, Math.min(totalFrames, frame))`.
+
+### First Frame Boot Control Lifecycle:
+When Studio first boots up, the rendered frame is determined by three interacting systems:
+```
+[ Application Boot: App.tsx ]
+       │
+       ├── 1. Playhead Initialization ────────► PlayheadController (defaults to frame 0)
+       │
+       ├── 2. Auto-Seek on Selected Sequence ─► useGizmoTransform seeks to seq.startFrame
+       │
+       ├── 3. Preflight & Render Pipeline ────► PreviewWorkerCoordinator.preflightTimeline({ prioritizedFrame })
+       │                                        useViewportRenderStrategy.renderFrame(currentFrame)
+       │
+       └── 4. Splash Screen Dismissal ────────► StudioBootController (waits for double-rAF & first frame)
+```
+
+1. **Playhead Default**: `App.tsx` initializes `currentFrame = 0`, and `PlayheadController.getInstance()` defaults to `0`.
+2. **Auto-Seek on Selected Sequence**: In [`useGizmoTransform.ts`](./src/components/preview/useGizmoTransform.ts), if `IRStateManager` initializes with a selected sequence (e.g. `'seq-city-intro'`), the playhead automatically seeks to `seq.startFrame` so the selected clip is visible in the viewport immediately.
+3. **Preflight Warmup & Canvas Ready**: [`useViewportRenderStrategy.ts`](./src/components/preview/useViewportRenderStrategy.ts) preflights the target frame in the sidecar worker and notifies `StudioBootController.notifyCanvasReady()` only once the initial frame is completely painted.
+4. **Flicker-Free Reveal**: The boot splash screen dismisses only after the initial frame is verified, eliminating black frames and canvas strobe on cold start.
+
+---
+
 ## 🛠️ Developer Guide: How to Simulate Loading & Verify Splash UI
 
 When designing or testing the splash screen, progressive status text, and fail-safe reload recovery, use any of the following methods:

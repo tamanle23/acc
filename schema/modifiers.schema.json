@@ -847,6 +847,142 @@
         }
       }
     },
+    "TextDrawModifierParams": {
+      "type": "object",
+      "description": "Parameter schema for text/draw standalone overlay text object modifier",
+      "required": [
+        "text"
+      ],
+      "properties": {
+        "text": {
+          "type": "string"
+        },
+        "fontFamily": {
+          "type": "string"
+        },
+        "fontSize": {
+          "type": "number"
+        },
+        "fontWeight": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "fontStyle": {
+          "type": "string",
+          "enum": [
+            "normal",
+            "italic"
+          ]
+        },
+        "letterSpacing": {
+          "type": "number"
+        },
+        "lineHeight": {
+          "type": "number"
+        },
+        "textAlign": {
+          "type": "string",
+          "enum": [
+            "left",
+            "center",
+            "right"
+          ]
+        },
+        "textColor": {
+          "type": "string"
+        },
+        "fillColor": {
+          "type": "string"
+        },
+        "fillGradient": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "linear",
+                "radial"
+              ]
+            },
+            "colors": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "angleDeg": {
+              "type": "number"
+            }
+          }
+        },
+        "strokeColor": {
+          "type": "string"
+        },
+        "strokeWidth": {
+          "type": "number"
+        },
+        "glowColor": {
+          "type": "string"
+        },
+        "glowBlur": {
+          "type": "number"
+        },
+        "shadowColor": {
+          "type": "string"
+        },
+        "shadowBlur": {
+          "type": "number"
+        },
+        "shadowOffsetX": {
+          "type": "number"
+        },
+        "shadowOffsetY": {
+          "type": "number"
+        },
+        "backgroundColor": {
+          "type": "string"
+        },
+        "backgroundOpacity": {
+          "type": "number"
+        },
+        "paddingX": {
+          "type": "number"
+        },
+        "paddingY": {
+          "type": "number"
+        },
+        "borderRadius": {
+          "type": "number"
+        },
+        "borderColor": {
+          "type": "string"
+        },
+        "borderWidth": {
+          "type": "number"
+        },
+        "maxWidth": {
+          "type": "number"
+        },
+        "normX": {
+          "type": "number"
+        },
+        "normY": {
+          "type": "number"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      }
+    },
     "VolumeModifierParams": {
       "type": "object",
       "properties": {
@@ -2686,6 +2822,8 @@
         "motion/gsap",
         "motion/vector_blur",
         "timed_text/style",
+        "text/draw",
+        "text/overlay",
         "shape/draw",
         "shape/vector",
         "sfx/procedural",
@@ -2730,7 +2868,7 @@
         "time_space/hyperbolic_poincare",
         "time_space/kinetic_harmonograph"
       ],
-      "description": "Canonical discriminator enum of all 53 registered modifier types"
+      "description": "Canonical discriminator enum of all 55 registered modifier types"
     }
   }
 }

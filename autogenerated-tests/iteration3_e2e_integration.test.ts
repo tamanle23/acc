@@ -9,7 +9,7 @@ import { findAvailablePort } from "../apps/ai-supervisor/src/bun/PortScanner.js"
 import { findUvBinary } from "../apps/ai-supervisor/src/bun/SupervisorEngine.js";
 
 describe("Phase 8: Master Integration & End-to-End QA of Iteration 3", () => {
-  const pythonBackendDir = path.resolve("./apps/ai-supervisor/python-backend");
+  const pythonBackendDir = path.resolve("./apps/python-backend");
   let testServerProc: any = null;
   const testPort = 53351;
 

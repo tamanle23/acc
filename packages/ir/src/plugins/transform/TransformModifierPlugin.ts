@@ -160,19 +160,61 @@ export class TransformModifierPlugin implements ModifierPlugin<TransformModifier
     const scaleX = width / refW;
     const scaleY = height / refH;
 
-    const anchorNormX = params.anchorPoint?.[0] ?? 0.5;
-    const anchorNormY = params.anchorPoint?.[1] ?? 0.5;
-    const anchorX = width * anchorNormX;
-    const anchorY = height * anchorNormY;
+    const textMod = sequence?.modifiers?.find((m) => m.type === 'text/draw' || m.type === 'text/overlay');
+    const shapeMod = sequence?.modifiers?.find((m) => m.type === 'shape/draw' || m.type === 'shape/vector');
+    const childNormX = (textMod?.params as any)?.normX ?? (shapeMod?.params as any)?.normX;
+    const childNormY = (textMod?.params as any)?.normY ?? (shapeMod?.params as any)?.normY;
 
-    canvasCtx.translate(anchorX + motion.x * scaleX, anchorY + motion.y * scaleY);
+    const baseNormX = typeof params.normX === 'number' && Number.isFinite(params.normX)
+      ? params.normX
+      : (typeof childNormX === 'number' && Number.isFinite(childNormX) ? childNormX : 0.5);
+    const baseNormY = typeof params.normY === 'number' && Number.isFinite(params.normY)
+      ? params.normY
+      : (typeof childNormY === 'number' && Number.isFinite(childNormY) ? childNormY : 0.5);
+
+    // Resolve anchor point / pivot relative to object bounds [0..1, 0..1]
+    const anchor = Array.isArray(params.anchorPoint) && params.anchorPoint.length === 2
+      ? [Number(params.anchorPoint[0]), Number(params.anchorPoint[1])]
+      : [0.5, 0.5];
+
+    // Compute unscaled normalized dimensions of target object
+    let normW = typeof params.normWidth === 'number' && Number.isFinite(params.normWidth)
+      ? params.normWidth
+      : 0.2;
+    let normH = typeof params.normHeight === 'number' && Number.isFinite(params.normHeight)
+      ? params.normHeight
+      : 0.1;
+
+    if (shapeMod) {
+      const sp = shapeMod.params as any;
+      if (typeof sp?.width === 'number') normW = (sp.width * scaleX) / width;
+      if (typeof sp?.height === 'number') normH = (sp.height * scaleY) / height;
+    } else if (textMod) {
+      const tp = textMod.params as any;
+      const fSize = (typeof tp?.fontSize === 'number' ? tp.fontSize : 56) * Math.min(scaleX, scaleY);
+      const textLen = typeof tp?.text === 'string' ? Math.max(1, tp.text.length) : 10;
+      normW = Math.min(1.0, Math.max(0.06, (textLen * fSize * 0.6) / width));
+      normH = Math.min(1.0, Math.max(0.04, (fSize * 1.3) / height));
+    } else if (sequence.type === 'video' || sequence.type === 'image') {
+      normW = 1.0;
+      normH = 1.0;
+    }
+
+    const pivotNormX = baseNormX + (anchor[0] - 0.5) * normW;
+    const pivotNormY = baseNormY + (anchor[1] - 0.5) * normH;
+    const pivotX = width * pivotNormX;
+    const pivotY = height * pivotNormY;
+
+    canvasCtx.translate(pivotX + motion.x * scaleX, pivotY + motion.y * scaleY);
     if (motion.rotation !== 0) {
       canvasCtx.rotate((motion.rotation * Math.PI) / 180);
     }
-    if (motion.scale !== 1.0) {
-      canvasCtx.scale(motion.scale, motion.scale);
+    const scaleFactorX = typeof params.scaleX === 'number' && Number.isFinite(params.scaleX) ? params.scaleX : motion.scale;
+    const scaleFactorY = typeof params.scaleY === 'number' && Number.isFinite(params.scaleY) ? params.scaleY : motion.scale;
+    if (scaleFactorX !== 1.0 || scaleFactorY !== 1.0) {
+      canvasCtx.scale(scaleFactorX, scaleFactorY);
     }
-    canvasCtx.translate(-anchorX, -anchorY);
+    canvasCtx.translate(-pivotX, -pivotY);
 
     canvasCtx.globalAlpha = Math.max(0, Math.min(1, canvasCtx.globalAlpha * motion.opacity));
   }
@@ -196,8 +238,12 @@ export class TransformModifierPlugin implements ModifierPlugin<TransformModifier
     const scaleX = width / refW;
     const scaleY = height / refH;
 
-    const anchorNormX = params.anchorPoint?.[0] ?? 0.5;
-    const anchorNormY = params.anchorPoint?.[1] ?? 0.5;
+    const anchorNormX = typeof params.normX === 'number' && Number.isFinite(params.normX)
+      ? params.normX
+      : (params.anchorPoint?.[0] ?? 0.5);
+    const anchorNormY = typeof params.normY === 'number' && Number.isFinite(params.normY)
+      ? params.normY
+      : (params.anchorPoint?.[1] ?? 0.5);
     const anchorX = width * anchorNormX;
     const anchorY = height * anchorNormY;
 
@@ -205,8 +251,10 @@ export class TransformModifierPlugin implements ModifierPlugin<TransformModifier
     if (motion.rotation !== 0) {
       canvasCtx.rotate((motion.rotation * Math.PI) / 180);
     }
-    if (motion.scale !== 1.0) {
-      canvasCtx.scale(motion.scale, motion.scale);
+    const scaleFactorX = typeof params.scaleX === 'number' && Number.isFinite(params.scaleX) ? params.scaleX : motion.scale;
+    const scaleFactorY = typeof params.scaleY === 'number' && Number.isFinite(params.scaleY) ? params.scaleY : motion.scale;
+    if (scaleFactorX !== 1.0 || scaleFactorY !== 1.0) {
+      canvasCtx.scale(scaleFactorX, scaleFactorY);
     }
     canvasCtx.translate(-anchorX, -anchorY);
 
@@ -232,8 +280,12 @@ export class TransformModifierPlugin implements ModifierPlugin<TransformModifier
     const scaleX = width / refW;
     const scaleY = height / refH;
 
-    const anchorNormX = params.anchorPoint?.[0] ?? 0.5;
-    const anchorNormY = params.anchorPoint?.[1] ?? 0.5;
+    const anchorNormX = typeof params.normX === 'number' && Number.isFinite(params.normX)
+      ? params.normX
+      : (params.anchorPoint?.[0] ?? 0.5);
+    const anchorNormY = typeof params.normY === 'number' && Number.isFinite(params.normY)
+      ? params.normY
+      : (params.anchorPoint?.[1] ?? 0.5);
     const anchorX = width * anchorNormX;
     const anchorY = height * anchorNormY;
 
@@ -241,8 +293,10 @@ export class TransformModifierPlugin implements ModifierPlugin<TransformModifier
     if (motion.rotation !== 0) {
       canvasCtx.rotate((motion.rotation * Math.PI) / 180);
     }
-    if (motion.scale !== 1.0) {
-      canvasCtx.scale(motion.scale, motion.scale);
+    const scaleFactorX = typeof params.scaleX === 'number' && Number.isFinite(params.scaleX) ? params.scaleX : motion.scale;
+    const scaleFactorY = typeof params.scaleY === 'number' && Number.isFinite(params.scaleY) ? params.scaleY : motion.scale;
+    if (scaleFactorX !== 1.0 || scaleFactorY !== 1.0) {
+      canvasCtx.scale(scaleFactorX, scaleFactorY);
     }
     canvasCtx.translate(-anchorX, -anchorY);
 

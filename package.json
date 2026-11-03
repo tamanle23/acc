@@ -34,8 +34,10 @@
     "bench:micro": "bun run benchmarks/micro/runner.ts",
     "bench:http": "bun run benchmarks/http/load-test-webhook.ts",
     "bench:cli": "bun run benchmarks/cli/benchmark-cli.ts",
-    "supervisor:dev": "bun --cwd apps/ai-supervisor dev",
-    "supervisor:build": "bun --cwd apps/ai-supervisor build",
+    "supervisor:dev": "pnpm --filter @acc/supervisor-desktop dev",
+    "supervisor:build": "pnpm --filter @acc/supervisor-desktop build",
+    "desktop:dev": "pnpm --filter @acc/supervisor-desktop dev",
+    "desktop:build": "pnpm --filter @acc/supervisor-desktop build",
     "worker:dev": "bun --cwd apps/worker dev",
     "studio:dev": "bun --cwd apps/studio dev",
     "studio:build": "bun --cwd apps/studio build"

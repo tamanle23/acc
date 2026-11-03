@@ -1,7 +1,7 @@
 import { UniversalLogger as Logger } from '@acc/core-isomorphic';
 import { IConductorListenerStrategy } from '../interfaces/IConductorListenerStrategy';
 import { ConductorTaskOutput } from '../interfaces/IConductorTaskCommand';
-import { TaskWorkerFactory } from '../TaskWorkerFactory';
+import { TaskWorkerFactory } from '../conductor/TaskWorkerFactory';
 
 export class LocalSandboxListenerStrategy implements IConductorListenerStrategy {
     private sandboxServer: any = null;
