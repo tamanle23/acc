@@ -376,7 +376,7 @@ export function Titlebar({
                 className="gap-1.5 text-xs h-8 font-mono text-foreground border-border/50 bg-muted/40 hover:bg-muted/80 shadow-xs px-2 sm:px-3"
               >
                 <HardDrive className="w-3.5 h-3.5 text-accent-theme" />
-                <span>OPFS Cache</span>
+                <span>Cache</span>
               </Button>
             </Tooltip>
           </>
@@ -618,7 +618,7 @@ export function Titlebar({
                 >
                   <span className="flex items-center gap-1.5">
                     <HardDrive className="w-3.5 h-3.5 text-accent-theme" />
-                    OPFS Cache Debugger
+                    Cache
                   </span>
                   <span className="text-[9px] text-muted-foreground font-sans">^⇧O</span>
                 </button>

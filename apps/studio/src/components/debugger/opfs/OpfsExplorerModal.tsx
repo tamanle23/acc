@@ -175,9 +175,9 @@ export function OpfsExplorerModal({ open, onOpenChange }: OpfsDebuggerModalProps
       setSelectedNode(null);
       setFileDetails(null);
       await refreshData();
-      toast.success('OPFS cache purged successfully');
+      toast.success('Cache purged successfully');
     } catch {
-      toast.error('Failed to purge OPFS cache');
+      toast.error('Failed to purge cache');
     } finally {
       setIsPurging(false);
     }
@@ -226,7 +226,7 @@ export function OpfsExplorerModal({ open, onOpenChange }: OpfsDebuggerModalProps
             </div>
             <div>
               <DialogTitle className="text-base font-bold text-foreground flex items-center gap-2">
-                Origin Private File System (OPFS) Debugger
+                File Explorer
                 <Badge
                   variant="outline"
                   className={`text-[10px] font-mono ${isSupported

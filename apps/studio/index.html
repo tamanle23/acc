@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ACC Studio Preview — Dedicated NLE</title>
+  <title>ACC Studio Preview</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <style id="boot-splash-style">
     :root {
@@ -332,7 +332,7 @@
           root.style.setProperty('--glass-border', 'color-mix(in srgb, ' + pr.primary + ' 45%, transparent)');
           root.style.setProperty('--glass-shadow', '0 0 24px -4px color-mix(in srgb, ' + pr.primary + ' 30%, transparent)');
         }
-      } catch (e) {}
+      } catch (e) { }
     })();
   </script>
 </head>
@@ -355,15 +355,21 @@
             </linearGradient>
           </defs>
           <!-- Outer Rotating Lens Aperture Track -->
-          <circle class="splash-ring-outer" cx="24" cy="24" r="22" stroke="color-mix(in srgb, var(--accent-primary, #06b6d4) 35%, transparent)" stroke-width="1.5" stroke-dasharray="4 4">
-            <animateTransform attributeName="transform" type="rotate" from="0 24 24" to="360 24 24" dur="12s" repeatCount="indefinite" />
+          <circle class="splash-ring-outer" cx="24" cy="24" r="22"
+            stroke="color-mix(in srgb, var(--accent-primary, #06b6d4) 35%, transparent)" stroke-width="1.5"
+            stroke-dasharray="4 4">
+            <animateTransform attributeName="transform" type="rotate" from="0 24 24" to="360 24 24" dur="12s"
+              repeatCount="indefinite" />
           </circle>
           <!-- Fast Orbiting Radar/Loader Arc -->
-          <circle class="splash-ring-orbit" cx="24" cy="24" r="18" stroke="url(#splash-orbit-grad)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="28 85">
-            <animateTransform attributeName="transform" type="rotate" from="0 24 24" to="360 24 24" dur="1.8s" repeatCount="indefinite" />
+          <circle class="splash-ring-orbit" cx="24" cy="24" r="18" stroke="url(#splash-orbit-grad)" stroke-width="2.5"
+            stroke-linecap="round" stroke-dasharray="28 85">
+            <animateTransform attributeName="transform" type="rotate" from="0 24 24" to="360 24 24" dur="1.8s"
+              repeatCount="indefinite" />
           </circle>
           <!-- Inner Stabilizer Ring -->
-          <circle cx="24" cy="24" r="14" stroke="var(--glass-border-highlight, rgba(255, 255, 255, 0.15))" stroke-width="1" />
+          <circle cx="24" cy="24" r="14" stroke="var(--glass-border-highlight, rgba(255, 255, 255, 0.15))"
+            stroke-width="1" />
           <!-- Breathing Playhead Symbol -->
           <path class="splash-play-icon" d="M21 16.5L31 24L21 31.5V16.5Z" fill="url(#splash-play-grad)">
             <animate attributeName="opacity" values="0.75;1;0.75" dur="2s" repeatCount="indefinite" />
@@ -371,7 +377,7 @@
         </svg>
       </div>
       <div class="splash-title">ACC STUDIO</div>
-      <div class="splash-badge">PRO NLE • WEBCODECS &amp; IR ENGINE</div>
+      <div class="splash-badge">PRO NLE Preview • IR ENGINE</div>
       <div class="splash-progress-track">
         <div class="splash-progress-bar"></div>
       </div>
