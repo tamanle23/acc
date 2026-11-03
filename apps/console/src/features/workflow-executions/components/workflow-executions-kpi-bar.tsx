@@ -153,3 +153,5 @@ export const WorkflowExecutionsKpiBar: React.FC<WorkflowExecutionsKpiBarProps> =
     </div>
   );
 });
+
+WorkflowExecutionsKpiBar.displayName = 'WorkflowExecutionsKpiBar';
