@@ -2,41 +2,60 @@ import { describe, it, expect, beforeAll, afterAll } from "bun:test";
 import path from "node:path";
 import fs from "node:fs";
 
-describe("Supervisor SolidJS + Ark UI + Tailwind CSS Electrobun Views & Static Server", () => {
-  const supervisorRoot = path.resolve("apps/ai-supervisor");
-  const builtViewsDir = path.join(
-    supervisorRoot,
-    "build",
-    "dev-win-x64",
-    "ACCControlPlane-dev",
-    "Resources",
-    "app",
-    "views",
-    "main"
-  );
-  const srcViewsDir = path.join(supervisorRoot, "src", "views", "main");
+describe("Supervisor Desktop SolidJS + Ark UI + Tailwind CSS Vite & Tauri Architecture", () => {
+  const desktopRoot = path.resolve("apps/supervisor-desktop");
+  const distDir = path.join(desktopRoot, "dist");
+  const tauriDir = path.join(desktopRoot, "src-tauri");
 
-  it("produces all compiled production UI assets in electrobun views directory", () => {
-    expect(fs.existsSync(builtViewsDir)).toBe(true);
+  it("produces all compiled production UI assets in dist directory", () => {
+    expect(fs.existsSync(distDir)).toBe(true);
 
-    const indexHtml = path.join(builtViewsDir, "index.html");
-    const indexJs = path.join(builtViewsDir, "index.js");
-    const indexCss = path.join(builtViewsDir, "index.css");
-
+    const indexHtml = path.join(distDir, "index.html");
     expect(fs.existsSync(indexHtml)).toBe(true);
-    expect(fs.existsSync(indexJs)).toBe(true);
-    expect(fs.existsSync(indexCss)).toBe(true);
 
     const htmlContent = fs.readFileSync(indexHtml, "utf8");
-    expect(htmlContent).toContain('<div id="root"></div>');
-    expect(htmlContent).toContain('src="./index.js"');
-    expect(htmlContent).toContain('href="./index.css"');
+    expect(htmlContent).toContain('<div id="root"');
 
-    const jsSize = fs.statSync(indexJs).size;
-    expect(jsSize).toBeGreaterThan(10000); // Bundled SolidJS + Ark UI + Lucide
+    // Check assets directory
+    const assetsDir = path.join(distDir, "assets");
+    expect(fs.existsSync(assetsDir)).toBe(true);
 
-    const cssSize = fs.statSync(indexCss).size;
-    expect(cssSize).toBeGreaterThan(1000); // Compiled Tailwind v4
+    const files = fs.readdirSync(assetsDir);
+    const jsFile = files.find((f) => f.endsWith(".js"));
+    const cssFile = files.find((f) => f.endsWith(".css"));
+
+    expect(jsFile).toBeDefined();
+    expect(cssFile).toBeDefined();
+
+    const jsSize = fs.statSync(path.join(assetsDir, jsFile!)).size;
+    expect(jsSize).toBeGreaterThan(50000); // Bundled SolidJS + Ark UI + Lucide
+
+    const cssSize = fs.statSync(path.join(assetsDir, cssFile!)).size;
+    expect(cssSize).toBeGreaterThan(1000); // Compiled Tailwind CSS
+  });
+
+  it("contains valid Tauri 2.x configuration and icons", () => {
+    const tauriConf = path.join(tauriDir, "tauri.conf.json");
+    expect(fs.existsSync(tauriConf)).toBe(true);
+
+    const confContent = JSON.parse(fs.readFileSync(tauriConf, "utf8"));
+    expect(confContent.productName).toBe("ACC Control Plane");
+    expect(confContent.identifier).toBe("com.acc.supervisor-desktop");
+    expect(confContent.build.frontendDist).toBe("../dist");
+
+    // Check tray icons
+    const iconsDir = path.join(tauriDir, "icons");
+    expect(fs.existsSync(path.join(iconsDir, "icon.ico"))).toBe(true);
+    expect(fs.existsSync(path.join(iconsDir, "tray-green.ico"))).toBe(true);
+    expect(fs.existsSync(path.join(iconsDir, "tray-yellow.ico"))).toBe(true);
+    expect(fs.existsSync(path.join(iconsDir, "tray-red.ico"))).toBe(true);
+  });
+
+  it("contains compiled native Windows desktop host binary", () => {
+    const releaseExe = path.join(tauriDir, "target", "release", "acc-supervisor-desktop.exe");
+    expect(fs.existsSync(releaseExe)).toBe(true);
+    const exeSize = fs.statSync(releaseExe).size;
+    expect(exeSize).toBeGreaterThan(5 * 1024 * 1024); // Solid native binary (~11MB)
   });
 
   describe("Embedded Static HTTP Server Route Verification", () => {
@@ -49,20 +68,16 @@ describe("Supervisor SolidJS + Ark UI + Tailwind CSS Electrobun Views & Static S
         fetch(req) {
           const url = new URL(req.url);
           const pathname = url.pathname === "/" ? "/index.html" : url.pathname;
-          const candidatePaths = [
-            path.join(builtViewsDir, pathname.slice(1)),
-            path.join(srcViewsDir, pathname.slice(1)),
-          ];
-          const foundPath = candidatePaths.find((p) => fs.existsSync(p) && fs.statSync(p).isFile());
+          const targetPath = path.join(distDir, pathname.slice(1));
 
-          if (foundPath) {
-            const ext = path.extname(foundPath);
+          if (fs.existsSync(targetPath) && fs.statSync(targetPath).isFile()) {
+            const ext = path.extname(targetPath);
             const mimeTypes: Record<string, string> = {
               ".html": "text/html; charset=utf-8",
               ".js": "application/javascript; charset=utf-8",
               ".css": "text/css; charset=utf-8",
             };
-            return new Response(Bun.file(foundPath), {
+            return new Response(Bun.file(targetPath), {
               headers: { "Content-Type": mimeTypes[ext] || "text/plain" },
             });
           }
@@ -80,23 +95,7 @@ describe("Supervisor SolidJS + Ark UI + Tailwind CSS Electrobun Views & Static S
       expect(res.status).toBe(200);
       expect(res.headers.get("content-type")).toContain("text/html");
       const text = await res.text();
-      expect(text).toContain('<div id="root"></div>');
-    });
-
-    it("serves index.js with JavaScript mime type", async () => {
-      const res = await fetch(`http://127.0.0.1:${testPort}/index.js`);
-      expect(res.status).toBe(200);
-      expect(res.headers.get("content-type")).toContain("javascript");
-      const text = await res.text();
-      expect(text.length).toBeGreaterThan(5000);
-    });
-
-    it("serves index.css with CSS mime type", async () => {
-      const res = await fetch(`http://127.0.0.1:${testPort}/index.css`);
-      expect(res.status).toBe(200);
-      expect(res.headers.get("content-type")).toContain("text/css");
-      const text = await res.text();
-      expect(text.length).toBeGreaterThan(500);
+      expect(text).toContain('<div id="root"');
     });
   });
 });

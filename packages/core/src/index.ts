@@ -55,4 +55,6 @@ export * from './cache';
 export * from './effects';
 export * from './editing';
 export * from './ir-server';
+export * from './conductor/TaskWorkerFactory';
+export * from './conductor/interfaces/IConductorTaskCommand';
 

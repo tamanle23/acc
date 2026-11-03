@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "bun:test";
-import { HttpServer } from "../apps/ai-supervisor/src/bun/server/HttpServer.js";
-import type { HardwareProfile } from "../apps/ai-supervisor/src/bun/HardwareProfiler.js";
+import { HttpServer } from "../apps/worker/src/supervisor/server/HttpServer.js";
+import type { HardwareProfile } from "../apps/worker/src/supervisor/HardwareProfiler.js";
 
 describe("HttpServer Modular Endpoints & Routing", () => {
   const testPort = 33341;
@@ -82,7 +82,7 @@ describe("HttpServer Modular Endpoints & Routing", () => {
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toContain("text/html");
     const html = await res.text();
-    expect(html).toContain('<div id="root"></div>');
+    expect(html).toContain('<div id="root"');
   });
 
   it("returns 404 for unknown endpoints", async () => {

@@ -1,7 +1,7 @@
 {
   "name": "@acc/worker",
   "version": "1.0.0",
-  "description": "ACC Standalone Task Worker Daemon with Pluggable Workflow Engine Adapter & VRAM Arbitrator",
+  "description": "ACC Unified Supervisor & Task Worker Daemon with Pluggable Workflow Engine Adapter & VRAM Arbitrator",
   "main": "src/index.ts",
   "bin": {
     "acc-worker": "./src/index.ts"
@@ -15,7 +15,14 @@
   },
   "dependencies": {
     "@acc/core": "workspace:*",
+    "@acc/effect-engines": "workspace:*",
     "@acc/ir": "workspace:*",
-    "@acc/effect-engines": "workspace:*"
+    "@acc/proto": "workspace:*",
+    "@grpc/grpc-js": "^1.12.6",
+    "@grpc/proto-loader": "^0.7.13"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/node": "^26.6.2"
   }
 }

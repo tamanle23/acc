@@ -4,7 +4,7 @@ import fs from "fs";
 import os from "os";
 
 describe("Phase 6: Python Backend Resilience & Watchdog", () => {
-  const pythonBackendDir = path.resolve("./apps/ai-supervisor/python-backend");
+  const pythonBackendDir = path.resolve("./apps/python-backend");
   const testPidPath = path.resolve("./scratch/test_python.pid");
 
   afterAll(() => {

@@ -1,15 +1,22 @@
 import { describe, expect, it } from "bun:test";
-import { SupervisorEngine } from "../apps/ai-supervisor/src/bun/SupervisorEngine.js";
+import { SupervisorEngine } from "../apps/worker/src/supervisor/SupervisorEngine.js";
 
 describe("SupervisorEngine Multi-Daemon Orchestration", () => {
-  it("initializes fleet with all 3 services in STOPPED state", () => {
-    const engine = new SupervisorEngine();
+  it("initializes fleet with all 3 services in STOPPED state when worker is external", () => {
+    const engine = new SupervisorEngine(undefined, undefined, undefined, false);
     const states = engine.getAllStates();
 
     expect(Object.keys(states)).toEqual(["python-backend", "worker", "studio"]);
     expect(states["python-backend"].status).toBe("STOPPED");
     expect(states["worker"].status).toBe("STOPPED");
     expect(states["studio"].status).toBe("STOPPED");
+  });
+
+  it("marks in-process worker as RUNNING by default in unified worker daemon", () => {
+    const engine = new SupervisorEngine();
+    const states = engine.getAllStates();
+    expect(states["worker"].status).toBe("RUNNING");
+    expect(states["worker"].pid).toBe(process.pid);
   });
 
   it("calculates dynamic tray colors based on fleet states", () => {

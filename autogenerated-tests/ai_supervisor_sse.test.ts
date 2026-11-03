@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "bun:test";
-import { TelemetryEventBroker } from "../apps/ai-supervisor/src/bun/telemetry/TelemetryEventBroker";
-import { OSProcessSampler } from "../apps/ai-supervisor/src/bun/telemetry/OSProcessSampler";
-import type { IProcessRunner, ProcessOutput, Result } from "../apps/ai-supervisor/src/bun/platform/IProcessRunner";
+import { TelemetryEventBroker } from "../apps/worker/src/supervisor/telemetry/TelemetryEventBroker";
+import { OSProcessSampler } from "../apps/worker/src/supervisor/telemetry/OSProcessSampler";
+import type { IProcessRunner, ProcessOutput, Result } from "../apps/worker/src/supervisor/IProcessRunner";
 
 class MockProcessRunner implements IProcessRunner {
   public async exec(cmd: string[]): Promise<Result<ProcessOutput, Error>> {
