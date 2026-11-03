@@ -33,6 +33,9 @@ describe('Studio Boot Splash & First-Load Lifecycle Suite', () => {
       expect(htmlContent).toContain('splash-card');
       expect(htmlContent).toContain('splash-logo-container');
       expect(htmlContent).toContain('splash-logo-svg');
+      expect(htmlContent).toContain('splash-ring-outer');
+      expect(htmlContent).toContain('splash-ring-orbit');
+      expect(htmlContent).toContain('splash-play-icon');
       expect(htmlContent).toContain('splash-title');
       expect(htmlContent).toContain('ACC STUDIO');
       expect(htmlContent).toContain('splash-badge');
@@ -49,6 +52,8 @@ describe('Studio Boot Splash & First-Load Lifecycle Suite', () => {
       expect(htmlContent).toContain('id="boot-splash-style"');
 
       // GPU Compositor only (@keyframes use transform and opacity)
+      expect(htmlContent).toContain('@keyframes splash-spin');
+      expect(htmlContent).toContain('transform: rotate(');
       expect(htmlContent).toContain('@keyframes splash-pulse');
       expect(htmlContent).toContain('transform: scale(');
       expect(htmlContent).toContain('@keyframes splash-shimmer');
