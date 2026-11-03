@@ -27,6 +27,8 @@ export default defineConfig(({ mode }) => {
 
   const enableSandbox = !isSandboxExplicitOff
 
+  const apiUrl = process.env.API_URL;
+
   return {
     base: './',
     build: {
@@ -65,7 +67,7 @@ export default defineConfig(({ mode }) => {
     server: {
       proxy: {
         '/api': {
-          target: 'http://localhost:8000', // Your Spring Boot backend
+          target: apiUrl || 'http://localhost:8000', // Your Spring Boot backend
           changeOrigin: true,
           secure: false,
         },

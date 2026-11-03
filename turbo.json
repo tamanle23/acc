@@ -1,27 +1,47 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
-  "globalDependencies": ["**/.env.*local"],
-  "globalPassThroughEnv": ["JAVA_HOME"],
+  "globalDependencies": [
+    "**/.env.*local"
+  ],
+  "globalPassThroughEnv": [
+    "JAVA_HOME"
+  ],
   "tasks": {
     "build": {
-      "dependsOn": ["^build"],
-      "outputs": ["dist/**"]
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "dist/**"
+      ]
     },
     "lint": {
-      "dependsOn": ["^lint"]
+      "dependsOn": [
+        "^lint"
+      ]
     },
     "test": {
-      "dependsOn": ["^test"]
+      "dependsOn": [
+        "^test"
+      ]
     },
     "validate:infra": {
-      "dependsOn": ["^validate:infra"]
+      "dependsOn": [
+        "^validate:infra"
+      ]
     },
     "check-types": {
-      "dependsOn": ["^check-types"]
+      "dependsOn": [
+        "^check-types"
+      ]
     },
     "dev": {
       "persistent": true,
       "cache": false
+    },
+    "dev:sandbox": {
+      "cache": false,
+      "persistent": true
     }
   }
 }
