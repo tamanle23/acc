@@ -307,7 +307,7 @@ function TimelineInner({
   }, [selectedSeqId, currentFrame, rippleEnabled, tracks]);
 
   return (
-    <footer className="h-full glass-panel border-t border-border/50 flex flex-col select-none shadow-sm z-10 shrink-0">
+    <footer className="h-full glass-panel border-t border-border/50 flex flex-col select-none shadow-glass z-10 shrink-0">
       {/* 1. Pro Transport & Utility Bar */}
       <Toolbar
         activeTool={activeTool}

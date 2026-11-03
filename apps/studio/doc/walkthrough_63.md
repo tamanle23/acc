@@ -5,7 +5,8 @@ We have delivered a studio-grade UI/UX transformation across `@acc/studio`:
 
 ### 1. 20 Iconic Theme Presets & Decoupled Glass Physics
 - Presets: *Obsidian Studio*, *Tokyo Night*, *Catppuccin Mocha*, *Catppuccin Latte*, *Dracula Pro*, *Nord Frost*, *One Dark Pro*, *GitHub Dark Dimmed*, *GitHub Light Modern*, *Monokai Pro*, *Cyberpunk 2077*, *Synthwave '84*, *Solarized Dark*, *Solarized Light*, *Gruvbox Dark*, *Rosé Pine*, *Horizon Dark*, *Ayu Mirage*, *Midnight OLED*, and *Vesper Noir*.
-- Decoupling: Palettes and Glass Refraction profiles (Specular, Frosted, Cyber) are independent layers.
+- Decoupling: Palettes and Glass Refraction profiles (Specular, Frosted, Cyber) are independent layers. `applyThemeToDocument` dynamically computes `--glass-specular`, `--glass-border-highlight`, `--glass-border`, `--glass-shadow`, and `--glass-blur` directly to ensure user choices take effect immediately.
+- Live Specimen: Integrated live optical material specimen into `SettingsModal` for real-time visual parity.
 - Preset-Governed Mode: Selecting a light preset automatically adjusts to light mode and vice versa.
 
 ### 2. Dual-Access Theme Switcher

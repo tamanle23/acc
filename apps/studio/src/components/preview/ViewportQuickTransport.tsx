@@ -47,7 +47,7 @@ export const ViewportQuickTransport: React.FC<ViewportQuickTransportProps> = ({
 
   return (
     <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 pointer-events-auto transition-all">
-      <div className="glass-panel px-4 py-2 rounded-full flex items-center gap-3 shadow-2xl backdrop-blur-xl border border-glass-border">
+      <div className="glass-panel px-4 py-2 rounded-full flex items-center gap-3 shadow-glass border border-glass-border">
         {/* Step Backward 1 Frame */}
         <Tooltip content="Step Backward 1 Frame (ArrowLeft)">
           <Button

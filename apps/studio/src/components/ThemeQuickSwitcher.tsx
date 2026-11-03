@@ -76,7 +76,7 @@ export function ThemeQuickSwitcher() {
       <PopoverContent
         align="end"
         sideOffset={6}
-        className="w-[360px] p-3 glass-panel border-glass-border shadow-2xl backdrop-blur-2xl rounded-2xl flex flex-col gap-2.5 z-50"
+        className="w-[360px] p-3 glass-panel bg-glass-surface border-glass-border border-t-glass-border-highlight shadow-glass rounded-2xl flex flex-col gap-2.5 z-50"
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-glass-border pb-2">

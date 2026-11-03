@@ -167,10 +167,99 @@ describe('Studio 20 Curated Theme Presets & Responsive Layout Architecture (Task
       const ghLight = getThemePreset('github-light-modern');
       expect(mockStyleProperties.get('--background')).toBe(ghLight.tokens.background);
     });
+
+    it('dynamically applies decoupled optical glass finishes (specular, frosted, cyber) to DOM CSS variables', () => {
+      // 1. Frosted Matte: specular is none, border highlight equals border, soft shadow
+      applyThemeToDocument({
+        presetId: 'obsidian',
+        mode: 'dark',
+        glassStyle: 'frosted',
+        blurIntensity: 'medium',
+        accentColor: 'cyan',
+      });
+
+      expect(mockAttributes.get('data-glass-style')).toBe('frosted');
+      expect(mockStyleProperties.get('--glass-specular')).toBe('none');
+      const obsidian = getThemePreset('obsidian');
+      expect(mockStyleProperties.get('--glass-border-highlight')).toBe(obsidian.tokens.glassBorder);
+      expect(mockStyleProperties.get('--glass-shadow')).toBe('0 6px 20px 0 rgba(0, 0, 0, 0.4)');
+
+      // 2. Cyber Glow: accent-tinted rim highlight, cyber border, and chromatic glow shadow
+      applyThemeToDocument({
+        presetId: 'obsidian',
+        mode: 'dark',
+        glassStyle: 'cyber',
+        blurIntensity: 'medium',
+        accentColor: 'violet',
+      });
+
+      expect(mockAttributes.get('data-glass-style')).toBe('cyber');
+      expect(mockStyleProperties.get('--glass-border-highlight')).toBe('#8b5cf6');
+      expect(mockStyleProperties.get('--glass-specular')).toContain('#8b5cf6');
+      expect(mockStyleProperties.get('--glass-shadow')).toContain('#8b5cf6');
+
+      // 3. Specular Sheen: native preset specular reflection restored
+      applyThemeToDocument({
+        presetId: 'obsidian',
+        mode: 'dark',
+        glassStyle: 'specular',
+        blurIntensity: 'medium',
+        accentColor: 'cyan',
+      });
+
+      expect(mockAttributes.get('data-glass-style')).toBe('specular');
+      expect(mockStyleProperties.get('--glass-specular')).toBe(obsidian.tokens.glassSpecular);
+      expect(mockStyleProperties.get('--glass-border-highlight')).toBe(obsidian.tokens.glassBorderHighlight);
+      expect(mockStyleProperties.get('--glass-shadow')).toBe(obsidian.tokens.glassShadow);
+    });
+
+    it('dynamically applies decoupled acrylic blur intensities (low, medium, high) to DOM CSS variables', () => {
+      applyThemeToDocument({
+        presetId: 'tokyo-night',
+        mode: 'dark',
+        glassStyle: 'specular',
+        blurIntensity: 'low',
+        accentColor: 'cyan',
+      });
+      expect(mockAttributes.get('data-blur-intensity')).toBe('low');
+      expect(mockStyleProperties.get('--glass-blur')).toBe('blur(6px)');
+
+      applyThemeToDocument({
+        presetId: 'tokyo-night',
+        mode: 'dark',
+        glassStyle: 'specular',
+        blurIntensity: 'medium',
+        accentColor: 'cyan',
+      });
+      expect(mockAttributes.get('data-blur-intensity')).toBe('medium');
+      expect(mockStyleProperties.get('--glass-blur')).toBe('blur(18px)');
+
+      applyThemeToDocument({
+        presetId: 'tokyo-night',
+        mode: 'dark',
+        glassStyle: 'specular',
+        blurIntensity: 'high',
+        accentColor: 'cyan',
+      });
+      expect(mockAttributes.get('data-blur-intensity')).toBe('high');
+      expect(mockStyleProperties.get('--glass-blur')).toBe('blur(40px)');
+    });
   });
 
   describe('UI Component Modernization & Responsive Layout Verification', () => {
     const rootDir = path.resolve(__dirname, '..');
+
+    it('SettingsModal.tsx renders live material specimen and uses decoupled shadow-glass and bg-glass-surface', () => {
+      const modalCode = fs.readFileSync(
+        path.join(rootDir, 'apps/studio/src/components/SettingsModal.tsx'),
+        'utf8'
+      );
+      expect(modalCode).toContain('Live Material Specimen (Physics Parity)');
+      expect(modalCode).toContain('shadow-glass');
+      expect(modalCode).toContain('bg-glass-surface');
+      expect(modalCode).toContain('border-t-glass-border-highlight');
+      expect(modalCode).not.toContain('shadow-2xl backdrop-blur-2xl');
+    });
 
     it('Titlebar.tsx includes ThemeQuickSwitcher and Zen Mode toggle', () => {
       const titlebarCode = fs.readFileSync(

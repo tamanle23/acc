@@ -99,8 +99,8 @@ export function SettingsModal() {
 
   return (
     <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-      <DialogContent className="sm:max-w-3xl max-w-2xl max-h-[88vh] overflow-y-auto glass-panel text-foreground border-[var(--glass-border)] p-6 rounded-2xl shadow-2xl backdrop-blur-2xl">
-        <DialogHeader className="pb-3 border-b border-[var(--glass-border)]">
+      <DialogContent className="sm:max-w-3xl max-w-2xl max-h-[88vh] overflow-y-auto glass-panel bg-glass-surface text-foreground border-glass-border border-t-glass-border-highlight p-6 rounded-2xl shadow-glass">
+        <DialogHeader className="pb-3 border-b border-glass-border">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <div className="h-8 w-8 rounded-lg glass-badge-accent flex items-center justify-center">
@@ -291,6 +291,56 @@ export function SettingsModal() {
                     </span>
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {/* Live Material & Optical Finish Specimen */}
+            <div className="col-span-1 md:col-span-2 p-3.5 rounded-xl border border-glass-border relative overflow-hidden bg-black/20">
+              <div className="absolute inset-0 liquid-ambient-mesh opacity-80 pointer-events-none" />
+              <div className="relative z-10 flex items-center justify-between mb-2">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                  <Sparkles className="w-3 h-3 text-accent-theme" />
+                  Live Material Specimen (Physics Parity)
+                </span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-accent-theme/15 text-accent-theme border border-accent-theme/30 capitalize">
+                  {preferences.glassStyle} • {preferences.blurIntensity} ({preferences.blurIntensity === 'low' ? '6px' : preferences.blurIntensity === 'high' ? '40px' : '18px'})
+                </span>
+              </div>
+              <div className="relative z-10 p-3.5 rounded-xl glass-panel shadow-glass flex items-center justify-between transition-all duration-200">
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-8 h-8 rounded-lg flex items-center justify-center border border-accent-theme/40 shadow-accent-glow"
+                    style={{ background: 'color-mix(in srgb, var(--accent-primary) 20%, transparent)' }}
+                  >
+                    <Layers className="w-4 h-4 text-accent-theme" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-semibold text-foreground flex items-center gap-2">
+                      <span>
+                        {preferences.glassStyle === 'specular' && 'Specular Sheen Active'}
+                        {preferences.glassStyle === 'frosted' && 'Frosted Matte Active'}
+                        {preferences.glassStyle === 'cyber' && 'Cyber Glow Emission Active'}
+                      </span>
+                      <span className="text-[10px] font-normal text-muted-foreground capitalize">
+                        • {activePreset.name} Palette
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5">
+                      {preferences.glassStyle === 'specular' &&
+                        'Sharpened rim reflection with high-refraction specular highlight.'}
+                      {preferences.glassStyle === 'frosted' &&
+                        'Diffused matte refraction with zero specular sheen and subtle soft shadow.'}
+                      {preferences.glassStyle === 'cyber' &&
+                        'High-tech neon perimeter lighting and accent chromatic shadow emission.'}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <div className="w-2.5 h-2.5 rounded-full bg-accent-theme shadow-accent-glow animate-pulse" />
+                  <span className="text-[10px] font-mono font-semibold text-accent-theme uppercase">
+                    ACTIVE
+                  </span>
+                </div>
               </div>
             </div>
           </div>

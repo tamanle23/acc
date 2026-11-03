@@ -158,24 +158,60 @@ export function applyThemeToDocument(preferences: ThemePreferences): void {
   root.style.setProperty('--border', t.border);
   root.style.setProperty('--input', t.input);
 
-  // 2. Liquid Glass Decoupled Layers
-  root.style.setProperty('--glass-bg', t.glassBg);
-  root.style.setProperty('--glass-border', t.glassBorder);
-  root.style.setProperty('--glass-border-highlight', t.glassBorderHighlight);
-  root.style.setProperty('--glass-specular', t.glassSpecular);
-  root.style.setProperty('--glass-shadow', t.glassShadow);
-  if (t.ambientMesh) {
-    root.style.setProperty('--ambient-mesh', t.ambientMesh);
-  }
-
-  // 3. Dynamic Accent Colors synchronized with shadcn --primary and --ring
-  // If an accentColor is provided in ACCENT_CONFIGS, apply it
+  // 2. Dynamic Accent Colors synchronized with shadcn --primary and --ring
   const accentCfg = ACCENT_CONFIGS[preferences.accentColor] || ACCENT_CONFIGS.cyan;
   root.style.setProperty('--primary', accentCfg.hsl);
   root.style.setProperty('--ring', accentCfg.hsl);
   root.style.setProperty('--accent-primary', accentCfg.hex);
   root.style.setProperty('--color-brand-accent', accentCfg.hex);
   root.style.setProperty('--accent-glow', accentCfg.glow);
+
+  // 3. Liquid Glass Decoupled Layers
+  root.style.setProperty('--glass-bg', t.glassBg);
+
+  // Decoupled Optical Glass Finish Physics
+  if (preferences.glassStyle === 'frosted') {
+    root.style.setProperty('--glass-specular', 'none');
+    root.style.setProperty('--glass-border', t.glassBorder);
+    root.style.setProperty('--glass-border-highlight', t.glassBorder);
+    root.style.setProperty(
+      '--glass-shadow',
+      isDark ? '0 6px 20px 0 rgba(0, 0, 0, 0.4)' : '0 4px 16px 0 rgba(0, 0, 0, 0.05)'
+    );
+  } else if (preferences.glassStyle === 'cyber') {
+    root.style.setProperty(
+      '--glass-specular',
+      `inset 0 1px 0 0 color-mix(in srgb, ${accentCfg.hex} 30%, transparent)`
+    );
+    root.style.setProperty('--glass-border-highlight', accentCfg.hex);
+    root.style.setProperty(
+      '--glass-border',
+      `color-mix(in srgb, ${accentCfg.hex} 45%, transparent)`
+    );
+    root.style.setProperty(
+      '--glass-shadow',
+      `0 0 24px -4px color-mix(in srgb, ${accentCfg.hex} 30%, transparent)`
+    );
+  } else {
+    // 'specular' (Default native specular sheen with sharpened rim)
+    root.style.setProperty('--glass-specular', t.glassSpecular);
+    root.style.setProperty('--glass-border', t.glassBorder);
+    root.style.setProperty('--glass-border-highlight', t.glassBorderHighlight);
+    root.style.setProperty('--glass-shadow', t.glassShadow);
+  }
+
+  // Decoupled Acrylic Blur Intensity
+  if (preferences.blurIntensity === 'low') {
+    root.style.setProperty('--glass-blur', 'blur(6px)');
+  } else if (preferences.blurIntensity === 'high') {
+    root.style.setProperty('--glass-blur', 'blur(40px)');
+  } else {
+    root.style.setProperty('--glass-blur', 'blur(18px)');
+  }
+
+  if (t.ambientMesh) {
+    root.style.setProperty('--ambient-mesh', t.ambientMesh);
+  }
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
@@ -206,18 +242,26 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   );
 
   const setTheme = useCallback((updates: Partial<ThemePreferences>) => {
-    setPreferences((prev) => ({ ...prev, ...updates }));
+    setPreferences((prev) => {
+      const next = { ...prev, ...updates };
+      applyThemeToDocument(next);
+      return next;
+    });
   }, []);
 
   // Preset-Governed Mode Selection
   const selectPreset = useCallback((presetId: string) => {
     const targetPreset = getThemePreset(presetId);
-    setPreferences((prev) => ({
-      ...prev,
-      presetId,
-      // Preset-Governed Mode: automatically sync dark/light mode to preset's native mode
-      mode: targetPreset.mode,
-    }));
+    setPreferences((prev) => {
+      const next = {
+        ...prev,
+        presetId,
+        // Preset-Governed Mode: automatically sync dark/light mode to preset's native mode
+        mode: targetPreset.mode,
+      };
+      applyThemeToDocument(next);
+      return next;
+    });
   }, []);
 
   const toggleMode = useCallback(() => {
@@ -236,16 +280,20 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
           nextPresetId = 'obsidian';
         }
       }
-      return {
+      const next: ThemePreferences = {
         ...prev,
         mode: nextMode,
         presetId: nextPresetId,
       };
+      applyThemeToDocument(next);
+      return next;
     });
   }, []);
 
   const resetTheme = useCallback(() => {
-    setPreferences({ ...DEFAULT_THEME_PREFERENCES, presetId: 'obsidian' });
+    const next: ThemePreferences = { ...DEFAULT_THEME_PREFERENCES, presetId: 'obsidian' };
+    applyThemeToDocument(next);
+    setPreferences(next);
   }, []);
 
   const value = useMemo(
