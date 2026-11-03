@@ -7,6 +7,57 @@
   <title>ACC Studio Preview — Dedicated NLE</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <style id="boot-splash-style">
+    :root {
+      --accent-primary: #06b6d4;
+      --accent-glow: rgba(6, 182, 212, 0.4);
+      --glass-bg: rgba(11, 17, 33, 0.72);
+      --glass-border: rgba(255, 255, 255, 0.12);
+      --glass-border-highlight: rgba(255, 255, 255, 0.22);
+      --glass-specular: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      --glass-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.7);
+      --glass-blur: blur(24px);
+      --foreground: 210 40% 98%;
+      --muted-foreground: 215 20.2% 65.1%;
+      --splash-backdrop-bg: #020617cc;
+      --splash-ambient-mesh: radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--accent-primary) 14%, transparent) 0%, transparent 60%);
+    }
+
+    html.light,
+    .light {
+      --accent-primary: #06b6d4;
+      --accent-glow: rgba(6, 182, 212, 0.25);
+      --glass-bg: rgba(255, 255, 255, 0.85);
+      --glass-border: rgba(0, 0, 0, 0.08);
+      --glass-border-highlight: rgba(255, 255, 255, 0.9);
+      --glass-specular: inset 0 1px 0 0 rgba(255, 255, 255, 0.85);
+      --glass-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.12);
+      --glass-blur: blur(20px);
+      --foreground: 222.2 84% 4.9%;
+      --muted-foreground: 215.4 16.3% 46.9%;
+      --splash-backdrop-bg: rgba(241, 245, 249, 0.88);
+      --splash-ambient-mesh: radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--accent-primary) 10%, transparent) 0%, transparent 60%);
+    }
+
+    [data-glass-style="frosted"] {
+      --glass-specular: none !important;
+      --glass-shadow: 0 6px 20px 0 rgba(0, 0, 0, 0.4) !important;
+    }
+
+    [data-glass-style="cyber"] {
+      --glass-specular: inset 0 1px 0 0 color-mix(in srgb, var(--accent-primary) 35%, transparent) !important;
+      --glass-border-highlight: var(--accent-primary) !important;
+      --glass-border: color-mix(in srgb, var(--accent-primary) 45%, transparent) !important;
+      --glass-shadow: 0 0 26px -2px color-mix(in srgb, var(--accent-primary) 40%, transparent) !important;
+    }
+
+    [data-blur-intensity="low"] {
+      --glass-blur: blur(6px) !important;
+    }
+
+    [data-blur-intensity="high"] {
+      --glass-blur: blur(40px) !important;
+    }
+
     #app-boot-splash {
       position: fixed;
       inset: 0;
@@ -14,25 +65,27 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: radial-gradient(circle at 50% 42%, rgba(6, 182, 212, 0.12) 0%, transparent 60%), #020617cc;
+      background: var(--splash-ambient-mesh), var(--splash-backdrop-bg);
       font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      color: #f8fafc;
+      color: hsl(var(--foreground));
       will-change: opacity;
+      transition: background 0.3s ease, color 0.3s ease;
     }
 
     .splash-card {
       width: min(90vw, 380px);
       padding: 36px 32px 30px;
       border-radius: 16px;
-      background: rgba(15, 23, 42, 0.72);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 20px 50px -10px rgba(0, 0, 0, 0.7);
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--glass-specular), var(--glass-shadow);
       display: flex;
       flex-direction: column;
       align-items: center;
       text-align: center;
+      transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, backdrop-filter 0.3s ease;
     }
 
     .splash-logo-container {
@@ -40,9 +93,10 @@
       height: 64px;
       margin-bottom: 18px;
       position: relative;
-      filter: drop-shadow(0 0 18px rgba(6, 182, 212, 0.65)) drop-shadow(0 0 32px rgba(139, 92, 246, 0.35));
+      filter: drop-shadow(0 0 18px var(--accent-glow)) drop-shadow(0 0 32px color-mix(in srgb, var(--accent-primary) 35%, transparent));
       animation: splash-pulse 2.8s ease-in-out infinite;
       will-change: transform, opacity;
+      transition: filter 0.3s ease;
     }
 
     .splash-logo-svg {
@@ -77,8 +131,9 @@
       font-size: 18px;
       font-weight: 700;
       letter-spacing: 0.18em;
-      color: #f1f5f9;
+      color: hsl(var(--foreground));
       margin-bottom: 6px;
+      transition: color 0.3s ease;
     }
 
     .splash-badge {
@@ -86,23 +141,25 @@
       font-weight: 600;
       letter-spacing: 0.14em;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      color: #06b6d4;
+      color: var(--accent-primary);
       text-transform: uppercase;
       margin-bottom: 24px;
       padding: 3px 10px;
       border-radius: 9999px;
-      background: rgba(6, 182, 212, 0.12);
-      border: 1px solid rgba(6, 182, 212, 0.28);
+      background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
+      border: 1px solid color-mix(in srgb, var(--accent-primary) 28%, transparent);
+      transition: color 0.3s ease, background 0.3s ease, border-color 0.3s ease;
     }
 
     .splash-progress-track {
       width: 100%;
       height: 3px;
-      background: rgba(255, 255, 255, 0.08);
+      background: var(--glass-border);
       border-radius: 9999px;
       overflow: hidden;
       position: relative;
       margin-bottom: 16px;
+      transition: background 0.3s ease;
     }
 
     .splash-progress-bar {
@@ -110,16 +167,17 @@
       inset: 0;
       width: 50%;
       height: 100%;
-      background: linear-gradient(90deg, transparent, #06b6d4, #8b5cf6, transparent);
+      background: linear-gradient(90deg, transparent, var(--accent-primary), color-mix(in srgb, var(--accent-primary) 60%, #8b5cf6), transparent);
       border-radius: 9999px;
       animation: splash-shimmer 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
       will-change: transform;
+      transition: background 0.3s ease;
     }
 
     .splash-status {
       font-size: 12px;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      color: #94a3b8;
+      color: hsl(var(--muted-foreground));
       min-height: 18px;
       transition: color 0.2s ease;
     }
@@ -129,9 +187,9 @@
       font-size: 11px;
       font-family: system-ui, -apple-system, sans-serif;
       font-weight: 500;
-      color: #06b6d4;
-      background: rgba(6, 182, 212, 0.12);
-      border: 1px solid rgba(6, 182, 212, 0.35);
+      color: var(--accent-primary);
+      background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
+      border: 1px solid color-mix(in srgb, var(--accent-primary) 35%, transparent);
       padding: 5px 14px;
       border-radius: 6px;
       cursor: pointer;
@@ -140,8 +198,8 @@
     }
 
     .splash-reload-btn:hover {
-      background: rgba(6, 182, 212, 0.24);
-      border-color: rgba(6, 182, 212, 0.6);
+      background: color-mix(in srgb, var(--accent-primary) 24%, transparent);
+      border-color: var(--accent-primary);
     }
 
     @keyframes splash-spin {
@@ -215,6 +273,80 @@
       }
     }
   </style>
+  <script id="splash-theme-init">
+    (function () {
+      try {
+        var raw = localStorage.getItem('acc_studio_theme_prefs');
+        if (!raw) return;
+        var p = JSON.parse(raw);
+        var root = document.documentElement;
+        var isDark = p.mode !== 'light';
+        root.classList.toggle('dark', isDark);
+        root.classList.toggle('light', !isDark);
+        root.style.colorScheme = isDark ? 'dark' : 'light';
+        if (p.presetId) root.setAttribute('data-theme-preset', p.presetId);
+        if (p.glassStyle) root.setAttribute('data-glass-style', p.glassStyle);
+        if (p.blurIntensity) root.setAttribute('data-blur-intensity', p.blurIntensity);
+        if (p.accentColor) root.setAttribute('data-accent', p.accentColor);
+
+        var accents = {
+          cyan: { hex: '#06b6d4', hsl: '189 94% 43%', glow: 'rgba(6, 182, 212, 0.4)' },
+          violet: { hex: '#8b5cf6', hsl: '258 90% 66%', glow: 'rgba(139, 92, 246, 0.4)' },
+          emerald: { hex: '#10b981', hsl: '160 84% 39%', glow: 'rgba(16, 185, 129, 0.4)' },
+          amber: { hex: '#f59e0b', hsl: '38 92% 50%', glow: 'rgba(245, 158, 11, 0.4)' },
+          rose: { hex: '#f43f5e', hsl: '350 89% 60%', glow: 'rgba(244, 63, 94, 0.4)' }
+        };
+        var a = accents[p.accentColor] || accents.cyan;
+        root.style.setProperty('--accent-primary', a.hex);
+        root.style.setProperty('--color-brand-accent', a.hex);
+        root.style.setProperty('--accent-glow', a.glow);
+        root.style.setProperty('--primary', a.hsl);
+        root.style.setProperty('--ring', a.hsl);
+
+        var presets = {
+          'obsidian': { bg: 'rgba(11, 17, 33, 0.72)', border: 'rgba(255, 255, 255, 0.12)' },
+          'tokyo-night': { bg: 'rgba(26, 27, 38, 0.75)', border: 'rgba(255, 255, 255, 0.08)' },
+          'catppuccin-mocha': { bg: 'rgba(30, 30, 46, 0.75)', border: 'rgba(255, 255, 255, 0.08)' },
+          'catppuccin-latte': { bg: 'rgba(239, 241, 245, 0.82)', border: 'rgba(76, 79, 105, 0.12)' },
+          'dracula-pro': { bg: 'rgba(40, 42, 54, 0.75)', border: 'rgba(255, 255, 255, 0.08)' },
+          'nord-frost': { bg: 'rgba(46, 52, 64, 0.75)', border: 'rgba(255, 255, 255, 0.08)' },
+          'one-dark-pro': { bg: 'rgba(33, 37, 43, 0.75)', border: 'rgba(255, 255, 255, 0.08)' },
+          'github-dark-dimmed': { bg: 'rgba(13, 17, 23, 0.75)', border: 'rgba(255, 255, 255, 0.08)' },
+          'github-light-modern': { bg: 'rgba(255, 255, 255, 0.85)', border: 'rgba(31, 35, 40, 0.12)' },
+          'monokai-pro': { bg: 'rgba(45, 42, 46, 0.75)', border: 'rgba(255, 255, 255, 0.08)' },
+          'cyberpunk-2077': { bg: 'rgba(0, 11, 30, 0.82)', border: 'rgba(0, 240, 255, 0.35)' },
+          'synthwave-84': { bg: 'rgba(38, 35, 53, 0.78)', border: 'rgba(255, 126, 219, 0.35)' },
+          'solarized-dark': { bg: 'rgba(0, 43, 54, 0.75)', border: 'rgba(255, 255, 255, 0.08)' },
+          'solarized-light': { bg: 'rgba(253, 246, 227, 0.85)', border: 'rgba(101, 123, 131, 0.15)' },
+          'gruvbox-dark': { bg: 'rgba(40, 40, 40, 0.75)', border: 'rgba(255, 255, 255, 0.08)' },
+          'rose-pine': { bg: 'rgba(25, 23, 36, 0.75)', border: 'rgba(255, 255, 255, 0.08)' },
+          'horizon-dark': { bg: 'rgba(28, 30, 38, 0.75)', border: 'rgba(255, 255, 255, 0.08)' },
+          'ayu-mirage': { bg: 'rgba(31, 36, 48, 0.75)', border: 'rgba(255, 255, 255, 0.08)' },
+          'midnight-oled': { bg: 'rgba(0, 0, 0, 0.85)', border: 'rgba(255, 255, 255, 0.08)' },
+          'vesper-noir': { bg: 'rgba(16, 16, 16, 0.8)', border: 'rgba(255, 255, 255, 0.08)' }
+        };
+        var pr = presets[p.presetId];
+        if (pr) {
+          root.style.setProperty('--glass-bg', pr.bg);
+          root.style.setProperty('--glass-border', pr.border);
+        }
+
+        if (p.blurIntensity === 'low') root.style.setProperty('--glass-blur', 'blur(6px)');
+        else if (p.blurIntensity === 'high') root.style.setProperty('--glass-blur', 'blur(40px)');
+        else root.style.setProperty('--glass-blur', 'blur(18px)');
+
+        if (p.glassStyle === 'frosted') {
+          root.style.setProperty('--glass-specular', 'none');
+          root.style.setProperty('--glass-shadow', isDark ? '0 6px 20px 0 rgba(0, 0, 0, 0.4)' : '0 4px 16px 0 rgba(0, 0, 0, 0.05)');
+        } else if (p.glassStyle === 'cyber') {
+          root.style.setProperty('--glass-specular', 'inset 0 1px 0 0 color-mix(in srgb, ' + a.hex + ' 30%, transparent)');
+          root.style.setProperty('--glass-border-highlight', a.hex);
+          root.style.setProperty('--glass-border', 'color-mix(in srgb, ' + a.hex + ' 45%, transparent)');
+          root.style.setProperty('--glass-shadow', '0 0 24px -4px color-mix(in srgb, ' + a.hex + ' 30%, transparent)');
+        }
+      } catch (e) {}
+    })();
+  </script>
 </head>
 
 <body class="bg-[#020617] text-slate-100 antialiased h-screen overflow-hidden">
@@ -225,17 +357,17 @@
         <svg class="splash-logo-svg" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <linearGradient id="splash-orbit-grad" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
-              <stop stop-color="#06b6d4" />
-              <stop offset="0.5" stop-color="#8b5cf6" />
-              <stop offset="1" stop-color="#ec4899" />
+              <stop stop-color="var(--accent-primary, #06b6d4)" />
+              <stop offset="0.5" stop-color="color-mix(in srgb, var(--accent-primary, #06b6d4) 60%, #8b5cf6)" />
+              <stop offset="1" stop-color="color-mix(in srgb, var(--accent-primary, #06b6d4) 30%, #ec4899)" />
             </linearGradient>
             <linearGradient id="splash-play-grad" x1="18" y1="16" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-              <stop stop-color="#22d3ee" />
-              <stop offset="1" stop-color="#a855f7" />
+              <stop stop-color="var(--accent-primary, #06b6d4)" />
+              <stop offset="1" stop-color="color-mix(in srgb, var(--accent-primary, #06b6d4) 60%, #8b5cf6)" />
             </linearGradient>
           </defs>
           <!-- Outer Rotating Lens Aperture Track -->
-          <circle class="splash-ring-outer" cx="24" cy="24" r="22" stroke="rgba(6, 182, 212, 0.35)" stroke-width="1.5" stroke-dasharray="4 4">
+          <circle class="splash-ring-outer" cx="24" cy="24" r="22" stroke="color-mix(in srgb, var(--accent-primary, #06b6d4) 35%, transparent)" stroke-width="1.5" stroke-dasharray="4 4">
             <animateTransform attributeName="transform" type="rotate" from="0 24 24" to="360 24 24" dur="12s" repeatCount="indefinite" />
           </circle>
           <!-- Fast Orbiting Radar/Loader Arc -->
@@ -243,7 +375,7 @@
             <animateTransform attributeName="transform" type="rotate" from="0 24 24" to="360 24 24" dur="1.8s" repeatCount="indefinite" />
           </circle>
           <!-- Inner Stabilizer Ring -->
-          <circle cx="24" cy="24" r="14" stroke="rgba(255, 255, 255, 0.15)" stroke-width="1" />
+          <circle cx="24" cy="24" r="14" stroke="var(--glass-border-highlight, rgba(255, 255, 255, 0.15))" stroke-width="1" />
           <!-- Breathing Playhead Symbol -->
           <path class="splash-play-icon" d="M21 16.5L31 24L21 31.5V16.5Z" fill="url(#splash-play-grad)">
             <animate attributeName="opacity" values="0.75;1;0.75" dur="2s" repeatCount="indefinite" />

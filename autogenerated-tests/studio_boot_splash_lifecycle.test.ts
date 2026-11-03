@@ -79,6 +79,40 @@ describe('Studio Boot Splash & First-Load Lifecycle Suite', () => {
       expect(htmlContent).toContain('Loading video & audio subsystems...');
       expect(htmlContent).toContain('Taking longer than usual...');
     });
+
+    it('verifies splash modal styling is dynamically synchronized with system theme manager tokens and pre-hydration bootstrap', () => {
+      const htmlContent = fs.readFileSync(indexHtmlPath, 'utf8');
+
+      // Pre-hydration synchronous theme bootstrapper
+      expect(htmlContent).toContain('id="splash-theme-init"');
+      expect(htmlContent).toContain("localStorage.getItem('acc_studio_theme_prefs')");
+      expect(htmlContent).toContain("data-theme-preset");
+      expect(htmlContent).toContain("data-glass-style");
+      expect(htmlContent).toContain("data-blur-intensity");
+      expect(htmlContent).toContain("data-accent");
+
+      // Liquid Glass design tokens consistency
+      expect(htmlContent).toContain('--accent-primary');
+      expect(htmlContent).toContain('--accent-glow');
+      expect(htmlContent).toContain('--glass-bg');
+      expect(htmlContent).toContain('--glass-border');
+      expect(htmlContent).toContain('--glass-specular');
+      expect(htmlContent).toContain('--glass-shadow');
+      expect(htmlContent).toContain('--glass-blur');
+
+      // Decoupled optical glass & blur rules
+      expect(htmlContent).toContain('[data-glass-style="frosted"]');
+      expect(htmlContent).toContain('[data-glass-style="cyber"]');
+      expect(htmlContent).toContain('[data-blur-intensity="low"]');
+      expect(htmlContent).toContain('[data-blur-intensity="high"]');
+
+      // Light mode glass finish parity
+      expect(htmlContent).toContain('html.light');
+      expect(htmlContent).toContain('--splash-backdrop-bg');
+
+      // SVG accent color bindings
+      expect(htmlContent).toContain('var(--accent-primary');
+    });
   });
 
   describe('2. StudioBootController Lifecycle & First-Paint Synchronization', () => {

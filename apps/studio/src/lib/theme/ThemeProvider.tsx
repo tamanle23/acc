@@ -212,6 +212,17 @@ export function applyThemeToDocument(preferences: ThemePreferences): void {
   if (t.ambientMesh) {
     root.style.setProperty('--ambient-mesh', t.ambientMesh);
   }
+
+  // 4. Studio Splash Modal System Theme Synchronization
+  root.style.setProperty(
+    '--splash-backdrop-bg',
+    isDark ? '#020617cc' : 'rgba(241, 245, 249, 0.88)'
+  );
+  root.style.setProperty(
+    '--splash-ambient-mesh',
+    t.ambientMesh ||
+      `radial-gradient(circle at 50% 42%, color-mix(in srgb, ${accentCfg.hex} 14%, transparent) 0%, transparent 60%)`
+  );
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
