@@ -53,19 +53,22 @@
     }
 
     .splash-ring-outer {
-      transform-origin: 24px 24px;
-      animation: splash-spin 14s linear infinite;
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: splash-spin 12s linear infinite;
       will-change: transform;
     }
 
     .splash-ring-orbit {
-      transform-origin: 24px 24px;
-      animation: splash-spin 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: splash-spin 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
       will-change: transform;
     }
 
     .splash-play-icon {
-      transform-origin: 24px 24px;
+      transform-box: fill-box;
+      transform-origin: center;
       animation: splash-pulse 2s ease-in-out infinite;
       will-change: transform, opacity;
     }
@@ -199,18 +202,16 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
-
-      .splash-logo-container,
-      .splash-ring-outer,
-      .splash-ring-orbit,
-      .splash-play-icon,
-      .splash-progress-bar {
+      .splash-logo-container {
         animation: none !important;
       }
 
+      .splash-ring-orbit {
+        animation: splash-spin 3.5s linear infinite !important;
+      }
+
       .splash-progress-bar {
-        width: 100% !important;
-        opacity: 0.6;
+        animation: splash-shimmer 2.8s cubic-bezier(0.4, 0, 0.2, 1) infinite !important;
       }
     }
   </style>
@@ -234,13 +235,19 @@
             </linearGradient>
           </defs>
           <!-- Outer Rotating Lens Aperture Track -->
-          <circle class="splash-ring-outer" cx="24" cy="24" r="22" stroke="rgba(6, 182, 212, 0.35)" stroke-width="1.5" stroke-dasharray="4 4" />
+          <circle class="splash-ring-outer" cx="24" cy="24" r="22" stroke="rgba(6, 182, 212, 0.35)" stroke-width="1.5" stroke-dasharray="4 4">
+            <animateTransform attributeName="transform" type="rotate" from="0 24 24" to="360 24 24" dur="12s" repeatCount="indefinite" />
+          </circle>
           <!-- Fast Orbiting Radar/Loader Arc -->
-          <circle class="splash-ring-orbit" cx="24" cy="24" r="18" stroke="url(#splash-orbit-grad)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="28 85" />
+          <circle class="splash-ring-orbit" cx="24" cy="24" r="18" stroke="url(#splash-orbit-grad)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="28 85">
+            <animateTransform attributeName="transform" type="rotate" from="0 24 24" to="360 24 24" dur="1.8s" repeatCount="indefinite" />
+          </circle>
           <!-- Inner Stabilizer Ring -->
           <circle cx="24" cy="24" r="14" stroke="rgba(255, 255, 255, 0.15)" stroke-width="1" />
           <!-- Breathing Playhead Symbol -->
-          <path class="splash-play-icon" d="M21 16.5L31 24L21 31.5V16.5Z" fill="url(#splash-play-grad)" />
+          <path class="splash-play-icon" d="M21 16.5L31 24L21 31.5V16.5Z" fill="url(#splash-play-grad)">
+            <animate attributeName="opacity" values="0.75;1;0.75" dur="2s" repeatCount="indefinite" />
+          </path>
         </svg>
       </div>
       <div class="splash-title">ACC STUDIO</div>
