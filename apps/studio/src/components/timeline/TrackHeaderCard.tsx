@@ -152,7 +152,7 @@ export function TrackHeaderCard({
             variant="ghost"
             size="icon"
             aria-pressed={isMuted}
-            aria-label={isMuted ? 'Unmute Track Audio' : 'Mute Track Audio'}
+            aria-label={isMuted ? 'Unmute Track' : 'Mute Track'}
             onClick={(e) => {
               e.stopPropagation();
               onToggleMute(track.id);
@@ -162,7 +162,7 @@ export function TrackHeaderCard({
                 ? 'text-rose-400 bg-rose-500/15 hover:bg-rose-500/25 font-bold shadow-xs'
                 : 'text-emerald-400 hover:bg-emerald-500/15'
             }`}
-            title={isMuted ? 'Unmute Track Audio' : 'Mute Track Audio'}
+            title={isMuted ? 'Unmute Track' : 'Mute Track'}
           >
             {isMuted ? <VolumeX className="w-2.5 h-2.5" /> : <Volume2 className="w-2.5 h-2.5" />}
           </Button>

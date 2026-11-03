@@ -310,8 +310,44 @@ describe('Studio 20 Curated Theme Presets & Responsive Layout Architecture (Task
       expect(canvasCloseIndex).toBeGreaterThan(canvasIndex);
       expect(transportIndex).toBeGreaterThan(canvasCloseIndex);
 
-      // Viewport container must reserve bottom padding so canvas is never occluded
-      expect(previewCode).toContain('pb-14');
+      // Viewport container must reserve top and bottom padding so canvas is never occluded
+      expect(previewCode).toContain('pt-14 pb-14');
+      expect(previewCode).toContain('useContainerLOD');
+      expect(previewCode).toContain('lod={containerLOD}');
+    });
+
+    it('ViewportControlBar.tsx docks top center of Preview.tsx with adaptive LOD support', () => {
+      const controlBarPath = path.join(
+        rootDir,
+        'apps/studio/src/components/preview/ViewportControlBar.tsx'
+      );
+      expect(fs.existsSync(controlBarPath)).toBe(true);
+      const code = fs.readFileSync(controlBarPath, 'utf8');
+
+      // Must dock top center as a floating HUD
+      expect(code).toContain('absolute top-3 left-1/2 -translate-x-1/2');
+      expect(code).toContain('glass-panel px-3 py-1.5 rounded-full');
+
+      // Must support adaptive PreviewLOD
+      expect(code).toContain('PreviewLOD');
+      expect(code).toContain("lod = 'full'");
+      expect(code).toContain("lod === 'compact'");
+      expect(code).toContain("lod === 'full'");
+    });
+
+    it('ViewportQuickTransport.tsx implements adaptive LOD support', () => {
+      const transportPath = path.join(
+        rootDir,
+        'apps/studio/src/components/preview/ViewportQuickTransport.tsx'
+      );
+      const code = fs.readFileSync(transportPath, 'utf8');
+
+      // Must support adaptive PreviewLOD
+      expect(code).toContain('PreviewLOD');
+      expect(code).toContain("lod = 'full'");
+      expect(code).toContain("lod !== 'compact'");
+      expect(code).toContain("lod === 'full'");
+      expect(code).toContain('absolute bottom-3.5 left-1/2 -translate-x-1/2');
     });
 
     it('Toolbar.tsx implements progressive collapse for responsive viewports', () => {

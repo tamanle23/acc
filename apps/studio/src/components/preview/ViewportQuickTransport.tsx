@@ -12,6 +12,7 @@ import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Tooltip } from '../ui/tooltip';
 import { RationalTime } from '@acc/core-isomorphic';
+import type { PreviewLOD } from './useContainerLOD';
 
 export interface ViewportQuickTransportProps {
   isPlaying: boolean;
@@ -23,6 +24,7 @@ export interface ViewportQuickTransportProps {
   zoomLevel?: 'fit' | 0.5 | 1.0 | 2.0;
   onSetZoomLevel?: (zoom: 'fit' | 0.5 | 1.0 | 2.0) => void;
   onResetPan?: () => void;
+  lod?: PreviewLOD;
   className?: string;
 }
 
@@ -36,6 +38,7 @@ export const ViewportQuickTransport: React.FC<ViewportQuickTransportProps> = ({
   zoomLevel = 'fit',
   onSetZoomLevel,
   onResetPan,
+  lod = 'full',
   className,
 }) => {
   const handleStepBack = () => {
@@ -51,11 +54,11 @@ export const ViewportQuickTransport: React.FC<ViewportQuickTransportProps> = ({
   return (
     <div
       className={cn(
-        "absolute bottom-3.5 left-1/2 -translate-x-1/2 z-20 pointer-events-auto transition-all",
+        "absolute bottom-3.5 left-1/2 -translate-x-1/2 z-20 pointer-events-auto transition-all max-w-[calc(100%-1.5rem)]",
         className
       )}
     >
-      <div className="glass-panel px-4 py-2 rounded-full flex items-center gap-3 shadow-glass border border-glass-border">
+      <div className="glass-panel px-4 py-2 rounded-full flex items-center gap-2 sm:gap-3 shadow-glass border border-glass-border select-none">
         {/* Step Backward 1 Frame */}
         <Tooltip content="Step Backward 1 Frame (ArrowLeft)">
           <Button
@@ -63,7 +66,7 @@ export const ViewportQuickTransport: React.FC<ViewportQuickTransportProps> = ({
             size="icon"
             onClick={handleStepBack}
             aria-label="Step Backward 1 Frame"
-            className="h-7 w-7 text-muted-foreground hover:text-foreground rounded-full transition-transform active:scale-95"
+            className="h-7 w-7 text-muted-foreground hover:text-foreground rounded-full transition-transform active:scale-95 shrink-0"
           >
             <ChevronLeft className="w-4 h-4" />
           </Button>
@@ -76,7 +79,7 @@ export const ViewportQuickTransport: React.FC<ViewportQuickTransportProps> = ({
             size="icon"
             onClick={onTogglePlay}
             aria-label={isPlaying ? 'Pause' : 'Play'}
-            className="h-8 w-8 rounded-full bg-accent-theme text-primary-foreground shadow-accent-glow hover:brightness-110 active:scale-95 transition-all"
+            className="h-8 w-8 rounded-full bg-accent-theme text-primary-foreground shadow-accent-glow hover:brightness-110 active:scale-95 transition-all shrink-0 cursor-pointer"
           >
             {isPlaying ? (
               <Pause className="w-4 h-4 fill-current" />
@@ -93,48 +96,55 @@ export const ViewportQuickTransport: React.FC<ViewportQuickTransportProps> = ({
             size="icon"
             onClick={handleStepForward}
             aria-label="Step Forward 1 Frame"
-            className="h-7 w-7 text-muted-foreground hover:text-foreground rounded-full transition-transform active:scale-95"
+            className="h-7 w-7 text-muted-foreground hover:text-foreground rounded-full transition-transform active:scale-95 shrink-0"
           >
             <ChevronRight className="w-4 h-4" />
           </Button>
         </Tooltip>
 
-        <div className="h-4 w-px bg-glass-border mx-0.5" />
+        <div className="h-4 w-px bg-glass-border mx-0.5 shrink-0" />
 
-        {/* SMPTE Timecode & Discrete Frame */}
-        <div className="flex items-center gap-1.5 font-mono">
-          <Badge
-            variant="outline"
-            className="text-[11px] px-2 py-0.5 border-glass-border bg-background/50 font-bold text-foreground"
-          >
-            {smpte}
-          </Badge>
-          <span className="text-[10px] text-muted-foreground font-medium hidden sm:inline">
-            F {currentFrame}
-          </span>
-        </div>
+        {/* SMPTE Timecode */}
+        <Tooltip content={`Timecode (SMPTE): ${smpte} • Frame ${currentFrame} of ${totalFrames} (${fps} fps)`}>
+          <div className="flex items-center gap-1.5 font-mono shrink-0">
+            <Badge
+              variant="outline"
+              className="text-[11px] px-2 py-0.5 border-glass-border bg-background/50 font-bold text-foreground"
+            >
+              {smpte}
+            </Badge>
+            {lod !== 'compact' && (
+              <span className="text-[10px] text-muted-foreground font-medium hidden sm:inline">
+                {lod === 'full' ? `F ${currentFrame}/${totalFrames}` : `F ${currentFrame}`}
+              </span>
+            )}
+          </div>
+        </Tooltip>
 
         {/* Viewport Fit / Zoom Toggle */}
         {(onSetZoomLevel || onResetPan) && (
           <>
-            <div className="h-4 w-px bg-glass-border mx-0.5" />
-            <Tooltip content={zoomLevel === 'fit' ? 'Zoom 100%' : 'Fit Viewport (Z)'}>
+            <div className="h-4 w-px bg-glass-border mx-0.5 shrink-0" />
+            <Tooltip content={zoomLevel === 'fit' ? 'Zoom 100% (Z)' : 'Fit Viewport (Z)'}>
               <Button
                 variant="ghost"
-                size="icon"
+                size={lod === 'full' ? 'sm' : 'icon'}
                 onClick={() => {
-                  if (onResetPan) onResetPan();
+                  if (onResetPan && zoomLevel !== 'fit') onResetPan();
                   if (onSetZoomLevel) {
                     onSetZoomLevel(zoomLevel === 'fit' ? 1.0 : 'fit');
                   }
                 }}
                 aria-label="Toggle Viewport Zoom"
-                className="h-7 w-7 text-muted-foreground hover:text-foreground rounded-full"
+                className="h-7 px-2 text-[10px] gap-1 font-mono text-muted-foreground hover:text-foreground rounded-full shrink-0"
               >
                 {zoomLevel === 'fit' ? (
                   <Maximize2 className="w-3.5 h-3.5" />
                 ) : (
                   <RotateCcw className="w-3.5 h-3.5" />
+                )}
+                {lod === 'full' && (
+                  <span className="hidden md:inline">{zoomLevel === 'fit' ? '100%' : 'Fit'}</span>
                 )}
               </Button>
             </Tooltip>

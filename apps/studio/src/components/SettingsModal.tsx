@@ -64,6 +64,7 @@ export function SettingsModal() {
     activePreset,
     setTheme,
     selectPreset,
+    toggleMode,
     resetTheme,
     isSettingsOpen,
     setIsSettingsOpen,
@@ -129,9 +130,39 @@ export function SettingsModal() {
                 <Palette className="w-3.5 h-3.5 text-accent-theme" />
                 Theme Presets ({STUDIO_THEME_PRESETS.length} Curated)
               </label>
-              <Badge variant="outline" className="font-mono text-[10px] border-accent-theme/40 text-accent-theme bg-accent-theme/10">
-                Active: {activePreset.name}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 p-0.5 rounded-lg border border-glass-border bg-black/20">
+                  <button
+                    type="button"
+                    onClick={() => toggleMode()}
+                    aria-pressed={preferences.mode === 'dark'}
+                    aria-label="Dark Mode"
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-mono flex items-center gap-1 transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-accent-theme ${
+                      preferences.mode === 'dark'
+                        ? 'bg-accent-theme/20 text-accent-theme font-bold'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    <Moon className="w-2.5 h-2.5" /> Dark
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleMode()}
+                    aria-pressed={preferences.mode === 'light'}
+                    aria-label="Light Mode"
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-mono flex items-center gap-1 transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-accent-theme ${
+                      preferences.mode === 'light'
+                        ? 'bg-accent-theme/20 text-accent-theme font-bold'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    <Sun className="w-2.5 h-2.5" /> Light
+                  </button>
+                </div>
+                <Badge variant="outline" className="font-mono text-[10px] border-accent-theme/40 text-accent-theme bg-accent-theme/10">
+                  Active: {activePreset.name}
+                </Badge>
+              </div>
             </div>
 
             {/* Filter Pills & Search Bar */}
