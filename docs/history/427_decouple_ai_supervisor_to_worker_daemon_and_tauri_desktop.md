@@ -79,3 +79,4 @@ The previous `apps/ai-supervisor` setup attempted to package a Bun-based supervi
 ## Enhancement
 - Add code-signing workflow for `acc-supervisor-desktop.exe` in CI/CD release pipelines.
 - Implement optional autostart registry entry toggling via Windows Task Scheduler or HKCU `Run` key directly from the Tauri settings view.
+

@@ -5,7 +5,7 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineConfig({
   plugins: [solidPlugin(), tailwindcss()],
   server: {
-    port: 5173,
+    port: 1420,
     strictPort: true,
   },
   build: {
@@ -14,3 +14,4 @@ export default defineConfig({
     emptyOutDir: true,
   },
 });
+
