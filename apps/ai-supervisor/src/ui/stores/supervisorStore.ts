@@ -7,6 +7,13 @@ import type {
   StreamConnectionStatus,
 } from "../types";
 
+export function getApiBase(): string {
+  if (typeof window !== "undefined" && window.location.protocol.startsWith("http")) {
+    return "";
+  }
+  return "http://127.0.0.1:3333";
+}
+
 export function createSupervisorStore() {
   const [status, setStatus] = createSignal<SupervisorStatusResponse | null>(null);
   const [telemetry, setTelemetry] = createSignal<FleetTelemetrySnapshot | null>(null);
@@ -33,7 +40,7 @@ export function createSupervisorStore() {
 
   const fetchStatus = async () => {
     try {
-      const res = await fetch("/api/status");
+      const res = await fetch(`${getApiBase()}/api/status`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: SupervisorStatusResponse = await res.json();
       setStatus(data);
@@ -49,7 +56,7 @@ export function createSupervisorStore() {
     const service = activeLogService();
     const filter = encodeURIComponent(logFilter());
     try {
-      const res = await fetch(`/api/logs/${service}?filter=${filter}&limit=250`);
+      const res = await fetch(`${getApiBase()}/api/logs/${service}?filter=${filter}&limit=250`);
       if (!res.ok) return;
       const data = await res.json();
       setLogs(data.logs ?? []);
@@ -60,7 +67,7 @@ export function createSupervisorStore() {
 
   const fetchAuditHistory = async () => {
     try {
-      const res = await fetch("/api/telemetry/audits");
+      const res = await fetch(`${getApiBase()}/api/telemetry/audits`);
       if (!res.ok) return;
       const data: AuditEventEntry[] = await res.json();
       setAuditEvents(data);
@@ -76,7 +83,7 @@ export function createSupervisorStore() {
     }
 
     setStreamStatus("CONNECTING");
-    eventSource = new EventSource("/api/telemetry/stream");
+    eventSource = new EventSource(`${getApiBase()}/api/telemetry/stream`);
 
     eventSource.onopen = () => {
       setStreamStatus("CONNECTED");
@@ -144,7 +151,7 @@ export function createSupervisorStore() {
   const controlService = async (serviceName: string, action: "start" | "stop" | "restart") => {
     setIsActionPending(true);
     try {
-      const res = await fetch(`/api/service/${serviceName}/${action}`, { method: "POST" });
+      const res = await fetch(`${getApiBase()}/api/service/${serviceName}/${action}`, { method: "POST" });
       if (!res.ok) throw new Error(`Failed to ${action} ${serviceName}`);
       showToast(`Service ${serviceName}: ${action} executed`, "success");
       await fetchStatus();
@@ -159,7 +166,7 @@ export function createSupervisorStore() {
   const purgeVram = async () => {
     setIsActionPending(true);
     try {
-      const res = await fetch("/api/vram/purge", { method: "POST" });
+      const res = await fetch(`${getApiBase()}/api/vram/purge`, { method: "POST" });
       if (!res.ok) throw new Error("VRAM purge failed");
       showToast("VRAM purge command dispatched across fleet", "success");
       await fetchLogs();
@@ -173,7 +180,7 @@ export function createSupervisorStore() {
   const restartAll = async () => {
     setIsActionPending(true);
     try {
-      const res = await fetch("/api/service/all/restart", { method: "POST" });
+      const res = await fetch(`${getApiBase()}/api/service/all/restart`, { method: "POST" });
       if (!res.ok) throw new Error("Restart all failed");
       showToast("All supervised services restarted", "success");
       await fetchStatus();
@@ -188,7 +195,7 @@ export function createSupervisorStore() {
   const checkUpdates = async () => {
     setIsActionPending(true);
     try {
-      const res = await fetch("/api/update/check", { method: "POST" });
+      const res = await fetch(`${getApiBase()}/api/update/check`, { method: "POST" });
       const data = await res.json();
       if (data.available) {
         showToast(`Update v${data.status.targetVersion} is available!`, "info");
@@ -205,7 +212,7 @@ export function createSupervisorStore() {
 
   const saveConfig = async (configUpdate: Partial<SupervisorConfig>) => {
     try {
-      const res = await fetch("/api/config", {
+      const res = await fetch(`${getApiBase()}/api/config`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(configUpdate),

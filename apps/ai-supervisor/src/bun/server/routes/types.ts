@@ -5,3 +5,4 @@ export const CORS_HEADERS = {
 } as const;
 
 export type RouteHandler = (req: Request, url: URL) => Promise<Response | null> | Response | null;
+

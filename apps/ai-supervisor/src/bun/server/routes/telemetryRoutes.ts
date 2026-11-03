@@ -54,3 +54,4 @@ export const handleTelemetryRoutes: RouteHandler = async (req: Request, url: URL
 
   return null;
 };
+

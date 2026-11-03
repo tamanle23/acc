@@ -14,6 +14,7 @@ export class DesktopApplication {
   private readonly windowManager: WindowManager;
   private readonly trayManager: TrayManager;
   private currentDashboardUrl = "";
+  private isTrayActive = false;
 
   constructor(private readonly options: DesktopApplicationOptions) {
     this.windowManager = options.windowManager ?? new WindowManager();
@@ -46,21 +47,22 @@ export class DesktopApplication {
   public start(dashboardUrl: string, options?: { minimized?: boolean }): void {
     this.currentDashboardUrl = dashboardUrl;
     const initialColor: TrayIconColor = this.options.supervisorEngine.getTrayColor();
-    const trayActive = this.trayManager.initialize(initialColor);
+    this.isTrayActive = this.trayManager.initialize(initialColor);
 
     this.options.supervisorEngine.onStatusChange((_states, color) => {
       this.trayManager.updateStatus(color);
     });
 
     const isMinimized = options?.minimized ?? process.argv.includes("--minimized");
-    if (!isMinimized || !trayActive) {
+    if (!isMinimized || !this.isTrayActive) {
       this.openDashboard();
     }
   }
 
   public openDashboard(): void {
     if (!this.currentDashboardUrl) return;
-    this.windowManager.openWindow(this.currentDashboardUrl);
+    const handleClose = !this.isTrayActive ? () => this.options.onQuit() : undefined;
+    this.windowManager.openWindow(this.currentDashboardUrl, handleClose);
   }
 
   public stop(): void {

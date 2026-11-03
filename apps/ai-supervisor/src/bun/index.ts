@@ -25,15 +25,17 @@ async function main(): Promise<void> {
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   }
 
-  // 2. Boot Watchdog & Rollback Check
-  updateManager.recordBootStart();
-  setTimeout(() => {
-    updateManager.markBootSuccessful();
-  }, 10000);
+  // 2. Boot Watchdog & Rollback Check (Production Only)
+  if (process.env.NODE_ENV === "production") {
+    updateManager.recordBootStart();
+    setTimeout(() => {
+      updateManager.markBootSuccessful();
+    }, 10000);
 
-  if (updateManager.shouldRollback()) {
-    console.warn("[Supervisor] Detected repeated crash on boot! Rolling back from backup slot...");
-    updateManager.rollbackFromBackup();
+    if (updateManager.shouldRollback()) {
+      console.warn("[Supervisor] Detected repeated crash on boot! Rolling back from backup slot...");
+      updateManager.rollbackFromBackup();
+    }
   }
 
   // 3. Load Config & Dynamic Port Collision Resolution

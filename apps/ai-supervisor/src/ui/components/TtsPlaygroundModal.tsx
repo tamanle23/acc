@@ -12,6 +12,7 @@ import {
   Clock,
 } from "lucide-solid";
 import type { createSupervisorStore } from "../stores/supervisorStore";
+import { getApiBase } from "../stores/supervisorStore";
 
 interface TtsPlaygroundModalProps {
   store: ReturnType<typeof createSupervisorStore>;
@@ -39,7 +40,7 @@ export function TtsPlaygroundModal(props: TtsPlaygroundModalProps) {
     setErrorMsg(null);
 
     try {
-      const res = await fetch("/api/tts/test", {
+      const res = await fetch(`${getApiBase()}/api/tts/test`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

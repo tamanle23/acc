@@ -18,7 +18,7 @@ export class WindowManager {
     this.defaultHeight = options.height ?? 820;
   }
 
-  public openWindow(url: string): BrowserWindow {
+  public openWindow(url: string, onClose?: () => void): BrowserWindow {
     if (this.mainWindow) {
       try {
         this.mainWindow.show();
@@ -41,21 +41,16 @@ export class WindowManager {
         titleBarStyle: "default",
       });
 
-      // Explicitly reveal, navigate, and activate window
       win.show();
       win.activate();
-
-      try {
-        win.webview.loadURL(url);
-      } catch {
-        // Fallback if webview controller initializes asynchronously
-      }
-
       this.bringNativeWindowToForeground(win.ptr);
 
       win.on("close", () => {
         if (this.mainWindow === win) {
           this.mainWindow = null;
+        }
+        if (onClose) {
+          onClose();
         }
       });
 
@@ -96,9 +91,10 @@ export class WindowManager {
         BringWindowToTop: { args: [FFIType.ptr], returns: FFIType.bool },
         ShowWindow: { args: [FFIType.ptr, FFIType.i32], returns: FFIType.bool },
       });
-      user32.symbols.ShowWindow(hwndPtr, 9); // SW_RESTORE
-      user32.symbols.BringWindowToTop(hwndPtr);
-      user32.symbols.SetForegroundWindow(hwndPtr);
+      const hwndBigInt = typeof hwndPtr === "number" ? BigInt(hwndPtr) : hwndPtr;
+      user32.symbols.ShowWindow(hwndBigInt, 9); // SW_RESTORE
+      user32.symbols.BringWindowToTop(hwndBigInt);
+      user32.symbols.SetForegroundWindow(hwndBigInt);
     } catch {
       // Best-effort foreground activation; continue silently on non-interactive environments
     }

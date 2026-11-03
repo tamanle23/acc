@@ -2,6 +2,7 @@ import { createSignal, createEffect } from "solid-js";
 import { Dialog, Switch } from "@ark-ui/solid";
 import { X, Sliders, PlayCircle } from "lucide-solid";
 import type { SupervisorConfig } from "../types";
+import { getApiBase } from "../stores/supervisorStore";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -44,7 +45,7 @@ export function SettingsModal(props: SettingsModalProps) {
 
   const simulateUpdate = async () => {
     try {
-      await fetch("/api/update/simulate", { method: "POST" });
+      await fetch(`${getApiBase()}/api/update/simulate`, { method: "POST" });
       alert("Simulated v1.1.0 update staged!");
     } catch {}
   };
