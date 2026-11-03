@@ -2,15 +2,14 @@ import { describe, expect, it } from "bun:test";
 import { SupervisorEngine } from "../apps/ai-supervisor/src/bun/SupervisorEngine.js";
 
 describe("SupervisorEngine Multi-Daemon Orchestration", () => {
-  it("initializes fleet with all 4 services in STOPPED state", () => {
+  it("initializes fleet with all 3 services in STOPPED state", () => {
     const engine = new SupervisorEngine();
     const states = engine.getAllStates();
 
-    expect(Object.keys(states)).toEqual(["python-backend", "worker", "studio", "ollama"]);
+    expect(Object.keys(states)).toEqual(["python-backend", "worker", "studio"]);
     expect(states["python-backend"].status).toBe("STOPPED");
     expect(states["worker"].status).toBe("STOPPED");
     expect(states["studio"].status).toBe("STOPPED");
-    expect(states["ollama"].status).toBe("STOPPED");
   });
 
   it("calculates dynamic tray colors based on fleet states", () => {
@@ -22,12 +21,10 @@ describe("SupervisorEngine Multi-Daemon Orchestration", () => {
     const s1 = engine.getServiceState("python-backend")!;
     const s2 = engine.getServiceState("worker")!;
     const s3 = engine.getServiceState("studio")!;
-    const s4 = engine.getServiceState("ollama")!;
 
     s1.status = "RUNNING";
     s2.status = "RUNNING";
     s3.status = "RUNNING";
-    s4.status = "ADOPTED";
 
     // Trigger state evaluation via status change listener
     let emittedTrayColor = "";
@@ -59,8 +56,9 @@ describe("SupervisorEngine Multi-Daemon Orchestration", () => {
     expect(engine.isBusy()).toBe(false);
   });
 
-  it("dispatches VRAM purge across Ollama and Python backend without throwing", async () => {
+  it("dispatches VRAM purge across Python backend without throwing", async () => {
     const engine = new SupervisorEngine();
-    expect(engine.purgeAllVram()).resolves.toBeUndefined();
+    // purgeAllVram attempts Python backend purge
+    await expect(engine.purgeAllVram()).resolves.toBeUndefined();
   });
 });

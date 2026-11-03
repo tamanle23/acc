@@ -77,8 +77,15 @@ export async function findPidByPort(port: number, runner?: any): Promise<number 
   try {
     if (process.platform === "win32") {
       const netstatCmd = ["netstat", "-ano", "-p", "tcp"];
-      const res = runner && typeof runner.execute === "function" ? await runner.execute(netstatCmd) : await Bun.spawn(netstatCmd).output();
-      const stdout = typeof res?.stdout === "string" ? res.stdout : new TextDecoder().decode(res);
+      let stdout = "";
+      if (runner && typeof runner.execute === "function") {
+        const res = await runner.execute(netstatCmd);
+        stdout = res?.value?.stdout || "";
+      } else {
+        const proc = Bun.spawn(netstatCmd, { stdout: "pipe", stderr: "ignore" });
+        stdout = await new Response(proc.stdout).text();
+        await proc.exited;
+      }
       const lines = stdout.split("\n");
       for (const line of lines) {
         if (line.includes(`:${port}`) && line.includes("LISTENING")) {

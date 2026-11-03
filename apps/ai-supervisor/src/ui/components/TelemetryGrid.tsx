@@ -280,7 +280,7 @@ export function TelemetryGrid(props: TelemetryGridProps) {
               >
                 {(wm) => (
                   <>
-                    <span class="truncate max-w-[130px]" title={wm().activeJobId}>Job: {wm().activeJobId.slice(0, 8)}...</span>
+                    <span class="truncate max-w-[130px]" title={wm().activeJobId || ""}>Job: {wm().activeJobId ? `${wm().activeJobId?.slice(0, 8)}...` : "None"}</span>
                     <span class="font-mono text-[var(--text-primary)]">{wm().renderFps} FPS</span>
                   </>
                 )}

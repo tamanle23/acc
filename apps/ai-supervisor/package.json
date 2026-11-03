@@ -10,6 +10,7 @@
     "build": "electrobun build"
   },
   "dependencies": {
+    "@acc/proto": "workspace:*",
     "@ark-ui/solid": "^5.39.3",
     "electrobun": "^2.0.2",
     "lucide-solid": "^1.61.0",

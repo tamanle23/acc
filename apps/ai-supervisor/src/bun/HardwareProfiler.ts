@@ -1,8 +1,8 @@
 import os from "node:os";
-import type { HardwareTierOption } from "./configStore.js";
 import { type IProcessRunner, defaultProcessRunner } from "./IProcessRunner.js";
 
 export type HardwareTier = "tier1" | "tier2" | "tier3" | "tier4" | "tier5";
+export type HardwareTierOption = "auto" | HardwareTier;
 
 export interface GpuInfo {
   name: string;
@@ -12,6 +12,7 @@ export interface GpuInfo {
   isIntegrated: boolean;
   vendor?: string;
   metalSupport?: string;
+  driverVersion?: string;
 }
 
 export interface CpuInfo {
@@ -31,6 +32,8 @@ export interface HardwareProfile {
   safeHeadroomBytes: number;
   recommendedPythonDevice: "cuda" | "mps" | "cpu";
 }
+
+export type SystemProfile = HardwareProfile;
 
 export class HardwareProfiler {
   public static async queryNvidiaSmi(

@@ -1,13 +1,16 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import type { HardwareTierOption } from "./HardwareProfiler.js";
+
+export type { HardwareTierOption };
 
 export interface ControlPlaneConfig {
   studioPort: number;
   supervisorPort: number;
   pythonPort: number;
   autostart: boolean;
-  hardwareTierOverride?: string;
+  hardwareTierOverride?: HardwareTierOption;
 }
 
 const DEFAULT_CONFIG: ControlPlaneConfig = {

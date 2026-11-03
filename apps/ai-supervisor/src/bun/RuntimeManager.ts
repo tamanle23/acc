@@ -287,6 +287,13 @@ export class RuntimeManager {
   }
 
   /**
+   * Alias for ensureRuntime to fulfill provisioning contracts.
+   */
+  public async provision(onProgress?: (msg: string) => void): Promise<boolean> {
+    return this.ensureRuntime(onProgress);
+  }
+
+  /**
    * Returns the execution environment variables ensuring complete version isolation.
    */
   public getExecutionEnv(): Record<string, string> {

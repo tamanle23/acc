@@ -47,6 +47,7 @@ export interface SpawnManagedOptions {
 export interface ManagedProcess {
   readonly pid: number;
   readonly killed: boolean;
+  readonly exitCode?: number | null;
   kill(signal?: NodeJS.Signals | number): Promise<boolean>;
   writeStdin(data: string | Uint8Array): Promise<void>;
   wait(): Promise<number>;
@@ -94,6 +95,10 @@ class BunManagedProcess implements ManagedProcess {
 
   get killed(): boolean {
     return this._killed || this.sub.exitCode !== null;
+  }
+
+  get exitCode(): number | null {
+    return this.sub.exitCode;
   }
 
   async kill(signal: NodeJS.Signals | number = "SIGTERM"): Promise<boolean> {

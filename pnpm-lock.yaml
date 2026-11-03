@@ -75,6 +75,9 @@ importers:
 
   apps/ai-supervisor:
     dependencies:
+      '@acc/proto':
+        specifier: workspace:*
+        version: link:../../packages/proto
       '@ark-ui/solid':
         specifier: ^5.39.3
         version: 5.39.3(solid-js@1.9.17)
@@ -581,9 +584,6 @@ importers:
       vaul:
         specifier: ^1.1.2
         version: 1.1.2(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      wavesurfer.js:
-        specifier: ^7.8.0
-        version: 7.12.12
     devDependencies:
       '@tailwindcss/vite':
         specifier: ^4.3.3
@@ -13046,9 +13046,6 @@ packages:
     resolution: {integrity: sha512-/OBiAALgWU24IG7sC84cDO/KfFuvajWc5Uec0oV2zrpOOZZDgGdOwHwgEzOrwh8jkubBk7PtZfQBIcI1OaE5Ng==}
     engines: {node: '>=8'}
     hasBin: true
-
-  wavesurfer.js@7.12.12:
-    resolution: {integrity: sha512-fyKNuREQTliCl4b9w7pUzpFXQIkX5tcdYu1o6vBdH+NlUXvTxshvfbG2hj8OxDevzQNZlDTHzZGyAT3FhuutWw==}
 
   wcwidth@1.0.1:
     resolution: {integrity: sha512-XHPEwS0q6TaxcvG85+8EYkbiCux2XtWG2mkc47Ng2A77BQu9+DqIOJldST4HgPkuea7dvKSj5VgX3P1d4rW8Tg==}
@@ -27940,8 +27937,6 @@ snapshots:
     optional: true
 
   wavefile@11.0.0: {}
-
-  wavesurfer.js@7.12.12: {}
 
   wcwidth@1.0.1:
     dependencies:

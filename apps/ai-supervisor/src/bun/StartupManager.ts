@@ -43,7 +43,7 @@ async function setWindowsStartup(
   }
 }
 
-async function getWindowsStartupStatus(
+async function checkWindowsStartupStatus(
   runner: IProcessRunner = defaultProcessRunner
 ): Promise<boolean> {
   const command = `(Get-ItemProperty -Path "${WIN_REG_KEY}" -Name "${APP_NAME}" -ErrorAction SilentlyContinue) -ne $null`;
@@ -182,7 +182,7 @@ export async function setStartupEnabled(enable: boolean, appPath?: string): Prom
 /** Returns true when the app is currently registered to start at login. */
 export async function getStartupStatus(): Promise<boolean> {
   switch (process.platform) {
-    case "win32":  return getWindowsStartupStatus();
+    case "win32":  return checkWindowsStartupStatus();
     case "darwin": return getMacOSStartupStatus();
     case "linux":  return getLinuxStartupStatus();
     default:       return false;
