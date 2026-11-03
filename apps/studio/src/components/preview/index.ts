@@ -1,5 +1,6 @@
 export * from './ViewportControlBar';
 export * from './ViewportSafeGuides';
+export * from './ViewportQuickTransport';
 export * from './ContextualActionPill';
 export * from './TelemetryCompanionCard';
 export * from './TransformHandles';

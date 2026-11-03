@@ -59,8 +59,9 @@ export function Toolbar({
   fps,
 }: ToolbarProps) {
   return (
-    <div className="h-11 border-b border-glass-border px-6 flex items-center justify-between bg-glass-surface/60 backdrop-blur-md">
-      <div className="flex items-center gap-1.5">
+    <div className="h-11 border-b border-glass-border px-3 sm:px-6 flex items-center justify-between bg-glass-surface/60 backdrop-blur-md gap-2 overflow-hidden select-none shrink-0">
+      {/* 1. Left: Editing Tools & Transport Shuttling */}
+      <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
         {/* Tool Selector Bar */}
         <Tooltip content="Selection Tool (V)">
           <Button
@@ -115,7 +116,7 @@ export function Toolbar({
           </Button>
         </Tooltip>
 
-        <Separator orientation="vertical" className="h-4 mx-1" />
+        <Separator orientation="vertical" className="h-4 mx-0.5" />
 
         {/* J-K-L Shuttle & Transport Controls */}
         <Tooltip content={`Shuttle Rewind (J): ${shuttle.speed < 0 ? Math.abs(shuttle.speed) + 'x' : '1x'}`}>
@@ -167,9 +168,9 @@ export function Toolbar({
           </Button>
         </Tooltip>
 
-        <Separator orientation="vertical" className="h-4 mx-1" />
+        <Separator orientation="vertical" className="h-4 mx-0.5" />
 
-        <Tooltip content="Magnetic Snapping">
+        <Tooltip content="Magnetic Snapping (S)">
           <Toggle
             pressed={snapEnabled}
             onPressedChange={onSetSnapEnabled}
@@ -177,11 +178,11 @@ export function Toolbar({
             className="h-7 px-2 text-[11px] gap-1 data-[state=on]:bg-accent-theme/15 data-[state=on]:text-accent-theme data-[state=on]:border-accent-theme/30 border border-transparent transition-colors"
           >
             <Magnet className="w-3 h-3" />
-            Snap
+            <span className="hidden sm:inline">Snap</span>
           </Toggle>
         </Tooltip>
 
-        <Tooltip content="Ripple Edit Mode: Trimming or deleting automatically shifts downstream clips on track">
+        <Tooltip content="Ripple Edit Mode (R): Trimming or deleting automatically shifts downstream clips">
           <Toggle
             pressed={rippleEnabled}
             onPressedChange={onSetRippleEnabled}
@@ -189,31 +190,49 @@ export function Toolbar({
             className="h-7 px-2 text-[11px] gap-1 data-[state=on]:bg-amber-500/20 data-[state=on]:text-amber-400 data-[state=on]:border-amber-500/40 border border-transparent transition-colors"
           >
             <ArrowRightLeft className="w-3 h-3" />
-            Ripple
+            <span className="hidden sm:inline">Ripple</span>
           </Toggle>
         </Tooltip>
       </div>
 
-      {/* Center: Zoom Controls & Fit */}
-      <div className="flex items-center gap-1.5">
-        <ZoomOut
-          className="w-3.5 h-3.5 text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
-          onClick={() => onSetZoomScale((z) => Math.max(0.1, +(z - 0.2).toFixed(2)))}
-        />
-        <Slider
-          min={0.1}
-          max={4.0}
-          step={0.05}
-          value={[zoomScale]}
-          onValueChange={(val) => onSetZoomScale(val[0])}
-          className="w-24 cursor-pointer"
-        />
-        <ZoomIn
-          className="w-3.5 h-3.5 text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
-          onClick={() => onSetZoomScale((z) => Math.min(4.0, +(z + 0.2).toFixed(2)))}
-        />
+      {/* 2. Center: Progressive Zoom Stepper & Slider */}
+      <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+        <Tooltip content="Zoom Out (-)">
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Zoom Out"
+            onClick={() => onSetZoomScale((z) => Math.max(0.1, +(z - 0.2).toFixed(2)))}
+            className="h-6 w-6 text-muted-foreground hover:text-foreground"
+          >
+            <ZoomOut className="w-3.5 h-3.5" />
+          </Button>
+        </Tooltip>
 
-        {/* Current Zoom Readout Badge (Clickable to reset to 1.0x / 100%) */}
+        <div className="hidden md:flex items-center">
+          <Slider
+            min={0.1}
+            max={4.0}
+            step={0.05}
+            value={[zoomScale]}
+            onValueChange={(val) => onSetZoomScale(val[0])}
+            className="w-16 lg:w-24 cursor-pointer"
+          />
+        </div>
+
+        <Tooltip content="Zoom In (+)">
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Zoom In"
+            onClick={() => onSetZoomScale((z) => Math.min(4.0, +(z + 0.2).toFixed(2)))}
+            className="h-6 w-6 text-muted-foreground hover:text-foreground"
+          >
+            <ZoomIn className="w-3.5 h-3.5" />
+          </Button>
+        </Tooltip>
+
+        {/* Current Zoom Readout Badge (Clickable to reset to 100%) */}
         <Tooltip content="Current Zoom Level (Click to reset to 100%)">
           <Badge
             variant="outline"
@@ -237,29 +256,31 @@ export function Toolbar({
         </Tooltip>
       </div>
 
-      {/* Right: Master Audio VU Meter & Timecode Readout */}
-      <div className="flex items-center gap-3">
+      {/* 3. Right: Master Audio VU Meter & Timecode Readout */}
+      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
         <MasterAudioMeter isPlaying={isPlaying} currentFrame={currentFrame} />
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1 sm:gap-1.5">
           {shuttle.speed !== 0 && (
             <Badge
               variant="outline"
-              className="font-mono text-[11px] text-amber-400 border-amber-500/30 bg-amber-500/10 font-semibold shadow-2xs"
+              className="font-mono text-[10px] sm:text-[11px] text-amber-400 border-amber-500/30 bg-amber-500/10 font-semibold shadow-2xs"
             >
               {shuttle.speed}x
             </Badge>
           )}
           <Badge
             variant="outline"
-            className="font-mono text-[11px] border-glass-border text-muted-foreground bg-glass-surface shadow-2xs"
+            className="font-mono text-[10px] sm:text-[11px] border-glass-border text-foreground bg-glass-surface shadow-2xs font-semibold"
           >
-            {RationalTime.fromFrame(currentFrame, fps).toSMPTE(fps)} /{' '}
-            {RationalTime.fromFrame(totalFrames, fps).toSMPTE(fps)}
+            {RationalTime.fromFrame(currentFrame, fps).toSMPTE(fps)}
+            <span className="opacity-60 hidden lg:inline">
+              {' '}/ {RationalTime.fromFrame(totalFrames, fps).toSMPTE(fps)}
+            </span>
           </Badge>
           <Badge
             variant="outline"
-            className="font-mono text-[11px] text-accent-theme border-accent-theme/30 bg-accent-theme/10 font-semibold shadow-2xs"
+            className="font-mono text-[10px] sm:text-[11px] text-accent-theme border-accent-theme/30 bg-accent-theme/10 font-semibold shadow-2xs hidden xl:inline-flex"
           >
             F {currentFrame} / {totalFrames}
           </Badge>
@@ -271,4 +292,3 @@ export function Toolbar({
 
 // Backward-compatible alias
 export const TimelineToolbar = Toolbar;
-

@@ -1,4 +1,9 @@
-import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
+import {
+  STUDIO_THEME_PRESETS,
+  getThemePreset,
+  type StudioThemePreset,
+} from './themePresets';
 
 export type ThemeMode = 'dark' | 'light';
 export type GlassStyle = 'specular' | 'frosted' | 'cyber';
@@ -6,6 +11,7 @@ export type BlurIntensity = 'low' | 'medium' | 'high';
 export type AccentColor = 'cyan' | 'violet' | 'emerald' | 'amber' | 'rose';
 
 export interface ThemePreferences {
+  presetId?: string;
   mode: ThemeMode;
   glassStyle: GlassStyle;
   blurIntensity: BlurIntensity;
@@ -14,7 +20,9 @@ export interface ThemePreferences {
 
 export interface ThemeContextValue {
   preferences: ThemePreferences;
+  activePreset: StudioThemePreset;
   setTheme: (updates: Partial<ThemePreferences>) => void;
+  selectPreset: (presetId: string) => void;
   toggleMode: () => void;
   resetTheme: () => void;
   isSettingsOpen: boolean;
@@ -27,6 +35,9 @@ export const DEFAULT_THEME_PREFERENCES: ThemePreferences = {
   blurIntensity: 'medium',
   accentColor: 'cyan',
 };
+
+// Alias for test compatibility
+export const DEFAULT_PREFERENCES = DEFAULT_THEME_PREFERENCES;
 
 export const THEME_STORAGE_KEY = 'acc_studio_theme_prefs';
 
@@ -45,13 +56,18 @@ function getStorage(): Storage | null {
 function loadSavedPreferences(): ThemePreferences {
   const storage = getStorage();
   if (!storage) {
-    return { ...DEFAULT_THEME_PREFERENCES };
+    return { ...DEFAULT_THEME_PREFERENCES, presetId: 'obsidian' };
   }
   try {
     const raw = storage.getItem(THEME_STORAGE_KEY);
-    if (!raw) return { ...DEFAULT_THEME_PREFERENCES };
+    if (!raw) return { ...DEFAULT_THEME_PREFERENCES, presetId: 'obsidian' };
     const parsed = JSON.parse(raw);
+    const validPreset = STUDIO_THEME_PRESETS.some((p) => p.id === parsed.presetId)
+      ? parsed.presetId
+      : 'obsidian';
+
     return {
+      presetId: validPreset,
       mode: parsed.mode === 'light' ? 'light' : 'dark',
       glassStyle: ['specular', 'frosted', 'cyber'].includes(parsed.glassStyle)
         ? parsed.glassStyle
@@ -64,7 +80,7 @@ function loadSavedPreferences(): ThemePreferences {
         : DEFAULT_THEME_PREFERENCES.accentColor,
     };
   } catch {
-    return { ...DEFAULT_THEME_PREFERENCES };
+    return { ...DEFAULT_THEME_PREFERENCES, presetId: 'obsidian' };
   }
 }
 
@@ -114,11 +130,46 @@ export function applyThemeToDocument(preferences: ThemePreferences): void {
   root.classList.toggle('light', !isDark);
   root.style.colorScheme = preferences.mode;
 
+  const presetId = preferences.presetId || 'obsidian';
+  const preset = getThemePreset(presetId);
+
   root.setAttribute('data-theme-mode', preferences.mode);
+  root.setAttribute('data-theme-preset', preset.id);
   root.setAttribute('data-glass-style', preferences.glassStyle);
   root.setAttribute('data-blur-intensity', preferences.blurIntensity);
   root.setAttribute('data-accent', preferences.accentColor);
 
+  // 1. Inject Preset Semantic Tokens into Tailwind v4 @theme variables
+  const t = preset.tokens;
+  root.style.setProperty('--background', t.background);
+  root.style.setProperty('--foreground', t.foreground);
+  root.style.setProperty('--card', t.card);
+  root.style.setProperty('--card-foreground', t.cardForeground);
+  root.style.setProperty('--popover', t.popover);
+  root.style.setProperty('--popover-foreground', t.popoverForeground);
+  root.style.setProperty('--secondary', t.secondary);
+  root.style.setProperty('--secondary-foreground', t.secondaryForeground);
+  root.style.setProperty('--muted', t.muted);
+  root.style.setProperty('--muted-foreground', t.mutedForeground);
+  root.style.setProperty('--accent', t.accent);
+  root.style.setProperty('--accent-foreground', t.accentForeground);
+  root.style.setProperty('--destructive', t.destructive);
+  root.style.setProperty('--destructive-foreground', t.destructiveForeground);
+  root.style.setProperty('--border', t.border);
+  root.style.setProperty('--input', t.input);
+
+  // 2. Liquid Glass Decoupled Layers
+  root.style.setProperty('--glass-bg', t.glassBg);
+  root.style.setProperty('--glass-border', t.glassBorder);
+  root.style.setProperty('--glass-border-highlight', t.glassBorderHighlight);
+  root.style.setProperty('--glass-specular', t.glassSpecular);
+  root.style.setProperty('--glass-shadow', t.glassShadow);
+  if (t.ambientMesh) {
+    root.style.setProperty('--ambient-mesh', t.ambientMesh);
+  }
+
+  // 3. Dynamic Accent Colors synchronized with shadcn --primary and --ring
+  // If an accentColor is provided in ACCENT_CONFIGS, apply it
   const accentCfg = ACCENT_CONFIGS[preferences.accentColor] || ACCENT_CONFIGS.cyan;
   root.style.setProperty('--primary', accentCfg.hsl);
   root.style.setProperty('--ring', accentCfg.hsl);
@@ -149,31 +200,66 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
   }, [preferences]);
 
-  const setTheme = (updates: Partial<ThemePreferences>) => {
-    setPreferences((prev) => ({ ...prev, ...updates }));
-  };
+  const activePreset = useMemo(
+    () => getThemePreset(preferences.presetId || 'obsidian'),
+    [preferences.presetId]
+  );
 
-  const toggleMode = () => {
+  const setTheme = useCallback((updates: Partial<ThemePreferences>) => {
+    setPreferences((prev) => ({ ...prev, ...updates }));
+  }, []);
+
+  // Preset-Governed Mode Selection
+  const selectPreset = useCallback((presetId: string) => {
+    const targetPreset = getThemePreset(presetId);
     setPreferences((prev) => ({
       ...prev,
-      mode: prev.mode === 'dark' ? 'light' : 'dark',
+      presetId,
+      // Preset-Governed Mode: automatically sync dark/light mode to preset's native mode
+      mode: targetPreset.mode,
     }));
-  };
+  }, []);
 
-  const resetTheme = () => {
-    setPreferences({ ...DEFAULT_THEME_PREFERENCES });
-  };
+  const toggleMode = useCallback(() => {
+    setPreferences((prev) => {
+      const nextMode: ThemeMode = prev.mode === 'dark' ? 'light' : 'dark';
+      // If toggling to light mode and current preset is dark, switch to a friendly light preset (e.g. catppuccin-latte or github-light)
+      let nextPresetId = prev.presetId;
+      if (nextMode === 'light' && prev.mode === 'dark') {
+        const curPreset = getThemePreset(prev.presetId || 'obsidian');
+        if (curPreset.mode === 'dark') {
+          nextPresetId = 'catppuccin-latte';
+        }
+      } else if (nextMode === 'dark' && prev.mode === 'light') {
+        const curPreset = getThemePreset(prev.presetId || 'catppuccin-latte');
+        if (curPreset.mode === 'light') {
+          nextPresetId = 'obsidian';
+        }
+      }
+      return {
+        ...prev,
+        mode: nextMode,
+        presetId: nextPresetId,
+      };
+    });
+  }, []);
+
+  const resetTheme = useCallback(() => {
+    setPreferences({ ...DEFAULT_THEME_PREFERENCES, presetId: 'obsidian' });
+  }, []);
 
   const value = useMemo(
     () => ({
       preferences,
+      activePreset,
       setTheme,
+      selectPreset,
       toggleMode,
       resetTheme,
       isSettingsOpen,
       setIsSettingsOpen,
     }),
-    [preferences, isSettingsOpen]
+    [preferences, activePreset, setTheme, selectPreset, toggleMode, resetTheme, isSettingsOpen]
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

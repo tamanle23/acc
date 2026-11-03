@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { TimecodeRuler } from './timeline/TimecodeRuler';
 import { Toolbar } from './timeline/Toolbar';
 import { OverlayHUD } from './timeline/OverlayHUD';
-import { EmptyState } from './timeline/EmptyState';
+import { EmptyState, TimelineEmptyState } from './timeline/EmptyState';
 import { TimelineDom } from './timeline/TimelineDom';
 import { TrackQuotaModal } from './timeline/TrackQuotaModal';
 import { IRStateManager } from '../lib/ir/irState';

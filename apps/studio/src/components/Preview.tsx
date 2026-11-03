@@ -7,6 +7,7 @@ import {
   ViewportControlBar,
   type PreviewResolutionMode,
   ViewportSafeGuides,
+  ViewportQuickTransport,
   TelemetryCompanionCard,
   InPlaceTextEditor,
   UniversalCanvasHitOverlay,
@@ -38,6 +39,7 @@ function PreviewInner({
   playhead,
   isPlaying = false,
   onTogglePlay,
+  onScrub,
 }: PreviewProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -417,6 +419,19 @@ function PreviewInner({
               onCancel={() => setEditingCue(null)}
             />
           )}
+
+          {/* Floating Studio Quick Playback Transport HUD */}
+          <ViewportQuickTransport
+            isPlaying={isPlaying}
+            onTogglePlay={onTogglePlay}
+            currentFrame={currentFrame}
+            totalFrames={totalFrames}
+            fps={fps}
+            onScrub={onScrub}
+            zoomLevel={panZoom.zoomLevel}
+            onSetZoomLevel={panZoom.setZoomLevel}
+            onResetPan={panZoom.resetPan}
+          />
         </div>
 
         {/* Telemetry Companion Card */}

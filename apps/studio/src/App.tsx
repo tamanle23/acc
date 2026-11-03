@@ -46,10 +46,34 @@ function StudioWorkspace() {
   const currentFrameRef = useRef(currentFrame);
   currentFrameRef.current = currentFrame;
 
-  // Enterprise Dual-Sidebar Workspace Layout
-  const [isLeftOpen, setIsLeftOpen] = useState(true);
+  // Enterprise Dual-Sidebar Workspace Layout with Responsive Auto-Collapse & Zen Mode
+  const [isLeftOpen, setIsLeftOpen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 1200;
+    }
+    return true;
+  });
   const [isRightOpen, setIsRightOpen] = useState(true);
   const [activeNav, setActiveNav] = useState<LeftNavTab>('vault');
+  const prevSidebarStateRef = useRef<{ left: boolean; right: boolean }>({
+    left: true,
+    right: true,
+  });
+
+  const isZenMode = !isLeftOpen && !isRightOpen;
+
+  const handleToggleZen = useCallback(() => {
+    if (isZenMode) {
+      // Restore previous state
+      setIsLeftOpen(prevSidebarStateRef.current.left);
+      setIsRightOpen(prevSidebarStateRef.current.right);
+    } else {
+      // Save current state and collapse both
+      prevSidebarStateRef.current = { left: isLeftOpen, right: isRightOpen };
+      setIsLeftOpen(false);
+      setIsRightOpen(false);
+    }
+  }, [isZenMode, isLeftOpen, isRightOpen]);
 
   const [isExportConfigOpen, setIsExportConfigOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -64,20 +88,22 @@ function StudioWorkspace() {
   // Global Workspace Hotkeys: [ (left drawer), ] (right inspector), \ (zen mode)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || (e.target as HTMLElement).isContentEditable) return;
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        (e.target as HTMLElement).isContentEditable
+      )
+        return;
       if (e.key === '[') setIsLeftOpen((prev) => !prev);
       else if (e.key === ']') setIsRightOpen((prev) => !prev);
       else if (e.key === '\\') {
-        setIsLeftOpen((prevLeft) => {
-          const anyOpen = prevLeft || isRightOpen;
-          setIsRightOpen(!anyOpen);
-          return !anyOpen;
-        });
+        e.preventDefault();
+        handleToggleZen();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isRightOpen]);
+  }, [handleToggleZen]);
 
   const [timelineScrollLeft, setTimelineScrollLeft] = useState(0);
   const [timelineZoomScale, setTimelineZoomScale] = useState(1.65);
@@ -217,6 +243,8 @@ function StudioWorkspace() {
           onToggleLeft={() => setIsLeftOpen(!isLeftOpen)}
           isRightOpen={isRightOpen}
           onToggleRight={() => setIsRightOpen(!isRightOpen)}
+          isZenMode={isZenMode}
+          onToggleZen={handleToggleZen}
         />
 
         {/* IR Error Banner if any */}
