@@ -150,7 +150,7 @@ export function analyzeVideoIRJson(rawJson: string): {
   };
 }
 
-export function VisualIRJsonDebuggerModal({
+export function IrVisualEditorModal({
   open,
   onOpenChange,
 }: VisualIRJsonDebuggerModalProps) {
@@ -315,11 +315,10 @@ export function VisualIRJsonDebuggerModal({
               type="button"
               onClick={() => setViewMode('split')}
               data-testid="debugger-tab-split"
-              className={`h-7 px-3 text-xs font-mono rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
-                viewMode === 'split'
-                  ? 'glass-button-primary text-primary-foreground shadow-accent-glow'
-                  : 'glass-pill'
-              }`}
+              className={`h-7 px-3 text-xs font-mono rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${viewMode === 'split'
+                ? 'glass-button-primary text-primary-foreground shadow-accent-glow'
+                : 'glass-pill'
+                }`}
             >
               <Columns className="w-3.5 h-3.5" />
               Split Visual & Code
@@ -329,11 +328,10 @@ export function VisualIRJsonDebuggerModal({
               type="button"
               onClick={() => setViewMode('tree')}
               data-testid="debugger-tab-tree"
-              className={`h-7 px-3 text-xs font-mono rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
-                viewMode === 'tree'
-                  ? 'glass-button-primary text-primary-foreground shadow-accent-glow'
-                  : 'glass-pill'
-              }`}
+              className={`h-7 px-3 text-xs font-mono rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${viewMode === 'tree'
+                ? 'glass-button-primary text-primary-foreground shadow-accent-glow'
+                : 'glass-pill'
+                }`}
             >
               <ListTree className="w-3.5 h-3.5" />
               Visual Tree Only
@@ -343,11 +341,10 @@ export function VisualIRJsonDebuggerModal({
               type="button"
               onClick={() => setViewMode('code')}
               data-testid="debugger-tab-editor"
-              className={`h-7 px-3 text-xs font-mono rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
-                viewMode === 'code'
-                  ? 'glass-button-primary text-primary-foreground shadow-accent-glow'
-                  : 'glass-pill'
-              }`}
+              className={`h-7 px-3 text-xs font-mono rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${viewMode === 'code'
+                ? 'glass-button-primary text-primary-foreground shadow-accent-glow'
+                : 'glass-pill'
+                }`}
             >
               <FileCode className="w-3.5 h-3.5" />
               Raw Code Only
@@ -357,11 +354,10 @@ export function VisualIRJsonDebuggerModal({
               type="button"
               onClick={() => setViewMode('diagnostics')}
               data-testid="debugger-tab-diagnostics"
-              className={`h-7 px-3 text-xs font-mono rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
-                viewMode === 'diagnostics'
-                  ? 'glass-button-primary text-primary-foreground shadow-accent-glow'
-                  : 'glass-pill'
-              }`}
+              className={`h-7 px-3 text-xs font-mono rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${viewMode === 'diagnostics'
+                ? 'glass-button-primary text-primary-foreground shadow-accent-glow'
+                : 'glass-pill'
+                }`}
             >
               <GitBranch className="w-3.5 h-3.5" />
               Diagnostics & Health

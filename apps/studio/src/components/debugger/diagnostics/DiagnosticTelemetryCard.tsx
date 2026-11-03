@@ -1,6 +1,6 @@
 import React from 'react';
 import { Sparkles, CheckCircle2, XCircle, AlertTriangle, Layers, Film, Box } from 'lucide-react';
-import { type IRDiagnosticsReport } from '../VisualIRJsonDebuggerModal';
+import { type IRDiagnosticsReport } from '../IrVisualEditorModal';
 
 export interface DiagnosticTelemetryCardProps {
   diagnostics: IRDiagnosticsReport;

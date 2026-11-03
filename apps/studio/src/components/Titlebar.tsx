@@ -42,8 +42,8 @@ import { useIRSelector } from '../lib/ir/useStudioStore';
 import { inferAspectRatioFromCanvasSize } from '@acc/ir';
 import { useTheme } from '../lib/theme';
 import { ShortcutsModal } from './ShortcutsModal';
-import { VisualIRJsonDebuggerModal } from './debugger/VisualIRJsonDebuggerModal';
-import { OpfsDebuggerModal } from './debugger/opfs/OpfsDebuggerModal';
+import { IrVisualEditorModal } from './debugger/IrVisualEditorModal';
+import { OpfsExplorerModal } from './debugger/opfs/OpfsExplorerModal';
 import { ThemeQuickSwitcher } from './ThemeQuickSwitcher';
 import { useTitlebarLOD, type TitlebarLOD } from './preview/useContainerLOD';
 
@@ -192,8 +192,8 @@ export function Titlebar({
                 lod === 'compact'
                   ? 'max-w-[90px] sm:max-w-[120px]'
                   : lod === 'medium'
-                  ? 'max-w-[150px]'
-                  : 'max-w-[220px]'
+                    ? 'max-w-[150px]'
+                    : 'max-w-[220px]'
               )}
             >
               {projectTitle}
@@ -250,8 +250,8 @@ export function Titlebar({
                 lod === 'compact'
                   ? 'w-24 sm:w-28 text-[10px]'
                   : lod === 'medium'
-                  ? 'w-36 text-[11px]'
-                  : 'w-48 xl:w-56'
+                    ? 'w-36 text-[11px]'
+                    : 'w-48 xl:w-56'
               )}
             >
               <SelectValue placeholder="Select Demo" />
@@ -708,8 +708,8 @@ export function Titlebar({
       </div>
 
       <ShortcutsModal open={isShortcutsOpen} onOpenChange={setIsShortcutsOpen} />
-      <VisualIRJsonDebuggerModal open={isDebuggerOpen} onOpenChange={setIsDebuggerOpen} />
-      <OpfsDebuggerModal open={isOpfsOpen} onOpenChange={setIsOpfsOpen} />
+      <IrVisualEditorModal open={isDebuggerOpen} onOpenChange={setIsDebuggerOpen} />
+      <OpfsExplorerModal open={isOpfsOpen} onOpenChange={setIsOpfsOpen} />
     </header>
   );
 }

@@ -35,7 +35,7 @@ import {
 import { toast } from 'sonner';
 import { ContentCacheRegistry, CacheNamespace } from '@acc/core-isomorphic';
 import { clearWaveSurferPeakCache } from './timeline/WaveSurferWaveform';
-import { OpfsDebuggerModal } from './debugger/opfs/OpfsDebuggerModal';
+import { OpfsExplorerModal } from './debugger/opfs/OpfsExplorerModal';
 
 const GLASS_STYLES: { id: GlassStyle; label: string; desc: string }[] = [
   { id: 'specular', label: 'Specular Sheen', desc: 'Sharpened top-edge highlight with rim reflection' },
@@ -128,11 +128,10 @@ export function SettingsModal() {
                     onClick={() => toggleMode()}
                     aria-pressed={preferences.mode === 'dark'}
                     aria-label="Dark Mode"
-                    className={`px-2 py-0.5 rounded-md text-[10px] font-mono flex items-center gap-1 transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-accent-theme ${
-                      preferences.mode === 'dark'
-                        ? 'bg-accent-theme/20 text-accent-theme font-bold'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-mono flex items-center gap-1 transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-accent-theme ${preferences.mode === 'dark'
+                      ? 'bg-accent-theme/20 text-accent-theme font-bold'
+                      : 'text-muted-foreground hover:text-foreground'
+                      }`}
                   >
                     <Moon className="w-2.5 h-2.5" /> Dark
                   </button>
@@ -141,11 +140,10 @@ export function SettingsModal() {
                     onClick={() => toggleMode()}
                     aria-pressed={preferences.mode === 'light'}
                     aria-label="Light Mode"
-                    className={`px-2 py-0.5 rounded-md text-[10px] font-mono flex items-center gap-1 transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-accent-theme ${
-                      preferences.mode === 'light'
-                        ? 'bg-accent-theme/20 text-accent-theme font-bold'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-mono flex items-center gap-1 transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-accent-theme ${preferences.mode === 'light'
+                      ? 'bg-accent-theme/20 text-accent-theme font-bold'
+                      : 'text-muted-foreground hover:text-foreground'
+                      }`}
                   >
                     <Sun className="w-2.5 h-2.5" /> Light
                   </button>
@@ -164,11 +162,10 @@ export function SettingsModal() {
                     key={cat.id}
                     type="button"
                     onClick={() => setSelectedCategory(cat.id)}
-                    className={`px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all shrink-0 cursor-pointer ${
-                      selectedCategory === cat.id
-                        ? 'bg-accent-theme text-primary-foreground font-semibold shadow-accent-glow'
-                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
-                    }`}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all shrink-0 cursor-pointer ${selectedCategory === cat.id
+                      ? 'bg-accent-theme text-primary-foreground font-semibold shadow-accent-glow'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+                      }`}
                   >
                     {cat.label}
                   </button>
@@ -201,11 +198,10 @@ export function SettingsModal() {
                     role="option"
                     aria-selected={isSelected}
                     onClick={() => selectPreset(preset.id)}
-                    className={`p-2.5 rounded-xl border text-left flex flex-col justify-between transition-all cursor-pointer ${
-                      isSelected
-                        ? 'border-accent-theme bg-accent-theme/15 shadow-accent-glow'
-                        : 'border-glass-border/70 hover:border-accent-theme/50 hover:bg-muted/30'
-                    }`}
+                    className={`p-2.5 rounded-xl border text-left flex flex-col justify-between transition-all cursor-pointer ${isSelected
+                      ? 'border-accent-theme bg-accent-theme/15 shadow-accent-glow'
+                      : 'border-glass-border/70 hover:border-accent-theme/50 hover:bg-muted/30'
+                      }`}
                   >
                     <div className="flex items-center justify-between w-full mb-2">
                       <div className="flex items-center gap-1.5 min-w-0">
@@ -407,7 +403,7 @@ export function SettingsModal() {
                     try {
                       const cache = ContentCacheRegistry.namespace(CacheNamespace.Assets);
                       await cache.clear();
-                    } catch {}
+                    } catch { }
                     toast.success('Cache cleared successfully');
                   }}
                   className="h-7 text-[11px] gap-1 px-2.5 border-glass-border hover:bg-destructive/10 hover:text-destructive"
@@ -463,7 +459,7 @@ export function SettingsModal() {
           </Button>
         </DialogFooter>
       </DialogContent>
-      <OpfsDebuggerModal open={isOpfsOpen} onOpenChange={setIsOpfsOpen} />
+      <OpfsExplorerModal open={isOpfsOpen} onOpenChange={setIsOpfsOpen} />
     </Dialog>
   );
 }
