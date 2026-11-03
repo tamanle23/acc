@@ -92,3 +92,4 @@
 | 426 | [Refactor AI-Supervisor for Electrobun Architecture and Clean Separation of Concerns](./426_refactor_ai_supervisor_electrobun_architecture.md) | Completed |
 | 427 | [Decouple AI-Supervisor to Headless Worker Daemon and Tauri 2.x Desktop Host](./427_decouple_ai_supervisor_to_worker_daemon_and_tauri_desktop.md) | Completed |
 | 428 | [Studio Grade UI/UX Upgrade, 20-Preset Theme System & Responsive Layout](./428_studio_grade_ui_ux_and_20_theme_presets.md) | Completed |
+| 429 | [Hide OPFS Companion Metadata Files (*.meta.json) in Studio Debugger](./429_hide_opfs_companion_metadata_files.md) | Completed |
