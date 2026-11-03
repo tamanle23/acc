@@ -271,6 +271,33 @@ describe('Studio 20 Curated Theme Presets & Responsive Layout Architecture (Task
       expect(titlebarCode).toContain('isZenMode');
     });
 
+    it('Titlebar.tsx implements adaptive LOD support with useTitlebarLOD and More Actions Popover', () => {
+      const titlebarCode = fs.readFileSync(
+        path.join(rootDir, 'apps/studio/src/components/Titlebar.tsx'),
+        'utf8'
+      );
+      expect(titlebarCode).toContain('useTitlebarLOD');
+      expect(titlebarCode).toContain('TitlebarLOD');
+      expect(titlebarCode).toContain("lod === 'compact'");
+      expect(titlebarCode).toContain("lod === 'full'");
+      expect(titlebarCode).toContain("lod !== 'full'");
+      expect(titlebarCode).toContain('Popover');
+      expect(titlebarCode).not.toContain('overflow-x-auto');
+    });
+
+    it('useContainerLOD.ts exports getTitlebarLODTier and correctly maps breakpoint widths', async () => {
+      const { getTitlebarLODTier } = await import(
+        '../apps/studio/src/components/preview/useContainerLOD'
+      );
+      expect(getTitlebarLODTier(500)).toBe('compact');
+      expect(getTitlebarLODTier(799)).toBe('compact');
+      expect(getTitlebarLODTier(800)).toBe('medium');
+      expect(getTitlebarLODTier(1100)).toBe('medium');
+      expect(getTitlebarLODTier(1279)).toBe('medium');
+      expect(getTitlebarLODTier(1280)).toBe('full');
+      expect(getTitlebarLODTier(1920)).toBe('full');
+    });
+
     it('ThemeQuickSwitcher.tsx exists and renders search, categories, and preset grid', () => {
       const switcherPath = path.join(rootDir, 'apps/studio/src/components/ThemeQuickSwitcher.tsx');
       expect(fs.existsSync(switcherPath)).toBe(true);
