@@ -1,6 +1,18 @@
-import { useState, useEffect, type RefObject } from 'react';
+import { useState, useEffect, useLayoutEffect, type RefObject } from 'react';
 
 export type PreviewLOD = 'compact' | 'medium' | 'full';
+
+/**
+ * Determine LOD tier strictly from pixel width:
+ * - 'compact' (< 640px)
+ * - 'medium' (640px - 959px)
+ * - 'full' (>= 960px)
+ */
+export function getLODTierFromWidth(width: number): PreviewLOD {
+  if (width < 640) return 'compact';
+  if (width < 960) return 'medium';
+  return 'full';
+}
 
 /**
  * useContainerLOD - Adaptive Level of Detail Hook
@@ -9,34 +21,75 @@ export type PreviewLOD = 'compact' | 'medium' | 'full';
  * - 'medium' (640px - 959px)
  * - 'full' (>= 960px)
  */
-export function useContainerLOD(ref: RefObject<HTMLElement | null>): PreviewLOD {
+export function useContainerLOD(
+  target: RefObject<HTMLElement | null> | HTMLElement | null
+): PreviewLOD {
   const [lod, setLod] = useState<PreviewLOD>('full');
 
+  // Helper to extract the element whether a RefObject or direct HTMLElement was provided
+  const getElement = (): HTMLElement | null => {
+    if (!target) return null;
+    if ('current' in target) {
+      return target.current;
+    }
+    return target;
+  };
+
+  const updateTier = (width: number) => {
+    if (width <= 0) return;
+    const nextLod = getLODTierFromWidth(width);
+    setLod((prev) => (prev !== nextLod ? nextLod : prev));
+  };
+
+  // Immediate layout effect measurement for synchronous first paint
+  useLayoutEffect(() => {
+    const el = getElement();
+    if (!el) return;
+    const initialWidth = el.getBoundingClientRect().width || el.clientWidth;
+    if (initialWidth > 0) {
+      updateTier(initialWidth);
+    }
+  });
+
   useEffect(() => {
-    const el = ref.current;
+    const el = getElement();
     if (!el) return;
 
+    // Measure immediately in effect
+    const initialWidth = el.getBoundingClientRect().width || el.clientWidth;
+    if (initialWidth > 0) {
+      updateTier(initialWidth);
+    }
+
     if (typeof ResizeObserver === 'undefined') {
-      // Safe fallback for SSR or headless environments
-      return;
+      const handleWindowResize = () => {
+        const w = el.getBoundingClientRect().width || el.clientWidth;
+        updateTier(w);
+      };
+      window.addEventListener('resize', handleWindowResize);
+      return () => window.removeEventListener('resize', handleWindowResize);
     }
 
     const observer = new ResizeObserver((entries) => {
       const entry = entries[0];
       if (!entry) return;
-      const width = entry.contentRect.width;
-      if (width < 640) {
-        setLod('compact');
-      } else if (width < 960) {
-        setLod('medium');
-      } else {
-        setLod('full');
-      }
+      const width = entry.contentRect.width || el.getBoundingClientRect().width || el.clientWidth;
+      updateTier(width);
     });
 
     observer.observe(el);
-    return () => observer.disconnect();
-  }, [ref]);
+
+    const handleWindowResize = () => {
+      const w = el.getBoundingClientRect().width || el.clientWidth;
+      updateTier(w);
+    };
+    window.addEventListener('resize', handleWindowResize);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', handleWindowResize);
+    };
+  }, [target]);
 
   return lod;
 }

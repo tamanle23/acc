@@ -45,9 +45,10 @@ function PreviewInner({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const [containerEl, setContainerEl] = useState<HTMLDivElement | null>(null);
 
   // Adaptive Container LOD (Level of Detail) Tracking for Floating HUDs
-  const containerLOD = useContainerLOD(containerRef);
+  const containerLOD = useContainerLOD(containerEl || containerRef);
 
   // Droppable container for dragging library presets into the viewport
   const { setNodeRef: setDroppableRef, isOver } = useDroppable({
@@ -258,6 +259,9 @@ function PreviewInner({
       ref={(node) => {
         containerRef.current = node;
         setDroppableRef(node);
+        if (node && node !== containerEl) {
+          setContainerEl(node);
+        }
       }}
       onMouseMove={handleMouseMove}
       onMouseUp={panZoom.handleMouseUpPan}
@@ -267,7 +271,7 @@ function PreviewInner({
         setDragCoords(null);
       }}
       onDrop={handleDrop}
-      className={`relative max-h-full max-w-full flex flex-col items-center justify-center p-0 overflow-hidden rounded-2xl select-none transition-all duration-300 ${isOver
+      className={`relative h-full w-full flex flex-col items-center justify-center p-0 overflow-hidden rounded-2xl select-none transition-all duration-300 ${isOver
         ? 'ring-2 ring-[var(--accent-primary)] shadow-[0_0_35px_var(--accent-glow)] scale-[1.005]'
         : 'hover:border-[var(--glass-border-highlight)]'
         }`}

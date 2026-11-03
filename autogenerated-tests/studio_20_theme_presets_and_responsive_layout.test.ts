@@ -328,11 +328,16 @@ describe('Studio 20 Curated Theme Presets & Responsive Layout Architecture (Task
       expect(code).toContain('absolute top-3 left-1/2 -translate-x-1/2');
       expect(code).toContain('glass-panel px-3 py-1.5 rounded-full');
 
-      // Must support adaptive PreviewLOD
+      // Must NOT use horizontal scrolling - must use adaptive LOD instead!
+      expect(code).not.toContain('overflow-x-auto');
+
+      // Must support adaptive PreviewLOD and tools popover
       expect(code).toContain('PreviewLOD');
       expect(code).toContain("lod = 'full'");
       expect(code).toContain("lod === 'compact'");
       expect(code).toContain("lod === 'full'");
+      expect(code).toContain("lod !== 'full'");
+      expect(code).toContain('Popover');
     });
 
     it('ViewportQuickTransport.tsx implements adaptive LOD support', () => {
@@ -348,6 +353,23 @@ describe('Studio 20 Curated Theme Presets & Responsive Layout Architecture (Task
       expect(code).toContain("lod !== 'compact'");
       expect(code).toContain("lod === 'full'");
       expect(code).toContain('absolute bottom-3.5 left-1/2 -translate-x-1/2');
+
+      // Must NOT use horizontal scrolling - must adapt cleanly to compact/medium/full
+      expect(code).not.toContain('overflow-x-auto');
+    });
+
+    it('useContainerLOD.ts exports getLODTierFromWidth and correctly maps breakpoint widths', async () => {
+      const { getLODTierFromWidth } = await import(
+        '../apps/studio/src/components/preview/useContainerLOD'
+      );
+      expect(getLODTierFromWidth(320)).toBe('compact');
+      expect(getLODTierFromWidth(500)).toBe('compact');
+      expect(getLODTierFromWidth(639)).toBe('compact');
+      expect(getLODTierFromWidth(640)).toBe('medium');
+      expect(getLODTierFromWidth(800)).toBe('medium');
+      expect(getLODTierFromWidth(959)).toBe('medium');
+      expect(getLODTierFromWidth(960)).toBe('full');
+      expect(getLODTierFromWidth(1440)).toBe('full');
     });
 
     it('Toolbar.tsx implements progressive collapse for responsive viewports', () => {
