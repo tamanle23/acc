@@ -77,7 +77,7 @@ public class WorkflowExecutionController {
     public record RerunTaskRequest(Map<String, Object> modifiedInput) {}
 
     @PostMapping
-    @PreAuthorize("hasAuthority('WORKFLOW_WRITE') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('workflow:execution:submit') or hasRole('ADMIN')")
     public ResponseEntity<?> startExecution(
         @RequestBody StartWorkflowRequest request,
         @RequestHeader(value = "X-Workspace-Id", required = false) String headerWorkspaceId
@@ -125,7 +125,7 @@ public class WorkflowExecutionController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAuthority('WORKFLOW_READ') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('workflow:execution:read') or hasRole('ADMIN')")
     public ResponseEntity<?> listExecutions(
         @RequestParam(value = "status", required = false) String statusStr,
         @RequestParam(value = "workflowKey", required = false) String workflowKey,
@@ -198,7 +198,7 @@ public class WorkflowExecutionController {
     }
 
     @GetMapping(value = "/{id}/events", produces = org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE)
-    @PreAuthorize("hasAuthority('WORKFLOW_READ') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('workflow:execution:read') or hasRole('ADMIN')")
     public org.springframework.web.servlet.mvc.method.annotation.SseEmitter streamExecutionEvents(
         @PathVariable("id") String id
     ) {
@@ -206,7 +206,7 @@ public class WorkflowExecutionController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAuthority('WORKFLOW_READ') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('workflow:execution:read') or hasRole('ADMIN')")
     public ResponseEntity<?> getExecution(
         @PathVariable("id") String id
     ) {
@@ -216,7 +216,7 @@ public class WorkflowExecutionController {
     }
 
     @PostMapping("/{id}/breakpoints")
-    @PreAuthorize("hasAuthority('WORKFLOW_WRITE') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('workflow:execution:submit') or hasRole('ADMIN')")
     public ResponseEntity<?> updateBreakpoints(
         @PathVariable("id") String id,
         @RequestBody UpdateBreakpointsRequest request
@@ -238,7 +238,7 @@ public class WorkflowExecutionController {
     }
 
     @PostMapping("/{id}/pause")
-    @PreAuthorize("hasAuthority('WORKFLOW_WRITE') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('workflow:execution:submit') or hasRole('ADMIN')")
     public ResponseEntity<?> pauseExecution(@PathVariable("id") String id) {
         long now = System.currentTimeMillis();
         WorkflowSnapshot updated = engineService.pauseExecution(id, now).orElse(null);
@@ -254,7 +254,7 @@ public class WorkflowExecutionController {
     }
 
     @PostMapping("/{id}/resume")
-    @PreAuthorize("hasAuthority('WORKFLOW_WRITE') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('workflow:execution:submit') or hasRole('ADMIN')")
     public ResponseEntity<?> resumeExecution(
         @PathVariable("id") String id
     ) {
@@ -281,7 +281,7 @@ public class WorkflowExecutionController {
     }
 
     @PostMapping("/{id}/step")
-    @PreAuthorize("hasAuthority('WORKFLOW_WRITE') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('workflow:execution:submit') or hasRole('ADMIN')")
     public ResponseEntity<?> stepOverExecution(
         @PathVariable("id") String id
     ) {
@@ -308,7 +308,7 @@ public class WorkflowExecutionController {
     }
 
     @PostMapping({ "/{id}/tasks/{taskRef}/rerun", "/{id}/tasks/{taskRef}/replay" })
-    @PreAuthorize("hasAuthority('WORKFLOW_WRITE') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('workflow:execution:submit') or hasRole('ADMIN')")
     public ResponseEntity<?> rerunTaskFromNode(
         @PathVariable("id") String id,
         @PathVariable("taskRef") String taskRef,
@@ -367,7 +367,7 @@ public class WorkflowExecutionController {
     }
 
     @PostMapping("/{id}/terminate")
-    @PreAuthorize("hasAuthority('WORKFLOW_WRITE') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('workflow:execution:submit') or hasRole('ADMIN')")
     public ResponseEntity<?> terminateExecution(
         @PathVariable("id") String id,
         @RequestBody(required = false) Map<String, Object> body
@@ -387,7 +387,7 @@ public class WorkflowExecutionController {
     }
 
     @PostMapping("/{id}/compensate")
-    @PreAuthorize("hasAuthority('WORKFLOW_WRITE') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('workflow:execution:submit') or hasRole('ADMIN')")
     public ResponseEntity<?> compensateExecution(
         @PathVariable("id") String id
     ) {

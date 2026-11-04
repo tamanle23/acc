@@ -20,8 +20,12 @@ import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.context.SecurityContextHolderStrategy;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 import com.acc.boot.config.properties.ApplicationProperties;
@@ -32,6 +36,9 @@ import io.jsonwebtoken.Claims;
 public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
 
   Logger logger = LoggerFactory.getLogger(JwtAuthenticationTokenFilter.class);
+
+  private final SecurityContextHolderStrategy securityContextHolderStrategy = SecurityContextHolder.getContextHolderStrategy();
+  private final SecurityContextRepository securityContextRepository = new RequestAttributeSecurityContextRepository();
 
   @Value("${application.security.jwtTokenHeader}")
   private String tokenHeaderName;
@@ -131,12 +138,16 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
     }
     Optional<JwtAuthenticationToken> authResult = attemptAuthentication(request, authenticationToken);
     if (!authResult.isPresent()) {
-      SecurityContextHolder.clearContext();
+      securityContextHolderStrategy.clearContext();
       response.setStatus(HttpStatus.UNAUTHORIZED.value());
       return;
     }
     JwtAuthenticationToken authentication = authResult.get();
-    SecurityContextHolder.getContext().setAuthentication(authentication);
+    SecurityContext securityContext = securityContextHolderStrategy.createEmptyContext();
+    securityContext.setAuthentication(authentication);
+    SecurityContextHolder.setContext(securityContext);
+    securityContextHolderStrategy.setContext(securityContext);
+    securityContextRepository.saveContext(securityContext, request, response);
     context.init(authenticationToken);
 
     String tenantId = authentication.getTenantId();

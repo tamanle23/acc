@@ -72,7 +72,8 @@ public class SecurityConfiguration {
     if (!this.environment.acceptsProfiles(Profiles.of("nonsecured"))) {
       http
         .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .securityContext(sc -> sc.requireExplicitSave(false))
         .httpBasic(hb -> hb.disable())
         .exceptionHandling(eh -> eh.authenticationEntryPoint(jwtAuthenticationEntryPoint))
         .logout(logout -> logout.permitAll());
@@ -85,10 +86,7 @@ public class SecurityConfiguration {
         authz.anyRequest().authenticated();
       });
       http.csrf(csrf -> {
-        if (applicationProperties.getSecurity() != null && applicationProperties.getSecurity().getPermitAlls() != null) {
-          csrf.ignoringRequestMatchers(applicationProperties.getSecurity().getPermitAlls());
-        }
-        csrf.ignoringRequestMatchers("/api/auth/token", "/api/auth/refresh", "/api/auth/passkey/**");
+        csrf.disable();
       });
 
       http.addFilterBefore(publishableKeyFilter(), UsernamePasswordAuthenticationFilter.class);

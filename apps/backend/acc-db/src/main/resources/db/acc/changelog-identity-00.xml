@@ -4,6 +4,9 @@
                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.6.xsd">
   <changeSet author="tamanle23" id="changelog-${schema}-000.000.00000">
+    <validCheckSum>9:261ffea56f4be9c86887a14801479336</validCheckSum>
+    <validCheckSum>9:880267f9116681913f1e007ef78a64c4</validCheckSum>
+    <validCheckSum>any</validCheckSum>
     <createTable tableName="${table_prefix}PERMISSION">
       <column autoIncrement="true" name="ID" type="INT">
         <constraints primaryKey="true" primaryKeyName="PK_PERMISSION"/>

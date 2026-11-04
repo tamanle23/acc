@@ -10,6 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { AuthorizedDropdownMenuItem } from '@/components/auth';
 import {
   MoreHorizontal,
   SlidersHorizontal,
@@ -162,27 +163,32 @@ export const createWorkflowCatalogColumns = ({
                 </Link>
               </DropdownMenuItem>
               {onFleetMigrate && (
-                <DropdownMenuItem onClick={() => onFleetMigrate(item)}>
+                <AuthorizedDropdownMenuItem
+                  permission="workflow:definition:manage"
+                  onClick={() => onFleetMigrate(item)}
+                >
                   <GitCompare className="h-4 w-4 mr-2 text-primary" />
                   Fleet Hot Migration
-                </DropdownMenuItem>
+                </AuthorizedDropdownMenuItem>
               )}
-              <DropdownMenuItem
+              <AuthorizedDropdownMenuItem
+                permission="workflow:definition:manage"
                 onClick={() =>
                   onToggleStatus(item.workflowKey, isActive ? 'DISABLED' : 'ACTIVE')
                 }
               >
                 <Power className="h-4 w-4 mr-2" />
                 {isActive ? 'Disable Workflow' : 'Enable Workflow'}
-              </DropdownMenuItem>
+              </AuthorizedDropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem
+              <AuthorizedDropdownMenuItem
+                permission="workflow:definition:manage"
                 className="text-destructive focus:text-destructive"
                 onClick={() => onDeleteWorkflow(item.workflowKey)}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Delete
-              </DropdownMenuItem>
+              </AuthorizedDropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

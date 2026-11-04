@@ -100,3 +100,4 @@
 | 434 | [Fix /api/auth/me Token Claims Fallback and JWT Audience Validation](./434_fix_auth_me_token_claims_fallback_and_jwt_audience_validation.md) | Completed |
 | 435 | [Seed Sandbox Personas and UserDetails into Sandbox PostgreSQL](./435_seed_sandbox_personas_and_userdetails_into_sandbox_postgres.md) | Completed |
 | 436 | [Suppress HTTP Basic Auth Dialog and Wire Dedicated JWT Authentication Entry Point](./436_suppress_http_basic_and_wire_jwt_auth_entry_point.md) | Completed |
+| 437 | [Declarative Client Authorization Safeguards & Dual-Gate Pre-Flight Defense](./437_declarative_client_authorization_safeguards.md) | Completed |

@@ -56,7 +56,7 @@ class TokenServiceImplTest {
                 new SimpleGrantedAuthority("ROLE_WORKSPACE_OWNER"),
                 new SimpleGrantedAuthority("ROLE_ADMIN"),
                 new SimpleGrantedAuthority("metadata:schema:read"),
-                new SimpleGrantedAuthority("metadata:record:read")
+                new SimpleGrantedAuthority("entity:record:read")
         );
 
         JwtAuthenticationToken token = new JwtAuthenticationToken(username, claims, authorities, "tenant-acme");
@@ -68,7 +68,7 @@ class TokenServiceImplTest {
         assertThat(profile.getUserId()).isEqualTo("usr_sandbox_admin_001");
         assertThat(profile.getTenantId()).isEqualTo("tenant-acme");
         assertThat(profile.getRoles()).containsExactlyInAnyOrder("ROLE_WORKSPACE_OWNER", "ROLE_ADMIN");
-        assertThat(profile.getPermissions()).containsExactlyInAnyOrder("metadata:schema:read", "metadata:record:read");
+        assertThat(profile.getPermissions()).containsExactlyInAnyOrder("metadata:schema:read", "entity:record:read");
     }
 
     @Test

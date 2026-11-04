@@ -46,6 +46,7 @@ describe('usePermissions Hook - Sovereign & Tenant Roles', () => {
       user: {
         sub: 'alice',
         roles: ['ROLE_WORKSPACE_OWNER'],
+        permissions: ['metadata:schema:write', 'entity:record:create', 'entity:record:update'],
         tenantId: 'tenant-acme',
       } as any,
     });
@@ -64,6 +65,7 @@ describe('usePermissions Hook - Sovereign & Tenant Roles', () => {
       user: {
         sub: 'bob',
         roles: ['ROLE_STANDARD_MEMBER'],
+        permissions: ['entity:record:create', 'entity:record:update'],
         tenantId: 'tenant-logistics',
       } as any,
     });

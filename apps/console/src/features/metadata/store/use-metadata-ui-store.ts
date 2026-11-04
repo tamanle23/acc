@@ -42,8 +42,6 @@ interface MetadataUiState {
   setCurrentUserRole: (role: TenantRole) => void;
   setActiveTenant: (tenantId: string, tenantName?: string) => void;
   setActiveWorkspace: (workspaceId: string, workspaceName?: string) => void;
-  canManageSchema: () => boolean;
-  canMutateRecords: () => boolean;
 
   // Navigation & selection
   selectedEntityTypeId: string | null;
@@ -199,49 +197,6 @@ export const useMetadataUiStore = create<MetadataUiState>((set, get) => ({
       activeWorkspaceId: workspaceId,
       activeWorkspaceName: workspaceName || workspaceId,
     });
-  },
-
-  canManageSchema: () => {
-    const { currentUserRole, workspaceMode, activeTenantId } = get();
-
-    // Dynamically derive sovereign custodian status from authenticated user credentials
-    const authState = useSpringAuthStore.getState();
-    const user = authState.user;
-    const userRoles = user?.roles || [];
-    const isSovereignCustodian = Boolean(
-      userRoles.includes('ROLE_SYSTEM_CUSTODIAN') ||
-      activeTenantId === 'SYSTEM' ||
-      user?.tenantId === 'SYSTEM' ||
-      user?.tid === 'SYSTEM'
-    );
-
-    // Sovereign root custodian possesses absolute schema authority unconditionally
-    if (isSovereignCustodian) {
-      return true;
-    }
-
-    return currentUserRole === 'TENANT_ADMIN' && workspaceMode === 'architect';
-  },
-
-  canMutateRecords: () => {
-    const { currentUserRole, activeTenantId } = get();
-
-    // Dynamically derive sovereign custodian status from authenticated user credentials
-    const authState = useSpringAuthStore.getState();
-    const user = authState.user;
-    const userRoles = user?.roles || [];
-    const isSovereignCustodian = Boolean(
-      userRoles.includes('ROLE_SYSTEM_CUSTODIAN') ||
-      activeTenantId === 'SYSTEM' ||
-      user?.tenantId === 'SYSTEM' ||
-      user?.tid === 'SYSTEM'
-    );
-
-    if (isSovereignCustodian) {
-      return true;
-    }
-
-    return currentUserRole !== 'TENANT_VIEWER';
   },
 
   selectedEntityTypeId: '1',

@@ -4,6 +4,7 @@ import { useMetadataUiStore } from '../../store/use-metadata-ui-store';
 import type { EntityType } from '../../api/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { AuthorizedButton, AuthorizedDropdownMenuItem } from '@/components/auth';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -51,7 +52,6 @@ export const EntityTypeSidebar: React.FC = () => {
   const {
     selectedEntityTypeId,
     setSelectedEntityTypeId,
-    canManageSchema,
     openCreateEntityTypeDialog,
     openEditEntityTypeDialog,
     openDeleteEntityTypeDialog,
@@ -155,32 +155,32 @@ export const EntityTypeSidebar: React.FC = () => {
           >
             {isMobileExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </Button>
-          {canManageSchema() && (
-            <div className="flex items-center gap-1">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={openBlueprintGallery}
-                disabled={isQuotaExceeded}
-                className="h-8 px-2 gap-1 text-xs bg-white/40 dark:bg-white/5 border-white/20 shrink-0 text-blue-600 dark:text-blue-400 hover:text-blue-700 disabled:opacity-50"
-                title={isQuotaExceeded ? `Model quota reached (${maxSchemas} max)` : "Browse Domain Blueprint Catalog"}
-              >
-                <Sparkles className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Templates</span>
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={openCreateEntityTypeDialog}
-                disabled={isQuotaExceeded}
-                className="h-8 px-2 gap-1 text-xs bg-white/40 dark:bg-white/5 border-white/20 shrink-0 disabled:opacity-50"
-                title={isQuotaExceeded ? `Model quota reached (${maxSchemas} max)` : "Create New Entity Model"}
-              >
-                <Plus className="h-3.5 w-3.5" />
-                <span>New</span>
-              </Button>
-            </div>
-          )}
+          <div className="flex items-center gap-1">
+            <AuthorizedButton
+              permission="metadata:schema:write"
+              size="sm"
+              variant="outline"
+              onClick={openBlueprintGallery}
+              disabled={isQuotaExceeded}
+              className="h-8 px-2 gap-1 text-xs bg-white/40 dark:bg-white/5 border-white/20 shrink-0 text-blue-600 dark:text-blue-400 hover:text-blue-700 disabled:opacity-50"
+              title={isQuotaExceeded ? `Model quota reached (${maxSchemas} max)` : "Browse Domain Blueprint Catalog"}
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Templates</span>
+            </AuthorizedButton>
+            <AuthorizedButton
+              permission="metadata:schema:write"
+              size="sm"
+              variant="outline"
+              onClick={openCreateEntityTypeDialog}
+              disabled={isQuotaExceeded}
+              className="h-8 px-2 gap-1 text-xs bg-white/40 dark:bg-white/5 border-white/20 shrink-0 disabled:opacity-50"
+              title={isQuotaExceeded ? `Model quota reached (${maxSchemas} max)` : "Create New Entity Model"}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span>New</span>
+            </AuthorizedButton>
+          </div>
         </div>
       </div>
 
@@ -288,39 +288,39 @@ export const EntityTypeSidebar: React.FC = () => {
                   </span>
                 </div>
 
-                {canManageSchema() && (
-                  <div
-                    className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button
-                          className={`p-1 rounded min-h-[28px] min-w-[28px] flex items-center justify-center hover:bg-white/20 ${
-                            isSelected ? 'text-primary-foreground' : 'text-muted-foreground'
-                          }`}
-                          aria-label={`Actions for ${et.name}`}
-                        >
-                          <MoreVertical className="h-3.5 w-3.5" />
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="text-xs">
-                        <DropdownMenuItem
-                          onClick={() => openEditEntityTypeDialog(et)}
-                          className="gap-2"
-                        >
-                          <Edit2 className="h-3.5 w-3.5" /> Edit Model
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => openDeleteEntityTypeDialog(et)}
-                          className="gap-2 text-destructive focus:text-destructive"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" /> Delete Model
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                )}
+                <div
+                  className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        className={`p-1 rounded min-h-[28px] min-w-[28px] flex items-center justify-center hover:bg-white/20 ${
+                          isSelected ? 'text-primary-foreground' : 'text-muted-foreground'
+                        }`}
+                        aria-label={`Actions for ${et.name}`}
+                      >
+                        <MoreVertical className="h-3.5 w-3.5" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="text-xs">
+                      <AuthorizedDropdownMenuItem
+                        permission="metadata:schema:write"
+                        onClick={() => openEditEntityTypeDialog(et)}
+                        className="gap-2"
+                      >
+                        <Edit2 className="h-3.5 w-3.5" /> Edit Model
+                      </AuthorizedDropdownMenuItem>
+                      <AuthorizedDropdownMenuItem
+                        permission="metadata:schema:write"
+                        onClick={() => openDeleteEntityTypeDialog(et)}
+                        className="gap-2 text-destructive focus:text-destructive"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" /> Delete Model
+                      </AuthorizedDropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
             );
           })

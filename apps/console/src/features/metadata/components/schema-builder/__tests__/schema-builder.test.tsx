@@ -7,6 +7,7 @@ import { useMetadataUiStore } from '../../../store/use-metadata-ui-store';
 import * as metadataApi from '../../../api/metadata-api';
 import * as billingApi from '../../../api/use-billing';
 import * as permissionsHook from '@/features/spring-auth';
+import { useSandboxStore } from '@/core/sandbox/store/sandbox-store';
 import type { AttributeDefinition, EntityType } from '../../../api/types';
 
 vi.mock('../../../api/metadata-api', async (importOriginal) => {
@@ -28,12 +29,13 @@ vi.mock('../../../api/use-billing', () => ({
   useTenantBilling: vi.fn(),
 }));
 
-vi.mock('@/features/spring-auth', () => ({
-  usePermissions: vi.fn(),
-  useSpringAuthStore: {
-    getState: () => ({ isSandbox: true }),
-  },
-}));
+vi.mock('@/features/spring-auth', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, any>>();
+  return {
+    ...actual,
+    usePermissions: vi.fn(),
+  };
+});
 
 vi.mock('../../studio', () => ({
   VisualSchemaStudio: () => <div data-testid="visual-schema-studio">Visual Schema Studio</div>,
@@ -105,6 +107,8 @@ describe('SchemaBuilder Component Integration', () => {
     vi.mocked(permissionsHook.usePermissions).mockReturnValue({
       isSovereignCustodian: false,
     } as any);
+
+    useSandboxStore.setState({ enabled: true, activePersonaId: 'admin' });
 
     const store = useMetadataUiStore.getState();
     store.closeAttributeDialog();

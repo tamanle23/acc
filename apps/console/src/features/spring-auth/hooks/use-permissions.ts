@@ -1,4 +1,5 @@
 import { useSpringAuthStore } from '../store';
+import { useHasPermission } from '@/features/system/hooks/use-has-permission';
 
 /**
  * Standard enterprise hook providing reactive permissions and sovereign authority
@@ -7,6 +8,13 @@ import { useSpringAuthStore } from '../store';
 export function usePermissions() {
   const user = useSpringAuthStore((state) => state.user);
   const currentTenantId = useSpringAuthStore((state) => state.currentTenantId);
+
+  const canManageSchema = useHasPermission('metadata:schema:write');
+  const canMutateRecords = useHasPermission(['entity:record:create', 'entity:record:update'], 'any');
+  const canManageWorkflows = useHasPermission('workflow:definition:manage');
+  const canSubmitWorkflows = useHasPermission('workflow:execution:submit');
+  const canApproveWorkflows = useHasPermission('workflow:approval:execute');
+  const canManageWorkers = useHasPermission('platform:workers:manage');
 
   const roles = user?.roles || [];
 
@@ -53,8 +61,12 @@ export function usePermissions() {
     isAuditor,
     isAdmin,
     isOperator,
-    canManageSchema: isAdmin || isOperationsManager,
-    canMutateRecords: isOperator || isStandardMember,
+    canManageSchema,
+    canMutateRecords,
+    canManageWorkflows,
+    canSubmitWorkflows,
+    canApproveWorkflows,
+    canManageWorkers,
     canVerifyTasks: isSovereignVerifier || isSovereignRoot,
     canApproveQuorum: isSovereignApprover || isSovereignRoot,
   };

@@ -1,6 +1,8 @@
 import { springApiClient } from '@/features/spring-auth/api-client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useMetadataUiStore } from '../store/use-metadata-ui-store';
+import { useSpringAuthStore } from '@/features/spring-auth';
+import { useHasPermission } from '@/features/system/hooks/use-has-permission';
 import type {
   SubscriptionTier,
   QuotaUsage,
@@ -35,6 +37,8 @@ export interface ContactSalesPayload {
  */
 export function useTenantBilling() {
   const activeTenantId = useMetadataUiStore((s) => s.activeTenantId);
+  const isAuthenticated = useSpringAuthStore((s) => s.isAuthenticated);
+  const canReadBilling = useHasPermission('billing:subscription:read');
 
   return useQuery<TenantBillingSummary>({
     queryKey: ['billing-summary', activeTenantId],
@@ -42,6 +46,8 @@ export function useTenantBilling() {
       const res = await springApiClient.get('/v1/billing/summary');
       return res.data?.data || res.data;
     },
+    enabled: Boolean(isAuthenticated && activeTenantId && canReadBilling),
+    retry: false, // Fail fast on 401/403/429; do not spam or loop requests
     staleTime: 1000 * 60 * 5, // 5 mins
   });
 }

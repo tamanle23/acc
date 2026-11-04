@@ -24,6 +24,7 @@ import { TableViewsPopover, type GridDensity } from './table-views-popover';
 import { MasterDetailRowInspector } from './master-detail-row-inspector';
 import { JsonCellPopover } from '@/components/ui/json-editor';
 import { useHasPermission } from '@/features/system/hooks/use-has-permission';
+import { AuthorizedButton, AuthorizedDropdownMenuItem } from '@/components/auth';
 import {
   Tooltip,
   TooltipContent,
@@ -880,14 +881,13 @@ export const EntityDataGrid: React.FC<Props> = ({
                     <DropdownMenuSeparator />
                   </>
                 )}
-                <DropdownMenuItem
+                <AuthorizedDropdownMenuItem
+                  permission="entity:record:update"
                   onClick={() => openEditRecordDialog(row.original)}
-                  disabled={!canUpdateRecord}
-                  title={!canUpdateRecord ? 'Requires entity:record:update permission' : undefined}
-                  className={cn("gap-2", !canUpdateRecord && "opacity-50 cursor-not-allowed")}
+                  className="gap-2"
                 >
                   <Edit2 className="h-3.5 w-3.5" /> Edit Record
-                </DropdownMenuItem>
+                </AuthorizedDropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => openRecordRelationshipsInspector(row.original)}
                   className="gap-2 text-primary focus:text-primary"
@@ -908,17 +908,13 @@ export const EntityDataGrid: React.FC<Props> = ({
                 >
                   <Code className="h-3.5 w-3.5" /> View Raw JSON
                 </DropdownMenuItem>
-                <DropdownMenuItem
+                <AuthorizedDropdownMenuItem
+                  permission="entity:record:delete"
                   onClick={() => openDeleteRecordDialog(row.original)}
-                  disabled={!canDeleteRecord}
-                  title={!canDeleteRecord ? 'Requires entity:record:delete permission' : undefined}
-                  className={cn(
-                    "gap-2 text-destructive focus:text-destructive",
-                    !canDeleteRecord && "opacity-40 cursor-not-allowed text-muted-foreground focus:text-muted-foreground"
-                  )}
+                  className="gap-2 text-destructive focus:text-destructive"
                 >
                   <Trash2 className="h-3.5 w-3.5" /> Delete Record
-                </DropdownMenuItem>
+                </AuthorizedDropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -1192,7 +1188,8 @@ export const EntityDataGrid: React.FC<Props> = ({
 
           <DataTableViewOptions table={table} />
 
-          <Button
+          <AuthorizedButton
+            permission="entity:record:export"
             variant="outline"
             size="sm"
             onClick={handleExportJson}
@@ -1202,34 +1199,17 @@ export const EntityDataGrid: React.FC<Props> = ({
           >
             <Download className="h-4 w-4" aria-hidden="true" />
             <span>Export JSON</span>
-          </Button>
+          </AuthorizedButton>
 
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span>
-                  <Button
-                    size="sm"
-                    onClick={openCreateRecordDialog}
-                    disabled={!canCreateRecord}
-                    aria-label={!canCreateRecord ? 'New record disabled: requires entity:record:create permission' : 'Create new entity record'}
-                    className={cn(
-                      "h-9 gap-1.5 text-xs shadow-md shadow-primary/20",
-                      !canCreateRecord && "opacity-50 cursor-not-allowed pointer-events-none"
-                    )}
-                  >
-                    <Plus className="h-4 w-4" />
-                    <span>New Record</span>
-                  </Button>
-                </span>
-              </TooltipTrigger>
-              {!canCreateRecord && (
-                <TooltipContent side="bottom" className="text-xs">
-                  Requires entity:record:create permission
-                </TooltipContent>
-              )}
-            </Tooltip>
-          </TooltipProvider>
+          <AuthorizedButton
+            permission="entity:record:create"
+            size="sm"
+            onClick={openCreateRecordDialog}
+            className="h-9 gap-1.5 text-xs shadow-md shadow-primary/20"
+          >
+            <Plus className="h-4 w-4" />
+            <span>New Record</span>
+          </AuthorizedButton>
         </div>
       </div>
 

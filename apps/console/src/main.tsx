@@ -37,13 +37,18 @@ const queryClient = new QueryClient({
         // eslint-disable-next-line no-console
         if (import.meta.env.DEV) console.log({ failureCount, error })
 
+        // Immediately halt retries on rate limit (429) or forbidden/unauthorized (401/403)
+        if (
+          error instanceof AxiosError &&
+          [401, 403, 429].includes(error.response?.status ?? 0)
+        ) {
+          return false
+        }
+
         if (failureCount >= 0 && import.meta.env.DEV) return false
         if (failureCount > 3 && import.meta.env.PROD) return false
 
-        return !(
-          error instanceof AxiosError &&
-          [401, 403].includes(error.response?.status ?? 0)
-        )
+        return true
       },
       refetchOnWindowFocus: import.meta.env.PROD,
       staleTime: 10 * 1000, // 10s

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { useSandboxStore } from '@/core/sandbox/store/sandbox-store';
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { SchemaBuilder } from '../schema-builder';
@@ -22,7 +23,13 @@ vi.mock('../../../api/metadata-api', () => ({
   }),
 }));
 vi.mock('../../../api/use-billing', () => ({ useTenantBilling: () => ({ data: undefined }) }));
-vi.mock('@/features/spring-auth', () => ({ usePermissions: () => ({ isSovereignCustodian: false }) }));
+vi.mock('@/features/spring-auth', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, any>>();
+  return {
+    ...actual,
+    usePermissions: () => ({ isSovereignCustodian: false }),
+  };
+});
 vi.mock('../../../store/use-metadata-ui-store', () => ({
   useMetadataUiStore: () => STABLE_UI,
 }));
@@ -35,6 +42,7 @@ vi.mock('../schema-json-preview', () => ({ SchemaJsonPreview: () => null }));
 describe('SchemaBuilder composite lock', () => {
   beforeEach(() => {
     mocks.isComposite = false;
+    useSandboxStore.setState({ enabled: true, activePersonaId: 'admin' });
   });
 
   it('composite: shows only the studio, no manual field controls', () => {

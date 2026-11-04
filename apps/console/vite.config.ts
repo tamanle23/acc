@@ -67,7 +67,7 @@ export default defineConfig(({ mode }) => {
     server: {
       proxy: {
         '/api': {
-          target: apiUrl || 'http://localhost:8000', // Your Spring Boot backend
+          target: apiUrl || 'http://localhost:8080', // Spring Boot backend (dev:sandbox runs on 8080)
           changeOrigin: true,
           secure: false,
         },
