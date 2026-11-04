@@ -104,6 +104,30 @@ public class TokenServiceImpl extends CommonReponseBuilder implements TokenServi
   }
 
   @Override
+  public com.acc.system.dto.AuthenticationProfileDto getAuthenticationProfile(org.springframework.security.core.Authentication authentication) {
+    if (authentication == null) {
+      throw BusinessException.create().add(ErrorCodes.ERROR_LOGIN_INVALID_CREDENTIALS).setHttpCode(HttpStatus.UNAUTHORIZED.value());
+    }
+    UserDetailsImpl userDetails = null;
+    if (authentication.getPrincipal() instanceof UserDetailsImpl udi) {
+      userDetails = udi;
+    } else if (authentication.getName() != null) {
+      try {
+        UserDetails loaded = userDetailsService.loadUserByUsername(authentication.getName());
+        if (loaded instanceof UserDetailsImpl udi) {
+          userDetails = udi;
+        }
+      } catch (Exception e) {
+        logger.warn("Could not load user details for {}: {}", authentication.getName(), e.getMessage());
+      }
+    }
+    if (userDetails == null) {
+      throw BusinessException.create().add(ErrorCodes.ERROR_LOGIN_INVALID_CREDENTIALS).setHttpCode(HttpStatus.UNAUTHORIZED.value());
+    }
+    return getAuthenticationProfile(userDetails);
+  }
+
+  @Override
   public com.acc.system.dto.AuthenticationProfileDto getAuthenticationProfile(UserDetailsImpl userDetails) {
     if (userDetails == null) {
       throw BusinessException.create().add(ErrorCodes.ERROR_LOGIN_INVALID_CREDENTIALS).setHttpCode(HttpStatus.UNAUTHORIZED.value());
@@ -111,6 +135,9 @@ public class TokenServiceImpl extends CommonReponseBuilder implements TokenServi
     String username = userDetails.getUsername();
     String userId = userDetails.getUid();
     String tenantId = com.acc.fw.tenancy.TenantContextHolder.getTenantId();
+    if (org.apache.commons.lang3.StringUtils.isBlank(tenantId)) {
+      tenantId = userDetails.getTenantId();
+    }
     if (org.apache.commons.lang3.StringUtils.isBlank(tenantId)) {
       tenantId = "SYSTEM";
     }

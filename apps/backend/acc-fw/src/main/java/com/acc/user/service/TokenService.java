@@ -17,4 +17,6 @@ public interface TokenService {
   void logout();
 
   com.acc.system.dto.AuthenticationProfileDto getAuthenticationProfile(com.acc.service.authentication.UserDetailsImpl userDetails);
+
+  com.acc.system.dto.AuthenticationProfileDto getAuthenticationProfile(org.springframework.security.core.Authentication authentication);
 }

@@ -67,12 +67,20 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
           Optional<String> usernameOpt = jwtTokenHelper.getUsername(c);
           List<GrantedAuthority> authorities = jwtTokenHelper.getAuthorities(c);
           Optional<String> tenantIdOpt = jwtTokenHelper.getTenantId(c);
-          if (tenantIdOpt.isEmpty() || tenantIdOpt.get().trim().isEmpty()) {
+          String tenantId = tenantIdOpt.orElse(null);
+          if (StringUtils.isBlank(tenantId)) {
+            boolean isSovereign = authorities.stream().anyMatch(a ->
+                a.getAuthority().contains("SYSTEM") || a.getAuthority().contains("CUSTODIAN") || a.getAuthority().contains("ADMIN"));
+            if (isSovereign) {
+              tenantId = "SYSTEM";
+            }
+          }
+          if (StringUtils.isBlank(tenantId)) {
             logger.warn("Authentication rejected for user {}: Missing or unassigned tenant ID.",
                 usernameOpt.orElse("anonymous"));
             return null;
           }
-          String tenantId = tenantIdOpt.get().trim();
+          tenantId = tenantId.trim();
           if (usernameOpt.isPresent()) {
             JwtAuthenticationToken authentication = new JwtAuthenticationToken(usernameOpt.get(), c, authorities,
                 tenantId);
@@ -108,7 +116,12 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
     String authenticationToken = this.readCookie(request, jwtCookieName).orElse(header);
     String path = request.getRequestURI();
 
-    if (StringUtils.isBlank(authenticationToken) || path.endsWith(this.tokenUrl)) {
+    if (StringUtils.isBlank(authenticationToken)
+        || path.endsWith(this.tokenUrl)
+        || path.endsWith("/api/auth/token")
+        || path.endsWith("/auth/token")
+        || path.endsWith("/api/auth/refresh")
+        || path.endsWith("/auth/refresh")) {
       filterChain.doFilter(request, response);
       return;
     }

@@ -17,6 +17,7 @@ application:
       - /resources/**
       - /jsMsgSource*
       - /api/auth/token
+      - /api/auth/refresh
       - /api/scheduler/**
       - /fs/explorer/**
       - /v3/api-docs/**

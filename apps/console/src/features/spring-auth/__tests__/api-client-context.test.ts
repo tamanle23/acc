@@ -93,4 +93,29 @@ describe('springApiClient Context Header Injection', () => {
     expect(traceparent).toBeDefined();
     expect(traceparent).toMatch(/^00-[a-f0-9]{32}-[a-f0-9]{16}-01$/);
   });
+
+  it('omits Authorization header when calling /auth/refresh to prevent invalidating refresh requests', async () => {
+    useSpringAuthStore.setState({ accessToken: 'expired-access-token', refreshToken: 'mock-refresh' });
+
+    let capturedConfig: any = null;
+    const originalAdapter = springApiClient.defaults.adapter;
+    springApiClient.defaults.adapter = async (config) => {
+      capturedConfig = config;
+      return {
+        data: { body: { accessToken: 'new-token' } },
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config,
+      };
+    };
+
+    try {
+      await springApiClient.post('/auth/refresh', { refreshToken: 'mock-refresh' });
+    } finally {
+      springApiClient.defaults.adapter = originalAdapter;
+    }
+
+    expect(capturedConfig.headers['Authorization']).toBeUndefined();
+  });
 });

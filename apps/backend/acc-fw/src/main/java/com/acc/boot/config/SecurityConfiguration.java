@@ -75,12 +75,14 @@ public class SecurityConfiguration {
         if (applicationProperties.getSecurity() != null && applicationProperties.getSecurity().getPermitAlls() != null) {
           authz.requestMatchers(applicationProperties.getSecurity().getPermitAlls()).permitAll();
         }
+        authz.requestMatchers("/api/auth/token", "/api/auth/refresh", "/api/auth/passkey/**").permitAll();
         authz.anyRequest().authenticated();
       });
       http.csrf(csrf -> {
         if (applicationProperties.getSecurity() != null && applicationProperties.getSecurity().getPermitAlls() != null) {
           csrf.ignoringRequestMatchers(applicationProperties.getSecurity().getPermitAlls());
         }
+        csrf.ignoringRequestMatchers("/api/auth/token", "/api/auth/refresh", "/api/auth/passkey/**");
       });
 
       http.addFilterBefore(publishableKeyFilter(), UsernamePasswordAuthenticationFilter.class);

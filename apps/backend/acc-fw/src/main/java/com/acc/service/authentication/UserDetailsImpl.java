@@ -75,6 +75,10 @@ public class UserDetailsImpl implements UserDetails {
     return (String) this.userDetails.get("uid");
   }
 
+  public String getTenantId() {
+    return (String) this.userDetails.get("tenantId");
+  }
+
   @Override
   public boolean isAccountNonExpired() {
     return (boolean) this.userDetails.get("isNonExpired");

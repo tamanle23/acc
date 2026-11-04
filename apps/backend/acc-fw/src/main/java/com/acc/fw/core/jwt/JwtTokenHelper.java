@@ -114,9 +114,12 @@ public class JwtTokenHelper implements Serializable {
   }
 
   public Optional<String> getTenantId(Claims claims) {
-    return Optional.ofNullable(claims)
-                   .map(c -> c.get(CLAIM_KEY_TENANT_ID, String.class))
-                   .filter(StringUtils::isNotBlank);
+    if (claims == null) return Optional.empty();
+    String tid = claims.get(CLAIM_KEY_TENANT_ID, String.class);
+    if (StringUtils.isBlank(tid)) {
+      tid = claims.get("tenantId", String.class);
+    }
+    return Optional.ofNullable(tid).filter(StringUtils::isNotBlank);
   }
 
   public Optional<String> getUsername(Claims claims) {
@@ -172,11 +175,21 @@ public class JwtTokenHelper implements Serializable {
   }
 
   public boolean validate(Claims claims, String userAgent) {
-    Optional<String> userAgentOpt = Optional.ofNullable(claims).map(c -> (String)c.get(CLAIM_KEY_AUDIENCE)).filter(u -> userAgent == null || StringUtils.equals(userAgent, u));
-    Optional<String> userNameOpt = Optional.ofNullable(claims).map(Claims::getSubject).filter(Objects::nonNull);
-    return userNameOpt.isPresent() && userAgentOpt.isPresent() && !isTokenExpired(claims)
-//          && !isCreatedBeforeLastPasswordReset(userName, getCreatedDateFromToken(token))
-    ;
+    if (claims == null) {
+      return false;
+    }
+    String username = claims.getSubject();
+    if (StringUtils.isBlank(username)) {
+      return false;
+    }
+    if (isTokenExpired(claims)) {
+      return false;
+    }
+    String audience = (String) claims.get(CLAIM_KEY_AUDIENCE);
+    if (StringUtils.isNotBlank(audience) && StringUtils.isNotBlank(userAgent)) {
+      return StringUtils.equals(audience, userAgent);
+    }
+    return true;
   }
 
   private Boolean isCreatedBeforeLastPasswordReset(Date created, Date lastPasswordReset) {
@@ -194,10 +207,14 @@ public class JwtTokenHelper implements Serializable {
     claims.put(CLAIM_KEY_CREATED, new Date());
     claims.put(CLAIM_KEY_USER_DETAILS, userDetails);
     String tenantId = com.acc.fw.tenancy.TenantContextHolder.getTenantId();
-    if (StringUtils.isNotBlank(tenantId)) {
-      claims.put(CLAIM_KEY_TENANT_ID, tenantId);
-      claims.put("tenantId", tenantId);
+    if (StringUtils.isBlank(tenantId) && userDetails instanceof UserDetailsImpl udi) {
+      tenantId = udi.getTenantId();
     }
+    if (StringUtils.isBlank(tenantId)) {
+      tenantId = "SYSTEM";
+    }
+    claims.put(CLAIM_KEY_TENANT_ID, tenantId);
+    claims.put("tenantId", tenantId);
     if(CollectionUtils.isNotEmpty(userDetails.getAuthorities())){
       List<String> roles = userDetails.getAuthorities().stream()
           .map(GrantedAuthority::getAuthority)

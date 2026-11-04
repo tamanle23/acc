@@ -39,8 +39,9 @@ springApiClient.interceptors.request.use(
     const { accessToken } = useSpringAuthStore.getState();
     const assumedToken = typeof window !== 'undefined' ? localStorage.getItem('acc_assumed_token') : null;
     const effectiveToken = assumedToken || accessToken;
+    const isRefreshRequest = Boolean(config.url && config.url.includes('/auth/refresh'));
 
-    if (effectiveToken && config.headers) {
+    if (effectiveToken && config.headers && !isRefreshRequest) {
       config.headers['Authorization'] = `Bearer ${effectiveToken}`;
     }
 
@@ -110,8 +111,8 @@ springApiClient.interceptors.response.use(
 
         const { data } = await springApiClient.post('/auth/refresh', payload);
 
-        const newAccess = data.accessToken;
-        const newRefresh = data.refreshToken || state.refreshToken;
+        const newAccess = data?.body?.accessToken || data?.accessToken;
+        const newRefresh = data?.body?.refreshToken || data?.refreshToken || state.refreshToken;
 
         state.setTokens(newAccess, newRefresh);
         processQueue(null, newAccess);

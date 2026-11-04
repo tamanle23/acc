@@ -95,3 +95,4 @@
 | 429 | [Hide OPFS Companion Metadata Files (*.meta.json) in Studio Debugger](./429_hide_opfs_companion_metadata_files.md) | Completed |
 | 430 | [Clean Cross-Stack Authorization & User Profile Architecture](./430_clean_cross_stack_authorization_and_user_profile.md) | Completed |
 | 431 | [Fix Console Login Session Hydration and Route Guard Bounce](./431_fix_console_login_hydration_stuck_on_sign_in.md) | Completed |
+| 432 | [Fix /api/auth/me and /api/auth/refresh 401 Unauthorized Post-Login](./432_fix_auth_me_and_refresh_401_unauthorized.md) | Completed |
