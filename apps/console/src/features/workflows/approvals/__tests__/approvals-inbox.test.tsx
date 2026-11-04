@@ -4,6 +4,7 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ApprovalsInbox } from '../approvals-inbox';
 import { approvalTaskMockStore } from '@/core/sandbox';
+import { useSandboxStore } from '@/core/sandbox/store/sandbox-store';
 
 class MockEventSource {
   public static instances: MockEventSource[] = [];
@@ -39,6 +40,7 @@ describe('ApprovalsInbox Component', () => {
 
   beforeEach(() => {
     approvalTaskMockStore.reset();
+    useSandboxStore.setState({ enabled: true, activePersonaId: 'admin' });
     queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });

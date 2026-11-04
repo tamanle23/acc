@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { StudioPlayheadController } from '../apps/studio/src/lib/playhead/StudioPlayheadController';
+import { PlayheadController } from '../apps/studio/src/lib/playhead/PlayheadController';
 import { WorkerRenderStrategy } from '../apps/studio/src/renderer/strategies/WorkerRenderStrategy';
 
 const root = resolve(import.meta.dir, '..');
@@ -9,7 +9,7 @@ const read = (rel: string): string => readFileSync(resolve(root, rel), 'utf8');
 
 describe('Iteration 60: preview playback smoothness', () => {
   it('Fractional Playhead Subscription: passes fractionalFrame on high-frequency ticks', () => {
-    const ctrl = StudioPlayheadController.getInstance();
+    const ctrl = PlayheadController.getInstance();
     ctrl.setConfig(30, 300);
     const received: Array<[number, boolean, number | undefined]> = [];
     const unsub = ctrl.subscribeHighFrequency((f, p, frac) => {

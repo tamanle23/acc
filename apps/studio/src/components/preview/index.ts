@@ -1,9 +1,11 @@
 export * from './ViewportControlBar';
 export * from './ViewportSafeGuides';
+export * from './ViewportQuickTransport';
 export * from './ContextualActionPill';
 export * from './TelemetryCompanionCard';
 export * from './TransformHandles';
 export * from './InlineTextEditorModal';
+export * from './InPlaceTextEditor';
 export * from './UniversalCanvasHitOverlay';
 export * from './StagingDropTargetOverlay';
 export * from './TransformGizmoOverlay';
@@ -15,3 +17,4 @@ export * from './useViewportPanZoom';
 export * from './useGizmoTransform';
 export * from './usePreviewHotkeys';
 export * from './useViewportRenderStrategy';
+export * from './useContainerLOD';

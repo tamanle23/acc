@@ -13,10 +13,10 @@ public record TaskDefinition(
     String taskReferenceName,
     TaskType taskType,
     String domain,
-    int timeoutSeconds,
-    int retryCount,
-    int retryDelaySeconds,
-    double backoffRate,
+    Integer timeoutSeconds,
+    Integer retryCount,
+    Integer retryDelaySeconds,
+    Double backoffRate,
     Map<String, Object> inputParameters,
     String compensateHandlerRef,
     Map<String, List<TaskDefinition>> decisionCases,
@@ -36,16 +36,16 @@ public record TaskDefinition(
         if (domain == null || domain.isBlank()) {
             domain = "default";
         }
-        if (timeoutSeconds <= 0) {
+        if (timeoutSeconds == null || timeoutSeconds <= 0) {
             timeoutSeconds = 30;
         }
-        if (retryCount < 0) {
+        if (retryCount == null || retryCount < 0) {
             retryCount = 3;
         }
-        if (retryDelaySeconds < 0) {
+        if (retryDelaySeconds == null || retryDelaySeconds < 0) {
             retryDelaySeconds = 2;
         }
-        if (backoffRate < 1.0) {
+        if (backoffRate == null || backoffRate < 1.0) {
             backoffRate = 2.0;
         }
         inputParameters = inputParameters != null ? Collections.unmodifiableMap(inputParameters) : Collections.emptyMap();

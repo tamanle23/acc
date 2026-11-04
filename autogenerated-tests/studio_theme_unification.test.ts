@@ -2,14 +2,16 @@ import { describe, it, expect, beforeEach } from 'bun:test';
 import fs from 'fs';
 import path from 'path';
 import {
-  ACCENT_CONFIGS,
-  DEFAULT_PREFERENCES,
+  DEFAULT_THEME_PREFERENCES,
   applyThemeToDocument,
   type ThemePreferences,
-  type AccentColor,
   type GlassStyle,
   type BlurIntensity,
 } from '../apps/studio/src/lib/theme/ThemeProvider';
+import {
+  STUDIO_THEME_PRESETS,
+  getThemePreset,
+} from '../apps/studio/src/lib/theme';
 
 describe('Studio Unified System Theme Manager & Tailwind v4 Integration', () => {
   const indexCssPath = path.join(process.cwd(), 'apps/studio/src/index.css');
@@ -40,15 +42,16 @@ describe('Studio Unified System Theme Manager & Tailwind v4 Integration', () => 
     expect(indexCssContent).toContain('color-mix(in srgb, var(--accent-primary)');
   });
 
-  it('provides complete ACCENT_CONFIGS for all 5 studio accent colors with hsl, hex, and glow', () => {
-    const accents: AccentColor[] = ['cyan', 'violet', 'emerald', 'amber', 'rose'];
-    for (const accent of accents) {
-      const cfg = ACCENT_CONFIGS[accent];
-      expect(cfg).toBeDefined();
-      expect(cfg.hex).toMatch(/^#[0-9a-fA-F]{6}$/);
-      expect(cfg.hsl).toBeTruthy();
-      expect(cfg.glow).toContain('rgba(');
+  it('ensures theme presets define rich accent colors and eliminates duplicated dynamic accent overrides', () => {
+    // Colors are strictly governed by presets
+    for (const preset of STUDIO_THEME_PRESETS) {
+      expect(preset.tokens.accentPrimary).toMatch(/^#[0-9a-fA-F]{6}$/);
+      expect(preset.tokens.accentGlow).toContain('rgba(');
+      expect(preset.tokens.primary).toBeTruthy();
+      expect(preset.tokens.ring).toBeTruthy();
     }
+    // Verify no [data-accent] rules in index.css
+    expect(indexCssContent).not.toContain('[data-accent=');
   });
 
   describe('applyThemeToDocument DOM & CSS Variable Synchronization', () => {
@@ -84,43 +87,41 @@ describe('Studio Unified System Theme Manager & Tailwind v4 Integration', () => 
       };
     });
 
-    it('synchronizes dark/light mode classes, data attributes, and CSS custom properties across all theme combinations', () => {
-      const modes: Array<'dark' | 'light'> = ['dark', 'light'];
+    it('synchronizes dark/light mode classes, data attributes, and CSS custom properties across theme presets and optical styles', () => {
       const glassStyles: GlassStyle[] = ['specular', 'frosted', 'cyber'];
       const blurs: BlurIntensity[] = ['low', 'medium', 'high'];
-      const accents: AccentColor[] = ['cyan', 'violet', 'emerald', 'amber', 'rose'];
 
-      for (const mode of modes) {
+      for (const preset of STUDIO_THEME_PRESETS) {
         for (const glassStyle of glassStyles) {
           for (const blurIntensity of blurs) {
-            for (const accentColor of accents) {
-              const prefs: ThemePreferences = {
-                mode,
-                glassStyle,
-                blurIntensity,
-                accentColor,
-              };
+            const prefs: ThemePreferences = {
+              presetId: preset.id,
+              mode: preset.mode,
+              glassStyle,
+              blurIntensity,
+            };
 
-              applyThemeToDocument(prefs);
+            applyThemeToDocument(prefs);
 
-              // Class & data-theme-mode synchronization
-              expect(mockClassList.has(mode)).toBe(true);
-              expect(mockClassList.has(mode === 'dark' ? 'light' : 'dark')).toBe(false);
-              expect(mockAttributes.get('data-theme-mode')).toBe(mode);
+            // Class & data-theme-mode synchronization
+            expect(mockClassList.has(preset.mode)).toBe(true);
+            expect(mockClassList.has(preset.mode === 'dark' ? 'light' : 'dark')).toBe(false);
+            expect(mockAttributes.get('data-theme-mode')).toBe(preset.mode);
+            expect(mockAttributes.get('data-theme-preset')).toBe(preset.id);
 
-              // Data attributes for glass style, blur intensity, and accent
-              expect(mockAttributes.get('data-glass-style')).toBe(glassStyle);
-              expect(mockAttributes.get('data-blur-intensity')).toBe(blurIntensity);
-              expect(mockAttributes.get('data-accent')).toBe(accentColor);
+            // Optical physics attributes
+            expect(mockAttributes.get('data-glass-style')).toBe(glassStyle);
+            expect(mockAttributes.get('data-blur-intensity')).toBe(blurIntensity);
 
-              // CSS custom properties bridged to Tailwind v4 tokens
-              const expectedCfg = ACCENT_CONFIGS[accentColor];
-              expect(mockStyleProperties.get('--primary')).toBe(expectedCfg.hsl);
-              expect(mockStyleProperties.get('--ring')).toBe(expectedCfg.hsl);
-              expect(mockStyleProperties.get('--accent-primary')).toBe(expectedCfg.hex);
-              expect(mockStyleProperties.get('--color-brand-accent')).toBe(expectedCfg.hex);
-              expect(mockStyleProperties.get('--accent-glow')).toBe(expectedCfg.glow);
-            }
+            // Strictly NO data-accent attribute (eliminated duplicate control)
+            expect(mockAttributes.has('data-accent')).toBe(false);
+
+            // Preset tokens strictly govern color variables
+            expect(mockStyleProperties.get('--primary')).toBe(preset.tokens.primary);
+            expect(mockStyleProperties.get('--ring')).toBe(preset.tokens.ring);
+            expect(mockStyleProperties.get('--accent-primary')).toBe(preset.tokens.accentPrimary);
+            expect(mockStyleProperties.get('--color-brand-accent')).toBe(preset.tokens.colorBrandAccent);
+            expect(mockStyleProperties.get('--accent-glow')).toBe(preset.tokens.accentGlow);
           }
         }
       }

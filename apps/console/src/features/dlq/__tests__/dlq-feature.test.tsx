@@ -74,11 +74,26 @@ describe('Dead-Letter Queue (DLQ) Feature', () => {
       roles: ['ROLE_SYSTEM_CUSTODIAN'],
       currentTenantId: 'SYSTEM',
       isSovereignCustodian: true,
+      isSovereignActor: true,
+      isSovereignRoot: true,
+      isSovereignSupport: false,
+      isSovereignVerifier: false,
+      isSovereignApprover: false,
+      isWorkspaceOwner: true,
+      isOperationsManager: false,
+      isStandardMember: false,
+      isAuditor: false,
       isAdmin: true,
       isOperator: true,
       canManageSchema: true,
       canMutateRecords: true,
-    });
+      canManageWorkflows: true,
+      canSubmitWorkflows: true,
+      canApproveWorkflows: true,
+      canManageWorkers: true,
+      canVerifyTasks: true,
+      canApproveQuorum: true,
+    } as any);
   });
 
   it('renders task details, status, and failure reason in DlqTable', () => {
@@ -169,11 +184,26 @@ describe('Dead-Letter Queue (DLQ) Feature', () => {
       roles: ['ROLE_USER'],
       currentTenantId: 'tenant-acme',
       isSovereignCustodian: false,
+      isSovereignActor: false,
+      isSovereignRoot: false,
+      isSovereignSupport: false,
+      isSovereignVerifier: false,
+      isSovereignApprover: false,
+      isWorkspaceOwner: false,
+      isOperationsManager: false,
+      isStandardMember: true,
+      isAuditor: false,
       isAdmin: false,
       isOperator: false,
       canManageSchema: false,
       canMutateRecords: false,
-    });
+      canManageWorkflows: false,
+      canSubmitWorkflows: false,
+      canApproveWorkflows: false,
+      canManageWorkers: false,
+      canVerifyTasks: false,
+      canApproveQuorum: false,
+    } as any);
 
     render(
       <QueryClientProvider client={queryClient}>

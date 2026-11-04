@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { decodeJwt, isTokenExpired } from '../jwt';
 import { sleep, withSimulationDecorator } from '../simulation';
 import { SandboxResetRegistry, sandboxResetRegistry } from '../reset-registry';
-import { SandboxStoreManager, DEFAULT_SANDBOX_PERSONAS, initialDefaultSandboxState } from '../store';
+import { SandboxStoreManager, DEFAULT_SANDBOX_PERSONAS, initialDefaultSandboxState, defaultSandboxStore } from '../store';
 import { SandboxRegistry } from '../registry';
 import { attachSandboxAxiosInterceptor } from '../adapters/axios-adapter';
 import { createSandboxFetch, attachGlobalSandboxFetch } from '../adapters/fetch-adapter';
@@ -168,7 +168,7 @@ describe('Sandbox Core Infrastructure Suite', () => {
 
     it('initializes with default sandbox state', () => {
       const state = store.getState();
-      expect(state.enabled).toBe(true);
+      expect(state.enabled).toBe(false);
       expect(state.activePersonaId).toBe('admin');
       expect(state.activeTenantId).toBe('tenant-us-east-1');
     });
@@ -210,23 +210,23 @@ describe('Sandbox Core Infrastructure Suite', () => {
       const listener = vi.fn();
       const unsub = store.subscribe(listener);
 
-      store.setEnabled(false);
+      store.setEnabled(true);
       expect(listener).toHaveBeenCalledTimes(1);
-      expect(store.getState().enabled).toBe(false);
+      expect(store.getState().enabled).toBe(true);
 
       unsub();
-      store.setEnabled(true);
+      store.setEnabled(false);
       expect(listener).toHaveBeenCalledTimes(1);
     });
 
     it('resets state to initial defaults cleanly', () => {
-      store.setEnabled(false);
+      store.setEnabled(true);
       store.setActiveTenant('tenant-modified');
       store.setNetworkLatency(500, 1000);
 
       store.resetToDefaults();
       const state = store.getState();
-      expect(state.enabled).toBe(true);
+      expect(state.enabled).toBe(false);
       expect(state.activeTenantId).toBe('tenant-us-east-1');
       expect(state.networkSimulation.latencyMinMs).toBe(0);
     });
@@ -305,6 +305,7 @@ describe('Sandbox Core Infrastructure Suite', () => {
 
   describe('Adapters', () => {
     beforeEach(() => {
+      defaultSandboxStore.setEnabled(true);
       registerDefaultSandboxHandlers();
     });
 

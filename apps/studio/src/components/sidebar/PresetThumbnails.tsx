@@ -293,10 +293,12 @@ interface TextStyleModifierParams {
 
 export function TypographyPresetThumbnail({ preset }: { preset: StagingPreset }) {
   const seq = React.useMemo(() => preset.createSequence({ startFrame: 0 }), [preset]);
-  const textMod = seq.modifiers?.find((m) => m.type === 'timed_text/style' || m.type === 'text/style');
-  const params = (textMod?.params || {}) as TextStyleModifierParams;
+  const textMod = seq.modifiers?.find(
+    (m) => m.type === 'text/draw' || m.type === 'text/overlay' || m.type === 'timed_text/style' || m.type === 'text/style'
+  );
+  const params = (textMod?.params || {}) as TextStyleModifierParams & { text?: string };
 
-  const cueText = seq.cues?.[0]?.text || preset.name;
+  const cueText = params.text || seq.cues?.[0]?.text || preset.name;
   const fontFamily = params.fontFamily || 'Inter, system-ui, sans-serif';
   const fontWeight = params.fontWeight || 700;
   const textColor = params.textColor || '#ffffff';

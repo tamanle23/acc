@@ -20,7 +20,7 @@ A comprehensive systems audit of `apps/studio` revealed fundamental design looph
 4. **Asynchronous DAG Compilation Race Condition:**
    `IRStateManager.dispatch()` updates `state.doc` and fires an un-awaited asynchronous DAG compilation. Rapid slider scrubbing or drag edits spawn multiple concurrent compilations where a slower, older compilation can finish last and overwrite newer timeline state.
 5. **Decoupling Failure in 60 FPS Playhead Animation:**
-   `useShuttleEngine.ts` throttles its RAF tick to 66ms (~15 Hz) before notifying `onScrub()`. Because `onScrub()` is the sole trigger for `StudioPlayheadController.seek()`, high-frequency direct canvas and needle subscribers stutter at 15 FPS instead of animating at 60 FPS.
+   `useShuttleEngine.ts` throttles its RAF tick to 66ms (~15 Hz) before notifying `onScrub()`. Because `onScrub()` is the sole trigger for `PlayheadController.seek()`, high-frequency direct canvas and needle subscribers stutter at 15 FPS instead of animating at 60 FPS.
 6. **Dual Command Systems & Pervasive Heavy Serialization:**
    `TimelineCommandDispatcher` retains an unbounded `history` array without undo/redo, duplicating `HistoryManager`. Over 60 occurrences of synchronous `JSON.parse(JSON.stringify(doc))` exist across command executions, bypassing `cloneIR()` and causing severe GC pressure during 60 FPS interactions.
 7. **Audio RAM Blowup & Dual Unshared AudioContexts:**
@@ -35,7 +35,7 @@ A comprehensive systems audit of `apps/studio` revealed fundamental design looph
 | **Memory Ownership** | Monkey-patch `.close()` checks in worker. | Rebuild worker and memory manager from scratch. | **Single Ownership in `PreviewFrameMemoryManager`**: `safeSetTexture` becomes a pure reference setter; `PreviewFrameMemoryManager` exclusively governs LRU eviction and synchronous disposal. |
 | **Keyboard Management** | Add boolean guards in each component's keydown listener. | Replace with heavy third-party shortcut framework. | **Centralized `StudioKeyboardManager` with Priority Routing**: Modal > Focused Surface/Tool > Transport > Global Workspace, with strict modifier key guards. |
 | **State Compilation** | Fire-and-forget background compiles with optimistic flags. | Complete synchronous redesign of DAG compiler. | **Two-Tier Compilation Guard**: UI busy/compiling indicator + awaitable `dispatch(): Promise<void>` backed by an internal sequential execution lock. |
-| **Playhead Motion** | Run full React state updates at 60 FPS (severe CPU load). | Keep 15 FPS throttle everywhere (noticeable stutter). | **60 FPS RAF Needle/Canvas Decoupling**: RAF loop calls `StudioPlayheadController.seek()` on every tick (60 FPS) while keeping React state updates throttled to 10–15 Hz. |
+| **Playhead Motion** | Run full React state updates at 60 FPS (severe CPU load). | Keep 15 FPS throttle everywhere (noticeable stutter). | **60 FPS RAF Needle/Canvas Decoupling**: RAF loop calls `PlayheadController.seek()` on every tick (60 FPS) while keeping React state updates throttled to 10–15 Hz. |
 | **Audio Cache Architecture** | Retain all decoded PCM in memory (RAM blowup). | Stream raw network audio without caching (high latency). | **OPFS-First Streaming via `ContentCacheRegistry`**: Decoded chunks are fetched/streamed on demand; shared single `AudioContext` provider. |
 | **Command Infrastructure** | Keep duplicate `TimelineCommandDispatcher`. | Redesign command interface across monorepo. | **Unified `IRStateManager` Commands + `cloneIR()`**: Eliminate `TimelineCommandDispatcher`; migrate commands to native `structuredClone`. |
 
@@ -52,7 +52,7 @@ flowchart TD
     end
 
     subgraph Controller_Layer["High-Frequency Playhead & State Coordination"]
-        SPC["StudioPlayheadController\n(Discrete Frame Clock)"]
+        SPC["PlayheadController\n(Discrete Frame Clock)"]
         SM["IRStateManager\n(awaitable dispatch with sequential compilation lock)"]
     end
 
@@ -200,7 +200,7 @@ export class SharedAudioContext {
    - Introduce `state.isCompiling` and expose it to the UI store.
    - Guard concurrent dispatches in `App.tsx` and inspectors with a non-intrusive compilation indicator.
 2. **60 FPS Playhead Decoupling:**
-   - In `useShuttleEngine.ts`, invoke `StudioPlayheadController.getInstance().seek(discreteFrame, false)` on **every** RAF tick.
+   - In `useShuttleEngine.ts`, invoke `PlayheadController.getInstance().seek(discreteFrame, false)` on **every** RAF tick.
    - Keep React state updates (`onScrub`) throttled to 66ms (~15 Hz) during active playback.
 3. **Preflight Content Hashing:**
    - Add deterministic parameter hashing in `PreviewWorkerCoordinator.ts` to form `taskKey = ${targetId}:${type}:${paramHash}`.

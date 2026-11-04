@@ -28,17 +28,20 @@ public class SandboxDataPreWarmer implements ApplicationListener<ApplicationRead
     private final ObjectProvider<TenantBillingRepository> billingRepositoryProvider;
     private final ObjectProvider<TenantProvisioningService> tenantProvisioningServiceProvider;
     private final ObjectProvider<CmsDataScaffoldingGenerator> cmsDataScaffoldingGeneratorProvider;
+    private final ObjectProvider<SandboxUserSeeder> userSeederProvider;
 
     public SandboxDataPreWarmer(
             SandboxProperties properties,
             ObjectProvider<TenantBillingRepository> billingRepositoryProvider,
             ObjectProvider<TenantProvisioningService> tenantProvisioningServiceProvider,
-            ObjectProvider<CmsDataScaffoldingGenerator> cmsDataScaffoldingGeneratorProvider
+            ObjectProvider<CmsDataScaffoldingGenerator> cmsDataScaffoldingGeneratorProvider,
+            ObjectProvider<SandboxUserSeeder> userSeederProvider
     ) {
         this.properties = properties;
         this.billingRepositoryProvider = billingRepositoryProvider;
         this.tenantProvisioningServiceProvider = tenantProvisioningServiceProvider;
         this.cmsDataScaffoldingGeneratorProvider = cmsDataScaffoldingGeneratorProvider;
+        this.userSeederProvider = userSeederProvider;
     }
 
     @Override
@@ -50,7 +53,18 @@ public class SandboxDataPreWarmer implements ApplicationListener<ApplicationRead
 
         log.info("[SANDBOX-SEED] DEV mode active. Pre-warming demonstration tenants and metadata...");
 
-        // 1. Provision Billing Entitlements for Demonstration Tenants
+        // 1. Seed Sandbox Personas & UserDetails into Postgres
+        SandboxUserSeeder userSeeder = userSeederProvider.getIfAvailable();
+        if (userSeeder != null) {
+            try {
+                userSeeder.seedUsersIfMissing();
+                log.info("[SANDBOX-SEED] Successfully verified and seeded sandbox users in Postgres.");
+            } catch (Exception e) {
+                log.warn("[SANDBOX-SEED] Could not seed sandbox users in Postgres: {}", e.getMessage(), e);
+            }
+        }
+
+        // 2. Provision Billing Entitlements for Demonstration Tenants
         TenantBillingRepository billingRepo = billingRepositoryProvider.getIfAvailable();
         if (billingRepo != null) {
             seedTenantBillingIfMissing(billingRepo, "tenant-acme", "ENTERPRISE", "YEARLY", 5000000L);

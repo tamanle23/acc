@@ -2,6 +2,8 @@
  * Unified Sandbox Platform - Core Types
  */
 
+import type { CanonicalPermission } from '@acc/client';
+
 export type SandboxPersonaId = 'system' | 'admin' | 'creator' | 'user' | 'custom';
 
 export interface SandboxPersona {
@@ -11,6 +13,7 @@ export interface SandboxPersona {
   roles: string[];
   defaultTenantId: string;
   description: string;
+  permissions?: CanonicalPermission[];
 }
 
 export interface SandboxRequest {

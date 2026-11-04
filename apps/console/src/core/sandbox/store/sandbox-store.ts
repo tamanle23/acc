@@ -10,6 +10,17 @@ export const DEFAULT_SANDBOX_PERSONAS: Record<SandboxPersonaId, SandboxPersona> 
     roles: ['ROLE_SYSTEM_ROOT', 'ROLE_WORKSPACE_OWNER', 'ROLE_STANDARD_MEMBER'],
     defaultTenantId: 'SYSTEM',
     description: 'Ultimate sovereign authority across all tenants, fleet operations, unconstrained quotas, and RBAC matrix',
+    permissions: [
+      'platform:fleet:read', 'platform:fleet:mutate', 'platform:fleet:trip_circuit', 'platform:tenant:assume',
+      'platform:tenant:purge', 'platform:quotas:manage', 'platform:roles:manage', 'platform:users:manage',
+      'platform:dlq:manage', 'platform:workers:manage', 'metadata:schema:read', 'metadata:schema:write',
+      'metadata:blueprint:package', 'metadata:blueprint:provision', 'metadata:cache:evict',
+      'entity:record:read', 'entity:record:create', 'entity:record:update', 'entity:record:delete', 'entity:record:export',
+      'workspace:settings:read', 'workspace:settings:manage', 'workspace:members:read', 'workspace:members:manage',
+      'workflow:definition:read', 'workflow:definition:manage', 'workflow:execution:read', 'workflow:execution:submit', 'workflow:approval:execute',
+      'audit:log:read', 'audit:hash:verify', 'audit:compliance:export',
+      'billing:subscription:read', 'billing:subscription:upgrade', 'billing:tier:override', 'billing:invoice:adjust',
+    ],
   },
   admin: {
     id: 'admin',
@@ -18,6 +29,13 @@ export const DEFAULT_SANDBOX_PERSONAS: Record<SandboxPersonaId, SandboxPersona> 
     roles: ['ROLE_WORKSPACE_OWNER', 'ROLE_STANDARD_MEMBER', 'ROLE_ADMIN'],
     defaultTenantId: 'tenant-us-east-1',
     description: 'Full workspace administrative access, schema authoring, member and billing governance',
+    permissions: [
+      'workspace:settings:read', 'workspace:settings:manage', 'workspace:members:read', 'workspace:members:manage',
+      'metadata:schema:read', 'metadata:schema:write', 'metadata:blueprint:provision',
+      'entity:record:read', 'entity:record:create', 'entity:record:update', 'entity:record:delete', 'entity:record:export',
+      'workflow:definition:read', 'workflow:definition:manage', 'workflow:execution:read', 'workflow:execution:submit', 'workflow:approval:execute',
+      'audit:log:read', 'billing:subscription:read', 'billing:subscription:upgrade',
+    ],
   },
   creator: {
     id: 'creator',
@@ -26,6 +44,12 @@ export const DEFAULT_SANDBOX_PERSONAS: Record<SandboxPersonaId, SandboxPersona> 
     roles: ['ROLE_OPERATIONS_MANAGER', 'ROLE_STANDARD_MEMBER'],
     defaultTenantId: 'tenant-eu-central-1',
     description: 'Operations manager with schema write, record mutation, integrations, and data export',
+    permissions: [
+      'workspace:settings:read', 'metadata:schema:read', 'metadata:schema:write',
+      'entity:record:read', 'entity:record:create', 'entity:record:update', 'entity:record:delete', 'entity:record:export',
+      'workflow:definition:read', 'workflow:definition:manage', 'workflow:execution:read', 'workflow:execution:submit', 'workflow:approval:execute',
+      'audit:log:read',
+    ],
   },
   user: {
     id: 'user',
@@ -34,6 +58,11 @@ export const DEFAULT_SANDBOX_PERSONAS: Record<SandboxPersonaId, SandboxPersona> 
     roles: ['ROLE_STANDARD_MEMBER'],
     defaultTenantId: 'tenant-us-west-2',
     description: 'Standard member with data record read and write access',
+    permissions: [
+      'workspace:settings:read', 'metadata:schema:read',
+      'entity:record:read', 'entity:record:create', 'entity:record:update',
+      'workflow:execution:read', 'workflow:execution:submit',
+    ],
   },
   custom: {
     id: 'custom',
@@ -42,6 +71,9 @@ export const DEFAULT_SANDBOX_PERSONAS: Record<SandboxPersonaId, SandboxPersona> 
     roles: ['ROLE_STANDARD_MEMBER'],
     defaultTenantId: 'tenant-us-east-1',
     description: 'Configurable sandbox profile for edge-case diagnostics',
+    permissions: [
+      'workspace:settings:read', 'entity:record:read',
+    ],
   },
 };
 

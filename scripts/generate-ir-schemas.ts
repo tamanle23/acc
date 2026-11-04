@@ -37,6 +37,8 @@ const TYPE_TO_DEF_MAP: Record<string, string> = {
   'motion/gsap': 'GSAPMotionModifierParams',
   'motion/vector_blur': 'VectorMotionBlurModifierParams',
   'timed_text/style': 'TextStyleModifierParams',
+  'text/draw': 'TextDrawModifierParams',
+  'text/overlay': 'TextDrawModifierParams',
   'shape/draw': 'ShapeDrawModifierParams',
   'shape/vector': 'ShapeVectorModifierParams',
   'sfx/procedural': 'ProceduralSfxModifierParams',

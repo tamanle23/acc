@@ -16,6 +16,7 @@ describe('Unified Sandbox Engine Package', () => {
   beforeEach(() => {
     registry = new SandboxRegistry();
     store = new SandboxStoreManager();
+    store.setEnabled(true);
     engine = new UnifiedSandboxEngine({ registry, store, isDev: true });
   });
 

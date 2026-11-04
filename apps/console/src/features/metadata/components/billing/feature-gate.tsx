@@ -3,6 +3,7 @@ import { useTenantBilling } from '../../api/use-billing';
 import { PayOsQrModal } from './payos-qr-modal';
 import { Lock, Sparkles, Zap, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { AuthorizedButton } from '@/components/auth';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
@@ -78,13 +79,14 @@ export const FeatureGate: React.FC<Props> = ({
           </div>
 
           <div className="pt-2 flex flex-col gap-2">
-            <Button
+            <AuthorizedButton
+              permission="billing:subscription:upgrade"
               onClick={() => setIsQrModalOpen(true)}
               className="w-full text-xs font-semibold gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/20"
             >
               <Sparkles className="h-3.5 w-3.5" />
               <span>Nâng cấp ngay qua VietQR</span>
-            </Button>
+            </AuthorizedButton>
             <span className="text-[10px] text-muted-foreground">
               Kích hoạt tự động tức thì trong 0s • Hỗ trợ toàn bộ app ngân hàng
             </span>

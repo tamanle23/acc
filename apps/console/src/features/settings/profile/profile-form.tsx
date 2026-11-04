@@ -1,8 +1,9 @@
+import { useEffect } from 'react'
 import { z } from 'zod'
 import { useFieldArray, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link } from '@tanstack/react-router'
-import { showSubmittedData } from '@/lib/show-submitted-data'
+import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -39,6 +40,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
+import { useUserProfileQuery, useUpdateUserProfileMutation } from './api/use-user-profile'
 
 const languages = [
   { label: 'English', value: 'en' },
@@ -81,12 +83,9 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>
 
 export function ProfileForm() {
   const { i18n } = useTranslation(['console', 'common'])
+  const { data: profileData, isLoading: isProfileLoading } = useUserProfileQuery()
+  const updateProfileMutation = useUpdateUserProfileMutation()
 
-  // Flag to determine if settings should be sent to server on update, 
-  // or applied immediately to the client UI.
-  const isServerSide = true
-
-  // This can come from your database or API.
   const defaultValues: Partial<ProfileFormValues> = {
     name: '',
     language: i18n.language || 'en',
@@ -103,23 +102,55 @@ export function ProfileForm() {
     mode: 'onChange',
   })
 
+  useEffect(() => {
+    if (profileData) {
+      const fullName = [profileData.firstName, profileData.lastName].filter(Boolean).join(' ')
+      form.reset({
+        name: fullName || profileData.username || '',
+        username: profileData.username || '',
+        email: profileData.email || 'm@example.com',
+        dob: new Date('1990-01-01'),
+        language: profileData.preferences?.language || i18n.language || 'en',
+        bio: profileData.preferences?.bio || 'I own a computer.',
+        urls: profileData.preferences?.urls || [{ value: 'https://acc.io' }],
+      })
+    }
+  }, [profileData, form, i18n.language])
+
   const { fields, append } = useFieldArray({
     name: 'urls',
     control: form.control,
   })
 
+  const onSubmit = async (data: ProfileFormValues) => {
+    if (data.language !== i18n.language) {
+      i18n.changeLanguage(data.language)
+    }
+
+    try {
+      const [firstName, ...rest] = data.name.trim().split(' ')
+      const lastName = rest.join(' ')
+
+      await updateProfileMutation.mutateAsync({
+        firstName,
+        lastName: lastName || undefined,
+        email: data.email,
+        preferences: {
+          language: data.language,
+          bio: data.bio,
+          urls: data.urls,
+        },
+      })
+      toast.success('Profile updated successfully')
+    } catch {
+      toast.error('Failed to update profile')
+    }
+  }
+
   return (
     <Form {...form}>
       <form
-        onSubmit={form.handleSubmit((data) => {
-          if (isServerSide) {
-            if (data.language !== i18n.language) {
-              i18n.changeLanguage(data.language)
-            }
-            // Simulate server-side API call
-            showSubmittedData(data)
-          }
-        })}
+        onSubmit={form.handleSubmit(onSubmit)}
         className='space-y-8'
       >
 
@@ -313,7 +344,9 @@ export function ProfileForm() {
             Add URL
           </Button>
         </div>
-        <Button type='submit'>Update</Button>
+        <Button type='submit' disabled={updateProfileMutation.isPending || isProfileLoading}>
+          {updateProfileMutation.isPending ? 'Updating...' : 'Update'}
+        </Button>
       </form>
     </Form>
   )

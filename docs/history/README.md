@@ -82,3 +82,22 @@
 | 416 | [Video IR & Modifiers Schema-First Parity, 9-Component Governance & Automation Pipeline](./416_modifiers_schema_sync_and_enforcement.md) | Completed |
 | 417 | [Studio Preview Dimensions and Level of Detail (LOD) Architecture](./417_studio_preview_dimensions_and_lod_architecture.md) | Completed |
 | 418 | [Studio RightSidebar & Dynamic Property Inspector Modernization](./418_studio_right_sidebar_and_property_editor_modernization.md) | Completed |
+| 419 | [Studio First-Load Indicator & Performance-Tuned Initialization Sequence](./419_studio_first_load_indicator_and_performance_initialization.md) | Completed |
+| 420 | [Standalone Text Overlay Modifier & Typography Bank Migration](./420_standalone_text_overlay_modifier_and_typography_bank_migration.md) | Completed |
+| 421 | [Transform Gizmo Studio-Grade Elevation & Dynamic Bounds Alignment](./421_transform_gizmo_studio_grade_elevation.md) | Completed |
+| 422 | [Studio Viewport In-Place Text Editing, Sibling Smart Guides & HUD Anchor Tool](./422_studio_in_place_text_smart_guides_anchor_tool.md) | Completed |
+| 423 | [Eliminate Multi-Platform Tray and Window Scripts for Pure Electrobun](./423_eliminate_multiplatform_tray_and_window_scripts_for_pure_electrobun.md) | Completed |
+| 424 | [Harmonize Text, Shape, and Transform Modifier Coordinates & Precision Gizmo Bounds](./424_harmonize_gizmo_bounds_and_modifier_coordinates.md) | Completed |
+| 425 | [Fix Anchor Point Pivot Rotation and Scaling in Transform Modifier & Viewport Gizmo](./425_fix_anchor_point_pivot_rotation_and_scale.md) | Completed |
+| 426 | [Refactor AI-Supervisor for Electrobun Architecture and Clean Separation of Concerns](./426_refactor_ai_supervisor_electrobun_architecture.md) | Completed |
+| 427 | [Decouple AI-Supervisor to Headless Worker Daemon and Tauri 2.x Desktop Host](./427_decouple_ai_supervisor_to_worker_daemon_and_tauri_desktop.md) | Completed |
+| 428 | [Studio Grade UI/UX Upgrade, 20-Preset Theme System & Responsive Layout](./428_studio_grade_ui_ux_and_20_theme_presets.md) | Completed |
+| 429 | [Hide OPFS Companion Metadata Files (*.meta.json) in Studio Debugger](./429_hide_opfs_companion_metadata_files.md) | Completed |
+| 430 | [Clean Cross-Stack Authorization & User Profile Architecture](./430_clean_cross_stack_authorization_and_user_profile.md) | Completed |
+| 431 | [Fix Console Login Session Hydration and Route Guard Bounce](./431_fix_console_login_hydration_stuck_on_sign_in.md) | Completed |
+| 432 | [Fix /api/auth/me and /api/auth/refresh 401 Unauthorized Post-Login](./432_fix_auth_me_and_refresh_401_unauthorized.md) | Completed |
+| 433 | [Fix UserProfileController Bytecode Corruption and Authentication Principal Resolution](./433_fix_user_profile_controller_class_corruption_and_auth_principal.md) | Completed |
+| 434 | [Fix /api/auth/me Token Claims Fallback and JWT Audience Validation](./434_fix_auth_me_token_claims_fallback_and_jwt_audience_validation.md) | Completed |
+| 435 | [Seed Sandbox Personas and UserDetails into Sandbox PostgreSQL](./435_seed_sandbox_personas_and_userdetails_into_sandbox_postgres.md) | Completed |
+| 436 | [Suppress HTTP Basic Auth Dialog and Wire Dedicated JWT Authentication Entry Point](./436_suppress_http_basic_and_wire_jwt_auth_entry_point.md) | Completed |
+| 437 | [Declarative Client Authorization Safeguards & Dual-Gate Pre-Flight Defense](./437_declarative_client_authorization_safeguards.md) | Completed |

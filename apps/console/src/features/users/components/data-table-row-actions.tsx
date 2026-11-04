@@ -9,6 +9,7 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { AuthorizedDropdownMenuItem } from '@/components/auth'
 import { type User } from '../data/schema'
 import { useUsers } from './users-provider'
 
@@ -32,7 +33,8 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align='end' className='w-[190px]'>
-          <DropdownMenuItem
+          <AuthorizedDropdownMenuItem
+            permission='workspace:members:manage'
             onClick={() => {
               setCurrentRow(row.original)
               setOpen('edit')
@@ -42,8 +44,9 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
             <DropdownMenuShortcut>
               <UserPen size={16} />
             </DropdownMenuShortcut>
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </AuthorizedDropdownMenuItem>
+          <AuthorizedDropdownMenuItem
+            permission='workspace:members:manage'
             onClick={() => {
               setCurrentRow(row.original)
               setOpen('delegate')
@@ -53,9 +56,10 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
             <DropdownMenuShortcut>
               <KeyRound size={16} />
             </DropdownMenuShortcut>
-          </DropdownMenuItem>
+          </AuthorizedDropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem
+          <AuthorizedDropdownMenuItem
+            permission='workspace:members:manage'
             onClick={() => {
               setCurrentRow(row.original)
               setOpen('delete')
@@ -66,7 +70,7 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
             <DropdownMenuShortcut>
               <Trash2 size={16} />
             </DropdownMenuShortcut>
-          </DropdownMenuItem>
+          </AuthorizedDropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </>

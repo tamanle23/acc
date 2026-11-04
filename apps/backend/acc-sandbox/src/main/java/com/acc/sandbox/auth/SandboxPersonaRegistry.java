@@ -23,8 +23,12 @@ public class SandboxPersonaRegistry {
                 "tenant-acme",
                 null,
                 List.of("ROLE_WORKSPACE_OWNER", "ROLE_STANDARD_MEMBER", "ROLE_ADMIN"),
-                List.of("ROLE_WORKSPACE_OWNER", "ROLE_STANDARD_MEMBER", "ROLE_ADMIN", "metadata:schema:read", "metadata:schema:write", 
-                        "metadata:record:read", "metadata:record:write", "metadata:record:delete", "workspace:settings:manage", "workspace:members:manage"),
+                List.of("ROLE_WORKSPACE_OWNER", "ROLE_STANDARD_MEMBER", "ROLE_ADMIN", 
+                        "metadata:schema:read", "metadata:schema:write", 
+                        "entity:record:read", "entity:record:create", "entity:record:update", "entity:record:delete", "entity:record:export",
+                        "workspace:settings:manage", "workspace:members:manage",
+                        "billing:subscription:read", "billing:subscription:upgrade",
+                        "workflow:definition:read", "workflow:definition:manage", "workflow:execution:read", "workflow:execution:submit", "workflow:approval:execute"),
                 "usr_sandbox_admin_001"
         );
         registerPersona(admin, List.of("admin@acc.io", "admin_bypass", "admin", "tenant-admin"));
@@ -39,7 +43,11 @@ public class SandboxPersonaRegistry {
                 List.of("ROLE_SYSTEM_ROOT", "ROLE_SYSTEM_SUPPORT", "ROLE_WORKSPACE_OWNER", "ROLE_STANDARD_MEMBER"),
                 List.of("ROLE_SYSTEM_ROOT", "ROLE_SYSTEM_SUPPORT", "platform:fleet:read", "platform:fleet:mutate", "platform:tenant:assume", 
                         "platform:quotas:override", "platform:roles:manage", "platform:users:lock", "platform:dlq:manage", "platform:audit:export", 
-                        "metadata:schema:read", "metadata:schema:write", "metadata:record:read", "metadata:record:write"),
+                        "platform:workers:manage",
+                        "metadata:schema:read", "metadata:schema:write", 
+                        "entity:record:read", "entity:record:create", "entity:record:update", "entity:record:delete", "entity:record:export",
+                        "billing:subscription:read", "billing:subscription:upgrade",
+                        "workflow:definition:read", "workflow:definition:manage", "workflow:execution:read", "workflow:execution:submit", "workflow:approval:execute"),
                 "usr_sandbox_custodian_001"
         );
         registerPersona(custodian, List.of("custodian@system", "custodian_root", "system", "sovereign-custodian@acc.io", "system-custodian"));
@@ -52,8 +60,11 @@ public class SandboxPersonaRegistry {
                 "tenant-acme",
                 null,
                 List.of("ROLE_OPERATIONS_MANAGER", "ROLE_STANDARD_MEMBER"),
-                List.of("ROLE_OPERATIONS_MANAGER", "ROLE_STANDARD_MEMBER", "metadata:schema:read", "metadata:schema:write", 
-                        "metadata:record:read", "metadata:record:write", "metadata:record:delete", "workspace:integrations:manage", "workspace:export:data"),
+                List.of("ROLE_OPERATIONS_MANAGER", "ROLE_STANDARD_MEMBER", 
+                        "metadata:schema:read", "metadata:schema:write", 
+                        "entity:record:read", "entity:record:create", "entity:record:update", "entity:record:delete", "entity:record:export",
+                        "workspace:integrations:manage", "workspace:export:data",
+                        "workflow:definition:read", "workflow:definition:manage", "workflow:execution:read", "workflow:execution:submit", "workflow:approval:execute"),
                 "usr_sandbox_creator_001"
         );
         registerPersona(creator, List.of("creator@acc.io", "creator_bypass", "creator", "tenant-creator"));
@@ -66,7 +77,9 @@ public class SandboxPersonaRegistry {
                 "tenant-acme",
                 null,
                 List.of("ROLE_STANDARD_MEMBER"),
-                List.of("ROLE_STANDARD_MEMBER", "metadata:schema:read", "metadata:record:read", "metadata:record:write"),
+                List.of("ROLE_STANDARD_MEMBER", 
+                        "metadata:schema:read", 
+                        "entity:record:read", "entity:record:create", "entity:record:update"),
                 "usr_sandbox_user_001"
         );
         registerPersona(user, List.of("user@acc.io", "user_bypass", "user", "tenant-user"));

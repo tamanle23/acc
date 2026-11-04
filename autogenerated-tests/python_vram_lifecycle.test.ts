@@ -5,7 +5,7 @@ import { getAdminServiceClient } from "@acc/proto";
 import { GRPCAIStrategy, IPCFacade } from "@acc/core";
 
 describe("Phase 7: Dynamic VRAM Memory Manager & Admin gRPC Service", () => {
-  const pythonBackendDir = path.resolve("./apps/ai-supervisor/python-backend");
+  const pythonBackendDir = path.resolve("./apps/python-backend");
   const testPort = 53349;
   let serverProc: any = null;
 

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { billingSandboxHandler, billingSandboxRepo } from '../billing-sandbox-handler';
 import { defaultSandboxStore } from '../../store';
+import { createMockJwt } from '../auth-sandbox-handler';
 
 describe('Billing Sandbox Handler Test Suite', () => {
   beforeEach(() => {
@@ -8,10 +9,14 @@ describe('Billing Sandbox Handler Test Suite', () => {
     defaultSandboxStore.resetToDefaults();
   });
 
-  const createCtx = (path: string, method: string = 'GET') => ({
+  const getHeaders = (tenantId = 'tenant-acme') => ({
+    authorization: `Bearer ${createMockJwt({ sub: 'user-1', tenantId, roles: ['ROLE_WORKSPACE_OWNER'] })}`,
+  });
+
+  const createCtx = (path: string, method: string = 'GET', tenantId = 'tenant-acme') => ({
     pathname: path,
     method,
-    headers: {},
+    headers: getHeaders(tenantId),
     searchParams: new URLSearchParams(),
     url: path,
   });
@@ -28,8 +33,8 @@ describe('Billing Sandbox Handler Test Suite', () => {
   describe('GET /summary', () => {
     it('returns existing billing summary for pre-seeded tenant-acme', async () => {
       defaultSandboxStore.setActiveTenant('tenant-acme');
-      const ctx = createCtx('/api/v1/billing/summary', 'GET');
-      const req = { url: '/api/v1/billing/summary', method: 'GET', headers: {} };
+      const ctx = createCtx('/api/v1/billing/summary', 'GET', 'tenant-acme');
+      const req = { url: '/api/v1/billing/summary', method: 'GET', headers: getHeaders('tenant-acme') };
 
       const res = await billingSandboxHandler.handler(req, ctx);
       expect(res?.status).toBe(200);
@@ -41,8 +46,8 @@ describe('Billing Sandbox Handler Test Suite', () => {
 
     it('returns enterprise sovereign summary for SYSTEM tenant', async () => {
       defaultSandboxStore.setActiveTenant('SYSTEM');
-      const ctx = createCtx('/api/v1/billing/summary', 'GET');
-      const req = { url: '/api/v1/billing/summary', method: 'GET', headers: {} };
+      const ctx = createCtx('/api/v1/billing/summary', 'GET', 'SYSTEM');
+      const req = { url: '/api/v1/billing/summary', method: 'GET', headers: getHeaders('SYSTEM') };
 
       const res = await billingSandboxHandler.handler(req, ctx);
       expect(res?.status).toBe(200);
@@ -53,8 +58,8 @@ describe('Billing Sandbox Handler Test Suite', () => {
 
     it('creates default BASIC summary for new unseeded tenant on the fly', async () => {
       defaultSandboxStore.setActiveTenant('tenant-new-corp');
-      const ctx = createCtx('/api/v1/billing/summary', 'GET');
-      const req = { url: '/api/v1/billing/summary', method: 'GET', headers: {} };
+      const ctx = createCtx('/api/v1/billing/summary', 'GET', 'tenant-new-corp');
+      const req = { url: '/api/v1/billing/summary', method: 'GET', headers: getHeaders('tenant-new-corp') };
 
       const res = await billingSandboxHandler.handler(req, ctx);
       expect(res?.status).toBe(200);
@@ -70,7 +75,7 @@ describe('Billing Sandbox Handler Test Suite', () => {
       const req = {
         url: '/api/v1/billing/create-payment-link',
         method: 'POST',
-        headers: {},
+        headers: getHeaders(),
         data: { planTier: 'PRO', cadence: 'MONTHLY' },
       };
 
@@ -88,7 +93,7 @@ describe('Billing Sandbox Handler Test Suite', () => {
       const req = {
         url: '/api/v1/billing/create-payment-link',
         method: 'POST',
-        headers: {},
+        headers: getHeaders(),
         data: { planTier: 'PRO_MAX', cadence: 'YEARLY' },
       };
 
@@ -101,7 +106,7 @@ describe('Billing Sandbox Handler Test Suite', () => {
   describe('POST /contact-sales', () => {
     it('returns sales consultation confirmation', async () => {
       const ctx = createCtx('/api/v1/billing/contact-sales', 'POST');
-      const req = { url: '/api/v1/billing/contact-sales', method: 'POST', headers: {} };
+      const req = { url: '/api/v1/billing/contact-sales', method: 'POST', headers: getHeaders() };
 
       const res = await billingSandboxHandler.handler(req, ctx);
       expect(res?.status).toBe(200);
@@ -117,7 +122,7 @@ describe('Billing Sandbox Handler Test Suite', () => {
       const req = {
         url: '/api/v1/billing/webhook-simulate',
         method: 'POST',
-        headers: {},
+        headers: getHeaders(),
         data: { orderCode: 998877, amount: 3990000, planTier: 'PRO_MAX' },
       };
 
@@ -140,7 +145,7 @@ describe('Billing Sandbox Handler Test Suite', () => {
       const req = {
         url: '/api/v1/billing/webhook-simulate',
         method: 'POST',
-        headers: {},
+        headers: getHeaders(),
         data: { orderCode: 112233, amount: 15000000, planTier: 'ENTERPRISE' },
       };
 
@@ -153,7 +158,7 @@ describe('Billing Sandbox Handler Test Suite', () => {
 
     it('returns null for unmatched sub-path', async () => {
       const ctx = createCtx('/api/v1/billing/unknown-subpath', 'GET');
-      const req = { url: '/api/v1/billing/unknown-subpath', method: 'GET', headers: {} };
+      const req = { url: '/api/v1/billing/unknown-subpath', method: 'GET', headers: getHeaders() };
       const res = await billingSandboxHandler.handler(req, ctx);
       expect(res).toBeNull();
     });

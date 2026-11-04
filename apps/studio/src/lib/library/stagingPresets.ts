@@ -58,26 +58,20 @@ export const STAGING_PRESETS: StagingPreset[] = [
     description: 'Bold typographic title with cinematic tracking and cold cyan glow',
     iconName: 'Type',
     targetTrackId: 'track-text-overlay',
-    targetTrackType: 'timed_text',
+    targetTrackType: 'video',
     targetTrackName: 'Text Overlays',
     createSequence: ({ startFrame, durationFrames = 90, normX = 0.5, normY = 0.4 }) => ({
       id: `seq-title-${Date.now()}`,
-      type: 'text',
+      name: 'Cinematic Title',
+      type: 'overlay',
       time: {
         start: startFrame,
         duration: durationFrames,
       },
-      cues: [
-        {
-          startOffsetMs: 0,
-          endOffsetMs: (durationFrames / 30) * 1000,
-          text: 'NEURAL HORIZON 2099',
-        },
-      ],
       modifiers: [
         {
           type: 'transform',
-          target: 'text',
+          target: 'overlay',
           params: {
             normX,
             normY,
@@ -88,9 +82,10 @@ export const STAGING_PRESETS: StagingPreset[] = [
           },
         },
         {
-          type: 'timed_text/style',
-          target: 'text',
+          type: 'text/draw',
+          target: 'overlay',
           params: {
+            text: 'NEURAL HORIZON 2099',
             fontFamily: 'Cinzel',
             fontSize: 54,
             fontWeight: 800,
@@ -110,26 +105,20 @@ export const STAGING_PRESETS: StagingPreset[] = [
     description: 'Dual-row presenter tag with illuminated indigo accent bar',
     iconName: 'Type',
     targetTrackId: 'track-text-overlay',
-    targetTrackType: 'timed_text',
+    targetTrackType: 'video',
     targetTrackName: 'Text Overlays',
     createSequence: ({ startFrame, durationFrames = 90, normX = 0.3, normY = 0.82 }) => ({
       id: `seq-lowerthird-${Date.now()}`,
-      type: 'text',
+      name: 'Cyberpunk Lower Third',
+      type: 'overlay',
       time: {
         start: startFrame,
         duration: durationFrames,
       },
-      cues: [
-        {
-          startOffsetMs: 0,
-          endOffsetMs: (durationFrames / 30) * 1000,
-          text: 'DR. AELIA VEX // QUANTUM ARCHITECT',
-        },
-      ],
       modifiers: [
         {
           type: 'transform',
-          target: 'text',
+          target: 'overlay',
           params: {
             normX,
             normY,
@@ -140,9 +129,10 @@ export const STAGING_PRESETS: StagingPreset[] = [
           },
         },
         {
-          type: 'timed_text/style',
-          target: 'text',
+          type: 'text/draw',
+          target: 'overlay',
           params: {
+            text: 'DR. AELIA VEX // QUANTUM ARCHITECT',
             fontFamily: 'Inter',
             fontSize: 24,
             fontWeight: 600,
@@ -162,26 +152,20 @@ export const STAGING_PRESETS: StagingPreset[] = [
     description: 'Compact monospace status pill with emerald glow and live telemetry bracket',
     iconName: 'Zap',
     targetTrackId: 'track-hud-data',
-    targetTrackType: 'timed_text',
+    targetTrackType: 'video',
     targetTrackName: 'HUD Callouts',
     createSequence: ({ startFrame, durationFrames = 120, normX = 0.8, normY = 0.15 }) => ({
       id: `seq-badge-${Date.now()}`,
-      type: 'text',
+      name: 'Status Telemetry Badge',
+      type: 'overlay',
       time: {
         start: startFrame,
         duration: durationFrames,
       },
-      cues: [
-        {
-          startOffsetMs: 0,
-          endOffsetMs: (durationFrames / 30) * 1000,
-          text: 'STATUS: QUANTUM LOCK ACTIVE [99.8%]',
-        },
-      ],
       modifiers: [
         {
           type: 'transform',
-          target: 'text',
+          target: 'overlay',
           params: {
             normX,
             normY,
@@ -192,9 +176,10 @@ export const STAGING_PRESETS: StagingPreset[] = [
           },
         },
         {
-          type: 'timed_text/style',
-          target: 'text',
+          type: 'text/draw',
+          target: 'overlay',
           params: {
+            text: 'STATUS: QUANTUM LOCK ACTIVE [99.8%]',
             fontFamily: 'Fira Code',
             fontSize: 14,
             fontWeight: 700,
@@ -214,26 +199,20 @@ export const STAGING_PRESETS: StagingPreset[] = [
     description: 'Target reticle callout banner with amber bracketed telemetry',
     iconName: 'Type',
     targetTrackId: 'track-hud-data',
-    targetTrackType: 'timed_text',
+    targetTrackType: 'video',
     targetTrackName: 'HUD Callouts',
     createSequence: ({ startFrame, durationFrames = 90, normX = 0.5, normY = 0.25 }) => ({
       id: `seq-callout-${Date.now()}`,
-      type: 'text',
+      name: 'HUD Callout Tag',
+      type: 'overlay',
       time: {
         start: startFrame,
         duration: durationFrames,
       },
-      cues: [
-        {
-          startOffsetMs: 0,
-          endOffsetMs: (durationFrames / 30) * 1000,
-          text: 'TARGET ACQUIRED: PARALLAX 3D BREACH DETECTED',
-        },
-      ],
       modifiers: [
         {
           type: 'transform',
-          target: 'text',
+          target: 'overlay',
           params: {
             normX,
             normY,
@@ -244,9 +223,10 @@ export const STAGING_PRESETS: StagingPreset[] = [
           },
         },
         {
-          type: 'timed_text/style',
-          target: 'text',
+          type: 'text/draw',
+          target: 'overlay',
           params: {
+            text: 'TARGET ACQUIRED: PARALLAX 3D BREACH DETECTED',
             fontFamily: 'Fira Code',
             fontSize: 16,
             fontWeight: 700,

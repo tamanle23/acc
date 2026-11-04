@@ -31,6 +31,10 @@ public class JwtTokenHelperTest {
   }
 
   private UserDetailsImpl createTestUser() {
+    return createTestUser(null);
+  }
+
+  private UserDetailsImpl createTestUser(String tenantId) {
     Map<String, Object> map = new HashMap<>();
     map.put("userName", "testuser");
     map.put("password", "password");
@@ -38,6 +42,9 @@ public class JwtTokenHelperTest {
     map.put("isNonLocked", true);
     map.put("isCredentialsNonExpired", true);
     map.put("isEnabled", true);
+    if (tenantId != null) {
+      map.put("tenantId", tenantId);
+    }
     return new UserDetailsImpl(map, Collections.emptyList());
   }
 
@@ -62,5 +69,25 @@ public class JwtTokenHelperTest {
     assertTrue(claimsOpt.isPresent());
     assertEquals("testuser", claimsOpt.get().getSubject());
     assertTrue(jwtTokenHelper.validate(claimsOpt.get(), "web"));
+  }
+
+  @Test
+  public void testGenerateTokenPreservesTenantId() {
+    UserDetailsImpl userDetails = createTestUser("TENANT_ACME");
+
+    AuthenticationToken token = jwtTokenHelper.generateToken(userDetails, "web");
+    Optional<Claims> claimsOpt = jwtTokenHelper.getClaims(token.getAccessToken());
+    assertTrue(claimsOpt.isPresent());
+    assertEquals("TENANT_ACME", jwtTokenHelper.getTenantId(claimsOpt.get()).orElse(null));
+  }
+
+  @Test
+  public void testGenerateTokenDefaultsToSystemTenantWhenMissing() {
+    UserDetailsImpl userDetails = createTestUser();
+    AuthenticationToken token = jwtTokenHelper.generateToken(userDetails, "web");
+
+    Optional<Claims> claimsOpt = jwtTokenHelper.getClaims(token.getAccessToken());
+    assertTrue(claimsOpt.isPresent());
+    assertEquals("SYSTEM", jwtTokenHelper.getTenantId(claimsOpt.get()).orElse(null));
   }
 }

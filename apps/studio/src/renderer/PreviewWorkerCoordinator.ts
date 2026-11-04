@@ -42,6 +42,7 @@ export class PreviewWorkerCoordinator {
   private lowPriorityQueue: ExecuteModifierPayload[] = [];
   private warmedListeners = new Set<(event: ModifierWarmedEvent) => void>();
   private completedTaskKeys = new Set<string>();
+  private warmupResolvers: Array<(warmed: boolean) => void> = [];
 
   constructor(customWorkerUrl?: URL) {
     this.initWorker(customWorkerUrl);
@@ -94,6 +95,7 @@ export class PreviewWorkerCoordinator {
         this.worker.onerror = (err) => {
           Logger.warn('PreviewWorkerCoordinator', `Sidecar worker encountered an error: ${err.message || err}`);
           this.isProcessing = false;
+          this.notifyWarmupResolvers(false);
           this.drainNext();
         };
 
@@ -109,6 +111,55 @@ export class PreviewWorkerCoordinator {
 
     // In-process fallback for Node.js / Bun tests
     this.inProcessRegistry = registerCoreModifierPlugins(ModifierPluginRegistry.createIsolated());
+    this.isWarmedUp = true;
+    this.notifyWarmupResolvers(true);
+  }
+
+  public getIsWarmedUp(): boolean {
+    return this.isWarmedUp;
+  }
+
+  /**
+   * Returns a promise that resolves when the sidecar worker has completed its WARMUP task.
+   * If the worker is already warmed up, resolves immediately.
+   * Includes a timeout fallback (default: 4000ms) to ensure startup never hangs.
+   */
+  public waitForWarmup(timeoutMs = 4000): Promise<boolean> {
+    if (this.isWarmedUp) {
+      return Promise.resolve(true);
+    }
+    if (!this.worker) {
+      return Promise.resolve(true);
+    }
+
+    // Explicitly trigger warmup immediately rather than waiting for idle callback
+    this.warmup();
+
+    return new Promise<boolean>((resolve) => {
+      let timer: ReturnType<typeof setTimeout> | null = null;
+      const resolver = (warmed: boolean) => {
+        if (timer) clearTimeout(timer);
+        resolve(warmed);
+      };
+
+      this.warmupResolvers.push(resolver);
+
+      if (timeoutMs > 0) {
+        timer = setTimeout(() => {
+          const idx = this.warmupResolvers.indexOf(resolver);
+          if (idx !== -1) {
+            this.warmupResolvers.splice(idx, 1);
+          }
+          resolve(false);
+        }, timeoutMs);
+      }
+    });
+  }
+
+  private notifyWarmupResolvers(warmed: boolean): void {
+    const list = [...this.warmupResolvers];
+    this.warmupResolvers = [];
+    list.forEach((r) => r(warmed));
   }
 
   public warmup(): void {
@@ -142,6 +193,7 @@ export class PreviewWorkerCoordinator {
       case 'WARMED_UP': {
         this.isWarmedUp = true;
         Logger.info('PreviewWorkerCoordinator.ts', 'Sidecar worker successfully warmed up.');
+        this.notifyWarmupResolvers(true);
         break;
       }
 

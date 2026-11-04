@@ -3,6 +3,7 @@ import { Pt } from 'pts';
 export type TransformHandleType =
   | 'body'
   | 'rotate'
+  | 'anchor'
   | 'tl' // top-left
   | 'tc' // top-center
   | 'tr' // top-right
@@ -22,10 +23,19 @@ export interface BoundingBox2D {
 
 export interface SnappingGuide {
   id: string;
-  type: 'centerX' | 'centerY' | 'safe16_9' | 'safe9_16' | 'edge';
+  type: 'centerX' | 'centerY' | 'safe16_9' | 'safe9_16' | 'edge' | 'sibling';
   orientation: 'horizontal' | 'vertical';
   position: number; // normalized coordinate (0.0 to 1.0)
   label: string;
+}
+
+export interface SiblingGuideBox {
+  id: string;
+  label: string;
+  normX: number; // center X 0..1
+  normY: number; // center Y 0..1
+  normWidth: number; // 0..1
+  normHeight: number; // 0..1
 }
 
 export interface SnapResult {
@@ -62,13 +72,32 @@ export class MagneticSnapEngine {
     width: number,
     height: number,
     threshold: number = MagneticSnapEngine.DEFAULT_THRESHOLD,
-    disabled: boolean = false
+    disabled: boolean = false,
+    siblingBoxes: SiblingGuideBox[] = []
   ): SnapResult {
     if (disabled) {
       return { x, y, snappedX: false, snappedY: false, activeGuides: [] };
     }
 
     const guides = MagneticSnapEngine.getStandardGuides();
+
+    // Dynamically harvest vertical and horizontal guides from visible siblings
+    if (siblingBoxes && siblingBoxes.length > 0) {
+      for (const sib of siblingBoxes) {
+        const sibHalfW = sib.normWidth / 2;
+        const sibHalfH = sib.normHeight / 2;
+        const cleanLabel = sib.label || 'Sibling';
+
+        guides.push(
+          { id: `sib-cx-${sib.id}`, type: 'sibling', orientation: 'vertical', position: sib.normX, label: `${cleanLabel} (Center X)` },
+          { id: `sib-l-${sib.id}`, type: 'sibling', orientation: 'vertical', position: sib.normX - sibHalfW, label: `${cleanLabel} (Left)` },
+          { id: `sib-r-${sib.id}`, type: 'sibling', orientation: 'vertical', position: sib.normX + sibHalfW, label: `${cleanLabel} (Right)` },
+          { id: `sib-cy-${sib.id}`, type: 'sibling', orientation: 'horizontal', position: sib.normY, label: `${cleanLabel} (Center Y)` },
+          { id: `sib-t-${sib.id}`, type: 'sibling', orientation: 'horizontal', position: sib.normY - sibHalfH, label: `${cleanLabel} (Top)` },
+          { id: `sib-b-${sib.id}`, type: 'sibling', orientation: 'horizontal', position: sib.normY + sibHalfH, label: `${cleanLabel} (Bottom)` }
+        );
+      }
+    }
     const activeGuides: SnappingGuide[] = [];
 
     let snappedX = false;
@@ -84,36 +113,50 @@ export class MagneticSnapEngine {
     const top = y - halfH;
     const bottom = y + halfH;
 
+    let bestSnapX: { diff: number; finalX: number; guide: SnappingGuide } | null = null;
+    let bestSnapY: { diff: number; finalY: number; guide: SnappingGuide } | null = null;
+
     for (const guide of guides) {
-      if (guide.orientation === 'vertical' && !snappedX) {
-        if (Math.abs(x - guide.position) < threshold) {
-          finalX = guide.position;
-          snappedX = true;
-          activeGuides.push(guide);
-        } else if (Math.abs(left - guide.position) < threshold) {
-          finalX = guide.position + halfW;
-          snappedX = true;
-          activeGuides.push(guide);
-        } else if (Math.abs(right - guide.position) < threshold) {
-          finalX = guide.position - halfW;
-          snappedX = true;
-          activeGuides.push(guide);
+      if (guide.orientation === 'vertical') {
+        const diffCenter = Math.abs(x - guide.position);
+        const diffLeft = Math.abs(left - guide.position);
+        const diffRight = Math.abs(right - guide.position);
+
+        if (diffCenter < threshold && (!bestSnapX || diffCenter < bestSnapX.diff)) {
+          bestSnapX = { diff: diffCenter, finalX: guide.position, guide };
         }
-      } else if (guide.orientation === 'horizontal' && !snappedY) {
-        if (Math.abs(y - guide.position) < threshold) {
-          finalY = guide.position;
-          snappedY = true;
-          activeGuides.push(guide);
-        } else if (Math.abs(top - guide.position) < threshold) {
-          finalY = guide.position + halfH;
-          snappedY = true;
-          activeGuides.push(guide);
-        } else if (Math.abs(bottom - guide.position) < threshold) {
-          finalY = guide.position - halfH;
-          snappedY = true;
-          activeGuides.push(guide);
+        if (diffLeft < threshold && (!bestSnapX || diffLeft < bestSnapX.diff)) {
+          bestSnapX = { diff: diffLeft, finalX: guide.position + halfW, guide };
+        }
+        if (diffRight < threshold && (!bestSnapX || diffRight < bestSnapX.diff)) {
+          bestSnapX = { diff: diffRight, finalX: guide.position - halfW, guide };
+        }
+      } else if (guide.orientation === 'horizontal') {
+        const diffCenter = Math.abs(y - guide.position);
+        const diffTop = Math.abs(top - guide.position);
+        const diffBottom = Math.abs(bottom - guide.position);
+
+        if (diffCenter < threshold && (!bestSnapY || diffCenter < bestSnapY.diff)) {
+          bestSnapY = { diff: diffCenter, finalY: guide.position, guide };
+        }
+        if (diffTop < threshold && (!bestSnapY || diffTop < bestSnapY.diff)) {
+          bestSnapY = { diff: diffTop, finalY: guide.position + halfH, guide };
+        }
+        if (diffBottom < threshold && (!bestSnapY || diffBottom < bestSnapY.diff)) {
+          bestSnapY = { diff: diffBottom, finalY: guide.position - halfH, guide };
         }
       }
+    }
+
+    if (bestSnapX) {
+      finalX = bestSnapX.finalX;
+      snappedX = true;
+      activeGuides.push(bestSnapX.guide);
+    }
+    if (bestSnapY) {
+      finalY = bestSnapY.finalY;
+      snappedY = true;
+      activeGuides.push(bestSnapY.guide);
     }
 
     return {
@@ -190,6 +233,10 @@ export class Gizmo2DTransformation {
       if (guide.type === 'centerX' || guide.type === 'centerY') {
         ctx.strokeStyle = '#00ffff'; // Neon cyan for center crosshairs
         ctx.shadowColor = '#00ffff';
+        ctx.shadowBlur = 8;
+      } else if (guide.type === 'sibling' || guide.type === 'edge') {
+        ctx.strokeStyle = '#38bdf8'; // Sky blue / cyan for sibling alignments
+        ctx.shadowColor = '#38bdf8';
         ctx.shadowBlur = 8;
       } else {
         ctx.strokeStyle = '#ec4899'; // Neon pink for safe margins
@@ -428,11 +475,43 @@ export class Gizmo2DTransformation {
     currentPointer: { x: number; y: number },
     startPointer: { x: number; y: number },
     lockAspectRatio: boolean = false,
-    disableSnapping: boolean = false
-  ): { box: BoundingBox2D; snapResult?: SnapResult } {
+    disableSnapping: boolean = false,
+    siblingBoxes: SiblingGuideBox[] = [],
+    centerScale: boolean = true,
+    axisLock: boolean = false,
+    anchorPoint: [number, number] = [0.5, 0.5]
+  ): { box: BoundingBox2D; snapResult?: SnapResult; anchorResult?: [number, number] } {
+    if (handle === 'anchor') {
+      const rad = (-startBox.rotation * Math.PI) / 180;
+      const cosR = Math.cos(rad);
+      const sinR = Math.sin(rad);
+      const curDx = currentPointer.x - startBox.x;
+      const curDy = currentPointer.y - startBox.y;
+      const localX = curDx * cosR - curDy * sinR;
+      const localY = curDx * sinR + curDy * cosR;
+
+      const normAnchorX = Number((0.5 + localX / Math.max(0.001, startBox.width)).toFixed(3));
+      const normAnchorY = Number((0.5 + localY / Math.max(0.001, startBox.height)).toFixed(3));
+
+      return {
+        box: startBox,
+        anchorResult: [normAnchorX, normAnchorY],
+      };
+    }
+
     if (handle === 'body') {
-      const deltaX = currentPointer.x - startPointer.x;
-      const deltaY = currentPointer.y - startPointer.y;
+      let deltaX = currentPointer.x - startPointer.x;
+      let deltaY = currentPointer.y - startPointer.y;
+
+      // Orthogonal Axis Constraint (Shift or HUD toggle)
+      if (axisLock) {
+        if (Math.abs(deltaX) >= Math.abs(deltaY)) {
+          deltaY = 0;
+        } else {
+          deltaX = 0;
+        }
+      }
+
       const proposedX = startBox.x + deltaX;
       const proposedY = startBox.y + deltaY;
 
@@ -442,7 +521,8 @@ export class Gizmo2DTransformation {
         startBox.width,
         startBox.height,
         MagneticSnapEngine.DEFAULT_THRESHOLD,
-        disableSnapping
+        disableSnapping,
+        siblingBoxes
       );
 
       return {
@@ -456,8 +536,18 @@ export class Gizmo2DTransformation {
     }
 
     if (handle === 'rotate') {
-      const currentAngleRad = Math.atan2(currentPointer.y - startBox.y, currentPointer.x - startBox.x);
-      const startAngleRad = Math.atan2(startPointer.y - startBox.y, startPointer.x - startBox.x);
+      const rad = (startBox.rotation * Math.PI) / 180;
+      const cosR = Math.cos(rad);
+      const sinR = Math.sin(rad);
+
+      const unrotatedDx = (anchorPoint[0] - 0.5) * startBox.width;
+      const unrotatedDy = (anchorPoint[1] - 0.5) * startBox.height;
+
+      const pivotX = startBox.x + unrotatedDx * cosR - unrotatedDy * sinR;
+      const pivotY = startBox.y + unrotatedDx * sinR + unrotatedDy * cosR;
+
+      const currentAngleRad = Math.atan2(currentPointer.y - pivotY, currentPointer.x - pivotX);
+      const startAngleRad = Math.atan2(startPointer.y - pivotY, startPointer.x - pivotX);
 
       let deltaDeg = ((currentAngleRad - startAngleRad) * 180) / Math.PI;
       let newRot = (startBox.rotation + deltaDeg) % 360;

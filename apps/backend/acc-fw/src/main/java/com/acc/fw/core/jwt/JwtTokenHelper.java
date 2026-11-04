@@ -97,16 +97,29 @@ public class JwtTokenHelper implements Serializable {
                   .map(o -> (List<String>)o)
                   .orElse(List.of());
 
-    return Stream.concat(authorities.stream(), permissions.stream())
+    List<String> roles = Optional.ofNullable(claims.get("roles"))
+                  .filter(Objects::nonNull)
+                  .map(o -> (List<String>)o)
+                  .orElse(List.of());
+
+    return Stream.concat(Stream.concat(authorities.stream(), permissions.stream()), roles.stream())
                  .distinct()
-                 .map(SimpleGrantedAuthority::new)
+                 .map(authStr -> {
+                     if (authStr.startsWith("ROLE_")) {
+                         return new SimpleGrantedAuthority(authStr.toUpperCase());
+                     }
+                     return new SimpleGrantedAuthority(authStr.toLowerCase());
+                 })
                  .collect(Collectors.toList());
   }
 
   public Optional<String> getTenantId(Claims claims) {
-    return Optional.ofNullable(claims)
-                   .map(c -> c.get(CLAIM_KEY_TENANT_ID, String.class))
-                   .filter(StringUtils::isNotBlank);
+    if (claims == null) return Optional.empty();
+    String tid = claims.get(CLAIM_KEY_TENANT_ID, String.class);
+    if (StringUtils.isBlank(tid)) {
+      tid = claims.get("tenantId", String.class);
+    }
+    return Optional.ofNullable(tid).filter(StringUtils::isNotBlank);
   }
 
   public Optional<String> getUsername(Claims claims) {
@@ -162,11 +175,17 @@ public class JwtTokenHelper implements Serializable {
   }
 
   public boolean validate(Claims claims, String userAgent) {
-    Optional<String> userAgentOpt = Optional.ofNullable(claims).map(c -> (String)c.get(CLAIM_KEY_AUDIENCE)).filter(u -> userAgent == null || StringUtils.equals(userAgent, u));
-    Optional<String> userNameOpt = Optional.ofNullable(claims).map(Claims::getSubject).filter(Objects::nonNull);
-    return userNameOpt.isPresent() && userAgentOpt.isPresent() && !isTokenExpired(claims)
-//          && !isCreatedBeforeLastPasswordReset(userName, getCreatedDateFromToken(token))
-    ;
+    if (claims == null) {
+      return false;
+    }
+    String username = claims.getSubject();
+    if (StringUtils.isBlank(username)) {
+      return false;
+    }
+    if (isTokenExpired(claims)) {
+      return false;
+    }
+    return true;
   }
 
   private Boolean isCreatedBeforeLastPasswordReset(Date created, Date lastPasswordReset) {
@@ -183,7 +202,27 @@ public class JwtTokenHelper implements Serializable {
     claims.put(CLAIM_KEY_AUDIENCE, userAgent);
     claims.put(CLAIM_KEY_CREATED, new Date());
     claims.put(CLAIM_KEY_USER_DETAILS, userDetails);
+    String tenantId = com.acc.fw.tenancy.TenantContextHolder.getTenantId();
+    if (StringUtils.isBlank(tenantId) && userDetails instanceof UserDetailsImpl udi) {
+      tenantId = udi.getTenantId();
+    }
+    if (StringUtils.isBlank(tenantId)) {
+      tenantId = "SYSTEM";
+    }
+    claims.put(CLAIM_KEY_TENANT_ID, tenantId);
+    claims.put("tenantId", tenantId);
     if(CollectionUtils.isNotEmpty(userDetails.getAuthorities())){
+      List<String> roles = userDetails.getAuthorities().stream()
+          .map(GrantedAuthority::getAuthority)
+          .filter(a -> a.startsWith("ROLE_"))
+          .collect(Collectors.toList());
+      List<String> permissions = userDetails.getAuthorities().stream()
+          .map(GrantedAuthority::getAuthority)
+          .filter(a -> !a.startsWith("ROLE_"))
+          .map(String::toLowerCase)
+          .collect(Collectors.toList());
+      claims.put("roles", roles);
+      claims.put(CLAIM_KEY_PERMISSIONS, permissions);
       claims.put(CLAIM_KEY_AUTHORITIES, userDetails.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList()));
     }
     return getAuthenticationToken(claims);

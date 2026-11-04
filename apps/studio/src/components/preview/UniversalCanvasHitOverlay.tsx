@@ -66,7 +66,16 @@ export const UniversalCanvasHitOverlay: React.FC<UniversalCanvasHitOverlayProps>
             onDoubleClick={(e) => {
               e.stopPropagation();
               const seq = activeSequences.find((s) => s.id === region.sequenceId);
-              if (seq && (seq.cues?.length || seq.type === 'text') && onStartEditingCue) {
+              const textMod = seq?.modifiers?.find(
+                (m) => m.type === 'text/draw' || m.type === 'text/overlay'
+              );
+              if (textMod && onStartEditingCue) {
+                onStartEditingCue({
+                  sequenceId: seq.id,
+                  cueIndex: 0,
+                  text: (textMod.params as any)?.text ?? seq.name ?? '',
+                });
+              } else if (seq && (seq.cues?.length || seq.type === 'text') && onStartEditingCue) {
                 onStartEditingCue({
                   sequenceId: seq.id,
                   cueIndex: 0,

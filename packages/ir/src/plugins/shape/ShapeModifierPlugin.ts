@@ -153,9 +153,26 @@ export class ShapeModifierPlugin implements ModifierPlugin<ShapeModifierParams> 
     const halfW = w * 0.5;
     const halfH = h * 0.5;
 
-    // Position origin at center of viewport (default: 50% width, 50% height) + offset
-    const originX = canvasW * (params.normX ?? 0.5) + (params.x ?? 0) * scaleX;
-    const originY = canvasH * (params.normY ?? 0.5) + (params.y ?? 0) * scaleY;
+    // Position origin:
+    // Translate origin to [normX, normY] in canvas space + offset.
+    // If not specified on shape/draw, inherit from preceding transform modifier on sequence.
+    const transMod = ctx.sequence?.modifiers?.find((m) => m.type === 'transform');
+    const transParams = (transMod?.params || {}) as Record<string, unknown>;
+    const defaultNormX = typeof transParams.normX === 'number' && Number.isFinite(transParams.normX)
+      ? transParams.normX
+      : 0.5;
+    const defaultNormY = typeof transParams.normY === 'number' && Number.isFinite(transParams.normY)
+      ? transParams.normY
+      : 0.5;
+    const normX = typeof params.normX === 'number' && Number.isFinite(params.normX)
+      ? params.normX
+      : defaultNormX;
+    const normY = typeof params.normY === 'number' && Number.isFinite(params.normY)
+      ? params.normY
+      : defaultNormY;
+
+    const originX = canvasW * normX + (params.x ?? 0) * scaleX;
+    const originY = canvasH * normY + (params.y ?? 0) * scaleY;
 
     canvasCtx.save();
     try {

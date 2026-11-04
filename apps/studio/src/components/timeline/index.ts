@@ -18,9 +18,9 @@ export * from './ClipInsightCard';
 export * from './EmptyState';
 export * from './TimelineDom';
 
-// Legacy Aliases for backwards compatibility with test harnesses
-export { EmptyState } from './EmptyState';
-export { ClipItem } from './ClipItem';
+// Legacy and Module Resolution Aliases
+export { EmptyState, EmptyState as TimelineEmptyState } from './EmptyState';
+export { ClipItem, ClipItem as TimelineClipItem } from './ClipItem';
 export { Toolbar } from './Toolbar';
 export { OverlayHUD } from './OverlayHUD';
 export { TransitionBlock } from './TransitionBlock';

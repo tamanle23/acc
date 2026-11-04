@@ -12,7 +12,8 @@ Dự án được phân rã thành các gói module chuyên biệt:
 acc/
 ├── apps/
 │   ├── cli/                   # @acc/cli: Unified CLI Dispatcher & 6 Orchestrator Pipelines
-│   └── python-backend/        # Backend Python gRPC (SAM 2, Depth Anything v2, Kokoro TTS)
+│   ├── python-backend/        # Backend Python gRPC (SAM 2, Depth Anything v2, Kokoro TTS)
+│   └── studio/                # @acc/studio: Dedicated Pro NLE & Motion Graphics Workstation (see apps/studio/README.md)
 ├── packages/
 │   ├── core/                  # @acc/core: FFI FFmpeg C-Bindings, Zero-Copy I/O, Registry, Prompts
 │   ├── ir/                    # @acc/ir: Timeline IR Models, DAG AST Schemas

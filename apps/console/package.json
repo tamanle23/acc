@@ -3,10 +3,10 @@
   "version": "2.2.1",
   "type": "module",
   "scripts": {
-    "dev": "vite --mode no-devtools",
+    "dev": "cross-env API_URL=http://localhost:8080 vite --mode no-devtools --no-sandbox",
     "dev:no-devtools": "vite --mode no-devtools",
     "dev:theme-settings": "vite --theme-settings",
-    "dev:sandbox": "vite --mode no-devtools --sandbox",
+    "dev:sandbox": "cross-env API_URL=http://localhost:8080 vite --mode no-devtools",
     "dev:no-sandbox": "vite --mode no-devtools --no-sandbox",
     "build": "tsc -b && vite build --config vite.config.ts && vite build --config vite.electron.config.ts --mode electron",
     "build:web": "tsc -b && vite build --mode web",

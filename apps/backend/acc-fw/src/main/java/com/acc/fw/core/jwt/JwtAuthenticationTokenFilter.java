@@ -20,8 +20,12 @@ import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.context.SecurityContextHolderStrategy;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 import com.acc.boot.config.properties.ApplicationProperties;
@@ -32,6 +36,9 @@ import io.jsonwebtoken.Claims;
 public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
 
   Logger logger = LoggerFactory.getLogger(JwtAuthenticationTokenFilter.class);
+
+  private final SecurityContextHolderStrategy securityContextHolderStrategy = SecurityContextHolder.getContextHolderStrategy();
+  private final SecurityContextRepository securityContextRepository = new RequestAttributeSecurityContextRepository();
 
   @Value("${application.security.jwtTokenHeader}")
   private String tokenHeaderName;
@@ -67,12 +74,20 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
           Optional<String> usernameOpt = jwtTokenHelper.getUsername(c);
           List<GrantedAuthority> authorities = jwtTokenHelper.getAuthorities(c);
           Optional<String> tenantIdOpt = jwtTokenHelper.getTenantId(c);
-          if (tenantIdOpt.isEmpty() || tenantIdOpt.get().trim().isEmpty()) {
+          String tenantId = tenantIdOpt.orElse(null);
+          if (StringUtils.isBlank(tenantId)) {
+            boolean isSovereign = authorities.stream().anyMatch(a ->
+                a.getAuthority().contains("SYSTEM") || a.getAuthority().contains("CUSTODIAN") || a.getAuthority().contains("ADMIN"));
+            if (isSovereign) {
+              tenantId = "SYSTEM";
+            }
+          }
+          if (StringUtils.isBlank(tenantId)) {
             logger.warn("Authentication rejected for user {}: Missing or unassigned tenant ID.",
                 usernameOpt.orElse("anonymous"));
             return null;
           }
-          String tenantId = tenantIdOpt.get().trim();
+          tenantId = tenantId.trim();
           if (usernameOpt.isPresent()) {
             JwtAuthenticationToken authentication = new JwtAuthenticationToken(usernameOpt.get(), c, authorities,
                 tenantId);
@@ -108,7 +123,12 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
     String authenticationToken = this.readCookie(request, jwtCookieName).orElse(header);
     String path = request.getRequestURI();
 
-    if (StringUtils.isBlank(authenticationToken) || path.endsWith(this.tokenUrl)) {
+    if (StringUtils.isBlank(authenticationToken)
+        || path.endsWith(this.tokenUrl)
+        || path.endsWith("/api/auth/token")
+        || path.endsWith("/auth/token")
+        || path.endsWith("/api/auth/refresh")
+        || path.endsWith("/auth/refresh")) {
       filterChain.doFilter(request, response);
       return;
     }
@@ -118,12 +138,16 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
     }
     Optional<JwtAuthenticationToken> authResult = attemptAuthentication(request, authenticationToken);
     if (!authResult.isPresent()) {
-      SecurityContextHolder.clearContext();
+      securityContextHolderStrategy.clearContext();
       response.setStatus(HttpStatus.UNAUTHORIZED.value());
       return;
     }
     JwtAuthenticationToken authentication = authResult.get();
-    SecurityContextHolder.getContext().setAuthentication(authentication);
+    SecurityContext securityContext = securityContextHolderStrategy.createEmptyContext();
+    securityContext.setAuthentication(authentication);
+    SecurityContextHolder.setContext(securityContext);
+    securityContextHolderStrategy.setContext(securityContext);
+    securityContextRepository.saveContext(securityContext, request, response);
     context.init(authenticationToken);
 
     String tenantId = authentication.getTenantId();

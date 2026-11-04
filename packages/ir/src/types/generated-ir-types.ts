@@ -416,6 +416,45 @@ export interface TextStyleModifierParams {
   };
 }
 
+/** Parameter schema for text/draw standalone overlay text object modifier */
+export interface TextDrawModifierParams {
+  text: string;
+  fontFamily?: string;
+  fontSize?: number;
+  fontWeight?: string | number;
+  fontStyle?: "normal" | "italic";
+  letterSpacing?: number;
+  lineHeight?: number;
+  textAlign?: "left" | "center" | "right";
+  textColor?: string;
+  fillColor?: string;
+  fillGradient?: {
+    type?: "linear" | "radial";
+    colors?: string[];
+    angleDeg?: number;
+  };
+  strokeColor?: string;
+  strokeWidth?: number;
+  glowColor?: string;
+  glowBlur?: number;
+  shadowColor?: string;
+  shadowBlur?: number;
+  shadowOffsetX?: number;
+  shadowOffsetY?: number;
+  backgroundColor?: string;
+  backgroundOpacity?: number;
+  paddingX?: number;
+  paddingY?: number;
+  borderRadius?: number;
+  borderColor?: string;
+  borderWidth?: number;
+  maxWidth?: number;
+  normX?: number;
+  normY?: number;
+  x?: number;
+  y?: number;
+}
+
 export interface VolumeModifierParams {
   volume?: number;
   fadeInSec?: number;
@@ -1027,5 +1066,5 @@ export interface KineticHarmonographModifierParams {
   boundary?: "loop" | "pingpong" | "clamp" | "once";
 }
 
-/** Canonical discriminator enum of all 53 registered modifier types */
-export type ModifierTypeEnum = "transform" | "vfx/depth_relighting" | "vfx/camera_3d" | "vfx/depth3d" | "vfx/auto_reframe" | "vfx/color_grading" | "vfx/partial" | "motion/gsap" | "motion/vector_blur" | "timed_text/style" | "shape/draw" | "shape/vector" | "sfx/procedural" | "sfx/dynamic_ducking" | "editorial/split_edit" | "transition/crossfade" | "transition/wipe" | "transition/push" | "transition/zoom" | "transition/dip" | "transition/glitch" | "transition/light_leak" | "transition/radial_wipe" | "transition/iris" | "overlay/blend_mode" | "overlay/canvas_particles" | "overlay/hologram_hud" | "generator/solid_backdrop" | "audio/volume" | "audio/pan" | "audio/filter" | "audio/pitch" | "timeline/photometric_bloom" | "timeline/anamorphic_glare" | "time_space" | "time_space/callout_leader" | "time_space/callout_multitarget" | "time_space/hud_reticle" | "time_space/kinetic_title" | "time_space/cyber_lower_third" | "time_space/countdown" | "time_space/network_plexus" | "time_space/audio_waveform" | "time_space/audio_spectrum" | "time_space/superformula" | "time_space/energy_shield" | "time_space/glitch_data_stream" | "time_space/cymatic_chladni" | "time_space/strange_attractor" | "time_space/relativistic_blackhole" | "time_space/topographic_contour" | "time_space/hyperbolic_poincare" | "time_space/kinetic_harmonograph";
+/** Canonical discriminator enum of all 55 registered modifier types */
+export type ModifierTypeEnum = "transform" | "vfx/depth_relighting" | "vfx/camera_3d" | "vfx/depth3d" | "vfx/auto_reframe" | "vfx/color_grading" | "vfx/partial" | "motion/gsap" | "motion/vector_blur" | "timed_text/style" | "text/draw" | "text/overlay" | "shape/draw" | "shape/vector" | "sfx/procedural" | "sfx/dynamic_ducking" | "editorial/split_edit" | "transition/crossfade" | "transition/wipe" | "transition/push" | "transition/zoom" | "transition/dip" | "transition/glitch" | "transition/light_leak" | "transition/radial_wipe" | "transition/iris" | "overlay/blend_mode" | "overlay/canvas_particles" | "overlay/hologram_hud" | "generator/solid_backdrop" | "audio/volume" | "audio/pan" | "audio/filter" | "audio/pitch" | "timeline/photometric_bloom" | "timeline/anamorphic_glare" | "time_space" | "time_space/callout_leader" | "time_space/callout_multitarget" | "time_space/hud_reticle" | "time_space/kinetic_title" | "time_space/cyber_lower_third" | "time_space/countdown" | "time_space/network_plexus" | "time_space/audio_waveform" | "time_space/audio_spectrum" | "time_space/superformula" | "time_space/energy_shield" | "time_space/glitch_data_stream" | "time_space/cymatic_chladni" | "time_space/strange_attractor" | "time_space/relativistic_blackhole" | "time_space/topographic_contour" | "time_space/hyperbolic_poincare" | "time_space/kinetic_harmonograph";

@@ -27,7 +27,7 @@ This plan incorporates the architectural decisions established during technical 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
 │                   Main Thread (apps/studio)                            │
-│  - StudioPlayheadController (High-frequency playhead ticks & scrubs)   │
+│  - PlayheadController (High-frequency playhead ticks & scrubs)   │
 │  - Timeline & Preview UI (Passes timeline IR & asset URLs to worker)   │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     │ transferControlToOffscreen() + postMessage
@@ -125,7 +125,7 @@ This plan incorporates the architectural decisions established during technical 
 **Target File**: `apps/studio/src/components/Preview.tsx` & `apps/studio/src/lib/worker/PreviewWorkerBridge.ts` [MODIFY]
 - Remove per-frame synchronous `createImageBitmap` and `Promise.all` in `Preview.tsx`.
 - Simply pass asset metadata / URLs to the worker on project load or asset update; let the worker handle all decoding and texture streaming internally.
-- Update `StudioPlayheadController` high-frequency subscriber to pass scrub rate metadata.
+- Update `PlayheadController` high-frequency subscriber to pass scrub rate metadata.
 
 ---
 

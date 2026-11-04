@@ -11,10 +11,10 @@ import java.util.Map;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record WorkflowDefinition(
     String workflowKey,
-    int version,
+    Integer version,
     String name,
     String description,
-    int timeoutSeconds,
+    Integer timeoutSeconds,
     List<TaskDefinition> tasks,
     Map<String, Object> layoutMetadata
 ) {
@@ -22,13 +22,13 @@ public record WorkflowDefinition(
         if (workflowKey == null || workflowKey.isBlank()) {
             throw new IllegalArgumentException("workflowKey is required");
         }
-        if (version <= 0) {
+        if (version == null || version <= 0) {
             version = 1;
         }
         if (name == null || name.isBlank()) {
             name = workflowKey;
         }
-        if (timeoutSeconds <= 0) {
+        if (timeoutSeconds == null || timeoutSeconds <= 0) {
             timeoutSeconds = 3600;
         }
         tasks = tasks != null ? Collections.unmodifiableList(tasks) : Collections.emptyList();

@@ -183,7 +183,7 @@ export class GRPCAIStrategy implements IAIClientStrategy {
         if (await this.isAvailable()) return true;
 
         if (!GRPCAIStrategy.daemonProcess) {
-          const pythonBackendDir = path.resolve(__dirname, '../../../../apps/ai-supervisor/python-backend');
+          const pythonBackendDir = path.resolve(__dirname, '../../../../apps/python-backend');
           Logger.info('IPCFacade', `Auto-bootstrapping Python AI Daemon via uv in ${pythonBackendDir}...`);
 
           const port = process.env.ACC_GRPC_PORT || '50051';

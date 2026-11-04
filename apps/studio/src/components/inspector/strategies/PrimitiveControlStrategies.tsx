@@ -1,5 +1,6 @@
 import React from 'react';
 import { Input } from '../../ui/input';
+import { Textarea } from '../../ui/textarea';
 import { Slider } from '../../ui/slider';
 import { Switch } from '../../ui/switch';
 import type { ParamFieldDescriptor } from '@acc/ir';
@@ -172,18 +173,31 @@ export const StringControlStrategy: React.FC<ControlStrategyProps> = ({
   onChange,
   disabled = false,
 }) => {
+  const isMultiLine = descriptor.key === 'text' || (descriptor as any).type === 'textarea';
+
   return (
     <div className={`space-y-1 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
       <span className="text-[11px] font-medium text-foreground/90 block">
         {descriptor.label}
       </span>
-      <Input
-        type="text"
-        disabled={disabled}
-        value={String(value ?? descriptor.defaultValue ?? '')}
-        onChange={(e) => !disabled && onChange(e.target.value)}
-        className="w-full h-7 px-2 text-xs font-mono rounded border border-glass-border bg-glass-surface text-foreground disabled:cursor-not-allowed"
-      />
+      {isMultiLine ? (
+        <Textarea
+          disabled={disabled}
+          value={String(value ?? descriptor.defaultValue ?? '')}
+          onChange={(e) => !disabled && onChange(e.target.value)}
+          rows={3}
+          placeholder="Enter text..."
+          className="w-full min-h-[64px] p-2 text-xs font-mono rounded border border-glass-border bg-glass-surface text-foreground disabled:cursor-not-allowed resize-y"
+        />
+      ) : (
+        <Input
+          type="text"
+          disabled={disabled}
+          value={String(value ?? descriptor.defaultValue ?? '')}
+          onChange={(e) => !disabled && onChange(e.target.value)}
+          className="w-full h-7 px-2 text-xs font-mono rounded border border-glass-border bg-glass-surface text-foreground disabled:cursor-not-allowed"
+        />
+      )}
     </div>
   );
 };

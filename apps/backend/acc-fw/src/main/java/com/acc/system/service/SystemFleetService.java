@@ -288,12 +288,22 @@ public class SystemFleetService {
                 "ROLE_WORKSPACE_OWNER",
                 "ROLE_STANDARD_MEMBER",
                 "platform:fleet:read",
+                "platform:fleet:mutate",
                 "platform:tenant:assume",
+                "platform:quotas:manage",
+                "platform:roles:manage",
+                "platform:users:manage",
                 "platform:dlq:manage",
                 "metadata:schema:read",
                 "metadata:schema:write",
-                "metadata:record:read",
-                "metadata:record:write"
+                "entity:record:read",
+                "entity:record:create",
+                "entity:record:update",
+                "entity:record:delete",
+                "workspace:settings:manage",
+                "workspace:members:manage",
+                "audit:log:read",
+                "audit:compliance:export"
         );
         claims.put(JwtTokenHelper.CLAIM_KEY_AUTHORITIES, authorities);
 
@@ -510,12 +520,14 @@ public class SystemFleetService {
                 .description("Ultimate sovereign authority across all tenants and infrastructure.")
                 .systemRole(true)
                 .permissions(List.of(
-                        "platform:fleet:read", "platform:fleet:mutate",
-                        "platform:tenant:assume", "platform:quotas:override",
-                        "platform:roles:manage", "platform:users:lock",
-                        "platform:dlq:manage", "platform:audit:export",
-                        "metadata:schema:read", "metadata:schema:write",
-                        "metadata:record:read", "metadata:record:write"
+                        "platform:fleet:read", "platform:fleet:mutate", "platform:fleet:trip_circuit",
+                        "platform:tenant:assume", "platform:tenant:purge", "platform:quotas:manage",
+                        "platform:roles:manage", "platform:users:manage", "platform:dlq:manage", "platform:workers:manage",
+                        "metadata:schema:read", "metadata:schema:write", "metadata:blueprint:package", "metadata:blueprint:provision", "metadata:cache:evict",
+                        "entity:record:read", "entity:record:create", "entity:record:update", "entity:record:delete", "entity:record:export",
+                        "workspace:settings:manage", "workspace:members:manage",
+                        "audit:log:read", "audit:hash:verify", "audit:compliance:export",
+                        "billing:tier:override", "billing:invoice:adjust"
                 ))
                 .inheritedRoles(List.of("ROLE_WORKSPACE_OWNER", "ROLE_STANDARD_MEMBER"))
                 .userCount(1)
@@ -529,33 +541,7 @@ public class SystemFleetService {
                 .systemRole(true)
                 .permissions(List.of(
                         "platform:fleet:read", "platform:tenant:assume",
-                        "metadata:schema:read", "metadata:record:read"
-                ))
-                .inheritedRoles(Collections.emptyList())
-                .userCount(1)
-                .createdDate(LocalDateTime.now())
-                .build());
-
-        roleMatrixStore.put("ROLE_SYSTEM_VERIFIER", RoleWithPermissionsDto.builder()
-                .roleId("ROLE_SYSTEM_VERIFIER")
-                .roleName("Sovereign Verifier")
-                .description("Two-person quorum task verification and compliance auditor.")
-                .systemRole(true)
-                .permissions(List.of(
-                        "platform:fleet:read", "platform:audit:export"
-                ))
-                .inheritedRoles(Collections.emptyList())
-                .userCount(1)
-                .createdDate(LocalDateTime.now())
-                .build());
-
-        roleMatrixStore.put("ROLE_SYSTEM_APPROVER", RoleWithPermissionsDto.builder()
-                .roleId("ROLE_SYSTEM_APPROVER")
-                .roleName("Sovereign Approver")
-                .description("Two-person quorum action approver and fleet reader.")
-                .systemRole(true)
-                .permissions(List.of(
-                        "platform:fleet:read", "platform:audit:export"
+                        "metadata:schema:read", "entity:record:read", "audit:log:read"
                 ))
                 .inheritedRoles(Collections.emptyList())
                 .userCount(1)
@@ -570,10 +556,11 @@ public class SystemFleetService {
                 .systemRole(false)
                 .permissions(List.of(
                         "metadata:schema:read", "metadata:schema:write",
-                        "metadata:record:read", "metadata:record:write", "metadata:record:delete",
-                        "workspace:settings:manage", "workspace:members:manage",
-                        "workspace:billing:manage", "workspace:integrations:manage",
-                        "workspace:export:data", "workspace:audit:read"
+                        "entity:record:read", "entity:record:create", "entity:record:update", "entity:record:delete", "entity:record:export",
+                        "workspace:settings:read", "workspace:settings:manage", "workspace:members:read", "workspace:members:manage",
+                        "workflow:definition:manage", "workflow:execution:submit",
+                        "audit:log:read",
+                        "billing:subscription:read", "billing:subscription:upgrade"
                 ))
                 .inheritedRoles(List.of("ROLE_OPERATIONS_MANAGER", "ROLE_STANDARD_MEMBER"))
                 .userCount(12)
@@ -587,8 +574,9 @@ public class SystemFleetService {
                 .systemRole(false)
                 .permissions(List.of(
                         "metadata:schema:read", "metadata:schema:write",
-                        "metadata:record:read", "metadata:record:write", "metadata:record:delete",
-                        "workspace:integrations:manage", "workspace:export:data"
+                        "entity:record:read", "entity:record:create", "entity:record:update", "entity:record:delete", "entity:record:export",
+                        "workspace:settings:read",
+                        "workflow:definition:manage", "workflow:execution:submit"
                 ))
                 .inheritedRoles(List.of("ROLE_STANDARD_MEMBER"))
                 .userCount(25)
@@ -601,7 +589,8 @@ public class SystemFleetService {
                 .description("Standard member with data record read and write access.")
                 .systemRole(false)
                 .permissions(List.of(
-                        "metadata:schema:read", "metadata:record:read", "metadata:record:write"
+                        "metadata:schema:read", "entity:record:read", "entity:record:create", "entity:record:update",
+                        "workspace:settings:read", "workflow:execution:submit"
                 ))
                 .inheritedRoles(Collections.emptyList())
                 .userCount(148)
@@ -614,7 +603,7 @@ public class SystemFleetService {
                 .description("Restricted view-only role for compliance and audit logging.")
                 .systemRole(false)
                 .permissions(List.of(
-                        "metadata:schema:read", "metadata:record:read", "workspace:audit:read"
+                        "metadata:schema:read", "entity:record:read", "workspace:settings:read", "audit:log:read", "audit:compliance:export"
                 ))
                 .inheritedRoles(Collections.emptyList())
                 .userCount(5)

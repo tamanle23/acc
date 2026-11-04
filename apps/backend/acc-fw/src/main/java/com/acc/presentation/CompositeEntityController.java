@@ -34,7 +34,7 @@ public class CompositeEntityController {
     private static final Pattern CHILD_OFFSET_PATTERN = Pattern.compile("^childOffset\\[([^\\]]+)\\]$");
 
     @GetMapping("/{id}/records")
-    @PreAuthorize("hasAuthority('METADATA_RECORD_READ') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('entity:record:read')")
     public ResponseEntity<ResponseWrapper<ContextHeader, Page<CompositeRecordResponse>>> getCompositeRecords(
             @PathVariable("id") Long id,
             @ModelAttribute PageRequest pageRequest,
@@ -54,7 +54,7 @@ public class CompositeEntityController {
     }
 
     @GetMapping("/{id}/records/{recordId}")
-    @PreAuthorize("hasAuthority('METADATA_RECORD_READ') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('entity:record:read')")
     public ResponseEntity<ResponseWrapper<ContextHeader, CompositeRecordResponse>> getCompositeRecord(
             @PathVariable("id") Long id,
             @PathVariable("recordId") Long recordId,

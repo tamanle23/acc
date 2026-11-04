@@ -3,5 +3,10 @@ package com.acc.user.model.enums;
 public enum PermissionType {
   ENTITY,
   MODULE,
-  WORKFLOW
+  WORKFLOW,
+  PLATFORM,
+  METADATA,
+  SECURITY,
+  COMMERCIAL,
+  ORGANIZATION
 }

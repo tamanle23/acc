@@ -175,7 +175,7 @@ public class WorkflowApprovalsController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAuthority('WORKFLOW_READ') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('workflow:execution:read') or hasRole('ADMIN')")
     public ResponseEntity<List<ApprovalTaskDto>> listApprovals(
         @RequestParam(value = "status", required = false) String statusFilter
     ) {
@@ -196,7 +196,7 @@ public class WorkflowApprovalsController {
     }
 
     @PostMapping("/{id}/resolve")
-    @PreAuthorize("hasAuthority('WORKFLOW_WRITE') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('workflow:approval:execute') or hasRole('ADMIN')")
     public ResponseEntity<?> resolveApproval(
         @PathVariable("id") String id,
         @RequestBody ResolveApprovalRequest req

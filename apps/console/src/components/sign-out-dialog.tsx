@@ -1,5 +1,4 @@
 import { useNavigate, useLocation } from '@tanstack/react-router'
-import { useAuthStore } from '@/stores/auth-store'
 import { useSpringAuthStore, springApiClient } from '@/features/spring-auth'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { toast } from 'sonner'
@@ -14,8 +13,6 @@ export function SignOutDialog({ open, onOpenChange }: SignOutDialogProps) {
   const navigate = useNavigate()
   const location = useLocation()
 
-  // Keep legacy store for compatibility if needed, but primary is Spring Auth
-  const { auth } = useAuthStore()
   const { clearTokens } = useSpringAuthStore()
   const [isLoading, setIsLoading] = useState(false)
 
@@ -29,7 +26,6 @@ export function SignOutDialog({ open, onOpenChange }: SignOutDialogProps) {
     } finally {
       // Clear local states
       clearTokens();
-      auth.reset(); // Legacy auth state
       setIsLoading(false);
       onOpenChange(false);
 

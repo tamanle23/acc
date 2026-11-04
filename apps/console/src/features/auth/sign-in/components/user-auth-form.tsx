@@ -7,7 +7,7 @@ import { Loader2, LogIn, ShieldAlert, Fingerprint } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
 import { IconFacebook, IconGithub } from '@acc/ui/icons'
-import { useSpringAuthStore, springApiClient } from '@/features/spring-auth'
+import { useSpringAuthStore, springApiClient, fetchAuthenticationProfile } from '@/features/spring-auth'
 import { PasswordRotationModal } from '@/features/auth/components/password-rotation-modal'
 import {
   useSandboxStore,
@@ -81,6 +81,15 @@ export function UserAuthForm({
       const accessToken = response.data?.body?.accessToken || response.data?.accessToken;
       const refreshToken = response.data?.body?.refreshToken || response.data?.refreshToken;
       setTokens(accessToken, refreshToken);
+
+      // Hydrate authentication profile from session endpoint before navigating
+      try {
+        const profile = await fetchAuthenticationProfile(accessToken);
+        useSpringAuthStore.getState().setUser(profile);
+      } catch (profError) {
+        console.error('Failed to hydrate authentication profile:', profError);
+      }
+
       toast.success(`Welcome back, ${data.email}!`);
 
       const targetPath = redirectTo || '/'
@@ -124,6 +133,12 @@ export function UserAuthForm({
         const refreshToken = verifyRes.data?.body?.refreshToken || verifyRes.data?.refreshToken
         if (accessToken) {
           setTokens(accessToken, refreshToken)
+          try {
+            const profile = await fetchAuthenticationProfile()
+            useSpringAuthStore.getState().setUser(profile)
+          } catch (profError) {
+            console.error('Failed to hydrate passkey authentication profile:', profError)
+          }
           toast.success('Passkey verification successful!')
           navigate({ to: redirectTo || '/', replace: true })
         }
@@ -134,6 +149,12 @@ export function UserAuthForm({
         const refreshToken = verifyRes.data?.body?.refreshToken || verifyRes.data?.refreshToken
         if (accessToken) {
           setTokens(accessToken, refreshToken)
+          try {
+            const profile = await fetchAuthenticationProfile()
+            useSpringAuthStore.getState().setUser(profile)
+          } catch (profError) {
+            console.error('Failed to hydrate passkey authentication profile:', profError)
+          }
           toast.success('Passkey verification successful!')
           navigate({ to: redirectTo || '/', replace: true })
         }
@@ -168,6 +189,15 @@ export function UserAuthForm({
       const accessToken = response.data?.body?.accessToken || response.data?.accessToken;
       const refreshToken = response.data?.body?.refreshToken || response.data?.refreshToken;
       setTokens(accessToken, refreshToken);
+
+      // Hydrate authentication profile for the selected persona
+      try {
+        const profile = await fetchAuthenticationProfile();
+        useSpringAuthStore.getState().setUser(profile);
+      } catch (profError) {
+        console.error('Failed to hydrate sandbox authentication profile:', profError);
+      }
+
       toast.success(
         t('auth.sandbox.successToast', 'Sandbox Login Successful ({{role}})', {
           role: persona.name,

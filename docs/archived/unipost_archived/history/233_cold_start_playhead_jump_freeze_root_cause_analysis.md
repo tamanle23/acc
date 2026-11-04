@@ -19,7 +19,7 @@ flowchart TD
     D1 --> E2["Synchronous syncFromIR() -> AudioAssetCache.preloadAssets()"]
     E2 --> E3["4+ unthrottled fetch() + decodeAudioData() on Main Thread"]
     
-    C --> D2["StudioPlayheadController.seek(60)"]
+    C --> D2["PlayheadController.seek(60)"]
     D2 --> F1["Preview.tsx subscribeHighFrequency -> bridge.renderFrame(60)"]
     F1 --> G1["preview.worker.ts: renderCurrentFrame(60)"]
     G1 --> H1["MediabunnyWorkerReader.requestFrame(60)"]

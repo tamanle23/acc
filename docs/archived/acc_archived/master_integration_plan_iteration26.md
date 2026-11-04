@@ -8,7 +8,7 @@ Iteration 26 targets five core pillars across `/frontend-app-architect`, `/ui-ux
 2. **Decomposed Component Test Suite Harmonization (Pillar 2)**: Re-align legacy monolithic string-matching tests (in `studio_liquid_glass_theme.test.ts`, `studio_phase1_declarative_vfx.test.ts`, `studio_theme_tokens.test.ts`) that were inspecting `Timeline.tsx` and `Preview.tsx` before they were decomposed into submodules in Tasks 302 and 303.
 3. **Visual Easing & Transition Curve Graphs (Pillar 3)**: Elevate `EasingCurveSelector.tsx` and `DynamicModifierInspector.tsx` with interactive SVG/Canvas Bézier preview graphs and keyframe timeline scrubbing.
 4. **5-State Component Matrix & WCAG 2.1 AA Audit (Pillar 4)**: Ensure every major panel in `@acc/studio` (Timeline, Preview, Bento Card, Inspectors, Debugger) explicitly renders the mandatory 5 states: *Default*, *Loading* (skeletons), *Empty* (contextual CTA), *Error* (actionable retry), and *Disabled/Read-only*.
-5. **Deterministic Playhead & Transport Sync (Pillar 5)**: Complete the reactive loop between `StudioPlayheadController`, `DeterministicTimelineClock`, and `AudioWorklet` for frame-accurate playback transport.
+5. **Deterministic Playhead & Transport Sync (Pillar 5)**: Complete the reactive loop between `PlayheadController`, `DeterministicTimelineClock`, and `AudioWorklet` for frame-accurate playback transport.
 
 ---
 

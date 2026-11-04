@@ -10,7 +10,7 @@
 2. **Abandoned Promises:** `PreviewWorkerCoordinator.reset()` clears `this.activeTasks` without rejecting pending promises, causing caller hangs.
 3. **Keyboard Collision:** Five disparate `window.addEventListener('keydown')` listeners collide on `Cmd+K` vs pure `K` (shuttle pause), `Delete`/`Backspace` double-triggers, and `Space` (hand tool vs play toggle).
 4. **Async Compilation Race:** `IRStateManager.dispatch()` triggers un-awaited async compilations that interleave during rapid dragging, overwriting newer state with stale timelines.
-5. **Playhead Stuttering:** `useShuttleEngine.ts` throttles playhead ticks to 15 FPS (66ms) before notifying `StudioPlayheadController`, causing high-frequency canvas/needle animation to stutter.
+5. **Playhead Stuttering:** `useShuttleEngine.ts` throttles playhead ticks to 15 FPS (66ms) before notifying `PlayheadController`, causing high-frequency canvas/needle animation to stutter.
 6. **Command Duplication & Heavy Serialization:** `TimelineCommandDispatcher` retains unbounded history, while 60+ command instances use `JSON.parse(JSON.stringify(doc))` deep clones instead of native `structuredClone`.
 7. **Audio RAM Churn:** `AudioAssetCache` caches raw uncompressed PCM in heap instead of streaming from OPFS via `ContentCacheRegistry`, and duplicates `AudioContext`.
 
@@ -26,7 +26,7 @@
 
 ### Phase 2: P1 Concurrency, 60 FPS Motion & Preflight Hashing
 - **Two-Tier Compilation Guard:** Make `IRStateManager.dispatch()` return `Promise<void>` with an internal sequential execution queue and monotonic epoch counter. Expose `isCompiling` to the UI to prevent overlapping edits.
-- **60 FPS Playhead Decoupling:** In `useShuttleEngine.ts`, call `StudioPlayheadController.seek()` on **every** RAF frame tick (60 FPS) while keeping React state updates throttled to 10–15 Hz.
+- **60 FPS Playhead Decoupling:** In `useShuttleEngine.ts`, call `PlayheadController.seek()` on **every** RAF frame tick (60 FPS) while keeping React state updates throttled to 10–15 Hz.
 - **Preflight Content Hashing:** Hash `modifier.params` into the coordinator task key (`${targetId}:${type}:${contentHash}`) so parameter edits are never skipped.
 - **Decoder Concurrency Gate:** Pause lookahead speculative decodes when sequential playback is actively streaming frames from `CanvasSink`.
 

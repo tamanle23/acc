@@ -25,6 +25,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.acc.boot.config.properties.ApplicationProperties;
+import com.acc.fw.core.jwt.JwtAuthenticationEntryPoint;
 import com.acc.fw.core.jwt.JwtAuthenticationTokenFilter;
 
 @Configuration
@@ -43,6 +44,9 @@ public class SecurityConfiguration {
 
   @Autowired(required = false)
   UserDetailsService userDetailsService;
+
+  @Autowired
+  private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
   @Autowired
   private Environment environment;
@@ -67,20 +71,22 @@ public class SecurityConfiguration {
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
     if (!this.environment.acceptsProfiles(Profiles.of("nonsecured"))) {
       http
-        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
-        .httpBasic(hb -> {})
+        .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .securityContext(sc -> sc.requireExplicitSave(false))
+        .httpBasic(hb -> hb.disable())
+        .exceptionHandling(eh -> eh.authenticationEntryPoint(jwtAuthenticationEntryPoint))
         .logout(logout -> logout.permitAll());
 
       http.authorizeHttpRequests(authz -> {
         if (applicationProperties.getSecurity() != null && applicationProperties.getSecurity().getPermitAlls() != null) {
           authz.requestMatchers(applicationProperties.getSecurity().getPermitAlls()).permitAll();
         }
+        authz.requestMatchers("/api/auth/token", "/api/auth/refresh", "/api/auth/passkey/**").permitAll();
         authz.anyRequest().authenticated();
       });
       http.csrf(csrf -> {
-        if (applicationProperties.getSecurity() != null && applicationProperties.getSecurity().getPermitAlls() != null) {
-          csrf.ignoringRequestMatchers(applicationProperties.getSecurity().getPermitAlls());
-        }
+        csrf.disable();
       });
 
       http.addFilterBefore(publishableKeyFilter(), UsernamePasswordAuthenticationFilter.class);
