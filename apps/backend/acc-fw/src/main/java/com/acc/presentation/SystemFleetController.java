@@ -94,7 +94,7 @@ public class SystemFleetController {
      * Sovereign data volume & workspace quota override injection.
      */
     @PutMapping("/tenants/{id}/quotas")
-    @PreAuthorize("hasAnyAuthority('ROLE_SYSTEM_ROOT', 'platform:quotas:override') or hasRole('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SYSTEM_ROOT', 'platform:quotas:manage', 'platform:quotas:override') or hasRole('ADMIN')")
     public ResponseEntity<ResponseWrapper<ContextHeader, FleetTenantSummaryDto>> updateTenantQuotas(
             @PathVariable("id") String tenantId,
             @Valid @RequestBody UpdateTenantQuotasRequest request) {
@@ -164,7 +164,7 @@ public class SystemFleetController {
      * Emergency credential lockdown (lock/unlock user).
      */
     @PutMapping("/users/{id}/lock")
-    @PreAuthorize("hasAnyAuthority('ROLE_SYSTEM_ROOT', 'platform:users:lock') or hasRole('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SYSTEM_ROOT', 'platform:users:manage', 'platform:users:lock') or hasRole('ADMIN')")
     public ResponseEntity<ResponseWrapper<ContextHeader, GlobalUserListItemDto>> lockUser(
             @PathVariable("id") String userId,
             @Valid @RequestBody LockUserRequest request) {

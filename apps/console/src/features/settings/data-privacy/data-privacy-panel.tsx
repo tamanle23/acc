@@ -24,7 +24,7 @@ import {
   Loader2,
   FileCheck,
 } from 'lucide-react';
-import { useAuthStore } from '@/stores/auth-store';
+import { useSpringAuthStore } from '@/features/spring-auth';
 
 interface CertificateOfErasure {
   certificateId: string;
@@ -40,8 +40,8 @@ interface CertificateOfErasure {
 }
 
 export const DataPrivacyPanel: React.FC = () => {
-  const authUser = useAuthStore((state) => state.auth.user);
-  const activeTenantId = (authUser as any)?.tenantId || 'tenant-acme';
+  const authUser = useSpringAuthStore((state) => state.user);
+  const activeTenantId = authUser?.tenantId || 'tenant-acme';
 
   // Export state
   const [isExporting, setIsExporting] = useState(false);

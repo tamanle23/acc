@@ -44,7 +44,6 @@ vi.mock('../../store/use-metadata-ui-store', () => ({
     setSelectedEntityTypeId: (id: string) => {
       selectedId = id;
     },
-    canManageSchema: () => true,
     openCreateEntityTypeDialog: vi.fn(),
     openEditEntityTypeDialog: vi.fn(),
     openDeleteEntityTypeDialog: vi.fn(),
@@ -61,11 +60,15 @@ vi.mock('../../api/use-billing', () => ({
   }),
 }));
 
-vi.mock('@/features/spring-auth', () => ({
-  usePermissions: () => ({
-    isSovereignCustodian: true,
-  }),
-}));
+vi.mock('@/features/spring-auth', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, any>>();
+  return {
+    ...actual,
+    usePermissions: () => ({
+      isSovereignCustodian: true,
+    }),
+  };
+});
 
 describe('EntityTypeSidebar Composite Filter', () => {
   beforeEach(() => {

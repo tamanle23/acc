@@ -16,6 +16,8 @@ import {
   CurveControlStrategy,
 } from './strategies/PrimitiveControlStrategies';
 import { RegionsArrayControlStrategy } from './strategies/RegionsArrayControlStrategy';
+// Composite Strategies (Decomposed per Task 303)
+// Exposes Motion Preset & Lifecycle controls: Pop In, Slide In, Bounce, Intro Duration, Outro Duration
 import {
   MotionLifecycleControlStrategy,
   ShaderGroupControlStrategy,

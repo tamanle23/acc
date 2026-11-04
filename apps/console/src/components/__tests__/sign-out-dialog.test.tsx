@@ -18,12 +18,6 @@ vi.mock('@/features/spring-auth', () => ({
   },
 }))
 
-vi.mock('@/stores/auth-store', () => ({
-  useAuthStore: () => ({
-    auth: { reset: vi.fn() },
-  }),
-}))
-
 vi.mock('sonner', () => ({
   toast: { success: vi.fn() },
 }))

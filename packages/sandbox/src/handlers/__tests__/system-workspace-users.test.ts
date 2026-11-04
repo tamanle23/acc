@@ -3,6 +3,7 @@ import { systemSandboxHandler, mockFleetStore } from '../system-sandbox-handler'
 import { workspaceSandboxHandler, sandboxWorkspaceRepository } from '../workspace-sandbox-handler';
 import { usersSandboxHandler, usersSandboxRepo } from '../users-sandbox-handler';
 import { defaultSandboxStore } from '../../store';
+import { createMockJwt } from '../auth-sandbox-handler';
 
 describe('System, Workspace, and Users Sandbox Handlers Suite', () => {
   beforeEach(() => {
@@ -12,10 +13,14 @@ describe('System, Workspace, and Users Sandbox Handlers Suite', () => {
     defaultSandboxStore.resetToDefaults();
   });
 
+  const validHeaders = {
+    authorization: `Bearer ${createMockJwt({ sub: 'user-1', tenantId: 'tenant-acme', roles: ['ROLE_WORKSPACE_OWNER'] })}`,
+  };
+
   const createCtx = (path: string, method: string = 'GET') => ({
     pathname: path,
     method,
-    headers: {},
+    headers: validHeaders,
     searchParams: new URLSearchParams(),
     url: path,
   });
@@ -89,14 +94,14 @@ describe('System, Workspace, and Users Sandbox Handlers Suite', () => {
       expect(getRes?.data?.body?.length).toBeGreaterThan(0);
 
       const putReq = {
-        url: 'http://localhost/api/v1/system/roles/ROLE_ADMIN/permissions',
+        url: 'http://localhost/api/v1/system/roles/ROLE_WORKSPACE_OWNER/permissions',
         method: 'PUT',
-        headers: {},
-        data: { permissions: ['READ_METADATA', 'WRITE_METADATA', 'CUSTOM_PERM'] },
+        headers: validHeaders,
+        data: { permissions: ['entity:record:read', 'metadata:schema:read', 'CUSTOM_PERM'] },
       };
       const putRes = await systemSandboxHandler.handler(
         putReq,
-        createCtx('/api/v1/system/roles/ROLE_ADMIN/permissions', 'PUT')
+        createCtx('/api/v1/system/roles/ROLE_WORKSPACE_OWNER/permissions', 'PUT')
       );
       expect(putRes?.status).toBe(200);
       expect(putRes?.data?.body?.permissions).toContain('CUSTOM_PERM');
@@ -113,7 +118,7 @@ describe('System, Workspace, and Users Sandbox Handlers Suite', () => {
     it('lists workspaces and allows creating, setting default, and deleting', async () => {
       defaultSandboxStore.setActiveTenant('tenant-acme');
       // 1. List
-      const listReq = { url: '/api/v1/workspaces', method: 'GET', headers: {} };
+      const listReq = { url: '/api/v1/workspaces', method: 'GET', headers: validHeaders };
       const listRes = await workspaceSandboxHandler.handler(listReq, createCtx('/api/v1/workspaces', 'GET'));
       expect(listRes?.status).toBe(200);
       expect(Array.isArray(listRes?.data?.data)).toBe(true);
@@ -122,7 +127,7 @@ describe('System, Workspace, and Users Sandbox Handlers Suite', () => {
       const createReq = {
         url: '/api/v1/workspaces',
         method: 'POST',
-        headers: {},
+        headers: validHeaders,
         data: {
           code: 'TEMP',
           name: 'Temporary Test Workspace',
@@ -139,7 +144,7 @@ describe('System, Workspace, and Users Sandbox Handlers Suite', () => {
       const defaultReq = {
         url: `/api/v1/workspaces/${createdUid}/default`,
         method: 'PUT',
-        headers: {},
+        headers: validHeaders,
       };
       const defaultRes = await workspaceSandboxHandler.handler(
         defaultReq,
@@ -150,7 +155,7 @@ describe('System, Workspace, and Users Sandbox Handlers Suite', () => {
       const deleteReq = {
         url: `/api/v1/workspaces/${createdUid}`,
         method: 'DELETE',
-        headers: {},
+        headers: validHeaders,
       };
       // Before deleting, switch default so we can delete non-default
       sandboxWorkspaceRepository.setDefault('tenant-acme', 'ws-acme-prod');
@@ -180,7 +185,7 @@ describe('System, Workspace, and Users Sandbox Handlers Suite', () => {
       const postReq = {
         url: '/api/v1/users',
         method: 'POST',
-        headers: {},
+        headers: validHeaders,
         data: {
           username: 'engineer_tester',
           email: 'engineer@acc.vn',
@@ -195,7 +200,7 @@ describe('System, Workspace, and Users Sandbox Handlers Suite', () => {
       expect(newId).toBeDefined();
 
       // 2. Get user
-      const getReq = { url: `/api/v1/users/${newId}`, method: 'GET', headers: {} };
+      const getReq = { url: `/api/v1/users/${newId}`, method: 'GET', headers: validHeaders };
       const getRes = await usersSandboxHandler.handler(getReq, createCtx(`/api/v1/users/${newId}`, 'GET'));
       expect(getRes?.status).toBe(200);
       expect(getRes?.data?.username).toBe('engineer_tester');
@@ -204,7 +209,7 @@ describe('System, Workspace, and Users Sandbox Handlers Suite', () => {
       const patchReq = {
         url: `/api/v1/users/${newId}`,
         method: 'PATCH',
-        headers: {},
+        headers: validHeaders,
         data: { fullName: 'Lead Test Engineer' },
       };
       const patchRes = await usersSandboxHandler.handler(patchReq, createCtx(`/api/v1/users/${newId}`, 'PATCH'));
@@ -212,20 +217,20 @@ describe('System, Workspace, and Users Sandbox Handlers Suite', () => {
       expect(patchRes?.data?.fullName).toBe('Lead Test Engineer');
 
       // 4. Delete user
-      const delReq = { url: `/api/v1/users/${newId}`, method: 'DELETE', headers: {} };
+      const delReq = { url: `/api/v1/users/${newId}`, method: 'DELETE', headers: validHeaders };
       const delRes = await usersSandboxHandler.handler(delReq, createCtx(`/api/v1/users/${newId}`, 'DELETE'));
       expect(delRes?.status).toBe(200);
       expect(delRes?.data?.success).toBe(true);
 
       // 5. 404 checks
       const missingGet = await usersSandboxHandler.handler(
-        { url: '/api/v1/users/usr-ghost', method: 'GET', headers: {} },
+        { url: '/api/v1/users/usr-ghost', method: 'GET', headers: validHeaders },
         createCtx('/api/v1/users/usr-ghost', 'GET')
       );
       expect(missingGet?.status).toBe(404);
 
       const missingPatch = await usersSandboxHandler.handler(
-        { url: '/api/v1/users/usr-ghost', method: 'PATCH', headers: {}, data: {} },
+        { url: '/api/v1/users/usr-ghost', method: 'PATCH', headers: validHeaders, data: {} },
         createCtx('/api/v1/users/usr-ghost', 'PATCH')
       );
       expect(missingPatch?.status).toBe(404);

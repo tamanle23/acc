@@ -75,14 +75,28 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     }
     if (permissions != null) {
       for (String permission : permissions) {
-        GrantedAuthority authority = new SimpleGrantedAuthority(permission.toUpperCase());
+        GrantedAuthority authority = new SimpleGrantedAuthority(permission.toLowerCase());
         authorities.add(authority);
       }
     }
+    String assignedTenant = null;
+    if (userRoles != null && !userRoles.isEmpty()) {
+      for (UserRole ur : userRoles) {
+        if (ur.getTenantId() != null && !ur.getTenantId().trim().isEmpty()) {
+          assignedTenant = ur.getTenantId().trim();
+          break;
+        }
+      }
+    }
+    if (assignedTenant == null || assignedTenant.trim().isEmpty()) {
+      assignedTenant = "SYSTEM";
+    }
+
     Map<String, Object> userMap = new HashMap<>();
     userMap.put("uid", userUser.getUid());
     userMap.put("userName", userUser.getUserName());
     userMap.put("password", userUser.getPassword());
+    userMap.put("tenantId", assignedTenant);
     userMap.put("isNonLocked", userUser.isNonLocked());
     userMap.put("isNonExpired", userUser.isNonExpired());
     userMap.put("isCredentialsNonExpired", userUser.isCredentialsNonExpired());

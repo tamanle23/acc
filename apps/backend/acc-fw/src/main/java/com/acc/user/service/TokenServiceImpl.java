@@ -102,4 +102,130 @@ public class TokenServiceImpl extends CommonReponseBuilder implements TokenServi
   @Override
   public void logout() {
   }
+
+  @Override
+  public com.acc.system.dto.AuthenticationProfileDto getAuthenticationProfile(org.springframework.security.core.Authentication authentication) {
+    if (authentication == null) {
+      throw BusinessException.create().add(ErrorCodes.ERROR_LOGIN_INVALID_CREDENTIALS).setHttpCode(HttpStatus.UNAUTHORIZED.value());
+    }
+    UserDetailsImpl userDetails = null;
+    if (authentication.getPrincipal() instanceof UserDetailsImpl udi) {
+      userDetails = udi;
+    } else if (authentication.getName() != null) {
+      try {
+        UserDetails loaded = userDetailsService.loadUserByUsername(authentication.getName());
+        if (loaded instanceof UserDetailsImpl udi) {
+          userDetails = udi;
+        }
+      } catch (Exception e) {
+        logger.warn("Could not load user details from database for {}: {}", authentication.getName(), e.getMessage());
+      }
+    }
+    if (userDetails != null) {
+      return getAuthenticationProfile(userDetails);
+    }
+
+    // Direct token / security context fallback for sandbox personas or external sessions
+    String username = authentication.getName();
+    String tenantId = null;
+    String userId = username;
+
+    if (authentication instanceof com.acc.fw.core.jwt.JwtAuthenticationToken jwtAuth) {
+      tenantId = jwtAuth.getTenantId();
+      if (jwtAuth.getCredentials() instanceof Claims claims) {
+        Object uDetailsObj = claims.get(JwtTokenHelper.CLAIM_KEY_USER_DETAILS);
+        if (uDetailsObj instanceof java.util.Map<?, ?> uMap) {
+          Object uid = uMap.get("uid");
+          if (uid != null) {
+            userId = String.valueOf(uid);
+          }
+        }
+      }
+    }
+
+    if (org.apache.commons.lang3.StringUtils.isBlank(tenantId)) {
+      tenantId = com.acc.fw.tenancy.TenantContextHolder.getTenantId();
+    }
+    if (org.apache.commons.lang3.StringUtils.isBlank(tenantId)) {
+      tenantId = "SYSTEM";
+    }
+
+    java.util.List<String> roles = authentication.getAuthorities() != null
+        ? authentication.getAuthorities().stream()
+            .map(org.springframework.security.core.GrantedAuthority::getAuthority)
+            .filter(a -> a.startsWith("ROLE_"))
+            .collect(java.util.stream.Collectors.toList())
+        : java.util.Collections.emptyList();
+
+    java.util.List<String> permissions = authentication.getAuthorities() != null
+        ? authentication.getAuthorities().stream()
+            .map(org.springframework.security.core.GrantedAuthority::getAuthority)
+            .filter(a -> !a.startsWith("ROLE_"))
+            .map(String::toLowerCase)
+            .collect(java.util.stream.Collectors.toList())
+        : java.util.Collections.emptyList();
+
+    boolean isSovereign = roles.contains(com.acc.core.constant.CanonicalRoles.ROLE_SYSTEM_ROOT)
+        || roles.contains(com.acc.core.constant.CanonicalRoles.ROLE_SYSTEM_SUPPORT)
+        || "SYSTEM".equalsIgnoreCase(tenantId);
+
+    java.util.List<String> activeFeatures = java.util.List.of("auth", "metadata", "users", "workflows", "billing");
+
+    return com.acc.system.dto.AuthenticationProfileDto.builder()
+        .userId(userId)
+        .username(username)
+        .tenantId(tenantId)
+        .sovereign(isSovereign)
+        .roles(roles)
+        .permissions(permissions)
+        .activeFeatures(activeFeatures)
+        .build();
+  }
+
+  @Override
+  public com.acc.system.dto.AuthenticationProfileDto getAuthenticationProfile(UserDetailsImpl userDetails) {
+    if (userDetails == null) {
+      throw BusinessException.create().add(ErrorCodes.ERROR_LOGIN_INVALID_CREDENTIALS).setHttpCode(HttpStatus.UNAUTHORIZED.value());
+    }
+    String username = userDetails.getUsername();
+    String userId = userDetails.getUid();
+    String tenantId = com.acc.fw.tenancy.TenantContextHolder.getTenantId();
+    if (org.apache.commons.lang3.StringUtils.isBlank(tenantId)) {
+      tenantId = userDetails.getTenantId();
+    }
+    if (org.apache.commons.lang3.StringUtils.isBlank(tenantId)) {
+      tenantId = "SYSTEM";
+    }
+
+    java.util.List<String> roles = userDetails.getAuthorities() != null
+        ? userDetails.getAuthorities().stream()
+            .map(org.springframework.security.core.GrantedAuthority::getAuthority)
+            .filter(a -> a.startsWith("ROLE_"))
+            .collect(java.util.stream.Collectors.toList())
+        : java.util.Collections.emptyList();
+
+    java.util.List<String> permissions = userDetails.getAuthorities() != null
+        ? userDetails.getAuthorities().stream()
+            .map(org.springframework.security.core.GrantedAuthority::getAuthority)
+            .filter(a -> !a.startsWith("ROLE_"))
+            .map(String::toLowerCase)
+            .collect(java.util.stream.Collectors.toList())
+        : java.util.Collections.emptyList();
+
+    boolean isSovereign = roles.contains(com.acc.core.constant.CanonicalRoles.ROLE_SYSTEM_ROOT)
+        || roles.contains(com.acc.core.constant.CanonicalRoles.ROLE_SYSTEM_SUPPORT)
+        || "SYSTEM".equalsIgnoreCase(tenantId);
+
+    java.util.List<String> activeFeatures = java.util.List.of("auth", "metadata", "users", "workflows", "billing");
+
+    return com.acc.system.dto.AuthenticationProfileDto.builder()
+        .userId(userId != null ? userId : username)
+        .username(username)
+        .tenantId(tenantId)
+        .sovereign(isSovereign)
+        .roles(roles)
+        .permissions(permissions)
+        .activeFeatures(activeFeatures)
+        .build();
+  }
 }

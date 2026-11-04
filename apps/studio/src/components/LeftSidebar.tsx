@@ -293,7 +293,7 @@ function LeftSidebarInner({
 
       {/* 2. 300px Slide-out Drawer */}
       {isOpen && (
-        <aside className="w-[300px] glass-panel border-r border-border/50 flex flex-col h-full shadow-xs">
+        <aside className="w-[300px] glass-panel border-r border-border/50 flex flex-col h-full shadow-glass">
           {/* Drawer Header */}
           <div className="p-3 border-b border-border/40 bg-background/50 flex items-center justify-between">
             <div className="flex items-center gap-2">

@@ -161,7 +161,7 @@ function RightSidebarInner() {
   };
 
   return (
-    <aside className="w-full glass-panel border-l border-glass-border flex flex-col h-full select-none shadow-xs z-10">
+    <aside className="w-full glass-panel border-l border-glass-border flex flex-col h-full select-none shadow-glass z-10">
       {/* 1. Header with Multi-Tier Breadcrumbs & Global Actions */}
       <InspectorHeader
         currentMode={currentMode}

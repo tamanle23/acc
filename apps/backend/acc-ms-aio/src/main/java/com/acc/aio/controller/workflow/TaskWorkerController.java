@@ -23,7 +23,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/workflow/tasks")
-@PreAuthorize("hasAuthority('ROLE_SYSTEM_CUSTODIAN') or hasAuthority('platform:worker:manage') or hasAuthority('WORKFLOW_WRITE') or hasRole('ADMIN')")
+@PreAuthorize("hasAuthority('platform:workers:manage') or hasAuthority('workflow:execution:submit') or hasRole('ADMIN')")
 public class TaskWorkerController {
 
     private final WorkflowEngineService engineService;

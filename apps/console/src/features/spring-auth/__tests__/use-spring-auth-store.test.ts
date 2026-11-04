@@ -23,40 +23,32 @@ describe('useSpringAuthStore', () => {
     expect(state.isSandbox).toBe(false);
   });
 
-  it('decodes access token, extracts tenant, and sets authentication state', () => {
-    const access = createMockToken({
-      sub: 'custodian_1',
-      username: 'custodian_root',
-      roles: ['ROLE_SYSTEM_CUSTODIAN', 'ROLE_ADMIN'],
-      tenantId: 'SYSTEM',
-    });
+  it('treats tokens as opaque credentials and sets session via setUser', () => {
+    const access = 'mock.access.token.mock_signature';
     const refresh = 'mock_refresh_token_12345';
 
     useSpringAuthStore.getState().setTokens(access, refresh);
 
-    const state = useSpringAuthStore.getState();
+    let state = useSpringAuthStore.getState();
     expect(state.accessToken).toBe(access);
     expect(state.refreshToken).toBe(refresh);
     expect(state.isAuthenticated).toBe(true);
+    expect(state.isSandbox).toBe(true);
+
+    useSpringAuthStore.getState().setUser({
+      userId: 'custodian_1',
+      username: 'custodian_root',
+      roles: ['ROLE_SYSTEM_ROOT'],
+      tenantId: 'SYSTEM',
+      isSovereign: true,
+      permissions: ['platform:fleet:read'],
+      activeFeatures: ['auth'],
+    });
+
+    state = useSpringAuthStore.getState();
     expect(state.currentTenantId).toBe('SYSTEM');
     expect(state.user?.username).toBe('custodian_root');
-    expect(state.isSandbox).toBe(true);
-  });
-
-  it('extracts tid fallback when tenantId is not in JWT payload', () => {
-    const access = createMockToken({
-      sub: 'usr_2',
-      username: 'alice',
-      roles: ['ROLE_USER'],
-      tid: 'tenant-acme',
-    });
-    const refresh = 'live_refresh_token';
-
-    useSpringAuthStore.getState().setTokens(access, refresh);
-
-    const state = useSpringAuthStore.getState();
-    expect(state.isAuthenticated).toBe(true);
-    expect(state.currentTenantId).toBe('tenant-acme');
+    expect(state.user?.isSovereign).toBe(true);
   });
 
   it('updates hydration flag via setHydrating', () => {

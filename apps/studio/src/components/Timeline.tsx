@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { TimecodeRuler } from './timeline/TimecodeRuler';
 import { Toolbar } from './timeline/Toolbar';
 import { OverlayHUD } from './timeline/OverlayHUD';
-import { EmptyState } from './timeline/EmptyState';
+import { EmptyState, TimelineEmptyState } from './timeline/EmptyState';
 import { TimelineDom } from './timeline/TimelineDom';
 import { TrackQuotaModal } from './timeline/TrackQuotaModal';
 import { IRStateManager } from '../lib/ir/irState';
@@ -307,7 +307,7 @@ function TimelineInner({
   }, [selectedSeqId, currentFrame, rippleEnabled, tracks]);
 
   return (
-    <footer className="h-full glass-panel border-t border-border/50 flex flex-col select-none shadow-sm z-10 shrink-0">
+    <footer className="h-full glass-panel border-t border-border/50 flex flex-col select-none shadow-glass z-10 shrink-0">
       {/* 1. Pro Transport & Utility Bar */}
       <Toolbar
         activeTool={activeTool}

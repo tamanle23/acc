@@ -8,7 +8,7 @@
     "build:prod": "node mvnw.cjs clean package -DskipTests -Pprod -DexcludeSandbox",
     "build:no-sandbox": "node mvnw.cjs clean package -DskipTests -DexcludeSandbox",
     "dev": "node mvnw.cjs compile -am -pl acc-ms-aio spring-boot:run -Dspring-boot.run.profiles=local -Djava.net.preferIPv4Stack=true",
-    "dev:sandbox": "node mvnw.cjs compile -am -pl acc-ms-aio spring-boot:run -Dspring-boot.run.profiles=local,sandbox -Djava.net.preferIPv4Stack=true",
+    "dev:sandbox": "node mvnw.cjs compile -am -pl acc-ms-aio spring-boot:run -Dspring-boot.run.profiles=local,sandbox -Dspring-boot.run.arguments=\"--server.port=8080\" -Djava.net.preferIPv4Stack=true ",
     "dev:sandbox:persistent": "node mvnw.cjs compile -am -pl acc-ms-aio spring-boot:run -Dspring-boot.run.profiles=local,sandbox -Djava.net.preferIPv4Stack=true",
     "dev:sandbox:pristine": "node mvnw.cjs compile -am -pl acc-ms-aio spring-boot:run -Dspring-boot.run.profiles=local,sandbox -Dapplication.sandbox.dev.pristine=true -Djava.net.preferIPv4Stack=true",
     "dev:sandbox:test": "node mvnw.cjs compile -am -pl acc-ms-aio spring-boot:run -Dspring-boot.run.profiles=local,sandbox -Dapplication.sandbox.mode=TEST -Djava.net.preferIPv4Stack=true",

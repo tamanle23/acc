@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { AuthorizedButton } from '@/components/auth';
 import {
   Dialog,
   DialogContent,
@@ -290,7 +291,8 @@ export function ApprovalsInbox() {
                 {/* Actions */}
                 {task.status === 'PENDING' && (
                   <div className="flex items-center gap-2">
-                    <Button
+                    <AuthorizedButton
+                      permission="workflow:approval:execute"
                       size="sm"
                       variant="outline"
                       className="text-xs border-amber-500/30 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
@@ -298,8 +300,9 @@ export function ApprovalsInbox() {
                     >
                       <AlertCircle className="h-3.5 w-3.5 mr-1" />
                       Request Changes
-                    </Button>
-                    <Button
+                    </AuthorizedButton>
+                    <AuthorizedButton
+                      permission="workflow:approval:execute"
                       size="sm"
                       variant="ghost"
                       className="text-xs text-destructive hover:bg-destructive/10"
@@ -307,15 +310,16 @@ export function ApprovalsInbox() {
                     >
                       <XCircle className="h-3.5 w-3.5 mr-1" />
                       Reject
-                    </Button>
-                    <Button
+                    </AuthorizedButton>
+                    <AuthorizedButton
+                      permission="workflow:approval:execute"
                       size="sm"
                       className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-sm"
                       onClick={() => handleApprove(task)}
                     >
                       <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
                       Approve Step
-                    </Button>
+                    </AuthorizedButton>
                   </div>
                 )}
               </div>

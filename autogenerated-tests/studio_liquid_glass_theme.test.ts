@@ -36,12 +36,8 @@ describe('Studio Liquid Glass Theme System & Design Tokens', () => {
       expect(css).toContain('[data-blur-intensity="medium"]');
       expect(css).toContain('[data-blur-intensity="high"]');
 
-      // Dynamic Accents
-      expect(css).toContain('[data-accent="cyan"]');
-      expect(css).toContain('[data-accent="violet"]');
-      expect(css).toContain('[data-accent="emerald"]');
-      expect(css).toContain('[data-accent="amber"]');
-      expect(css).toContain('[data-accent="rose"]');
+      // Strict Separation: No [data-accent] overrides to prevent duplicate theme control
+      expect(css).not.toContain('[data-accent=');
 
       // Core Glass Utility Classes
       expect(css).toContain('.glass-panel');
@@ -62,7 +58,6 @@ describe('Studio Liquid Glass Theme System & Design Tokens', () => {
         mode: 'dark',
         glassStyle: 'specular',
         blurIntensity: 'medium',
-        accentColor: 'cyan',
       });
       expect(THEME_STORAGE_KEY).toBe('acc_studio_theme_prefs');
     });
@@ -141,7 +136,6 @@ describe('Studio Liquid Glass Theme System & Design Tokens', () => {
         el.classList.toggle('dark', prefs.mode === 'dark');
         el.setAttribute('data-glass-style', prefs.glassStyle);
         el.setAttribute('data-blur-intensity', prefs.blurIntensity);
-        el.setAttribute('data-accent', prefs.accentColor);
       };
 
       // 1. Initial Dark State
@@ -149,33 +143,28 @@ describe('Studio Liquid Glass Theme System & Design Tokens', () => {
       expect(mockElement.classList.contains('dark')).toBe(true);
       expect(mockElement.getAttribute('data-glass-style')).toBe('specular');
       expect(mockElement.getAttribute('data-blur-intensity')).toBe('medium');
-      expect(mockElement.getAttribute('data-accent')).toBe('cyan');
 
-      // 2. Switch to Light Mode with Frosted Glass & Emerald Accent
+      // 2. Switch to Light Mode with Frosted Glass
       const lightFrostedPrefs: ThemePreferences = {
         mode: 'light',
         glassStyle: 'frosted',
         blurIntensity: 'high',
-        accentColor: 'emerald',
       };
       syncThemeToDOM(mockElement, lightFrostedPrefs);
       expect(mockElement.classList.contains('dark')).toBe(false);
       expect(mockElement.getAttribute('data-glass-style')).toBe('frosted');
       expect(mockElement.getAttribute('data-blur-intensity')).toBe('high');
-      expect(mockElement.getAttribute('data-accent')).toBe('emerald');
 
-      // 3. Switch to Cyber Glass with Violet Accent
+      // 3. Switch to Cyber Glass
       const cyberPrefs: ThemePreferences = {
         mode: 'dark',
         glassStyle: 'cyber',
         blurIntensity: 'low',
-        accentColor: 'violet',
       };
       syncThemeToDOM(mockElement, cyberPrefs);
       expect(mockElement.classList.contains('dark')).toBe(true);
       expect(mockElement.getAttribute('data-glass-style')).toBe('cyber');
       expect(mockElement.getAttribute('data-blur-intensity')).toBe('low');
-      expect(mockElement.getAttribute('data-accent')).toBe('violet');
     });
   });
 

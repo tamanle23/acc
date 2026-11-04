@@ -1,46 +1,54 @@
 import { useEffect } from 'react';
 import { useSpringAuthStore } from '../store';
-import { springApiClient } from '../api-client';
+import { fetchAuthenticationProfile } from '../api-client';
 
 export function useAuthHydration() {
-  const { refreshToken, setTokens, clearTokens, setHydrating, isHydrating } = useSpringAuthStore();
+  const { setUser, clearTokens, setHydrating, isHydrating } = useSpringAuthStore();
 
   useEffect(() => {
     let mounted = true;
 
-    const hydrate = async () => {
-      // If we don't have a refresh token (even in cookies, though we check local state here), we can skip.
-      // In a real prod app with HttpOnly cookies, you might always attempt this on boot.
-      if (!refreshToken) {
+    const runHydration = async () => {
+      const { accessToken, refreshToken, user } = useSpringAuthStore.getState();
+
+      if (!accessToken && !refreshToken) {
         if (mounted) setHydrating(false);
         return;
       }
 
-      // try {
-      //   const { data } = await springApiClient.post('/auth/refresh', {
-      //     refreshToken,
-      //   });
-
-      //   if (mounted) {
-      //     setTokens(data.accessToken, data.refreshToken || refreshToken);
-      //   }
-      // } catch (_error) {
-      //   if (mounted) {
-      //     clearTokens();
-      //   }
-      // } finally {
-      //   if (mounted) {
-      //     setHydrating(false);
-      //   }
-      // }
+      try {
+        const profile = await fetchAuthenticationProfile();
+        if (mounted) {
+          setUser(profile);
+        }
+      } catch (_error) {
+        // Only clear tokens if we didn't already have a valid user profile restored
+        if (mounted && !user) {
+          clearTokens();
+        }
+      } finally {
+        if (mounted) {
+          setHydrating(false);
+        }
+      }
     };
 
-    hydrate();
+    if (useSpringAuthStore.persist.hasHydrated()) {
+      runHydration();
+    } else {
+      const unsub = useSpringAuthStore.persist.onFinishHydration(() => {
+        runHydration();
+      });
+      return () => {
+        mounted = false;
+        unsub();
+      };
+    }
 
     return () => {
       mounted = false;
     };
-  }, []); // Run exactly once on mount
+  }, [setUser, clearTokens, setHydrating]);
 
   return { isHydrating };
 }

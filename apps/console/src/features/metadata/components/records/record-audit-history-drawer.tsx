@@ -35,7 +35,7 @@ import {
   usePreviewRestoreRecord,
   useRestoreRecordVersion,
 } from '../../api/metadata-api';
-import { useAuthStore } from '@/stores/auth-store';
+import { useSpringAuthStore } from '@/features/spring-auth';
 import { useSandboxStore } from '@/core/sandbox/store/sandbox-store';
 
 interface Props {
@@ -61,10 +61,10 @@ export const RecordAuditHistoryDrawer: React.FC<Props> = ({
   );
 
   // Auth / Sovereign check
-  const authUser = useAuthStore((s) => s.auth.user);
+  const authUser = useSpringAuthStore((s) => s.user);
   const sandboxPersonaId = useSandboxStore((s) => s.activePersonaId);
   const isSovereign = useMemo(() => {
-    if (authUser?.role?.includes('ROLE_SYSTEM_CUSTODIAN') || authUser?.role?.includes('ROLE_SOVEREIGN_ADMIN')) {
+    if (authUser?.isSovereign || authUser?.roles?.includes('ROLE_SYSTEM_ROOT')) {
       return true;
     }
     if (import.meta.env.DEV && sandboxPersonaId === 'system') {

@@ -7,8 +7,6 @@ export type UserStatus = 'active' | 'inactive' | 'invited' | 'suspended';
 export const SovereignRole = {
   SystemRoot: 'ROLE_SYSTEM_ROOT',
   SystemSupport: 'ROLE_SYSTEM_SUPPORT',
-  SystemVerifier: 'ROLE_SYSTEM_VERIFIER',
-  SystemApprover: 'ROLE_SYSTEM_APPROVER',
 } as const;
 
 export type SovereignRole = typeof SovereignRole[keyof typeof SovereignRole];
@@ -25,14 +23,40 @@ export type TenantRole = typeof TenantRole[keyof typeof TenantRole];
 export type UserRole =
   | SovereignRole
   | TenantRole
-  | 'superadmin'
-  | 'admin'
-  | 'cashier'
-  | 'manager'
-  | 'ROLE_USER'
-  | 'ROLE_ADMIN'
-  | 'ROLE_CREATOR'
+  | 'ROLE_SYSTEM_ROOT'
+  | 'ROLE_SYSTEM_SUPPORT'
+  | 'ROLE_WORKSPACE_OWNER'
+  | 'ROLE_OPERATIONS_MANAGER'
+  | 'ROLE_STANDARD_MEMBER'
+  | 'ROLE_AUDITOR'
   | (string & {});
+
+export interface UserPreferences {
+  language?: string;
+  avatarUrl?: string;
+  bio?: string;
+  theme?: 'light' | 'dark' | 'system';
+  urls?: Array<{ value: string }>;
+  [key: string]: unknown;
+}
+
+export interface UserProfileDto {
+  userId: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber?: string;
+  preferences: UserPreferences;
+}
+
+export interface UpdateUserProfileRequest {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber?: string;
+  preferences?: UserPreferences;
+}
 
 export interface UserVm {
   id: string;

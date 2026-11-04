@@ -81,6 +81,18 @@ describe('UserAuthForm Component - Passkeys & Password Rotation Triggers', () =>
         },
       } as any);
 
+    vi.spyOn(springApiClient, 'get').mockResolvedValueOnce({
+      data: {
+        userId: 'usr-passkey',
+        username: 'custodian',
+        roles: ['ROLE_SYSTEM_ROOT'],
+        tenantId: 'SYSTEM',
+        isSovereign: true,
+        permissions: ['platform:fleet:read'],
+        activeFeatures: ['auth'],
+      },
+    } as any);
+
     render(<UserAuthForm />);
 
     fireEvent.change(screen.getByLabelText(/Email or Username/i), {
@@ -94,6 +106,88 @@ describe('UserAuthForm Component - Passkeys & Password Rotation Triggers', () =>
 
     await waitFor(() => {
       expect(useSpringAuthStore.getState().accessToken).toBe('mock-passkey-jwt');
+      expect(useSpringAuthStore.getState().user?.username).toBe('custodian');
+      expect(mockNavigate).toHaveBeenCalledWith({ to: '/', replace: true });
+    });
+  });
+
+  it('hydrates AuthenticationProfile on standard credential submit and navigates to dashboard', async () => {
+    vi.spyOn(springApiClient, 'post').mockResolvedValueOnce({
+      data: {
+        body: {
+          accessToken: 'mock-jwt-token',
+          refreshToken: 'mock-refresh-token',
+        },
+      },
+    } as any);
+
+    vi.spyOn(springApiClient, 'get').mockResolvedValueOnce({
+      data: {
+        body: {
+          userId: 'usr-standard',
+          username: 'alice',
+          roles: ['ROLE_WORKSPACE_OWNER'],
+          tenantId: 'tenant-acme',
+          isSovereign: false,
+          permissions: ['metadata:schema:read', 'entity:record:read'],
+          activeFeatures: ['auth', 'metadata'],
+        },
+      },
+    } as any);
+
+    render(<UserAuthForm />);
+
+    fireEvent.change(screen.getByLabelText(/Email or Username/i), {
+      target: { value: 'alice@acme.com' },
+    });
+    fireEvent.change(screen.getByLabelText(/^Password/i), {
+      target: { value: 'password123' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /^Sign in$/i }));
+
+    await waitFor(() => {
+      expect(useSpringAuthStore.getState().accessToken).toBe('mock-jwt-token');
+      expect(useSpringAuthStore.getState().user?.username).toBe('alice');
+      expect(useSpringAuthStore.getState().user?.tenantId).toBe('tenant-acme');
+      expect(mockNavigate).toHaveBeenCalledWith({ to: '/', replace: true });
+    });
+  });
+
+  it('hydrates AuthenticationProfile on sandbox bypass and navigates without getting stuck', async () => {
+    vi.spyOn(springApiClient, 'post').mockResolvedValueOnce({
+      data: {
+        accessToken: 'mock-sandbox-jwt.mock_signature',
+        refreshToken: 'mock_refresh_token_admin',
+      },
+    } as any);
+
+    vi.spyOn(springApiClient, 'get').mockResolvedValueOnce({
+      data: {
+        userId: 'usr-admin',
+        username: 'admin',
+        roles: ['ROLE_WORKSPACE_OWNER', 'ROLE_STANDARD_MEMBER'],
+        tenantId: 'tenant-acme',
+        isSovereign: false,
+        permissions: ['metadata:schema:read'],
+        activeFeatures: ['auth'],
+      },
+    } as any);
+
+    render(<UserAuthForm />);
+
+    // Open Sandbox dropdown
+    const sandboxTrigger = screen.getByRole('button', { name: /Bypass with Sandbox/i });
+    fireEvent.pointerDown(sandboxTrigger, { pointerType: 'mouse' });
+    fireEvent.click(sandboxTrigger);
+
+    // Click Admin (All Access)
+    const adminOption = await screen.findByText(/Admin \(All Access\)/i);
+    fireEvent.click(adminOption);
+
+    await waitFor(() => {
+      expect(useSpringAuthStore.getState().accessToken).toBe('mock-sandbox-jwt.mock_signature');
+      expect(useSpringAuthStore.getState().user?.username).toBe('admin');
+      expect(useSpringAuthStore.getState().user?.roles).toContain('ROLE_WORKSPACE_OWNER');
       expect(mockNavigate).toHaveBeenCalledWith({ to: '/', replace: true });
     });
   });

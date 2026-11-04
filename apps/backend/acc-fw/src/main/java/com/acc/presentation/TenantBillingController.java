@@ -26,7 +26,7 @@ public class TenantBillingController {
      * Get active tenant's current plan, subscription status, quota usage, VAT invoice, and transaction history.
      */
     @GetMapping("/summary")
-    @PreAuthorize("hasAuthority('METADATA_SCHEMA_READ') or hasAuthority('METADATA_SCHEMA_WRITE') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('billing:subscription:read')")
     public ResponseEntity<ResponseWrapper<ContextHeader, TenantBillingSummaryDto>> getBillingSummary() {
         String tenantId = TenantContextHolder.getRequiredTenantId();
         TenantBillingSummaryDto summary = billingService.getTenantBillingSummary(tenantId);
@@ -37,7 +37,7 @@ public class TenantBillingController {
      * Create a payOS payment link and dynamic VietQR code for upgrading/renewing subscription.
      */
     @PostMapping("/checkout")
-    @PreAuthorize("hasAuthority('METADATA_SCHEMA_WRITE') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('billing:subscription:upgrade')")
     public ResponseEntity<ResponseWrapper<ContextHeader, CheckoutResponseDto>> createCheckout(
             @Valid @RequestBody CreatePaymentLinkRequest request) {
         CheckoutResponseDto checkout = billingService.createPaymentLink(request);
@@ -48,7 +48,7 @@ public class TenantBillingController {
      * Update corporate VAT E-Invoice information for active tenant.
      */
     @PutMapping("/vat-invoice")
-    @PreAuthorize("hasAuthority('METADATA_SCHEMA_WRITE') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('billing:subscription:upgrade')")
     public ResponseEntity<ResponseWrapper<ContextHeader, VatInvoiceDto>> updateVatInvoice(
             @Valid @RequestBody VatInvoiceDto vatDto) {
         String tenantId = TenantContextHolder.getRequiredTenantId();
@@ -60,7 +60,7 @@ public class TenantBillingController {
      * Submit an Enterprise contact request for custom pricing and dedicated infrastructure.
      */
     @PostMapping("/contact-sales")
-    @PreAuthorize("hasAuthority('METADATA_SCHEMA_READ') or hasAuthority('METADATA_SCHEMA_WRITE') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('billing:subscription:read')")
     public ResponseEntity<ResponseWrapper<ContextHeader, String>> contactSales(
             @Valid @RequestBody ContactSalesRequest request) {
         String tenantId = TenantContextHolder.getRequiredTenantId();

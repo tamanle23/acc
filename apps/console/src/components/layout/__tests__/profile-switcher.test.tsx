@@ -118,11 +118,13 @@ describe('ProfileSwitcher Component', () => {
   it('renders Sovereign Root Platform context with ROOT badge when logged in as SYSTEM Custodian without active assume', () => {
     useSpringAuthStore.setState({
       user: {
-        sub: 'custodian_root',
-        roles: ['ROLE_SYSTEM_CUSTODIAN'],
+        userId: 'usr-custodian',
+        username: 'custodian_root',
+        roles: ['ROLE_SYSTEM_ROOT'],
         tenantId: 'SYSTEM',
-        iat: 1234567890,
-        exp: 9999999999,
+        isSovereign: true,
+        permissions: ['platform:fleet:read'],
+        activeFeatures: [],
       },
       isAuthenticated: true,
       currentTenantId: 'SYSTEM',

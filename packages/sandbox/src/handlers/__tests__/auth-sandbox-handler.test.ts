@@ -153,7 +153,7 @@ describe('Auth Sandbox Handler Test Suite', () => {
     it('rejects non-admin role with 403 Forbidden', async () => {
       const userToken = createMockJwt({
         sub: 'standard_user',
-        roles: ['ROLE_USER'],
+        roles: ['ROLE_STANDARD_MEMBER'],
         exp: Math.floor(Date.now() / 1000) + 3600,
       });
 
@@ -168,7 +168,7 @@ describe('Auth Sandbox Handler Test Suite', () => {
     it('allows access for admin role with 200 and metrics', async () => {
       const adminToken = createMockJwt({
         sub: 'admin',
-        roles: ['ROLE_USER', 'ROLE_ADMIN'],
+        roles: ['ROLE_WORKSPACE_OWNER', 'ROLE_STANDARD_MEMBER'],
         exp: Math.floor(Date.now() / 1000) + 3600,
       });
 
@@ -179,6 +179,46 @@ describe('Auth Sandbox Handler Test Suite', () => {
       expect(res?.status).toBe(200);
       expect(res?.data?.message).toContain('Welcome to the Secure Admin Dashboard');
       expect(res?.data?.stats).toBeDefined();
+    });
+
+    it('returns authentication profile for /auth/me', async () => {
+      const token = createMockJwt({
+        sub: 'custodian_root',
+        roles: ['ROLE_SYSTEM_ROOT'],
+        tenantId: 'SYSTEM',
+        exp: Math.floor(Date.now() / 1000) + 3600,
+      });
+
+      const ctx = createContext('GET', '/api/auth/me', { authorization: `Bearer ${token}` });
+      const req = { url: '/api/auth/me', method: 'GET', headers: { authorization: `Bearer ${token}` } };
+
+      const res = await authSandboxHandler.handler(req, ctx);
+      expect(res?.status).toBe(200);
+      expect(res?.data?.username).toBe('custodian_root');
+      expect(res?.data?.isSovereign).toBe(true);
+      expect(res?.data?.roles).toContain('ROLE_SYSTEM_ROOT');
+      expect(res?.data?.permissions).toContain('entity:record:read');
+      expect(res?.data?.permissions).toContain('metadata:schema:write');
+    });
+
+    it('retrieves and updates user profile via /user/profile', async () => {
+      const getCtx = createContext('GET', '/api/v1/user/profile');
+      const getReq = { url: '/api/v1/user/profile', method: 'GET', headers: {} };
+      const getRes = await authSandboxHandler.handler(getReq, getCtx);
+      expect(getRes?.status).toBe(200);
+      expect(getRes?.data?.username).toBeDefined();
+
+      const putCtx = createContext('PUT', '/api/v1/user/profile');
+      const putReq = {
+        url: '/api/v1/user/profile',
+        method: 'PUT',
+        headers: {},
+        data: { firstName: 'UpdatedAlice', phoneNumber: '+1-555-9999' },
+      };
+      const putRes = await authSandboxHandler.handler(putReq, putCtx);
+      expect(putRes?.status).toBe(200);
+      expect(putRes?.data?.firstName).toBe('UpdatedAlice');
+      expect(putRes?.data?.phoneNumber).toBe('+1-555-9999');
     });
 
     it('returns 404 for unhandled paths inside auth handler', async () => {

@@ -7,6 +7,7 @@ import {
   ViewportControlBar,
   type PreviewResolutionMode,
   ViewportSafeGuides,
+  ViewportQuickTransport,
   TelemetryCompanionCard,
   InPlaceTextEditor,
   UniversalCanvasHitOverlay,
@@ -18,6 +19,7 @@ import {
   useGizmoTransform,
   usePreviewHotkeys,
   useViewportRenderStrategy,
+  useContainerLOD,
 } from './preview/index';
 
 const EMPTY_ASSETS: Record<string, any> = {};
@@ -38,10 +40,15 @@ function PreviewInner({
   playhead,
   isPlaying = false,
   onTogglePlay,
+  onScrub,
 }: PreviewProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const [containerEl, setContainerEl] = useState<HTMLDivElement | null>(null);
+
+  // Adaptive Container LOD (Level of Detail) Tracking for Floating HUDs
+  const containerLOD = useContainerLOD(containerEl || containerRef);
 
   // Droppable container for dragging library presets into the viewport
   const { setNodeRef: setDroppableRef, isOver } = useDroppable({
@@ -248,9 +255,13 @@ function PreviewInner({
 
   return (
     <div
+      id="preview-inner"
       ref={(node) => {
         containerRef.current = node;
         setDroppableRef(node);
+        if (node && node !== containerEl) {
+          setContainerEl(node);
+        }
       }}
       onMouseMove={handleMouseMove}
       onMouseUp={panZoom.handleMouseUpPan}
@@ -260,9 +271,9 @@ function PreviewInner({
         setDragCoords(null);
       }}
       onDrop={handleDrop}
-      className={`relative max-h-full max-w-full flex flex-col items-center justify-center p-0 overflow-hidden rounded-2xl select-none transition-all duration-300 ${isOver
-          ? 'ring-2 ring-[var(--accent-primary)] shadow-[0_0_35px_var(--accent-glow)] scale-[1.005]'
-          : 'hover:border-[var(--glass-border-highlight)]'
+      className={`relative h-full w-full flex flex-col items-center justify-center p-0 overflow-hidden rounded-2xl select-none transition-all duration-300 ${isOver
+        ? 'ring-2 ring-[var(--accent-primary)] shadow-[0_0_35px_var(--accent-glow)] scale-[1.005]'
+        : 'hover:border-[var(--glass-border-highlight)]'
         }`}
     >
       {showVfxAmbiance && (
@@ -309,11 +320,12 @@ function PreviewInner({
         onToggleDepthHeatmap={() => setShowDepthHeatmap(!showDepthHeatmap)}
         isTelemetryCompanionOpen={isTelemetryCompanionOpen}
         onToggleTelemetryCompanion={() => setIsTelemetryCompanionOpen(!isTelemetryCompanionOpen)}
+        lod={containerLOD}
       />
 
       {/* Dynamic Viewport: Canvas Cell + Dockable Telemetry Companion */}
       <div
-        className={`w-full flex-1 flex flex-col xl:flex-row items-center justify-center gap-4 px-2 py-1 max-w-full overflow-hidden ${isTelemetryCompanionOpen ? 'xl:justify-between' : 'justify-center'
+        className={`w-full flex-1 flex flex-col xl:flex-row items-center justify-center gap-4 px-2 pt-14 pb-14 max-w-full overflow-hidden ${isTelemetryCompanionOpen ? 'xl:justify-between' : 'justify-center'
           }`}
       >
         <div
@@ -449,6 +461,20 @@ function PreviewInner({
           </div>
         )}
       </div>
+
+      {/* Floating Studio Quick Playback Transport HUD - Docked bottom center OUTSIDE canvas viewport */}
+      <ViewportQuickTransport
+        isPlaying={isPlaying}
+        onTogglePlay={onTogglePlay}
+        currentFrame={currentFrame}
+        totalFrames={totalFrames}
+        fps={fps}
+        onScrub={onScrub}
+        zoomLevel={panZoom.zoomLevel}
+        onSetZoomLevel={panZoom.setZoomLevel}
+        onResetPan={panZoom.resetPan}
+        lod={containerLOD}
+      />
     </div>
   );
 }

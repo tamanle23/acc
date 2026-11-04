@@ -81,7 +81,7 @@ export const SidebarActivityRail: React.FC<SidebarActivityRailProps> = ({
   onSelectCategory,
 }) => {
   return (
-    <aside className="w-12 glass-panel border-r border-border/50 flex flex-col items-center py-3 justify-between shadow-sm z-20">
+    <aside className="w-12 glass-panel border-r border-border/50 flex flex-col items-center py-3 justify-between shadow-glass z-20">
       <div className="flex flex-col items-center gap-2">
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;

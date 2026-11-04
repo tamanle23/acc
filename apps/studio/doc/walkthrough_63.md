@@ -1,0 +1,80 @@
+# Studio Walkthrough 63: Studio Grade UI/UX, 20-Preset Theme System & Responsive Layout
+
+## Overview of Implemented Upgrades
+We have delivered a studio-grade UI/UX transformation across `@acc/studio`:
+
+### 1. 20 Iconic Theme Presets & Decoupled Glass Physics
+- Presets: *Obsidian Studio*, *Tokyo Night*, *Catppuccin Mocha*, *Catppuccin Latte*, *Dracula Pro*, *Nord Frost*, *One Dark Pro*, *GitHub Dark Dimmed*, *GitHub Light Modern*, *Monokai Pro*, *Cyberpunk 2077*, *Synthwave '84*, *Solarized Dark*, *Solarized Light*, *Gruvbox Dark*, *Rosé Pine*, *Horizon Dark*, *Ayu Mirage*, *Midnight OLED*, and *Vesper Noir*.
+- Decoupling: Palettes and Glass Refraction profiles (Specular, Frosted, Cyber) are independent layers. `applyThemeToDocument` dynamically computes `--glass-specular`, `--glass-border-highlight`, `--glass-border`, `--glass-shadow`, and `--glass-blur` directly to ensure user choices take effect immediately.
+- Live Specimen: Integrated live optical material specimen into `SettingsModal` for real-time visual parity.
+- Preset-Governed Mode: Selecting a light preset automatically adjusts to light mode and vice versa.
+
+### 2. Dual-Access Theme Switcher
+- **Titlebar Popover**: Instant palette popover with live search, category pills, and 2-column swatch buttons.
+- **Settings Modal Gallery**: Visual grid of all 20 themes with 4-color preview swatches and live material inspection.
+
+### 3. Floating Quick Playback Transport HUD & Floating Viewport Control Bar
+- **Top-Center ViewportControlBar**: Refactored into a floating glass capsule docked at `top-3 left-1/2 -translate-x-1/2` of `Preview.tsx` outside of the canvas viewport.
+  - **Zero Horizontal Scrolling**: Removed `overflow-x-auto`. Operates with strict LOD-tier based component folding.
+  - **Jitter-Free Transform Coordinates Readout**: Rigid fixed-width card (`w-[248px] shrink-0`) with tabular numeric column slots (`tabular-nums font-mono w-[34px]`) and fixed magnetic snap indicator dot (`w-2 h-2 rounded-full`). Retains identical `w-[248px]` dimension when unselected (`NO LAYER SELECTED`), completely eliminating bar resizing and wobble during gizmo dragging.
+  - **Tools Popover**: On compact and medium tiers, secondary tools collapse into an elegant glass Popover menu (`Sliders` / `MoreHorizontal`), maintaining 100% feature parity without bar overflow.
+- **Bottom-Center ViewportQuickTransport**: Floating pill (`glass-panel px-4 py-2 rounded-full`) docked at `bottom-3.5 left-1/2 -translate-x-1/2` of `Preview.tsx` outside of the canvas viewport:
+  - Decoupled from canvas pan/zoom transforms and overflow clipping.
+  - Balanced top and bottom clearance (`pt-14 pb-14`) to prevent video frame occlusion.
+  - Zero horizontal scrolling; scales cleanly from ~240px (`compact`) to ~340px (`medium`) to ~440px (`full`).
+  - Step Backward (1 frame)
+  - Play / Pause (`Space`)
+  - Step Forward (1 frame)
+  - SMPTE Timecode & Discrete Frame
+  - Fit / 100% Zoom Reset
+- **Adaptive Container LOD (`useContainerLOD`)**:
+  - Dynamically evaluates preview container width via `ResizeObserver`, window resize events, and immediate synchronous layout measurement.
+  - Categorizes into 3 tiers: `compact` (<640px), `medium` (640-959px), and `full` (>=960px).
+  - Both `ViewportControlBar` and `ViewportQuickTransport` adaptively collapse secondary controls, zoom steppers, and timecode details based directly on the container width.
+
+### 4. Responsive Layout, Titlebar Adaptive LOD & Zen Mode
+- **Adaptive Titlebar LOD (`useTitlebarLOD`)**:
+  - Automatically measures Titlebar width across 3 tiers: `compact` (< 800px), `medium` (800px - 1279px), and `full` (>= 1280px).
+  - Eliminates button clipping and text overflow by moving secondary actions (Undo/Redo, Import/Save IR, Debugger, OPFS, Shortcuts) into an elegant **More Actions Popover** on narrower viewports.
+- **Adaptive Auto-Collapse**: On screen width < 1200px, LeftSidebar auto-collapses to the 48px rail to preserve canvas room.
+- **Zen Mode**: Toggle with `\` or Titlebar Zen button to hide all sidebars.
+- **Responsive Timeline Toolbar**: Zoom slider collapses to stepper buttons on narrower viewports.
+
+### 5. Active Boot Splash Loading Animation
+- **Multi-Track Orbital Loader**: Upgraded `apps/studio/index.html` boot splash logo container with active GPU-compositor-only and declarative SVG SMIL animations to communicate background initialization to the user:
+  - **Outer Rotating Aperture Lens Track (`.splash-ring-outer`)**: Segmented dashed circular aperture rotating smoothly over a 12-second loop via CSS and native SVG `<animateTransform>`.
+  - **Orbiting Neon Radar Arc (`.splash-ring-orbit`)**: High-speed gradient radar arc (`url(#splash-orbit-grad)`) completing a continuous sweep every 1.8 seconds with `transform-box: fill-box; transform-origin: center;` and `<animateTransform>`.
+  - **Pulsing Playhead Luminescence (`.splash-play-icon`)**: Cyan-to-purple luminescent playhead triangle with breathing opacity effect via `<animate>`.
+  - **Resilient Reduced Motion Support**: Handles `@media (prefers-reduced-motion: reduce)` gracefully by calming rapid motion and preserving steady rotation and progress bar shimmer, so Windows/browser users with reduced motion enabled never see a frozen workstation splash.
+
+### 6. System Theme Manager Synchronized Splash Modal
+- **Pre-Hydration Instant Theme Synchronization**:
+  - Embedded pre-hydration theme bootstrap script (`#splash-theme-init`) into `index.html` that reads user preferences from `localStorage.getItem('acc_studio_theme_prefs')`.
+  - Synchronously mounts the active preset tokens (across all 20 curated presets including Obsidian Studio, Tokyo Night, Catppuccin Mocha/Latte, Cyberpunk 2077, Dracula Pro, Nord Frost, etc.), mode (`dark`/`light`), decoupled optical glass style (`specular`, `frosted`, `cyber`), and accent color (`cyan`, `violet`, `emerald`, `amber`, `rose`).
+  - `.splash-card` dynamically inherits `--glass-bg`, `--glass-border`, `--glass-specular`, `--glass-shadow`, `--glass-blur`, and `--foreground`.
+  - In Cyber style, splash modal gains neon specular highlights and saturated colored drop shadows matching the accent color.
+  - In Frosted style, specular glare is eliminated in favor of a velvety matte card finish.
+  - In Light mode (e.g. Catppuccin Latte, GitHub Light Modern, Solarized Light), the splash modal switches to a frosted light-glass card with dark typography and light-tinted backdrop with zero white-flash FOUC.
+  - Connected `applyThemeToDocument` in `ThemeProvider.tsx` to continuously drive `--splash-backdrop-bg` and `--splash-ambient-mesh` during runtime.
+
+## Verification Summary
+- `autogenerated-tests/studio_boot_splash_lifecycle.test.ts`: 16/16 passed.
+- `autogenerated-tests/studio_20_theme_presets_and_responsive_layout.test.ts`: 21/21 passed.
+- `autogenerated-tests/studio_phase4_ux_resizable_specs.test.ts`: 7/7 passed.
+- `autogenerated-tests/studio_phase6_motion_timeline.test.ts`: 9/9 passed.
+- `autogenerated-tests/studio_phase2_reactive_store_and_types.test.ts`: 8/8 passed.
+- `autogenerated-tests/studio_build_and_module_resolution.test.ts`: 25/25 passed.
+- `autogenerated-tests/studio_liquid_glass_theme.test.ts`: 6/6 passed.
+- `autogenerated-tests/studio_theme_tokens.test.ts`: 3/3 passed.
+- `autogenerated-tests/studio_theme_unification.test.ts`: 5/5 passed.
+- Total primary suite: **100 passed, 0 failed** across 9 test suites.
+- Schema Drift: 0 drift (`bun run scripts/generate-ir-schemas.ts --check`).
+- Vite Production Build: Completed cleanly in 12.00s (`pnpm --filter @acc/studio build`).
+
+### 7. Pure Theme Palette Governance & Elimination of Dynamic Accent Override
+- **Single Source of Truth**: The 20 curated theme presets exclusively control color themes (`--primary`, `--ring`, `--accent-primary`, `--color-brand-accent`, `--accent-glow`), while Glass Refraction profiles (Specular, Frosted, Cyber) exclusively dictate liquid glass optical physics.
+- **Removed Duplicate Overrides**:
+  - Completely removed the "Dynamic Accent Color Override" UI section and `ACCENT_COLORS` array from `SettingsModal.tsx`.
+  - Removed `[data-accent="..."]` CSS selector overrides from `index.css`.
+  - In `ThemeProvider.tsx` and pre-hydration `#splash-theme-init`, removed `data-accent` DOM attributes and obsolete accent lookup maps.
+  - Cyber glass finish now directly and harmoniously derives its neon specular highlight and chromatic drop shadow from the active preset's curated `tokens.accentPrimary`.

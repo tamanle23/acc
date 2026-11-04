@@ -8,7 +8,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { Button } from '@/components/ui/button';
+import { AuthorizedButton } from '@/components/auth';
 import { Plus, Workflow } from 'lucide-react';
 import {
   DataTable,
@@ -21,6 +21,7 @@ import {
   useDeleteWorkflowDefinition,
 } from '@/features/workflows/api/workflow-api';
 import { createWorkflowCatalogColumns } from './workflow-catalog-columns';
+import { useHasPermission } from '@/features/system/hooks/use-has-permission';
 import { cn } from '@/lib/utils';
 
 interface WorkflowCatalogTableProps {
@@ -87,14 +88,15 @@ export const WorkflowCatalogTable: React.FC<WorkflowCatalogTableProps> = ({
       )}
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Button
+        <AuthorizedButton
+          permission="workflow:definition:manage"
           onClick={onCreateNew}
           size="sm"
           className="h-8 gap-1 shadow-md shadow-primary/20 text-xs"
         >
           <Plus className="h-3.5 w-3.5" />
           Create Workflow
-        </Button>
+        </AuthorizedButton>
       </div>
       {/* Header Toolbar & Action Bar */}
       <DataTableToolbar

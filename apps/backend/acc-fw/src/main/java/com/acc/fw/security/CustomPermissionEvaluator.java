@@ -27,10 +27,18 @@ public class CustomPermissionEvaluator implements PermissionEvaluator {
 
   private boolean hasPrivilege(Authentication auth, String targetType, String permission) {
     String combiPermission = (targetType + "_" + permission).toUpperCase();
-    if(auth != null) {
+    String colonPermission = (targetType + ":" + permission).toLowerCase();
+    if (auth != null && auth.getAuthorities() != null) {
       return auth.getAuthorities()
                  .stream()
-                 .anyMatch(grant -> (grant.getAuthority().equals(combiPermission)) || (permission.equalsIgnoreCase(PermissionActionConstants.LIST) && grant.getAuthority().equalsIgnoreCase("ROLE_ADMINISTRATOR")));
+                 .anyMatch(grant -> {
+                   String a = grant.getAuthority();
+                   return a.equalsIgnoreCase(combiPermission)
+                       || a.equalsIgnoreCase(colonPermission)
+                       || a.equalsIgnoreCase("ROLE_SYSTEM_ROOT")
+                       || a.equalsIgnoreCase("ROLE_ADMINISTRATOR")
+                       || (permission.equalsIgnoreCase(PermissionActionConstants.LIST) && a.equalsIgnoreCase("ROLE_ADMINISTRATOR"));
+                 });
     }
     return false;
   }

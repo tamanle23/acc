@@ -1,6 +1,17 @@
-import type { JwtPayload } from '@acc/client';
+export interface SandboxJwtPayload {
+  sub?: string;
+  roles?: string[];
+  tenantId?: string;
+  tid?: string;
+  actor_tid?: string;
+  is_ephemeral_delegation?: boolean;
+  isSandbox?: boolean;
+  iat?: number;
+  exp?: number;
+  [key: string]: unknown;
+}
 
-export function decodeJwt(token: string): JwtPayload | null {
+export function decodeJwt(token: string): SandboxJwtPayload | null {
   try {
     const base64Url = token.split('.')[1];
     if (!base64Url) return null;
@@ -14,7 +25,7 @@ export function decodeJwt(token: string): JwtPayload | null {
         .join('')
     );
 
-    return JSON.parse(jsonPayload) as JwtPayload;
+    return JSON.parse(jsonPayload) as SandboxJwtPayload;
   } catch {
     return null;
   }

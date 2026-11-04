@@ -33,6 +33,9 @@ describe('Studio Boot Splash & First-Load Lifecycle Suite', () => {
       expect(htmlContent).toContain('splash-card');
       expect(htmlContent).toContain('splash-logo-container');
       expect(htmlContent).toContain('splash-logo-svg');
+      expect(htmlContent).toContain('splash-ring-outer');
+      expect(htmlContent).toContain('splash-ring-orbit');
+      expect(htmlContent).toContain('splash-play-icon');
       expect(htmlContent).toContain('splash-title');
       expect(htmlContent).toContain('ACC STUDIO');
       expect(htmlContent).toContain('splash-badge');
@@ -49,6 +52,8 @@ describe('Studio Boot Splash & First-Load Lifecycle Suite', () => {
       expect(htmlContent).toContain('id="boot-splash-style"');
 
       // GPU Compositor only (@keyframes use transform and opacity)
+      expect(htmlContent).toContain('@keyframes splash-spin');
+      expect(htmlContent).toContain('transform: rotate(');
       expect(htmlContent).toContain('@keyframes splash-pulse');
       expect(htmlContent).toContain('transform: scale(');
       expect(htmlContent).toContain('@keyframes splash-shimmer');
@@ -73,6 +78,42 @@ describe('Studio Boot Splash & First-Load Lifecycle Suite', () => {
       expect(htmlContent).toContain('10000');
       expect(htmlContent).toContain('Loading video & audio subsystems...');
       expect(htmlContent).toContain('Taking longer than usual...');
+    });
+
+    it('verifies splash modal styling is dynamically synchronized with system theme manager tokens and pre-hydration bootstrap', () => {
+      const htmlContent = fs.readFileSync(indexHtmlPath, 'utf8');
+
+      // Pre-hydration synchronous theme bootstrapper
+      expect(htmlContent).toContain('id="splash-theme-init"');
+      expect(htmlContent).toContain("localStorage.getItem('acc_studio_theme_prefs')");
+      expect(htmlContent).toContain("data-theme-preset");
+      expect(htmlContent).toContain("data-glass-style");
+      expect(htmlContent).toContain("data-blur-intensity");
+      // Verify elimination of duplicated dynamic accent color override in bootstrapper
+      expect(htmlContent).not.toContain("data-accent");
+      expect(htmlContent).toContain("var presets = {");
+
+      // Liquid Glass design tokens consistency
+      expect(htmlContent).toContain('--accent-primary');
+      expect(htmlContent).toContain('--accent-glow');
+      expect(htmlContent).toContain('--glass-bg');
+      expect(htmlContent).toContain('--glass-border');
+      expect(htmlContent).toContain('--glass-specular');
+      expect(htmlContent).toContain('--glass-shadow');
+      expect(htmlContent).toContain('--glass-blur');
+
+      // Decoupled optical glass & blur rules
+      expect(htmlContent).toContain('[data-glass-style="frosted"]');
+      expect(htmlContent).toContain('[data-glass-style="cyber"]');
+      expect(htmlContent).toContain('[data-blur-intensity="low"]');
+      expect(htmlContent).toContain('[data-blur-intensity="high"]');
+
+      // Light mode glass finish parity
+      expect(htmlContent).toContain('html.light');
+      expect(htmlContent).toContain('--splash-backdrop-bg');
+
+      // SVG accent color bindings
+      expect(htmlContent).toContain('var(--accent-primary');
     });
   });
 

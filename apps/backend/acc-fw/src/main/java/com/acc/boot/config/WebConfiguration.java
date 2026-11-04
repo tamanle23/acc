@@ -92,6 +92,8 @@ public class WebConfiguration implements WebMvcConfigurer {
     javaTimeModule.addSerializer(java.time.LocalDateTime.class, new LocalDateTimeSerializer(DateTimeFormatter.ofPattern(SystemConstant.ISO_DATE_TIME_FORMAT).withResolverStyle(ResolverStyle.SMART)));
     mapper.registerModule(javaTimeModule);
     mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+    mapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
+    mapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     return mapper;
   }
 

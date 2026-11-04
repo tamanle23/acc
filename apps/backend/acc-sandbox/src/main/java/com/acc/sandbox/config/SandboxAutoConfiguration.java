@@ -34,6 +34,7 @@ import org.springframework.context.annotation.Import;
         MockWebhookDeliveryService.class,
         com.acc.sandbox.auth.SandboxPersonaRegistry.class,
         com.acc.sandbox.auth.SandboxTokenAspect.class,
+        com.acc.sandbox.seed.SandboxUserSeeder.class,
         com.acc.sandbox.seed.SandboxDataPreWarmer.class,
         com.acc.sandbox.db.SandboxLiquibaseConfiguration.class
 })

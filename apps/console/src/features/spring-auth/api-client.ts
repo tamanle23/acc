@@ -1,9 +1,11 @@
 import axios from 'axios';
 import { generateTraceparent } from '@acc/client';
+import { toast } from 'sonner';
 import { useSpringAuthStore } from './store';
 import { enableSandboxMockEngine } from './sandbox/mock-engine';
 import { useMetadataUiStore } from '../metadata/store/use-metadata-ui-store';
-import { useSandboxStore } from '../../core/sandbox/store/sandbox-store';
+import { useSandboxStore, DEFAULT_SANDBOX_PERSONAS } from '../../core/sandbox/store/sandbox-store';
+import { getRequiredClearanceText } from '@/components/auth/permission-guard';
 
 export const springApiClient = axios.create({
   baseURL: '/api',
@@ -12,6 +14,104 @@ export const springApiClient = axios.create({
   },
   withCredentials: true,
 });
+
+/**
+ * Canonical mutation route permission mappings for dual-gate pre-flight defense.
+ */
+interface RoutePermissionRule {
+  pattern: RegExp;
+  method: 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'ALL';
+  permission: string;
+}
+
+const MUTATION_PERMISSION_RULES: RoutePermissionRule[] = [
+  // Workflow Plane
+  { pattern: /^\/api\/v1\/workflow\/definitions/i, method: 'POST', permission: 'workflow:definition:manage' },
+  { pattern: /^\/api\/v1\/workflow\/definitions\/[^/]+\/batch-migrate/i, method: 'POST', permission: 'workflow:definition:manage' },
+  { pattern: /^\/api\/v1\/workflow\/definitions\/[^/]+\/migration-preview/i, method: 'POST', permission: 'workflow:definition:manage' },
+  { pattern: /^\/api\/v1\/workflow\/definitions\/simulate/i, method: 'POST', permission: 'workflow:definition:manage' },
+  { pattern: /^\/api\/v1\/workflow\/approvals\/[^/]+\/resolve/i, method: 'POST', permission: 'workflow:approval:execute' },
+  { pattern: /^\/api\/v1\/workflow\/executions/i, method: 'POST', permission: 'workflow:execution:submit' },
+  { pattern: /^\/api\/v1\/workflow\/workers/i, method: 'POST', permission: 'platform:workers:manage' },
+
+  // Metadata Plane
+  { pattern: /^\/api\/v1\/metadata\/entity-types\/[^/]+\/records(\/.*)?$/i, method: 'POST', permission: 'entity:record:create' },
+  { pattern: /^\/api\/v1\/metadata\/entity-types\/[^/]+\/records(\/.*)?$/i, method: 'PUT', permission: 'entity:record:update' },
+  { pattern: /^\/api\/v1\/metadata\/entity-types\/[^/]+\/records(\/.*)?$/i, method: 'DELETE', permission: 'entity:record:delete' },
+  { pattern: /^\/api\/v1\/metadata\/entity-types(\/.*)?$/i, method: 'POST', permission: 'metadata:schema:write' },
+  { pattern: /^\/api\/v1\/metadata\/entity-types(\/.*)?$/i, method: 'PUT', permission: 'metadata:schema:write' },
+  { pattern: /^\/api\/v1\/metadata\/entity-types(\/.*)?$/i, method: 'DELETE', permission: 'metadata:schema:write' },
+
+  // Workspace Plane
+  { pattern: /^\/api\/v1\/users(\/.*)?$/i, method: 'POST', permission: 'workspace:members:manage' },
+  { pattern: /^\/api\/v1\/users(\/.*)?$/i, method: 'PUT', permission: 'workspace:members:manage' },
+  { pattern: /^\/api\/v1\/users(\/.*)?$/i, method: 'DELETE', permission: 'workspace:members:manage' },
+  { pattern: /^\/api\/v1\/workspace\/settings/i, method: 'ALL', permission: 'workspace:settings:manage' },
+
+  // Billing Plane
+  { pattern: /^\/api\/v1\/billing\/(upgrade|subscription)/i, method: 'ALL', permission: 'billing:subscription:upgrade' },
+];
+
+function checkPreflightAuthorization(config: import('axios').InternalAxiosRequestConfig): void {
+  const method = (config.method || 'GET').toUpperCase();
+  if (['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+    return;
+  }
+
+  const fullUrl = config.url?.startsWith('http')
+    ? new URL(config.url).pathname
+    : (config.baseURL || '') + (config.url || '');
+
+  const matchingRule = MUTATION_PERMISSION_RULES.find((rule) => {
+    if (rule.method !== 'ALL' && rule.method !== method) return false;
+    return rule.pattern.test(fullUrl);
+  });
+
+  if (!matchingRule) return;
+
+  const authUser = useSpringAuthStore.getState().user;
+  const isSandboxEnabled = import.meta.env.DEV ? useSandboxStore.getState().enabled : false;
+  const activePersonaId = import.meta.env.DEV ? useSandboxStore.getState().activePersonaId : null;
+
+  // Sovereign Root Custodian unconditional bypass
+  if (
+    authUser?.isSovereign ||
+    authUser?.roles?.includes('ROLE_SYSTEM_ROOT' as any) ||
+    authUser?.roles?.includes('ROLE_SYSTEM_CUSTODIAN' as any) ||
+    authUser?.tenantId === 'SYSTEM' ||
+    (isSandboxEnabled && activePersonaId === 'system')
+  ) {
+    return;
+  }
+
+  const permSet = new Set<string>();
+  if (authUser?.permissions) {
+    authUser.permissions.forEach((p) => permSet.add(p));
+  }
+  if (isSandboxEnabled && activePersonaId) {
+    const persona = DEFAULT_SANDBOX_PERSONAS[activePersonaId];
+    persona?.permissions?.forEach((p) => permSet.add(p));
+  }
+
+  if (!permSet.has(matchingRule.permission)) {
+    const clearance = getRequiredClearanceText(matchingRule.permission);
+    toast.error(`Action blocked: Requires ${clearance} clearance`);
+    const cancelError = new axios.AxiosError(
+      `Pre-Flight Gate: Operation halted locally. Requires ${clearance} clearance.`,
+      'ERR_CLIENT_AUTH_PREFLIGHT',
+      config,
+      null,
+      {
+        status: 403,
+        statusText: 'Forbidden',
+        headers: {},
+        config,
+        data: { error: 'Forbidden', message: `Requires ${clearance} clearance` },
+      } as any
+    );
+    throw cancelError;
+  }
+}
 
 // Attach Unified Sandbox Interceptor in development mode
 if (import.meta.env.DEV) {
@@ -33,14 +133,18 @@ const processQueue = (error: Error | null, token: string | null = null) => {
   failedQueue = [];
 };
 
-// 1. Request Interceptor: Attach Access Token, Tenant & Workspace Context Headers
+// 1. Request Interceptor: Pre-Flight Gate & Headers
 springApiClient.interceptors.request.use(
   (config) => {
+    // Dual-gate authorization check before network dispatch
+    checkPreflightAuthorization(config);
+
     const { accessToken } = useSpringAuthStore.getState();
     const assumedToken = typeof window !== 'undefined' ? localStorage.getItem('acc_assumed_token') : null;
     const effectiveToken = assumedToken || accessToken;
+    const isRefreshRequest = Boolean(config.url && config.url.includes('/auth/refresh'));
 
-    if (effectiveToken && config.headers) {
+    if (effectiveToken && config.headers && !isRefreshRequest) {
       config.headers['Authorization'] = `Bearer ${effectiveToken}`;
     }
 
@@ -110,8 +214,8 @@ springApiClient.interceptors.response.use(
 
         const { data } = await springApiClient.post('/auth/refresh', payload);
 
-        const newAccess = data.accessToken;
-        const newRefresh = data.refreshToken || state.refreshToken;
+        const newAccess = data?.body?.accessToken || data?.accessToken;
+        const newRefresh = data?.body?.refreshToken || data?.refreshToken || state.refreshToken;
 
         state.setTokens(newAccess, newRefresh);
         processQueue(null, newAccess);
@@ -130,3 +234,19 @@ springApiClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+/**
+ * Fetch strongly-typed security profile for current authenticated session.
+ * Hydrates useSpringAuthStore without browser-side JWT decoding.
+ */
+export async function fetchAuthenticationProfile(explicitToken?: string): Promise<import('@acc/client').AuthenticationProfile> {
+  const config = explicitToken
+    ? { headers: { Authorization: `Bearer ${explicitToken}` } }
+    : undefined;
+  const { data } = await springApiClient.get<any>('/auth/me', config);
+  const raw = data?.body || data;
+  return {
+    ...raw,
+    isSovereign: raw.isSovereign ?? raw.sovereign ?? false,
+  } as import('@acc/client').AuthenticationProfile;
+}

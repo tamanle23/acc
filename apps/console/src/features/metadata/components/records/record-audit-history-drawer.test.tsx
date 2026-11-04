@@ -4,7 +4,7 @@ import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RecordAuditHistoryDrawer } from './record-audit-history-drawer';
 import * as metadataApi from '../../api/metadata-api';
-import { useAuthStore } from '@/stores/auth-store';
+import { useSpringAuthStore } from '@/features/spring-auth';
 import { useSandboxStore } from '@/core/sandbox/store/sandbox-store';
 import type { EntityRecord, RecordAuditLog } from '../../api/types';
 
@@ -110,14 +110,15 @@ describe('RecordAuditHistoryDrawer', () => {
   });
 
   it('renders audit ledger timeline and version history correctly', () => {
-    useAuthStore.setState({
-      auth: {
-        user: { accountNo: '1', email: 'user@acc.io', role: ['ROLE_USER'], exp: 0 },
-        accessToken: 'token',
-        setUser: vi.fn(),
-        setAccessToken: vi.fn(),
-        resetAccessToken: vi.fn(),
-        reset: vi.fn(),
+    useSpringAuthStore.setState({
+      user: {
+        userId: 'usr-1',
+        username: 'user@acc.io',
+        tenantId: 'tenant-acme',
+        isSovereign: false,
+        roles: ['ROLE_STANDARD_MEMBER'],
+        permissions: ['entity:record:read'],
+        activeFeatures: [],
       },
     });
     useSandboxStore.setState({ activePersonaId: 'user' });
@@ -141,14 +142,15 @@ describe('RecordAuditHistoryDrawer', () => {
   });
 
   it('keeps restore button locked and disabled for non-sovereign standard users', () => {
-    useAuthStore.setState({
-      auth: {
-        user: { accountNo: '1', email: 'user@acc.io', role: ['ROLE_USER'], exp: 0 },
-        accessToken: 'token',
-        setUser: vi.fn(),
-        setAccessToken: vi.fn(),
-        resetAccessToken: vi.fn(),
-        reset: vi.fn(),
+    useSpringAuthStore.setState({
+      user: {
+        userId: 'usr-1',
+        username: 'user@acc.io',
+        tenantId: 'tenant-acme',
+        isSovereign: false,
+        roles: ['ROLE_STANDARD_MEMBER'],
+        permissions: ['entity:record:read'],
+        activeFeatures: [],
       },
     });
     useSandboxStore.setState({ activePersonaId: 'user' });
@@ -168,19 +170,15 @@ describe('RecordAuditHistoryDrawer', () => {
   });
 
   it('unlocks Preview Restore button for Sovereign Root Custodians and opens confirmation preview', async () => {
-    useAuthStore.setState({
-      auth: {
-        user: {
-          accountNo: '1',
-          email: 'custodian@acc.io',
-          role: ['ROLE_USER', 'ROLE_ADMIN', 'ROLE_SYSTEM_CUSTODIAN'],
-          exp: 0,
-        },
-        accessToken: 'token',
-        setUser: vi.fn(),
-        setAccessToken: vi.fn(),
-        resetAccessToken: vi.fn(),
-        reset: vi.fn(),
+    useSpringAuthStore.setState({
+      user: {
+        userId: 'usr-custodian',
+        username: 'custodian@acc.io',
+        tenantId: 'SYSTEM',
+        isSovereign: true,
+        roles: ['ROLE_SYSTEM_ROOT'],
+        permissions: ['entity:record:read', 'entity:record:update'],
+        activeFeatures: [],
       },
     });
     useSandboxStore.setState({ activePersonaId: 'system' });

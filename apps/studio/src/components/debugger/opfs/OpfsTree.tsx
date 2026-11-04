@@ -23,19 +23,26 @@ import { Button } from '../../ui/button';
 import { formatOpfsBytes, type OpfsTreeNode } from '@acc/core-web';
 import type { OpfsFilterType, OpfsSortField, OpfsSortDirection } from './types';
 
-interface OpfsTreeExplorerProps {
+interface OpfsTreeProps {
   rootNode: OpfsTreeNode | null;
   selectedPath: string | null;
   onSelectNode: (node: OpfsTreeNode) => void;
   onDeleteNode?: (name: string, isDirectory?: boolean) => void;
 }
 
-export function OpfsTreeExplorer({
+/**
+ * Helper to determine whether an OPFS node is a companion metadata file (*.meta.json)
+ */
+export function isMetadataFile(node: OpfsTreeNode): boolean {
+  return Boolean(node.isMetadata || /\.meta\.json$/i.test(node.name));
+}
+
+export function OpfsTree({
   rootNode,
   selectedPath,
   onSelectNode,
   onDeleteNode,
-}: OpfsTreeExplorerProps) {
+}: OpfsTreeProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<OpfsFilterType>('all');
   const [sortField, setSortField] = useState<OpfsSortField>('name');
@@ -54,9 +61,20 @@ export function OpfsTreeExplorer({
 
   // Filter and sort predicate
   const filterNode = (node: OpfsTreeNode): boolean => {
+    // Unconditionally hide all metadata companion files (*.meta.json)
+    if (isMetadataFile(node)) {
+      return false;
+    }
+
     if (node.kind === 'directory') {
-      // Directory matches if any of its children matches
-      return node.children ? node.children.some(filterNode) : true;
+      // If searching, show directory if directory name matches or any non-hidden child matches
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchDirName = node.name.toLowerCase().includes(q);
+        return matchDirName || (node.children ? node.children.some(filterNode) : false);
+      }
+      // Directory matches if any of its non-hidden children matches (or if directory itself is empty)
+      return node.children ? (node.children.length === 0 ? true : node.children.some(filterNode)) : true;
     }
 
     // Check search query
@@ -69,7 +87,6 @@ export function OpfsTreeExplorer({
 
     // Check filter category
     if (filterType === 'all') return true;
-    if (filterType === 'meta') return node.isMetadata;
     if (filterType === 'json') return node.mimeType === 'application/json' || node.name.endsWith('.json');
     if (filterType === 'media') {
       const m = node.mimeType.toLowerCase();
@@ -77,7 +94,7 @@ export function OpfsTreeExplorer({
     }
     if (filterType === 'other') {
       const m = node.mimeType.toLowerCase();
-      return !node.isMetadata && !node.name.endsWith('.json') && !m.startsWith('image/') && !m.startsWith('audio/') && !m.startsWith('video/');
+      return !node.name.endsWith('.json') && !m.startsWith('image/') && !m.startsWith('audio/') && !m.startsWith('video/');
     }
 
     return true;
@@ -150,11 +167,10 @@ export function OpfsTreeExplorer({
             onSelectNode(node);
           }}
           style={{ paddingLeft }}
-          className={`flex items-center justify-between py-1.5 pr-2.5 rounded-lg cursor-pointer transition-colors group ${
-            isSelected
+          className={`flex items-center justify-between py-1.5 pr-2.5 rounded-lg cursor-pointer transition-colors group ${isSelected
               ? 'bg-accent-theme/20 text-accent-theme font-medium border-l-2 border-accent-theme shadow-xs'
               : 'text-foreground/90 hover:bg-muted/60'
-          }`}
+            }`}
         >
           <div className="flex items-center gap-1.5 min-w-0">
             {isDir ? (
@@ -214,6 +230,9 @@ export function OpfsTreeExplorer({
 
   const filteredRoot = useMemo(() => {
     if (!rootNode) return null;
+    if (rootNode.kind === 'file' && isMetadataFile(rootNode)) {
+      return null;
+    }
     return rootNode;
   }, [rootNode]);
 
@@ -242,16 +261,15 @@ export function OpfsTreeExplorer({
 
         {/* Filter Chips */}
         <div className="flex items-center gap-1 overflow-x-auto pb-0.5 text-[10px] font-mono no-scrollbar">
-          {(['all', 'media', 'json', 'meta', 'other'] as OpfsFilterType[]).map((f) => (
+          {(['all', 'media', 'json', 'other'] as OpfsFilterType[]).map((f) => (
             <button
               key={f}
               type="button"
               onClick={() => setFilterType(f)}
-              className={`px-2 py-0.5 rounded-md uppercase font-semibold transition-colors cursor-pointer shrink-0 ${
-                filterType === f
+              className={`px-2 py-0.5 rounded-md uppercase font-semibold transition-colors cursor-pointer shrink-0 ${filterType === f
                   ? 'bg-accent-theme/20 text-accent-theme border border-accent-theme/40'
                   : 'bg-muted/40 text-muted-foreground hover:text-foreground border border-transparent'
-              }`}
+                }`}
             >
               {f}
             </button>

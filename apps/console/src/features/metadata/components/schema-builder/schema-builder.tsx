@@ -6,6 +6,7 @@ import { AttributeDialog } from './attribute-dialog';
 import { AttributeDeleteDialog } from './attribute-delete-dialog';
 import { SchemaJsonPreview } from './schema-json-preview';
 import { Button } from '@/components/ui/button';
+import { AuthorizedButton } from '@/components/auth';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Code, Search, Layers, Sparkles, LayoutPanelTop, List } from 'lucide-react';
@@ -193,7 +194,8 @@ export const SchemaBuilder: React.FC<Props> = ({ entityTypeId }) => {
             <span>Draft-07 JSON</span>
           </Button>
 
-          <Button
+          <AuthorizedButton
+            permission="metadata:schema:write"
             size="sm"
             onClick={openCreateAttributeDialog}
             disabled={isFieldQuotaExceeded}
@@ -202,7 +204,7 @@ export const SchemaBuilder: React.FC<Props> = ({ entityTypeId }) => {
           >
             <Plus className="h-4 w-4" />
             <span>Add Field</span>
-          </Button>
+          </AuthorizedButton>
         </div>
       </div>
 

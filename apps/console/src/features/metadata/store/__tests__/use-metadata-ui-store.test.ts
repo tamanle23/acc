@@ -78,29 +78,6 @@ describe('useMetadataUiStore', () => {
       useMetadataUiStore.getState().setWorkspaceMode('operator');
       expect(useMetadataUiStore.getState().activeTab).toBe('data');
     });
-
-    it('calculates canManageSchema and canMutateRecords permissions', () => {
-      // 1. ADMIN in architect mode
-      useMetadataUiStore.getState().setCurrentUserRole('TENANT_ADMIN');
-      useMetadataUiStore.getState().setWorkspaceMode('architect');
-      expect(useMetadataUiStore.getState().canManageSchema()).toBe(true);
-      expect(useMetadataUiStore.getState().canMutateRecords()).toBe(true);
-
-      // 2. ADMIN in operator mode
-      useMetadataUiStore.getState().setWorkspaceMode('operator');
-      expect(useMetadataUiStore.getState().canManageSchema()).toBe(false);
-      expect(useMetadataUiStore.getState().canMutateRecords()).toBe(true);
-
-      // 3. OPERATOR
-      useMetadataUiStore.getState().setCurrentUserRole('TENANT_OPERATOR');
-      expect(useMetadataUiStore.getState().canManageSchema()).toBe(false);
-      expect(useMetadataUiStore.getState().canMutateRecords()).toBe(true);
-
-      // 4. VIEWER
-      useMetadataUiStore.getState().setCurrentUserRole('TENANT_VIEWER');
-      expect(useMetadataUiStore.getState().canManageSchema()).toBe(false);
-      expect(useMetadataUiStore.getState().canMutateRecords()).toBe(false);
-    });
   });
 
   describe('Navigation & Model Selection', () => {

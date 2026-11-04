@@ -30,7 +30,7 @@ import {
   type OpfsStorageEstimate,
 } from '@acc/core-web';
 import { ContentCacheRegistry, ContentCacheStrategyId } from '@acc/core-isomorphic';
-import { OpfsTreeExplorer } from './OpfsTreeExplorer';
+import { OpfsTree } from './OpfsTree';
 import { OpfsFilePreview } from './OpfsFilePreview';
 import type { OpfsFileDetails } from './types';
 
@@ -39,7 +39,7 @@ export interface OpfsDebuggerModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export function OpfsDebuggerModal({ open, onOpenChange }: OpfsDebuggerModalProps) {
+export function OpfsExplorerModal({ open, onOpenChange }: OpfsDebuggerModalProps) {
   // Obtain or instantiate OpfsCacheStrategy
   const strategy = useMemo(() => {
     try {
@@ -49,7 +49,7 @@ export function OpfsDebuggerModal({ open, onOpenChange }: OpfsDebuggerModalProps
           return found;
         }
       }
-    } catch {}
+    } catch { }
     return new OpfsCacheStrategy();
   }, []);
 
@@ -138,7 +138,7 @@ export function OpfsDebuggerModal({ open, onOpenChange }: OpfsDebuggerModalProps
             if (blob.size > maxTextBytes) {
               text += `\n\n--- [TRUNCATED] Showing first 1 MB of ${formatOpfsBytes(blob.size)} ---`;
             }
-          } catch {}
+          } catch { }
         }
 
         setFileDetails({
@@ -175,9 +175,9 @@ export function OpfsDebuggerModal({ open, onOpenChange }: OpfsDebuggerModalProps
       setSelectedNode(null);
       setFileDetails(null);
       await refreshData();
-      toast.success('OPFS cache purged successfully');
+      toast.success('Cache purged successfully');
     } catch {
-      toast.error('Failed to purge OPFS cache');
+      toast.error('Failed to purge cache');
     } finally {
       setIsPurging(false);
     }
@@ -219,21 +219,20 @@ export function OpfsDebuggerModal({ open, onOpenChange }: OpfsDebuggerModalProps
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-6xl max-w-7xl w-[95vw] h-[88vh] glass-panel text-foreground border-[var(--glass-border)] p-0 rounded-2xl shadow-2xl backdrop-blur-2xl flex flex-col overflow-hidden">
         {/* Header */}
-        <DialogHeader className="p-4 border-b border-[var(--glass-border)] shrink-0 flex flex-row items-center justify-between gap-4">
+        <DialogHeader className="p-4 border-b border-[var(--glass-border)] shrink-0 flex flex-row items-center justify-between px-5 py-3 gap-4">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-accent-theme/15 border border-accent-theme/30 flex items-center justify-center text-accent-theme shadow-xs">
               <HardDrive className="w-5 h-5" />
             </div>
             <div>
               <DialogTitle className="text-base font-bold text-foreground flex items-center gap-2">
-                Origin Private File System (OPFS) Debugger
+                File Explorer
                 <Badge
                   variant="outline"
-                  className={`text-[10px] font-mono ${
-                    isSupported
-                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                      : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                  }`}
+                  className={`text-[10px] font-mono ${isSupported
+                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                    : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                    }`}
                 >
                   {isSupported ? 'OPFS Active' : 'IndexedDB Fallback'}
                 </Badge>
@@ -248,9 +247,8 @@ export function OpfsDebuggerModal({ open, onOpenChange }: OpfsDebuggerModalProps
               </DialogDescription>
             </div>
           </div>
-
           {/* Quota Progress & Action Controls */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {quota && (
               <div className="hidden md:flex flex-col items-end text-[11px] font-mono mr-2">
                 <div className="text-muted-foreground">
@@ -296,6 +294,14 @@ export function OpfsDebuggerModal({ open, onOpenChange }: OpfsDebuggerModalProps
               <Trash2 className="w-3.5 h-3.5" />
               Purge Cache
             </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onOpenChange(false)}
+              className="h-7 w-7 rounded-full text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-4 h-4" />
+            </Button>
           </div>
         </DialogHeader>
 
@@ -303,7 +309,7 @@ export function OpfsDebuggerModal({ open, onOpenChange }: OpfsDebuggerModalProps
         <div className="flex-1 flex overflow-hidden">
           {/* Left Tree Explorer (340px) */}
           <div className="w-80 shrink-0 h-full">
-            <OpfsTreeExplorer
+            <OpfsTree
               rootNode={tree}
               selectedPath={selectedNode?.path || null}
               onSelectNode={loadFileDetails}

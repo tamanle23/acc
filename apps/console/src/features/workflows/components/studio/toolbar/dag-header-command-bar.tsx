@@ -1,5 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
+import { AuthorizedButton, AuthorizedDropdownMenuItem } from '@/components/auth';
 import { Badge } from '@/components/ui/badge';
 import {
   Activity,
@@ -540,7 +541,8 @@ export const DagHeaderCommandBar: React.FC<DagHeaderCommandBarProps> = ({
             </Button>
 
             {onSimulate && (
-              <Button
+              <AuthorizedButton
+                permission="workflow:execution:submit"
                 size="sm"
                 variant="outline"
                 className="h-7 px-2 text-xs gap-1 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10"
@@ -551,7 +553,7 @@ export const DagHeaderCommandBar: React.FC<DagHeaderCommandBarProps> = ({
               >
                 <Activity className="w-3 h-3 text-emerald-500" />
                 <span className="hidden lg:inline">Simulate</span>
-              </Button>
+              </AuthorizedButton>
             )}
 
             {/* Dropdown Menu for Export / Import IR & Blank Reset */}
@@ -634,7 +636,8 @@ export const DagHeaderCommandBar: React.FC<DagHeaderCommandBarProps> = ({
             <div className="h-3.5 w-[1px] bg-border/50 mx-0.5" />
 
             {/* Primary Save CTA */}
-            <Button
+            <AuthorizedButton
+              permission="workflow:definition:manage"
               size="sm"
               variant="default"
               className="h-7 text-xs gap-1 bg-primary text-primary-foreground shadow-sm disabled:opacity-50"
@@ -651,7 +654,7 @@ export const DagHeaderCommandBar: React.FC<DagHeaderCommandBarProps> = ({
               <Save className="w-3 h-3" />
               <span>{isSaving ? 'Saving...' : 'Save'}</span>
               <span className="hidden sm:inline">{!isSaving && ' DAG'}</span>
-            </Button>
+            </AuthorizedButton>
           </>
         )}
 

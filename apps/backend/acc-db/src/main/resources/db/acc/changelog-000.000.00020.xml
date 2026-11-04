@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+
+    <changeSet id="harmonize-identity-audit-column-casing-20" author="antigravity">
+        <validCheckSum>any</validCheckSum>
+        <comment>Safely rename unquoted/uppercase audit columns in identity tables to mixed-case for PostgreSQL case-preserving quoting</comment>
+        <sql dbms="postgresql" splitStatements="false">
+            -- UNIPOST_IDENTITY_USER
+            DO $$
+            BEGIN
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'unipost_identity_user' AND column_name = 'createdby_uid'
+                ) THEN
+                    ALTER TABLE UNIPOST_IDENTITY_USER RENAME COLUMN createdby_uid TO "createdBy_uid";
+                END IF;
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'unipost_identity_user' AND column_name = 'lastupdatedby_uid'
+                ) THEN
+                    ALTER TABLE UNIPOST_IDENTITY_USER RENAME COLUMN lastupdatedby_uid TO "lastUpdatedBy_uid";
+                END IF;
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'unipost_identity_user' AND column_name = 'createddate'
+                ) THEN
+                    ALTER TABLE UNIPOST_IDENTITY_USER RENAME COLUMN createddate TO "createdDate";
+                END IF;
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'unipost_identity_user' AND column_name = 'lastupdateddate'
+                ) THEN
+                    ALTER TABLE UNIPOST_IDENTITY_USER RENAME COLUMN lastupdateddate TO "lastUpdatedDate";
+                END IF;
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'unipost_identity_user' AND column_name = 'deleteddate'
+                ) THEN
+                    ALTER TABLE UNIPOST_IDENTITY_USER RENAME COLUMN deleteddate TO "deletedDate";
+                END IF;
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'unipost_identity_user' AND column_name = 'username'
+                ) THEN
+                    ALTER TABLE UNIPOST_IDENTITY_USER RENAME COLUMN username TO "userName";
+                END IF;
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'unipost_identity_user' AND column_name = 'phonenumber'
+                ) THEN
+                    ALTER TABLE UNIPOST_IDENTITY_USER RENAME COLUMN phonenumber TO "phoneNumber";
+                END IF;
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'unipost_identity_user' AND column_name = 'idtype'
+                ) THEN
+                    ALTER TABLE UNIPOST_IDENTITY_USER RENAME COLUMN idtype TO "idType";
+                END IF;
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'unipost_identity_user' AND column_name = 'defaultpassword'
+                ) THEN
+                    ALTER TABLE UNIPOST_IDENTITY_USER RENAME COLUMN defaultpassword TO "defaultPassword";
+                END IF;
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'unipost_identity_user' AND column_name = 'firstname'
+                ) THEN
+                    ALTER TABLE UNIPOST_IDENTITY_USER RENAME COLUMN firstname TO "firstName";
+                END IF;
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'unipost_identity_user' AND column_name = 'lastname'
+                ) THEN
+                    ALTER TABLE UNIPOST_IDENTITY_USER RENAME COLUMN lastname TO "lastName";
+                END IF;
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'unipost_identity_user' AND column_name = 'nonexpired'
+                ) THEN
+                    ALTER TABLE UNIPOST_IDENTITY_USER RENAME COLUMN nonexpired TO "nonExpired";
+                END IF;
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'unipost_identity_user' AND column_name = 'nonlocked'
+                ) THEN
+                    ALTER TABLE UNIPOST_IDENTITY_USER RENAME COLUMN nonlocked TO "nonLocked";
+                END IF;
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'unipost_identity_user' AND column_name = 'credentialsnonexpired'
+                ) THEN
+                    ALTER TABLE UNIPOST_IDENTITY_USER RENAME COLUMN credentialsnonexpired TO "credentialsNonExpired";
+                END IF;
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'unipost_identity_user' AND column_name = 'preferences'
+                ) THEN
+                    ALTER TABLE UNIPOST_IDENTITY_USER ADD COLUMN preferences TEXT;
+                END IF;
+
+                -- UNIPOST_IDENTITY_ROLE
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'unipost_identity_role' AND column_name = 'createdby_uid'
+                ) THEN
+                    ALTER TABLE UNIPOST_IDENTITY_ROLE RENAME COLUMN createdby_uid TO "createdBy_uid";
+                END IF;
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'unipost_identity_role' AND column_name = 'lastupdatedby_uid'
+                ) THEN
+                    ALTER TABLE UNIPOST_IDENTITY_ROLE RENAME COLUMN lastupdatedby_uid TO "lastUpdatedBy_uid";
+                END IF;
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'unipost_identity_role' AND column_name = 'createddate'
+                ) THEN
+                    ALTER TABLE UNIPOST_IDENTITY_ROLE RENAME COLUMN createddate TO "createdDate";
+                END IF;
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'unipost_identity_role' AND column_name = 'lastupdateddate'
+                ) THEN
+                    ALTER TABLE UNIPOST_IDENTITY_ROLE RENAME COLUMN lastupdateddate TO "lastUpdatedDate";
+                END IF;
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'unipost_identity_role' AND column_name = 'deleteddate'
+                ) THEN
+                    ALTER TABLE UNIPOST_IDENTITY_ROLE RENAME COLUMN deleteddate TO "deletedDate";
+                END IF;
+
+                -- UNIPOST_IDENTITY_USERROLE
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'unipost_identity_userrole' AND column_name = 'createdby_uid'
+                ) THEN
+                    ALTER TABLE UNIPOST_IDENTITY_USERROLE RENAME COLUMN createdby_uid TO "createdBy_uid";
+                END IF;
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'unipost_identity_userrole' AND column_name = 'lastupdatedby_uid'
+                ) THEN
+                    ALTER TABLE UNIPOST_IDENTITY_USERROLE RENAME COLUMN lastupdatedby_uid TO "lastUpdatedBy_uid";
+                END IF;
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'unipost_identity_userrole' AND column_name = 'createddate'
+                ) THEN
+                    ALTER TABLE UNIPOST_IDENTITY_USERROLE RENAME COLUMN createddate TO "createdDate";
+                END IF;
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'unipost_identity_userrole' AND column_name = 'lastupdateddate'
+                ) THEN
+                    ALTER TABLE UNIPOST_IDENTITY_USERROLE RENAME COLUMN lastupdateddate TO "lastUpdatedDate";
+                END IF;
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'unipost_identity_userrole' AND column_name = 'deleteddate'
+                ) THEN
+                    ALTER TABLE UNIPOST_IDENTITY_USERROLE RENAME COLUMN deleteddate TO "deletedDate";
+                END IF;
+
+                -- UNIPOST_IDENTITY_ROLEPERMISSION
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'unipost_identity_rolepermission' AND column_name = 'createdby_uid'
+                ) THEN
+                    ALTER TABLE UNIPOST_IDENTITY_ROLEPERMISSION RENAME COLUMN createdby_uid TO "createdBy_uid";
+                END IF;
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'unipost_identity_rolepermission' AND column_name = 'lastupdatedby_uid'
+                ) THEN
+                    ALTER TABLE UNIPOST_IDENTITY_ROLEPERMISSION RENAME COLUMN lastupdatedby_uid TO "lastUpdatedBy_uid";
+                END IF;
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'unipost_identity_rolepermission' AND column_name = 'createddate'
+                ) THEN
+                    ALTER TABLE UNIPOST_IDENTITY_ROLEPERMISSION RENAME COLUMN createddate TO "createdDate";
+                END IF;
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'unipost_identity_rolepermission' AND column_name = 'lastupdateddate'
+                ) THEN
+                    ALTER TABLE UNIPOST_IDENTITY_ROLEPERMISSION RENAME COLUMN lastupdateddate TO "lastUpdatedDate";
+                END IF;
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'unipost_identity_rolepermission' AND column_name = 'deleteddate'
+                ) THEN
+                    ALTER TABLE UNIPOST_IDENTITY_ROLEPERMISSION RENAME COLUMN deleteddate TO "deletedDate";
+                END IF;
+
+                -- UNIPOST_IDENTITY_USERPERMISSION
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'unipost_identity_userpermission' AND column_name = 'createdby_uid'
+                ) THEN
+                    ALTER TABLE UNIPOST_IDENTITY_USERPERMISSION RENAME COLUMN createdby_uid TO "createdBy_uid";
+                END IF;
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'unipost_identity_userpermission' AND column_name = 'lastupdatedby_uid'
+                ) THEN
+                    ALTER TABLE UNIPOST_IDENTITY_USERPERMISSION RENAME COLUMN lastupdatedby_uid TO "lastUpdatedBy_uid";
+                END IF;
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'unipost_identity_userpermission' AND column_name = 'createddate'
+                ) THEN
+                    ALTER TABLE UNIPOST_IDENTITY_USERPERMISSION RENAME COLUMN createddate TO "createdDate";
+                END IF;
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'unipost_identity_userpermission' AND column_name = 'lastupdateddate'
+                ) THEN
+                    ALTER TABLE UNIPOST_IDENTITY_USERPERMISSION RENAME COLUMN lastupdateddate TO "lastUpdatedDate";
+                END IF;
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'unipost_identity_userpermission' AND column_name = 'deleteddate'
+                ) THEN
+                    ALTER TABLE UNIPOST_IDENTITY_USERPERMISSION RENAME COLUMN deleteddate TO "deletedDate";
+                END IF;
+
+                -- UNIPOST_IDENTITY_PERMISSION
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'unipost_identity_permission' AND column_name = 'createdby_uid'
+                ) THEN
+                    ALTER TABLE UNIPOST_IDENTITY_PERMISSION RENAME COLUMN createdby_uid TO "createdBy_uid";
+                END IF;
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'unipost_identity_permission' AND column_name = 'lastupdatedby_uid'
+                ) THEN
+                    ALTER TABLE UNIPOST_IDENTITY_PERMISSION RENAME COLUMN lastupdatedby_uid TO "lastUpdatedBy_uid";
+                END IF;
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'unipost_identity_permission' AND column_name = 'createddate'
+                ) THEN
+                    ALTER TABLE UNIPOST_IDENTITY_PERMISSION RENAME COLUMN createddate TO "createdDate";
+                END IF;
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'unipost_identity_permission' AND column_name = 'lastupdateddate'
+                ) THEN
+                    ALTER TABLE UNIPOST_IDENTITY_PERMISSION RENAME COLUMN lastupdateddate TO "lastUpdatedDate";
+                END IF;
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'unipost_identity_permission' AND column_name = 'deleteddate'
+                ) THEN
+                    ALTER TABLE UNIPOST_IDENTITY_PERMISSION RENAME COLUMN deleteddate TO "deletedDate";
+                END IF;
+            END $$;
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

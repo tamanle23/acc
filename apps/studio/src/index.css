@@ -146,70 +146,29 @@
 
   /* Optical Glass Styles */
   [data-glass-style="frosted"] {
-    --glass-specular: none;
-    --glass-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.05);
-    --glass-border-highlight: var(--glass-border);
+    --glass-specular: none !important;
+    --glass-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.05) !important;
+    --glass-border-highlight: var(--glass-border) !important;
   }
 
   [data-glass-style="cyber"] {
-    --glass-specular: inset 0 1px 0 0 color-mix(in srgb, var(--accent-primary) 24%, transparent);
-    --glass-border-highlight: var(--accent-primary);
-    --glass-border: color-mix(in srgb, var(--accent-primary) 45%, transparent);
-    --glass-shadow: 0 0 24px -4px color-mix(in srgb, var(--accent-primary) 25%, transparent);
+    --glass-specular: inset 0 1px 0 0 color-mix(in srgb, var(--accent-primary) 30%, transparent) !important;
+    --glass-border-highlight: var(--accent-primary) !important;
+    --glass-border: color-mix(in srgb, var(--accent-primary) 45%, transparent) !important;
+    --glass-shadow: 0 0 24px -4px color-mix(in srgb, var(--accent-primary) 30%, transparent) !important;
   }
 
   /* Blur Intensities */
   [data-blur-intensity="low"] {
-    --glass-blur: blur(6px);
+    --glass-blur: blur(6px) !important;
   }
 
   [data-blur-intensity="medium"] {
-    --glass-blur: blur(18px);
+    --glass-blur: blur(18px) !important;
   }
 
   [data-blur-intensity="high"] {
-    --glass-blur: blur(40px);
-  }
-
-  /* Dynamic Accent Colors synchronized with shadcn --primary and --ring */
-  [data-accent="cyan"] {
-    --primary: 189 94% 43%;
-    --ring: 189 94% 43%;
-    --accent-primary: #06b6d4;
-    --color-brand-accent: #06b6d4;
-    --accent-glow: rgba(6, 182, 212, 0.4);
-  }
-
-  [data-accent="violet"] {
-    --primary: 258 90% 66%;
-    --ring: 258 90% 66%;
-    --accent-primary: #8b5cf6;
-    --color-brand-accent: #8b5cf6;
-    --accent-glow: rgba(139, 92, 246, 0.4);
-  }
-
-  [data-accent="emerald"] {
-    --primary: 160 84% 39%;
-    --ring: 160 84% 39%;
-    --accent-primary: #10b981;
-    --color-brand-accent: #10b981;
-    --accent-glow: rgba(16, 185, 129, 0.4);
-  }
-
-  [data-accent="amber"] {
-    --primary: 38 92% 50%;
-    --ring: 38 92% 50%;
-    --accent-primary: #f59e0b;
-    --color-brand-accent: #f59e0b;
-    --accent-glow: rgba(245, 158, 11, 0.4);
-  }
-
-  [data-accent="rose"] {
-    --primary: 350 89% 60%;
-    --ring: 350 89% 60%;
-    --accent-primary: #f43f5e;
-    --color-brand-accent: #f43f5e;
-    --accent-glow: rgba(244, 63, 94, 0.4);
+    --glass-blur: blur(40px) !important;
   }
 }
 
@@ -249,8 +208,8 @@ body {
 
 .glass-button {
   background: var(--glass-bg);
-  backdrop-filter: blur(12px) saturate(140%);
-  -webkit-backdrop-filter: blur(12px) saturate(140%);
+  backdrop-filter: var(--glass-blur) saturate(140%);
+  -webkit-backdrop-filter: var(--glass-blur) saturate(140%);
   border: 1px solid var(--glass-border);
   border-top-color: var(--glass-border-highlight);
   box-shadow: var(--glass-specular);

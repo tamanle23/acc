@@ -10,6 +10,7 @@ import {
 import { Edit2, Trash2, Copy, Archive, ArchiveRestore, Lock, Sparkles, ArrowUp, ArrowDown, ShieldCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { AuthorizedButton } from '@/components/auth';
 import { usePermissions } from '@/features/spring-auth';
 
 interface Props {
@@ -178,7 +179,8 @@ export const AttributeCard: React.FC<Props> = ({
         )}
 
         {/* Archive Button */}
-        <Button
+        <AuthorizedButton
+          permission="metadata:schema:write"
           variant="ghost"
           size="sm"
           onClick={handleToggleArchive}
@@ -203,10 +205,11 @@ export const AttributeCard: React.FC<Props> = ({
           ) : (
             <Archive className="h-4 w-4" />
           )}
-        </Button>
+        </AuthorizedButton>
 
         {/* Edit Button */}
-        <Button
+        <AuthorizedButton
+          permission="metadata:schema:write"
           variant="ghost"
           size="sm"
           onClick={() => !isLocked && openEditAttributeDialog(attribute)}
@@ -219,10 +222,11 @@ export const AttributeCard: React.FC<Props> = ({
           title={isLocked ? 'System attributes are protected and cannot be modified' : 'Edit attribute definition'}
         >
           <Edit2 className="h-4 w-4" />
-        </Button>
+        </AuthorizedButton>
 
         {/* Duplicate Button (allowed even for system fields) */}
-        <Button
+        <AuthorizedButton
+          permission="metadata:schema:write"
           variant="ghost"
           size="sm"
           onClick={handleDuplicate}
@@ -231,10 +235,11 @@ export const AttributeCard: React.FC<Props> = ({
           title="Duplicate attribute as new custom field"
         >
           <Copy className="h-4 w-4" />
-        </Button>
+        </AuthorizedButton>
 
         {/* Delete Button */}
-        <Button
+        <AuthorizedButton
+          permission="metadata:schema:write"
           variant="ghost"
           size="sm"
           onClick={() => !isLocked && openDeleteAttributeDialog(attribute)}
@@ -247,7 +252,7 @@ export const AttributeCard: React.FC<Props> = ({
           title={isLocked ? 'System attributes are immutable and cannot be deleted' : 'Delete attribute'}
         >
           <Trash2 className="h-4 w-4" />
-        </Button>
+        </AuthorizedButton>
       </div>
     </div>
   );

@@ -21,27 +21,144 @@ export const createMockJwt = (payload: Record<string, unknown>) => {
 };
 
 export const SANDBOX_AUTH_USERS: Record<string, string[]> = {
-  custodian_root: ['ROLE_USER', 'ROLE_ADMIN', 'ROLE_SYSTEM_CUSTODIAN'],
-  system_bypass: ['ROLE_USER', 'ROLE_ADMIN', 'ROLE_SYSTEM_CUSTODIAN'],
-  admin_bypass: ['ROLE_USER', 'ROLE_ADMIN'],
-  creator_bypass: ['ROLE_USER', 'ROLE_CREATOR'],
-  user_bypass: ['ROLE_USER'],
-  custom_bypass: ['ROLE_USER'],
+  custodian_root: ['ROLE_SYSTEM_ROOT', 'ROLE_WORKSPACE_OWNER', 'ROLE_STANDARD_MEMBER'],
+  system_bypass: ['ROLE_SYSTEM_ROOT', 'ROLE_WORKSPACE_OWNER', 'ROLE_STANDARD_MEMBER'],
+  admin_bypass: ['ROLE_WORKSPACE_OWNER', 'ROLE_STANDARD_MEMBER'],
+  creator_bypass: ['ROLE_OPERATIONS_MANAGER', 'ROLE_STANDARD_MEMBER'],
+  user_bypass: ['ROLE_STANDARD_MEMBER'],
+  custom_bypass: ['ROLE_STANDARD_MEMBER'],
 };
 
 export const SANDBOX_REFRESH_TOKENS: Record<string, string[]> = {
-  mock_refresh_token_custodian: ['ROLE_USER', 'ROLE_ADMIN', 'ROLE_SYSTEM_CUSTODIAN'],
-  mock_refresh_token_system: ['ROLE_USER', 'ROLE_ADMIN', 'ROLE_SYSTEM_CUSTODIAN'],
-  mock_refresh_token_admin: ['ROLE_USER', 'ROLE_ADMIN'],
-  mock_refresh_token_creator: ['ROLE_USER', 'ROLE_CREATOR'],
-  mock_refresh_token_user: ['ROLE_USER'],
-  mock_refresh_token_custom: ['ROLE_USER'],
+  mock_refresh_token_custodian: ['ROLE_SYSTEM_ROOT', 'ROLE_WORKSPACE_OWNER', 'ROLE_STANDARD_MEMBER'],
+  mock_refresh_token_system: ['ROLE_SYSTEM_ROOT', 'ROLE_WORKSPACE_OWNER', 'ROLE_STANDARD_MEMBER'],
+  mock_refresh_token_admin: ['ROLE_WORKSPACE_OWNER', 'ROLE_STANDARD_MEMBER'],
+  mock_refresh_token_creator: ['ROLE_OPERATIONS_MANAGER', 'ROLE_STANDARD_MEMBER'],
+  mock_refresh_token_user: ['ROLE_STANDARD_MEMBER'],
+  mock_refresh_token_custom: ['ROLE_STANDARD_MEMBER'],
+};
+
+const CANONICAL_ROLE_PERMISSIONS: Record<string, string[]> = {
+  ROLE_SYSTEM_ROOT: [
+    'platform:fleet:read',
+    'platform:fleet:mutate',
+    'platform:fleet:trip_circuit',
+    'platform:tenant:assume',
+    'platform:tenant:purge',
+    'platform:quotas:manage',
+    'platform:roles:manage',
+    'platform:users:manage',
+    'platform:dlq:manage',
+    'platform:workers:manage',
+    'metadata:schema:read',
+    'metadata:schema:write',
+    'metadata:blueprint:package',
+    'metadata:blueprint:provision',
+    'metadata:cache:evict',
+    'entity:record:read',
+    'entity:record:create',
+    'entity:record:update',
+    'entity:record:delete',
+    'entity:record:export',
+    'workspace:settings:read',
+    'workspace:settings:manage',
+    'workspace:members:read',
+    'workspace:members:manage',
+    'workflow:definition:read',
+    'workflow:definition:manage',
+    'workflow:execution:read',
+    'workflow:execution:submit',
+    'workflow:approval:execute',
+    'audit:log:read',
+    'audit:hash:verify',
+    'audit:compliance:export',
+    'billing:subscription:read',
+    'billing:subscription:upgrade',
+    'billing:tier:override',
+    'billing:invoice:adjust',
+  ],
+  ROLE_SYSTEM_SUPPORT: [
+    'platform:fleet:read',
+    'platform:tenant:assume',
+    'platform:dlq:manage',
+    'metadata:schema:read',
+    'entity:record:read',
+    'workspace:settings:read',
+    'workspace:members:read',
+    'audit:log:read',
+  ],
+  ROLE_WORKSPACE_OWNER: [
+    'workspace:settings:read',
+    'workspace:settings:manage',
+    'workspace:members:read',
+    'workspace:members:manage',
+    'metadata:schema:read',
+    'metadata:schema:write',
+    'metadata:blueprint:provision',
+    'entity:record:read',
+    'entity:record:create',
+    'entity:record:update',
+    'entity:record:delete',
+    'entity:record:export',
+    'workflow:definition:read',
+    'workflow:definition:manage',
+    'workflow:execution:read',
+    'workflow:execution:submit',
+    'workflow:approval:execute',
+    'audit:log:read',
+    'billing:subscription:read',
+    'billing:subscription:upgrade',
+  ],
+  ROLE_OPERATIONS_MANAGER: [
+    'workspace:settings:read',
+    'metadata:schema:read',
+    'entity:record:read',
+    'entity:record:create',
+    'entity:record:update',
+    'entity:record:delete',
+    'entity:record:export',
+    'workflow:definition:read',
+    'workflow:execution:read',
+    'workflow:execution:submit',
+    'workflow:approval:execute',
+    'audit:log:read',
+  ],
+  ROLE_STANDARD_MEMBER: [
+    'workspace:settings:read',
+    'entity:record:read',
+    'entity:record:create',
+    'entity:record:update',
+    'workflow:execution:read',
+    'workflow:execution:submit',
+  ],
+  ROLE_AUDITOR: [
+    'workspace:settings:read',
+    'workspace:members:read',
+    'metadata:schema:read',
+    'entity:record:read',
+    'audit:log:read',
+    'audit:hash:verify',
+    'audit:compliance:export',
+  ],
+};
+
+const mockUserProfileState: Record<string, any> = {
+  firstName: 'Sandbox',
+  lastName: 'User',
+  email: 'user@acc.local',
+  phoneNumber: '+1-555-0199',
+  preferences: {
+    language: 'en',
+    avatarUrl: '/avatars/shadcn.jpg',
+    bio: 'Unified Sandbox Simulated Profile',
+    urls: [{ value: 'https://acc.io' }],
+  },
 };
 
 export const authSandboxHandler: SandboxRouteHandler = {
   id: 'auth-sandbox-handler',
   name: 'Spring Security Auth Sandbox',
-  description: 'Handles /auth/token, /auth/refresh, /auth/logout, and /admin/dashboard in sandbox mode',
+  description: 'Handles /auth/token, /auth/refresh, /auth/me, /auth/logout, and /user/profile in sandbox mode',
   priority: 100,
   matcher: (ctx) => {
     const cleanPath = ctx.pathname.replace(/^\/(api\/v1|api|v1)/, '');
@@ -53,6 +170,12 @@ export const authSandboxHandler: SandboxRouteHandler = {
       return isMockRequest || true;
     }
     if (cleanPath === '/auth/refresh' && ctx.method === 'POST') {
+      return true;
+    }
+    if (cleanPath === '/auth/me' && ctx.method === 'GET') {
+      return true;
+    }
+    if ((cleanPath === '/user/profile' || cleanPath === '/v1/user/profile') && (ctx.method === 'GET' || ctx.method === 'PUT')) {
       return true;
     }
     if (cleanPath === '/auth/logout' && ctx.method === 'POST') {
@@ -157,7 +280,91 @@ export const authSandboxHandler: SandboxRouteHandler = {
       };
     }
 
-    // 4. Mock Protected Endpoint (/admin/dashboard)
+    // 4. Mock Current Session Profile (/auth/me)
+    if (cleanPath === '/auth/me' && ctx.method === 'GET') {
+      const authHeader = ctx.headers['authorization'];
+      let decoded: any = null;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        decoded = decodeJwt(authHeader.split(' ')[1]);
+      }
+      const username = decoded?.sub || 'custodian_root';
+      const tenantId = decoded?.tenantId || (username === 'custodian_root' ? 'SYSTEM' : 'tenant-acme');
+      const roles: string[] = decoded?.roles || (username in SANDBOX_AUTH_USERS ? SANDBOX_AUTH_USERS[username] : ['ROLE_STANDARD_MEMBER']);
+      const isSovereign = roles.includes('ROLE_SYSTEM_ROOT') || tenantId === 'SYSTEM';
+
+      const permSet = new Set<string>();
+      for (const r of roles) {
+        const perms = CANONICAL_ROLE_PERMISSIONS[r] || [];
+        perms.forEach((p) => permSet.add(p));
+      }
+
+      return {
+        status: 200,
+        statusText: 'OK',
+        data: {
+          userId: `usr-${username}`,
+          username,
+          tenantId,
+          isSovereign,
+          roles,
+          permissions: Array.from(permSet),
+          activeFeatures: ['auth', 'metadata', 'users', 'tasks'],
+        },
+      };
+    }
+
+    // 5. Mock User Profile (/v1/user/profile or /user/profile)
+    if ((cleanPath === '/user/profile' || cleanPath === '/v1/user/profile') && ctx.method === 'GET') {
+      const authHeader = ctx.headers['authorization'];
+      let decoded: any = null;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        decoded = decodeJwt(authHeader.split(' ')[1]);
+      }
+      const username = decoded?.sub || 'custodian_root';
+
+      return {
+        status: 200,
+        statusText: 'OK',
+        data: {
+          userId: `usr-${username}`,
+          username,
+          ...mockUserProfileState,
+          email: `${username}@acc.local`,
+        },
+      };
+    }
+
+    if ((cleanPath === '/user/profile' || cleanPath === '/v1/user/profile') && ctx.method === 'PUT') {
+      const authHeader = ctx.headers['authorization'];
+      let decoded: any = null;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        decoded = decodeJwt(authHeader.split(' ')[1]);
+      }
+      const username = decoded?.sub || 'custodian_root';
+
+      if (body.firstName !== undefined) mockUserProfileState.firstName = body.firstName;
+      if (body.lastName !== undefined) mockUserProfileState.lastName = body.lastName;
+      if (body.email !== undefined) mockUserProfileState.email = body.email;
+      if (body.phoneNumber !== undefined) mockUserProfileState.phoneNumber = body.phoneNumber;
+      if (body.preferences !== undefined) {
+        mockUserProfileState.preferences = {
+          ...mockUserProfileState.preferences,
+          ...body.preferences,
+        };
+      }
+
+      return {
+        status: 200,
+        statusText: 'OK',
+        data: {
+          userId: `usr-${username}`,
+          username,
+          ...mockUserProfileState,
+        },
+      };
+    }
+
+    // 6. Mock Protected Endpoint (/admin/dashboard)
     if (cleanPath === '/admin/dashboard' && ctx.method === 'GET') {
       const authHeader = ctx.headers['authorization'];
       if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -179,7 +386,12 @@ export const authSandboxHandler: SandboxRouteHandler = {
         };
       }
 
-      if (!decoded.roles.includes('ROLE_ADMIN')) {
+      const hasAdminRole =
+        decoded.roles?.includes('ROLE_ADMIN') ||
+        decoded.roles?.includes('ROLE_WORKSPACE_OWNER') ||
+        decoded.roles?.includes('ROLE_SYSTEM_ROOT');
+
+      if (!hasAdminRole) {
         return {
           status: 403,
           statusText: 'Forbidden',

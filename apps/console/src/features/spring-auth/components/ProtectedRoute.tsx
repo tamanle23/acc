@@ -20,18 +20,23 @@ export function ProtectedRoute({
   fallbackUnauthorized,
   fallbackForbidden,
 }: ProtectedRouteProps) {
-  const { isAuthenticated, user, currentTenantId, clearTokens } = useSpringAuthStore();
+  const { isAuthenticated, user, accessToken, refreshToken, isHydrating, currentTenantId, clearTokens } = useSpringAuthStore();
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const isHydrating = !useSpringAuthStore.persist.hasHydrated();
+  const hasPersistHydrated = useSpringAuthStore.persist.hasHydrated();
+
+  // If tokens exist but user profile is not yet loaded, or store is in active hydrating mode,
+  // do not prematurely bounce session to /sign-in.
+  const hasTokens = Boolean(accessToken || refreshToken);
+  const isPendingAuth = !hasPersistHydrated || (isHydrating && !user) || (hasTokens && !user);
 
   React.useEffect(() => {
-    if (!isHydrating && (!isAuthenticated || !user) && !fallbackUnauthenticated) {
+    if (!isPendingAuth && (!isAuthenticated || !user) && !fallbackUnauthenticated) {
       navigate({ to: '/sign-in', replace: true });
     }
-  }, [isHydrating, isAuthenticated, user, fallbackUnauthenticated, navigate]);
+  }, [isPendingAuth, isAuthenticated, user, fallbackUnauthenticated, navigate]);
 
-  if (isHydrating) {
+  if (isPendingAuth) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

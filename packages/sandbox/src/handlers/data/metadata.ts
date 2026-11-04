@@ -62,8 +62,8 @@ export const initialSeedEntityTypes: EntityType[] = [
       states: ['DRAFT', 'STAGED', 'ENFORCED', 'RETIRED'],
       transitions: [
         { from: 'DRAFT', to: 'STAGED', action: 'STAGE' },
-        { from: 'STAGED', to: 'ENFORCED', action: 'ENFORCE', allowed_roles: ['ROLE_ADMIN', 'ROLE_SYSTEM_CUSTODIAN'] },
-        { from: 'ENFORCED', to: 'RETIRED', action: 'RETIRE', allowed_roles: ['ROLE_ADMIN'] },
+        { from: 'STAGED', to: 'ENFORCED', action: 'ENFORCE', allowed_roles: ['ROLE_WORKSPACE_OWNER', 'ROLE_SYSTEM_ROOT'] },
+        { from: 'ENFORCED', to: 'RETIRED', action: 'RETIRE', allowed_roles: ['ROLE_WORKSPACE_OWNER', 'ROLE_SYSTEM_ROOT'] },
       ],
     },
     createdDate: new Date('2026-02-01').toISOString(),

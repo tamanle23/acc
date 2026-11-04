@@ -22,6 +22,8 @@ import { ConfigDrawer } from '@/components/config-drawer';
 import { ProfileDropdown } from '@/components/profile-dropdown';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
+import { AuthorizedButton } from '@/components/auth';
+import { useHasPermission } from '@/features/system/hooks/use-has-permission';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { getRouteApi } from '@tanstack/react-router';
 import { Layers, Database, Sparkles, GitFork, Cpu, User } from 'lucide-react';
@@ -42,10 +44,12 @@ export const MetadataFeature: React.FC = () => {
     workspaceMode,
     toggleWorkspaceMode,
     currentUserRole,
-    canManageSchema,
     openBlueprintGallery,
     openCreateEntityTypeDialog,
   } = useMetadataUiStore();
+
+  const canReadSchema = useHasPermission('metadata:schema:read');
+  const canWriteSchema = useHasPermission('metadata:schema:write');
 
 
   // 1. Initial Sync from URL to Store
@@ -196,7 +200,7 @@ export const MetadataFeature: React.FC = () => {
                     <div className="w-full xl:w-auto overflow-x-auto no-scrollbar py-0.5">
                       <TabsList className="flex w-full xl:w-auto min-w-0 items-center justify-between sm:justify-start xl:justify-end gap-1 sm:gap-1.5 p-1 sm:p-1.5 h-auto rounded-xl bg-slate-200/50 dark:bg-slate-950/60 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-inner shadow-black/5">
                         {/* Schema Builder Tab (Architect Mode Only) */}
-                        {canManageSchema() && (
+                        {canReadSchema && (
                           <TabsTrigger
                             value="schema"
                             className={cn(
@@ -312,27 +316,25 @@ export const MetadataFeature: React.FC = () => {
                   Select an existing model from the left rail, or jump-start your workspace with a pre-modeled Domain Blueprint in under 250ms.
                 </p>
                 <div className="flex flex-wrap items-center justify-center gap-2.5">
-                  {canManageSchema() && (
-                    <>
-                      <Button
-                        size="sm"
-                        onClick={openBlueprintGallery}
-                        className="text-xs gap-1.5 font-semibold bg-primary text-primary-foreground shadow-md hover:shadow-lg"
-                      >
-                        <Sparkles className="h-3.5 w-3.5" />
-                        <span>Browse Blueprint Catalog</span>
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={openCreateEntityTypeDialog}
-                        className="text-xs gap-1.5 bg-white/40 dark:bg-white/5 border-white/20 hover:bg-white/60"
-                      >
-                        <Database className="h-3.5 w-3.5" />
-                        <span>Create Custom Model</span>
-                      </Button>
-                    </>
-                  )}
+                  <AuthorizedButton
+                    permission="metadata:schema:write"
+                    size="sm"
+                    onClick={openBlueprintGallery}
+                    className="text-xs gap-1.5 font-semibold bg-primary text-primary-foreground shadow-md hover:shadow-lg"
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    <span>Browse Blueprint Catalog</span>
+                  </AuthorizedButton>
+                  <AuthorizedButton
+                    permission="metadata:schema:write"
+                    size="sm"
+                    variant="outline"
+                    onClick={openCreateEntityTypeDialog}
+                    className="text-xs gap-1.5 bg-white/40 dark:bg-white/5 border-white/20 hover:bg-white/60"
+                  >
+                    <Database className="h-3.5 w-3.5" />
+                    <span>Create Custom Model</span>
+                  </AuthorizedButton>
                 </div>
               </div>
             )}
