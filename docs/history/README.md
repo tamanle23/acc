@@ -98,3 +98,4 @@
 | 432 | [Fix /api/auth/me and /api/auth/refresh 401 Unauthorized Post-Login](./432_fix_auth_me_and_refresh_401_unauthorized.md) | Completed |
 | 433 | [Fix UserProfileController Bytecode Corruption and Authentication Principal Resolution](./433_fix_user_profile_controller_class_corruption_and_auth_principal.md) | Completed |
 | 434 | [Fix /api/auth/me Token Claims Fallback and JWT Audience Validation](./434_fix_auth_me_token_claims_fallback_and_jwt_audience_validation.md) | Completed |
+| 435 | [Seed Sandbox Personas and UserDetails into Sandbox PostgreSQL](./435_seed_sandbox_personas_and_userdetails_into_sandbox_postgres.md) | Completed |
