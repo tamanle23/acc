@@ -25,6 +25,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.acc.boot.config.properties.ApplicationProperties;
+import com.acc.fw.core.jwt.JwtAuthenticationEntryPoint;
 import com.acc.fw.core.jwt.JwtAuthenticationTokenFilter;
 
 @Configuration
@@ -43,6 +44,9 @@ public class SecurityConfiguration {
 
   @Autowired(required = false)
   UserDetailsService userDetailsService;
+
+  @Autowired
+  private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
   @Autowired
   private Environment environment;
@@ -67,8 +71,10 @@ public class SecurityConfiguration {
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
     if (!this.environment.acceptsProfiles(Profiles.of("nonsecured"))) {
       http
+        .cors(cors -> cors.configurationSource(corsConfigurationSource()))
         .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
-        .httpBasic(hb -> {})
+        .httpBasic(hb -> hb.disable())
+        .exceptionHandling(eh -> eh.authenticationEntryPoint(jwtAuthenticationEntryPoint))
         .logout(logout -> logout.permitAll());
 
       http.authorizeHttpRequests(authz -> {

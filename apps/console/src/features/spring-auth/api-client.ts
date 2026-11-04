@@ -136,8 +136,11 @@ springApiClient.interceptors.response.use(
  * Fetch strongly-typed security profile for current authenticated session.
  * Hydrates useSpringAuthStore without browser-side JWT decoding.
  */
-export async function fetchAuthenticationProfile(): Promise<import('@acc/client').AuthenticationProfile> {
-  const { data } = await springApiClient.get<any>('/auth/me');
+export async function fetchAuthenticationProfile(explicitToken?: string): Promise<import('@acc/client').AuthenticationProfile> {
+  const config = explicitToken
+    ? { headers: { Authorization: `Bearer ${explicitToken}` } }
+    : undefined;
+  const { data } = await springApiClient.get<any>('/auth/me', config);
   const raw = data?.body || data;
   return {
     ...raw,

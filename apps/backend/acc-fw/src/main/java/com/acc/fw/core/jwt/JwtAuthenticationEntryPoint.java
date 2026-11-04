@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
@@ -21,6 +22,10 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
   public void commence(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse,
       AuthenticationException e) throws IOException, ServletException {
     logger.error("Responding with unauthorized error. Message - {}", e.getMessage());
-    httpServletResponse.sendError(HttpServletResponse.SC_UNAUTHORIZED, e.getMessage());
+    httpServletResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+    httpServletResponse.setContentType(MediaType.APPLICATION_JSON_VALUE);
+    httpServletResponse.setCharacterEncoding("UTF-8");
+    httpServletResponse.getWriter().write("{\"status\":401,\"error\":\"Unauthorized\",\"message\":\"" 
+        + (e.getMessage() != null ? e.getMessage().replace("\"", "\\\"") : "Unauthorized") + "\"}");
   }
 }

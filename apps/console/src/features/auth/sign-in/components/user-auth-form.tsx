@@ -84,7 +84,7 @@ export function UserAuthForm({
 
       // Hydrate authentication profile from session endpoint before navigating
       try {
-        const profile = await fetchAuthenticationProfile();
+        const profile = await fetchAuthenticationProfile(accessToken);
         useSpringAuthStore.getState().setUser(profile);
       } catch (profError) {
         console.error('Failed to hydrate authentication profile:', profError);
