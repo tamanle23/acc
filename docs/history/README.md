@@ -103,3 +103,4 @@
 | 437 | [Declarative Client Authorization Safeguards & Dual-Gate Pre-Flight Defense](./437_declarative_client_authorization_safeguards.md) | Completed |
 | 438 | [Fix Workflow Catalog Table Missing Button and Guard Empty State Action](./438_fix_workflow_catalog_table_missing_button_and_guard_empty_state.md) | Completed |
 | 439 | [Mirror Backend Sandbox Personas to Console's Sandbox](./439_mirror_backend_sandbox_personas_to_console.md) | Completed |
+| 440 | [Fix Sandbox Store Duplicate Import SyntaxError](./440_fix_sandbox_store_duplicate_import_syntax_error.md) | Completed |

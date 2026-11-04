@@ -187,7 +187,6 @@ export const useSandboxStore = create<SandboxStore>()(
 );
 
 // Two-way synchronization with @acc/sandbox defaultSandboxStore
-import { defaultSandboxStore } from '@acc/sandbox';
 useSandboxStore.subscribe((state) => {
   defaultSandboxStore.setState({
     enabled: state.enabled,
