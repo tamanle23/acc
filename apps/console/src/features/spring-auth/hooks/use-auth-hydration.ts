@@ -3,12 +3,14 @@ import { useSpringAuthStore } from '../store';
 import { fetchAuthenticationProfile } from '../api-client';
 
 export function useAuthHydration() {
-  const { accessToken, refreshToken, setUser, clearTokens, setHydrating, isHydrating } = useSpringAuthStore();
+  const { setUser, clearTokens, setHydrating, isHydrating } = useSpringAuthStore();
 
   useEffect(() => {
     let mounted = true;
 
-    const hydrate = async () => {
+    const runHydration = async () => {
+      const { accessToken, refreshToken, user } = useSpringAuthStore.getState();
+
       if (!accessToken && !refreshToken) {
         if (mounted) setHydrating(false);
         return;
@@ -20,7 +22,8 @@ export function useAuthHydration() {
           setUser(profile);
         }
       } catch (_error) {
-        if (mounted) {
+        // Only clear tokens if we didn't already have a valid user profile restored
+        if (mounted && !user) {
           clearTokens();
         }
       } finally {
@@ -30,12 +33,22 @@ export function useAuthHydration() {
       }
     };
 
-    hydrate();
+    if (useSpringAuthStore.persist.hasHydrated()) {
+      runHydration();
+    } else {
+      const unsub = useSpringAuthStore.persist.onFinishHydration(() => {
+        runHydration();
+      });
+      return () => {
+        mounted = false;
+        unsub();
+      };
+    }
 
     return () => {
       mounted = false;
     };
-  }, []); // Run exactly once on mount
+  }, [setUser, clearTokens, setHydrating]);
 
   return { isHydrating };
 }

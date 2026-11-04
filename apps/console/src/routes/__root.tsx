@@ -7,7 +7,7 @@ import { NavigationProgress } from '@/components/navigation-progress'
 import { GeneralError } from '@/features/errors/general-error'
 import { NotFoundError } from '@/features/errors/not-found-error'
 
-import { SandboxPanel } from '@/features/spring-auth';
+import { SandboxPanel, useAuthHydration } from '@/features/spring-auth';
 import { ScreenReaderLiveRegion } from '@/components/screen-reader-live-region';
 
 const isDevtoolsDisabled =
@@ -31,6 +31,8 @@ const TanStackRouterDevtools = isDevtoolsDisabled
   )
 
 function RootComponent() {
+  useAuthHydration();
+
   return (
     <>
       <ScreenReaderLiveRegion />

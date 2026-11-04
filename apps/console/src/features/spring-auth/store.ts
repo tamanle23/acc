@@ -35,6 +35,7 @@ export const useSpringAuthStore = create<AuthState>()(
           user,
           currentTenantId: user?.tenantId || null,
           isAuthenticated: Boolean(user),
+          isHydrating: false,
         });
       },
       setHydrating: (val: boolean) => set({ isHydrating: val }),
@@ -52,6 +53,7 @@ export const useSpringAuthStore = create<AuthState>()(
           user: null,
           currentTenantId: null,
           isAuthenticated: false,
+          isHydrating: false,
           isSandbox: false,
         });
       },

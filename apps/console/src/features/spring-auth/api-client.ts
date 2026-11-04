@@ -136,6 +136,6 @@ springApiClient.interceptors.response.use(
  * Hydrates useSpringAuthStore without browser-side JWT decoding.
  */
 export async function fetchAuthenticationProfile(): Promise<import('@acc/client').AuthenticationProfile> {
-  const { data } = await springApiClient.get<import('@acc/client').AuthenticationProfile>('/auth/me');
-  return data;
+  const { data } = await springApiClient.get<any>('/auth/me');
+  return (data?.body || data) as import('@acc/client').AuthenticationProfile;
 }

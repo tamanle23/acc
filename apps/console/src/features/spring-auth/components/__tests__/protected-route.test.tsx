@@ -134,4 +134,44 @@ describe('ProtectedRoute Component - Phase 2 Tenant Guard', () => {
     expect(screen.getByText('Sovereign Custodian Console')).toBeDefined();
     expect(screen.queryByText('No Organization Assigned')).toBeNull();
   });
+
+  it('renders loading spinner and does NOT redirect to /sign-in while tokens exist and profile is pending hydration', () => {
+    useSpringAuthStore.setState({
+      accessToken: 'valid-access-token',
+      refreshToken: 'valid-refresh-token',
+      isAuthenticated: true,
+      user: null, // Profile still in flight
+      isHydrating: false,
+    });
+
+    render(
+      <ProtectedRoute>
+        <div>Should Not Render Yet</div>
+      </ProtectedRoute>
+    );
+
+    // Protected children not rendered yet
+    expect(screen.queryByText('Should Not Render Yet')).toBeNull();
+    // Must NOT have navigated away
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it('renders loading spinner and does NOT redirect to /sign-in while store isHydrating is true', () => {
+    useSpringAuthStore.setState({
+      accessToken: null,
+      refreshToken: 'valid-refresh-token',
+      isAuthenticated: false,
+      user: null,
+      isHydrating: true,
+    });
+
+    render(
+      <ProtectedRoute>
+        <div>Should Not Render Yet</div>
+      </ProtectedRoute>
+    );
+
+    expect(screen.queryByText('Should Not Render Yet')).toBeNull();
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
 });
