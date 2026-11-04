@@ -96,3 +96,4 @@
 | 430 | [Clean Cross-Stack Authorization & User Profile Architecture](./430_clean_cross_stack_authorization_and_user_profile.md) | Completed |
 | 431 | [Fix Console Login Session Hydration and Route Guard Bounce](./431_fix_console_login_hydration_stuck_on_sign_in.md) | Completed |
 | 432 | [Fix /api/auth/me and /api/auth/refresh 401 Unauthorized Post-Login](./432_fix_auth_me_and_refresh_401_unauthorized.md) | Completed |
+| 433 | [Fix UserProfileController Bytecode Corruption and Authentication Principal Resolution](./433_fix_user_profile_controller_class_corruption_and_auth_principal.md) | Completed |
