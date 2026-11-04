@@ -114,16 +114,16 @@ describe('Unified Sandbox Core Platform (Phase 1)', () => {
 
     it('should switch persona and synchronize active tenant', () => {
       expect(sandboxManager.getActivePersona().id).toBe('admin');
-      expect(useSandboxStore.getState().activeTenantId).toBe('tenant-us-east-1');
+      expect(useSandboxStore.getState().activeTenantId).toBe('tenant-acme');
 
       sandboxManager.switchPersona('creator');
       expect(sandboxManager.getActivePersona().id).toBe('creator');
       expect(sandboxManager.getActivePersona().roles).toContain('ROLE_OPERATIONS_MANAGER');
-      expect(useSandboxStore.getState().activeTenantId).toBe('tenant-eu-central-1');
+      expect(useSandboxStore.getState().activeTenantId).toBe('tenant-acme');
 
       sandboxManager.switchPersona('user');
       expect(sandboxManager.getActivePersona().id).toBe('user');
-      expect(useSandboxStore.getState().activeTenantId).toBe('tenant-us-west-2');
+      expect(useSandboxStore.getState().activeTenantId).toBe('tenant-acme');
     });
   });
 

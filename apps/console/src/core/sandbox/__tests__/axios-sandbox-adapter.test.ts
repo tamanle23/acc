@@ -79,6 +79,8 @@ describe('Axios Sandbox Adapter', () => {
     useSandboxStore.getState().setEnabled(false);
 
     // Should bypass mock and try live network (failing fast in jsdom)
-    await expect(testClient.get('/v1/ping', { timeout: 200 })).rejects.toThrow();
+    const offlineClient = axios.create({ baseURL: 'http://127.0.0.1:59999/api' });
+    attachSandboxAxiosInterceptor(offlineClient);
+    await expect(offlineClient.get('/v1/ping', { timeout: 200 })).rejects.toThrow();
   });
 });

@@ -1,5 +1,6 @@
-import type { SandboxRouteHandler, SandboxRequest } from '../types';
+import type { SandboxRouteHandler, SandboxRequest, SandboxPersona } from '../types';
 import { decodeJwt } from '../jwt';
+import { DEFAULT_SANDBOX_PERSONAS } from '../store';
 
 // Helper to base64 encode without padding/symbols standard for JWTs
 const b64 = (str: string) => {
@@ -20,19 +21,54 @@ export const createMockJwt = (payload: Record<string, unknown>) => {
   return `${header}.${body}.${signature}`;
 };
 
+export function resolveSandboxPersona(input?: string | null): SandboxPersona | undefined {
+  if (!input) return undefined;
+  const normalized = input.trim().toLowerCase();
+  for (const persona of Object.values(DEFAULT_SANDBOX_PERSONAS)) {
+    if (persona.id.toLowerCase() === normalized) return persona;
+    if (persona.username.toLowerCase() === normalized) return persona;
+    if (persona.aliases?.some((a) => a.toLowerCase() === normalized)) return persona;
+  }
+  return undefined;
+}
+
 export const SANDBOX_AUTH_USERS: Record<string, string[]> = {
-  custodian_root: ['ROLE_SYSTEM_ROOT', 'ROLE_WORKSPACE_OWNER', 'ROLE_STANDARD_MEMBER'],
-  system_bypass: ['ROLE_SYSTEM_ROOT', 'ROLE_WORKSPACE_OWNER', 'ROLE_STANDARD_MEMBER'],
-  admin_bypass: ['ROLE_WORKSPACE_OWNER', 'ROLE_STANDARD_MEMBER'],
+  // Admin & aliases
+  'admin@acc.io': ['ROLE_WORKSPACE_OWNER', 'ROLE_STANDARD_MEMBER', 'ROLE_ADMIN'],
+  admin_bypass: ['ROLE_WORKSPACE_OWNER', 'ROLE_STANDARD_MEMBER', 'ROLE_ADMIN'],
+  admin: ['ROLE_WORKSPACE_OWNER', 'ROLE_STANDARD_MEMBER', 'ROLE_ADMIN'],
+  'tenant-admin': ['ROLE_WORKSPACE_OWNER', 'ROLE_STANDARD_MEMBER', 'ROLE_ADMIN'],
+
+  // Sovereign Custodian & aliases
+  'custodian@system': ['ROLE_SYSTEM_ROOT', 'ROLE_SYSTEM_SUPPORT', 'ROLE_WORKSPACE_OWNER', 'ROLE_STANDARD_MEMBER'],
+  custodian_root: ['ROLE_SYSTEM_ROOT', 'ROLE_SYSTEM_SUPPORT', 'ROLE_WORKSPACE_OWNER', 'ROLE_STANDARD_MEMBER'],
+  system: ['ROLE_SYSTEM_ROOT', 'ROLE_SYSTEM_SUPPORT', 'ROLE_WORKSPACE_OWNER', 'ROLE_STANDARD_MEMBER'],
+  'sovereign-custodian@acc.io': ['ROLE_SYSTEM_ROOT', 'ROLE_SYSTEM_SUPPORT', 'ROLE_WORKSPACE_OWNER', 'ROLE_STANDARD_MEMBER'],
+  'system-custodian': ['ROLE_SYSTEM_ROOT', 'ROLE_SYSTEM_SUPPORT', 'ROLE_WORKSPACE_OWNER', 'ROLE_STANDARD_MEMBER'],
+  system_bypass: ['ROLE_SYSTEM_ROOT', 'ROLE_SYSTEM_SUPPORT', 'ROLE_WORKSPACE_OWNER', 'ROLE_STANDARD_MEMBER'],
+
+  // Operations Manager (Creator) & aliases
+  'creator@acc.io': ['ROLE_OPERATIONS_MANAGER', 'ROLE_STANDARD_MEMBER'],
   creator_bypass: ['ROLE_OPERATIONS_MANAGER', 'ROLE_STANDARD_MEMBER'],
+  creator: ['ROLE_OPERATIONS_MANAGER', 'ROLE_STANDARD_MEMBER'],
+  'tenant-creator': ['ROLE_OPERATIONS_MANAGER', 'ROLE_STANDARD_MEMBER'],
+
+  // Standard Member (User) & aliases
+  'user@acc.io': ['ROLE_STANDARD_MEMBER'],
   user_bypass: ['ROLE_STANDARD_MEMBER'],
+  user: ['ROLE_STANDARD_MEMBER'],
+  'tenant-user': ['ROLE_STANDARD_MEMBER'],
+
+  // Custom persona & aliases
+  'custom@acc.io': ['ROLE_STANDARD_MEMBER'],
   custom_bypass: ['ROLE_STANDARD_MEMBER'],
+  custom: ['ROLE_STANDARD_MEMBER'],
 };
 
 export const SANDBOX_REFRESH_TOKENS: Record<string, string[]> = {
-  mock_refresh_token_custodian: ['ROLE_SYSTEM_ROOT', 'ROLE_WORKSPACE_OWNER', 'ROLE_STANDARD_MEMBER'],
-  mock_refresh_token_system: ['ROLE_SYSTEM_ROOT', 'ROLE_WORKSPACE_OWNER', 'ROLE_STANDARD_MEMBER'],
-  mock_refresh_token_admin: ['ROLE_WORKSPACE_OWNER', 'ROLE_STANDARD_MEMBER'],
+  mock_refresh_token_custodian: ['ROLE_SYSTEM_ROOT', 'ROLE_SYSTEM_SUPPORT', 'ROLE_WORKSPACE_OWNER', 'ROLE_STANDARD_MEMBER'],
+  mock_refresh_token_system: ['ROLE_SYSTEM_ROOT', 'ROLE_SYSTEM_SUPPORT', 'ROLE_WORKSPACE_OWNER', 'ROLE_STANDARD_MEMBER'],
+  mock_refresh_token_admin: ['ROLE_WORKSPACE_OWNER', 'ROLE_STANDARD_MEMBER', 'ROLE_ADMIN'],
   mock_refresh_token_creator: ['ROLE_OPERATIONS_MANAGER', 'ROLE_STANDARD_MEMBER'],
   mock_refresh_token_user: ['ROLE_STANDARD_MEMBER'],
   mock_refresh_token_custom: ['ROLE_STANDARD_MEMBER'],
@@ -201,30 +237,40 @@ export const authSandboxHandler: SandboxRouteHandler = {
       const username = body.username || body.userName;
       const password = body.password;
 
-      if (username in SANDBOX_AUTH_USERS && password === 'bypass') {
-        const roles = SANDBOX_AUTH_USERS[username];
-        const sub = username.split('_')[0];
+      const persona = resolveSandboxPersona(username);
+      const isAllowedPassword = password === 'bypass' || password === 'password';
 
-        let tenantId = 'tenant-acme';
-        if (username === 'custodian_root' || username === 'system_bypass') {
-          tenantId = 'SYSTEM';
-        } else if (username === 'custom_bypass') {
-          tenantId = 'tenant-us-east-1';
-        }
+      if (persona && isAllowedPassword) {
+        const roles = persona.roles;
+        const sub = persona.username;
+        const tenantId = persona.defaultTenantId;
+        const isSovereign = tenantId === 'SYSTEM';
 
         const token = createMockJwt({
           sub,
+          personaId: persona.id,
+          uid: persona.uid,
           roles,
           tenantId,
           isSandbox: true,
+          isSovereign,
           iat: Math.floor(Date.now() / 1000),
           exp: Math.floor(Date.now() / 1000) + 60 * 15,
         });
 
+        const refreshKey = `mock_refresh_token_${persona.id}`;
+
         return {
           status: 200,
           statusText: 'OK',
-          data: { accessToken: token, refreshToken: `mock_refresh_token_${sub}` },
+          data: {
+            accessToken: token,
+            refreshToken: refreshKey,
+            body: {
+              accessToken: token,
+              refreshToken: refreshKey,
+            },
+          },
         };
       }
 
@@ -240,19 +286,20 @@ export const authSandboxHandler: SandboxRouteHandler = {
       const refreshToken = body.refreshToken;
       if (refreshToken && refreshToken in SANDBOX_REFRESH_TOKENS) {
         const roles = SANDBOX_REFRESH_TOKENS[refreshToken];
-        const sub = refreshToken.split('_').pop();
-        let tenantId = 'tenant-acme';
-        if (sub === 'custodian' || sub === 'root' || sub === 'system') {
-          tenantId = 'SYSTEM';
-        } else if (sub === 'custom') {
-          tenantId = 'tenant-us-east-1';
-        }
+        const rawKey = refreshToken.replace('mock_refresh_token_', '');
+        const persona = resolveSandboxPersona(rawKey) || DEFAULT_SANDBOX_PERSONAS.admin;
+        const sub = persona.username;
+        const tenantId = persona.defaultTenantId;
+        const isSovereign = tenantId === 'SYSTEM';
 
         const token = createMockJwt({
           sub,
+          personaId: persona.id,
+          uid: persona.uid,
           roles,
           tenantId,
           isSandbox: true,
+          isSovereign,
           iat: Math.floor(Date.now() / 1000),
           exp: Math.floor(Date.now() / 1000) + 60 * 15,
         });
@@ -260,7 +307,14 @@ export const authSandboxHandler: SandboxRouteHandler = {
         return {
           status: 200,
           statusText: 'OK',
-          data: { accessToken: token, refreshToken },
+          data: {
+            accessToken: token,
+            refreshToken,
+            body: {
+              accessToken: token,
+              refreshToken,
+            },
+          },
         };
       }
 
@@ -287,9 +341,12 @@ export const authSandboxHandler: SandboxRouteHandler = {
       if (authHeader && authHeader.startsWith('Bearer ')) {
         decoded = decodeJwt(authHeader.split(' ')[1]);
       }
-      const username = decoded?.sub || 'custodian_root';
-      const tenantId = decoded?.tenantId || (username === 'custodian_root' ? 'SYSTEM' : 'tenant-acme');
-      const roles: string[] = decoded?.roles || (username in SANDBOX_AUTH_USERS ? SANDBOX_AUTH_USERS[username] : ['ROLE_STANDARD_MEMBER']);
+      const rawUser = decoded?.sub || decoded?.personaId || 'admin@acc.io';
+      const persona = resolveSandboxPersona(rawUser) || DEFAULT_SANDBOX_PERSONAS.admin;
+
+      const username = decoded?.sub || persona.username;
+      const tenantId = decoded?.tenantId || persona.defaultTenantId;
+      const roles: string[] = decoded?.roles || persona.roles;
       const isSovereign = roles.includes('ROLE_SYSTEM_ROOT') || tenantId === 'SYSTEM';
 
       const permSet = new Set<string>();
@@ -297,18 +354,25 @@ export const authSandboxHandler: SandboxRouteHandler = {
         const perms = CANONICAL_ROLE_PERMISSIONS[r] || [];
         perms.forEach((p) => permSet.add(p));
       }
+      persona.permissions?.forEach((p) => permSet.add(p));
+
+      const profileData = {
+        userId: persona.uid || `usr-${persona.id}`,
+        username,
+        tenantId,
+        isSovereign,
+        sovereign: isSovereign,
+        roles,
+        permissions: Array.from(permSet),
+        activeFeatures: ['auth', 'metadata', 'users', 'tasks'],
+      };
 
       return {
         status: 200,
         statusText: 'OK',
         data: {
-          userId: `usr-${username}`,
-          username,
-          tenantId,
-          isSovereign,
-          roles,
-          permissions: Array.from(permSet),
-          activeFeatures: ['auth', 'metadata', 'users', 'tasks'],
+          ...profileData,
+          body: profileData,
         },
       };
     }
@@ -320,16 +384,22 @@ export const authSandboxHandler: SandboxRouteHandler = {
       if (authHeader && authHeader.startsWith('Bearer ')) {
         decoded = decodeJwt(authHeader.split(' ')[1]);
       }
-      const username = decoded?.sub || 'custodian_root';
+      const rawUser = decoded?.sub || decoded?.personaId || 'admin@acc.io';
+      const persona = resolveSandboxPersona(rawUser) || DEFAULT_SANDBOX_PERSONAS.admin;
+
+      const profileRes = {
+        userId: persona.uid || `usr-${persona.id}`,
+        username: persona.username,
+        ...mockUserProfileState,
+        email: persona.username,
+      };
 
       return {
         status: 200,
         statusText: 'OK',
         data: {
-          userId: `usr-${username}`,
-          username,
-          ...mockUserProfileState,
-          email: `${username}@acc.local`,
+          ...profileRes,
+          body: profileRes,
         },
       };
     }
@@ -378,7 +448,7 @@ export const authSandboxHandler: SandboxRouteHandler = {
       const token = authHeader.split(' ')[1];
       const decoded = decodeJwt(token);
 
-      if (!decoded || decoded.exp * 1000 < Date.now()) {
+      if (!decoded || !decoded.exp || decoded.exp * 1000 < Date.now()) {
         return {
           status: 401,
           statusText: 'Unauthorized',

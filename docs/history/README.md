@@ -102,3 +102,4 @@
 | 436 | [Suppress HTTP Basic Auth Dialog and Wire Dedicated JWT Authentication Entry Point](./436_suppress_http_basic_and_wire_jwt_auth_entry_point.md) | Completed |
 | 437 | [Declarative Client Authorization Safeguards & Dual-Gate Pre-Flight Defense](./437_declarative_client_authorization_safeguards.md) | Completed |
 | 438 | [Fix Workflow Catalog Table Missing Button and Guard Empty State Action](./438_fix_workflow_catalog_table_missing_button_and_guard_empty_state.md) | Completed |
+| 439 | [Mirror Backend Sandbox Personas to Console's Sandbox](./439_mirror_backend_sandbox_personas_to_console.md) | Completed |

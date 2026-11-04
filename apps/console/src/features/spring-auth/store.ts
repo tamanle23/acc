@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { AuthState, AuthenticationProfile } from './types';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { decodeJwt } from './utils/jwt';
 import { useSandboxStore } from '../../core/sandbox/store/sandbox-store';
 
 const REFRESH_STORAGE_KEY = 'sandbox_refresh_token';
@@ -23,12 +24,22 @@ export const useSpringAuthStore = create<AuthState>()(
           access?.endsWith('.mock_signature') ||
           refresh?.startsWith('mock_refresh_token_')
         );
-        set({
+        let decodedUser: any = null;
+        if (access) {
+          try {
+            decodedUser = decodeJwt(access);
+          } catch {
+            /* ignore */
+          }
+        }
+        set((state) => ({
           accessToken: access,
           refreshToken: refresh,
+          user: decodedUser || state.user,
+          currentTenantId: decodedUser?.tenantId || state.currentTenantId,
           isAuthenticated: Boolean(access),
           isSandbox,
-        });
+        }));
       },
       setUser: (user: AuthenticationProfile | null) => {
         set({

@@ -50,17 +50,20 @@ export class UnifiedSandboxManager {
    */
   public syncPersonaAuthTokens(personaId: SandboxPersonaId): void {
     const persona = DEFAULT_SANDBOX_PERSONAS[personaId] || DEFAULT_SANDBOX_PERSONAS.admin;
-    const sub = persona.username.split('_')[0];
+    const sub = persona.id;
 
     const accessToken = createMockJwt({
       sub,
+      username: persona.username,
+      personaId: persona.id,
+      uid: persona.uid,
       roles: persona.roles,
       tenantId: persona.defaultTenantId,
       isSandbox: true,
       iat: Math.floor(Date.now() / 1000),
       exp: Math.floor(Date.now() / 1000) + 60 * 15,
     });
-    const refreshToken = `mock_refresh_token_${sub}`;
+    const refreshToken = `mock_refresh_token_${persona.id}`;
 
     useSpringAuthStore.getState().setTokens(accessToken, refreshToken);
   }
@@ -139,6 +142,13 @@ export class UnifiedSandboxManager {
           headers[key.toLowerCase()] = String(val);
         }
       }
+    }
+    if (!headers['x-tenant-id'] && !headers['authorization']) {
+      headers['x-tenant-id'] = state.activeTenantId;
+    }
+    req.headers = req.headers || {};
+    if (!req.headers['x-tenant-id'] && !req.headers['X-Tenant-Id'] && !req.headers['authorization'] && !req.headers['Authorization']) {
+      req.headers['x-tenant-id'] = state.activeTenantId;
     }
 
     const match = sandboxRegistry.findHandler(req.url, req.method, headers);
