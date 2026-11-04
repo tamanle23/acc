@@ -185,10 +185,6 @@ public class JwtTokenHelper implements Serializable {
     if (isTokenExpired(claims)) {
       return false;
     }
-    String audience = (String) claims.get(CLAIM_KEY_AUDIENCE);
-    if (StringUtils.isNotBlank(audience) && StringUtils.isNotBlank(userAgent)) {
-      return StringUtils.equals(audience, userAgent);
-    }
     return true;
   }
 

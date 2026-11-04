@@ -138,5 +138,9 @@ springApiClient.interceptors.response.use(
  */
 export async function fetchAuthenticationProfile(): Promise<import('@acc/client').AuthenticationProfile> {
   const { data } = await springApiClient.get<any>('/auth/me');
-  return (data?.body || data) as import('@acc/client').AuthenticationProfile;
+  const raw = data?.body || data;
+  return {
+    ...raw,
+    isSovereign: raw.isSovereign ?? raw.sovereign ?? false,
+  } as import('@acc/client').AuthenticationProfile;
 }
