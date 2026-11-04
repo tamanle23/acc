@@ -9,6 +9,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { AuthorizedButton } from '@/components/auth';
+import { Button } from '@/components/ui/button';
 import { Plus, Workflow } from 'lucide-react';
 import {
   DataTable,
@@ -21,7 +22,6 @@ import {
   useDeleteWorkflowDefinition,
 } from '@/features/workflows/api/workflow-api';
 import { createWorkflowCatalogColumns } from './workflow-catalog-columns';
-import { useHasPermission } from '@/features/system/hooks/use-has-permission';
 import { cn } from '@/lib/utils';
 
 interface WorkflowCatalogTableProps {
@@ -126,9 +126,15 @@ export const WorkflowCatalogTable: React.FC<WorkflowCatalogTableProps> = ({
             <div className="flex flex-col items-center justify-center p-8 gap-2 text-muted-foreground">
               <Workflow className="h-8 w-8 text-muted-foreground/40" />
               <span className="text-sm font-medium">No workflow definitions found</span>
-              <Button variant="outline" size="sm" onClick={onCreateNew} className="text-xs">
+              <AuthorizedButton
+                permission="workflow:definition:manage"
+                variant="outline"
+                size="sm"
+                onClick={onCreateNew}
+                className="text-xs"
+              >
                 Create your first workflow
-              </Button>
+              </AuthorizedButton>
             </div>
           )
         }
