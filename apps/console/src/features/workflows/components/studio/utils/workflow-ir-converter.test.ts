@@ -468,6 +468,59 @@ describe('Workflow IR Converter & Graph Validation Engine', () => {
       expect(imported.edges.some((edge) => edge.source === 'node-prep1' && edge.target === 'node-joinBarrier')).toBe(true);
       expect(imported.edges.some((edge) => edge.source === 'node-prep2' && edge.target === 'node-joinBarrier')).toBe(true);
     });
+
+    it('returns blank workflow with both START and END nodes when imported IR has empty tasks', () => {
+      const emptyIr = {
+        workflowKey: 'new-blank-wf',
+        version: 1,
+        name: 'New Blank Workflow',
+        tasks: [],
+      };
+
+      const result = importFromWorkflowIR(emptyIr);
+      expect(result.nodes).toHaveLength(2);
+      expect(result.edges).toHaveLength(1);
+
+      const startNode = result.nodes.find((n) => n.data.isStartNode);
+      const endNode = result.nodes.find((n) => n.data.isEndNode);
+
+      expect(startNode).toBeDefined();
+      expect(startNode?.data.isEndNode).toBeFalsy();
+      expect(endNode).toBeDefined();
+      expect(endNode?.data.isStartNode).toBeFalsy();
+
+      expect(result.edges[0].source).toBe(startNode?.id);
+      expect(result.edges[0].target).toBe(endNode?.id);
+    });
+
+    it('supplements legacy single start task definition with terminal end node and connecting edge', () => {
+      const singleStartIr = {
+        workflowKey: 'legacy-single-start',
+        version: 1,
+        name: 'Legacy Single Start',
+        tasks: [
+          {
+            taskReferenceName: 'workflow_start',
+            taskType: 'NOOP' as const,
+          },
+        ],
+      };
+
+      const result = importFromWorkflowIR(singleStartIr);
+      expect(result.nodes).toHaveLength(2);
+      expect(result.edges).toHaveLength(1);
+
+      const startNode = result.nodes.find((n) => n.data.taskReferenceName === 'workflow_start');
+      const endNode = result.nodes.find((n) => n.data.taskReferenceName === 'workflow_end');
+
+      expect(startNode?.data.isStartNode).toBe(true);
+      expect(startNode?.data.isEndNode).toBe(false);
+      expect(endNode?.data.isStartNode).toBe(false);
+      expect(endNode?.data.isEndNode).toBe(true);
+
+      expect(result.edges[0].source).toBe(startNode?.id);
+      expect(result.edges[0].target).toBe(endNode?.id);
+    });
   });
 });
 

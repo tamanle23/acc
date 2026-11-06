@@ -13,6 +13,10 @@ import type {
   SubWorkflowTaskParams,
   KafkaTaskParams,
 } from '../canvas/dag-node';
+import {
+  BLANK_WORKFLOW_NODES,
+  BLANK_WORKFLOW_EDGES,
+} from './dag-sample-data';
 
 export interface WorkflowTaskIR {
   taskReferenceName: string;
@@ -481,12 +485,37 @@ export function importFromWorkflowIR(
     throw new Error('Invalid Workflow IR: "tasks" array is required');
   }
 
+  // Blank definition fallback: START and END boundary nodes connected by initial edge
+  if (ir.tasks.length === 0) {
+    return {
+      nodes: BLANK_WORKFLOW_NODES,
+      edges: BLANK_WORKFLOW_EDGES,
+    };
+  }
+
+  // If definition only contains a single start task (e.g. legacy blank definition), supplement with terminal end node
+  const tasksToProcess = [...ir.tasks];
+  const firstTask = tasksToProcess[0];
+  const isOnlyStart =
+    tasksToProcess.length === 1 &&
+    (firstTask.taskReferenceName === 'workflow_start' ||
+      firstTask.taskReferenceName === 'start' ||
+      firstTask.taskReferenceName === 'startTask');
+
+  if (isOnlyStart) {
+    tasksToProcess.push({
+      taskReferenceName: 'workflow_end',
+      taskType: 'NOOP',
+      domain: 'default',
+    });
+  }
+
   const nodes: Node<DagNodeData>[] = [];
   const edges: Edge[] = [];
   const taskToNodeId = new Map<string, string>();
 
   // 1. Build nodes
-  ir.tasks.forEach((task, idx) => {
+  tasksToProcess.forEach((task, idx) => {
     const nodeId = `node-${task.taskReferenceName}`;
     taskToNodeId.set(task.taskReferenceName, nodeId);
 
@@ -499,16 +528,25 @@ export function importFromWorkflowIR(
     const isStartNode = Boolean(
       metaLayout.isStartNode ||
         (idx === 0 &&
-          ir.tasks.length > 1 &&
-          (task.taskReferenceName === 'workflow_start' || task.taskReferenceName === 'start' || task.taskType === 'NOOP'))
+          (task.taskReferenceName === 'workflow_start' ||
+            task.taskReferenceName === 'start' ||
+            task.taskReferenceName === 'startTask'))
     );
     const isEndNode = Boolean(
       metaLayout.isEndNode ||
-        (idx === ir.tasks.length - 1 &&
-          ir.tasks.length > 1 &&
-          (task.taskReferenceName === 'workflow_end' || task.taskReferenceName === 'end' || task.taskType === 'TERMINATE' || task.taskType === 'NOOP'))
+        (idx === tasksToProcess.length - 1 &&
+          (task.taskReferenceName === 'workflow_end' ||
+            task.taskReferenceName === 'end' ||
+            task.taskType === 'TERMINATE'))
     );
     const isPermanent = Boolean(metaLayout.isPermanent || isStartNode || isEndNode);
+
+    const label =
+      task.taskReferenceName === 'workflow_start' || task.taskReferenceName === 'startTask'
+        ? 'Workflow Start'
+        : task.taskReferenceName === 'workflow_end'
+          ? 'Workflow End'
+          : task.taskReferenceName;
 
     nodes.push({
       id: nodeId,
@@ -517,7 +555,7 @@ export function importFromWorkflowIR(
       data: {
         taskReferenceName: task.taskReferenceName,
         taskType: task.taskType,
-        label: task.taskReferenceName,
+        label,
         domain: task.domain || 'default',
         timeoutSeconds: task.timeoutSeconds ?? 30,
         retryCount: task.retryCount ?? 3,
@@ -560,7 +598,7 @@ export function importFromWorkflowIR(
   };
 
   // Reconstruct edges from joinOn
-  ir.tasks.forEach((task) => {
+  tasksToProcess.forEach((task) => {
     const targetId = taskToNodeId.get(task.taskReferenceName);
     if (targetId && Array.isArray(task.joinOn) && task.joinOn.length > 0) {
       task.joinOn.forEach((prereqRef) => {
@@ -579,7 +617,7 @@ export function importFromWorkflowIR(
   });
 
   // Reconstruct edges from SWITCH decisionCases & defaultCase
-  ir.tasks.forEach((task) => {
+  tasksToProcess.forEach((task) => {
     const sourceId = taskToNodeId.get(task.taskReferenceName);
     if (sourceId && task.taskType === 'SWITCH') {
       if (task.decisionCases) {
@@ -621,9 +659,9 @@ export function importFromWorkflowIR(
 
   // Fallback: If no explicit joinOn / switch edges were created, link sequentially
   if (synthesizedEdges.length === 0) {
-    for (let i = 0; i < ir.tasks.length - 1; i++) {
-      const curTask = ir.tasks[i];
-      const nxtTask = ir.tasks[i + 1];
+    for (let i = 0; i < tasksToProcess.length - 1; i++) {
+      const curTask = tasksToProcess[i];
+      const nxtTask = tasksToProcess[i + 1];
       const source = taskToNodeId.get(curTask.taskReferenceName);
       const target = taskToNodeId.get(nxtTask.taskReferenceName);
       if (source && target) {

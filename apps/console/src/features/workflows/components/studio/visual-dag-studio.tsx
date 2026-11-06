@@ -468,15 +468,50 @@ function DagStudioCanvas({
       if (outDegree.has(e.source)) outDegree.set(e.source, (outDegree.get(e.source) || 0) + 1);
     });
 
+    const hasExplicitStart = nodes.some(
+      (n) =>
+        n.data.isStartNode ||
+        n.id === 'node-start' ||
+        n.data.taskReferenceName === 'workflow_start' ||
+        n.data.taskReferenceName === 'startTask'
+    );
+    const hasExplicitEnd = nodes.some(
+      (n) =>
+        n.data.isEndNode ||
+        n.id === 'node-end' ||
+        n.data.taskReferenceName === 'workflow_end'
+    );
+
     return nodes.map((n) => {
       const degIn = inDegree.get(n.id) ?? 0;
       const degOut = outDegree.get(n.id) ?? 0;
+
+      const isStart = hasExplicitStart
+        ? Boolean(
+            n.data.isStartNode ||
+              n.id === 'node-start' ||
+              n.data.taskReferenceName === 'workflow_start' ||
+              n.data.taskReferenceName === 'startTask'
+          )
+        : degIn === 0;
+
+      // An entry/start node MUST NOT be an end node (guarantees right connector handle is never suppressed)
+      const isEnd = isStart
+        ? false
+        : hasExplicitEnd
+          ? Boolean(
+              n.data.isEndNode ||
+                n.id === 'node-end' ||
+                n.data.taskReferenceName === 'workflow_end'
+            )
+          : degOut === 0;
+
       return {
         ...n,
         data: {
           ...n.data,
-          isStartNode: degIn === 0,
-          isEndNode: degOut === 0,
+          isStartNode: isStart,
+          isEndNode: isEnd,
           hasBreakpoint: isExecutionMode ? breakpoints.includes(n.data.taskReferenceName) : false,
           onToggleBreakpoint: isExecutionMode ? handleToggleBreakpoint : undefined,
           // Wire hover-popover "Inspect I/O & Logs" button to open telemetry drawer

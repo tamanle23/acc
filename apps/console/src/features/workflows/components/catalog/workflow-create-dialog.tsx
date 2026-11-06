@@ -40,13 +40,19 @@ export const WorkflowCreateDialog: React.FC<WorkflowCreateDialogProps> = ({
       description: description.trim() || undefined,
       tasks: [
         {
-          taskReferenceName: 'startTask',
-          taskType: 'SIMPLE',
+          taskReferenceName: 'workflow_start',
+          taskType: 'NOOP',
+          domain: 'default',
+        },
+        {
+          taskReferenceName: 'workflow_end',
+          taskType: 'NOOP',
           domain: 'default',
         },
       ],
       layoutMetadata: {
-        startTask: { x: 100, y: 150 },
+        workflow_start: { x: 100, y: 200, isPermanent: true, isStartNode: true } as any,
+        workflow_end: { x: 500, y: 200, isPermanent: true, isEndNode: true } as any,
       },
     };
 
