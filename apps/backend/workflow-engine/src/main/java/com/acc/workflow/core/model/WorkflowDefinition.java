@@ -35,6 +35,33 @@ public record WorkflowDefinition(
         layoutMetadata = layoutMetadata != null ? Collections.unmodifiableMap(layoutMetadata) : Collections.emptyMap();
     }
 
+    public static WorkflowDefinition createBlank(String workflowKey, String name, String description) {
+        TaskDefinition startTask = TaskDefinition.builder("workflow_start")
+            .taskType(TaskType.NOOP)
+            .domain("default")
+            .build();
+
+        TaskDefinition endTask = TaskDefinition.builder("workflow_end")
+            .taskType(TaskType.NOOP)
+            .domain("default")
+            .build();
+
+        Map<String, Object> layout = Map.of(
+            "workflow_start", Map.of("x", 100, "y", 200, "isPermanent", true, "isStartNode", true),
+            "workflow_end", Map.of("x", 500, "y", 200, "isPermanent", true, "isEndNode", true)
+        );
+
+        return new WorkflowDefinition(
+            workflowKey,
+            1,
+            name != null && !name.isBlank() ? name : workflowKey,
+            description,
+            3600,
+            List.of(startTask, endTask),
+            layout
+        );
+    }
+
     public static Builder builder(String workflowKey) {
         return new Builder(workflowKey);
     }

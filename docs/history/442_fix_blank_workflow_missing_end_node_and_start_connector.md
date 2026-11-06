@@ -1,23 +1,27 @@
-# 442 - Fix Blank Workflow Missing End Node and Start Connector Handle
+# 442 - Backend Canonical Blank Workflow Initialization & Connector Handle Fix
 
 ## Problem
-In `@acc/console`'s Visual DAG Studio:
-1. When creating a new workflow from the catalog dialog, the definition only contained a single task (`startTask`) without a corresponding terminal `workflow_end` node.
-2. The initial start node lacked an outgoing connector handle (source port) on its right edge, blocking users from connecting new tasks to it.
-3. In `visual-dag-studio.tsx`, `decoratedNodes` calculated `isStartNode = degIn === 0` and `isEndNode = degOut === 0`. Because the start node had 0 outgoing edges, `isEndNode` evaluated to `true`, which hid the source handle (`{!data.isEndNode && <Handle type="source" />}`).
+In the workflow orchestration subsystem:
+1. When creating a new workflow definition, `WorkflowCreateDialog` in the console was attempting to construct initial node payloads in the frontend instead of relying on the backend as the single source of truth.
+2. In the backend and unified sandbox, submitting a new workflow definition with empty tasks did not initialize canonical boundary nodes (`workflow_start` and `workflow_end`).
+3. In `visual-dag-studio.tsx`, `decoratedNodes` calculated `isStartNode = degIn === 0` and `isEndNode = degOut === 0`. Because a start node had 0 outgoing edges before connection, `isEndNode` evaluated to `true`, which suppressed its source handle (`{!data.isEndNode && <Handle type="source" />}`).
 
 ## Changes
+- `apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/model/WorkflowDefinition.java`:
+  - Added factory method `WorkflowDefinition.createBlank(key, name, description)` to initialize standard `workflow_start` and `workflow_end` boundary tasks and layout metadata.
+- `apps/backend/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/WorkflowDefinitionController.java`:
+  - In `registerDefinition()`, automatically initializes blank workflow definitions using `WorkflowDefinition.createBlank(...)` when tasks list is null or empty.
+- `apps/backend/acc-ms-aio/src/test/java/com/acc/aio/controller/workflow/WorkflowEngineRestApiTest.java`:
+  - Added `@Test testRegisterBlankWorkflowInitializesStartAndEndNodes()` verifying `POST /api/v1/workflow/definitions` with empty tasks generates both Start and End boundary nodes.
+- `packages/sandbox/src/handlers/workflow-handler.ts`:
+  - Implemented offline sandbox parity: `WorkflowSandboxRepository.saveDefinition()` automatically initializes canonical `workflow_start` and `workflow_end` nodes when tasks are empty.
 - `apps/console/src/features/workflows/components/catalog/workflow-create-dialog.tsx`:
-  - Updated `handleCreate()` to initialize blank workflows with paired boundary tasks `workflow_start` and `workflow_end` at positions (100, 200) and (500, 200) with `isPermanent` layout metadata.
-- `apps/console/src/features/workflows/components/studio/utils/workflow-ir-converter.ts`:
-  - Handled `ir.tasks.length === 0` by returning canonical `BLANK_WORKFLOW_NODES` and `BLANK_WORKFLOW_EDGES`.
-  - Added legacy healing for definitions with a solitary start task, automatically complementing with `workflow_end` and linking them sequentially.
-  - Normalized boundary node display labels to `'Workflow Start'` and `'Workflow End'`.
+  - Cleaned up `handleCreate()` to send metadata `{ workflowKey, name, description, tasks: [] }` directly to backend, delegating initialization to backend.
 - `apps/console/src/features/workflows/components/studio/visual-dag-studio.tsx`:
-  - Refactored `decoratedNodes` so that explicit start nodes guarantee `isEndNode = false`, ensuring the right source handle is always rendered and never suppressed by an out-degree of 0.
-- `apps/console/src/features/workflows/components/studio/utils/workflow-ir-converter.test.ts`:
-  - Added unit test coverage for blank IR fallback and legacy single-start definitions.
+  - Fixed `decoratedNodes` so that explicit start nodes (`workflow_start`, `node-start`, `data.isStartNode`) enforce `isEndNode = false`, ensuring the right source handle is always rendered.
 
 ## Verification
-- `pnpm --filter @acc/console exec vitest run src/features/workflows` passed (24 test files, 112 passed).
-- `pnpm --filter @acc/console exec tsc --noEmit` passed with 0 errors.
+- `pnpm --filter @acc/backend exec node mvnw.cjs -am -pl acc-ms-aio test "-Dtest=WorkflowEngineRestApiTest"` (2/2 passed, BUILD SUCCESS).
+- `pnpm --filter @acc/sandbox test` (11 test files, 103 passed).
+- `pnpm --filter @acc/console exec vitest run src/features/workflows` (24 test files, 112 passed).
+- `pnpm --filter @acc/console exec tsc --noEmit` (0 errors).

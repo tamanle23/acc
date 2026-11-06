@@ -47,10 +47,19 @@ public class WorkflowDefinitionController {
     ) {
         String tenantId = TenantContextHolder.getRequiredTenantId();
         try {
+            WorkflowDefinition defToRegister = definition;
+            // When creating a new blank workflow (empty/no tasks provided), initialize canonical boundary nodes (Start & End)
+            if (defToRegister.tasks() == null || defToRegister.tasks().isEmpty()) {
+                defToRegister = WorkflowDefinition.createBlank(
+                    definition.workflowKey(),
+                    definition.name(),
+                    definition.description()
+                );
+            }
             // Kahn's & Tarjan verification of acyclicity
-            acyclicityGuard.validateAndSort(definition);
-            registry.register(tenantId, definition);
-            return ResponseEntity.status(HttpStatus.CREATED).body(definition);
+            acyclicityGuard.validateAndSort(defToRegister);
+            registry.register(tenantId, defToRegister);
+            return ResponseEntity.status(HttpStatus.CREATED).body(defToRegister);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of(
                 "error", "Invalid Workflow Definition",
