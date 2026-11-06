@@ -25,7 +25,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping({"/api/v1/workflow/dlq", "/api/v1/system/dlq"})
-@PreAuthorize("hasAuthority('ROLE_SYSTEM_CUSTODIAN') or hasAuthority('platform:dlq:manage')")
+@PreAuthorize("hasAuthority('platform:dlq:manage')")
 public class WorkflowDlqController {
 
     private final WorkflowEngineService engineService;

@@ -1,6 +1,6 @@
 package com.acc.aio.controller.workflow;
 
-import com.acc.aio.config.WorkflowEngineConfiguration.WorkflowDefinitionRegistry;
+import com.acc.workflow.application.WorkflowDefinitionRegistry;
 import com.acc.fw.tenancy.TenantContextHolder;
 import com.acc.workflow.adapters.storage.InMemoryPersistenceAdapter;
 import com.acc.workflow.application.WorkflowEngineService;
@@ -59,11 +59,11 @@ class WorkflowDlqRestApiTest {
     }
 
     @Test
-    @DisplayName("Security: WorkflowDlqController must be secured with Sovereign Custodian authority and mapped to /api/v1/system/dlq")
+    @DisplayName("Security: WorkflowDlqController must be secured with platform:dlq:manage authority and mapped to /api/v1/system/dlq")
     void testSecurityAnnotationAndMapping() {
         PreAuthorize preAuth = WorkflowDlqController.class.getAnnotation(PreAuthorize.class);
         assertThat(preAuth).isNotNull();
-        assertThat(preAuth.value()).contains("ROLE_SYSTEM_CUSTODIAN");
+        assertThat(preAuth.value()).isEqualTo("hasAuthority('platform:dlq:manage')");
 
         RequestMapping mapping = WorkflowDlqController.class.getAnnotation(RequestMapping.class);
         assertThat(mapping).isNotNull();

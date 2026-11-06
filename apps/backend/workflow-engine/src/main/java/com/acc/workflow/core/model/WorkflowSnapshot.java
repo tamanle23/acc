@@ -37,6 +37,10 @@ public record WorkflowSnapshot(
         this(workflowId, tenantId, workspaceId, workflowKey, version, status, inputPayload, outputPayload, Collections.emptyMap(), failureReason, tasksByRef);
     }
 
+    public WorkflowExecutionStatus executionStatus() {
+        return status != null ? status.toExecutionStatus() : null;
+    }
+
     public WorkflowSnapshot {
         if (workflowId == null || workflowId.isBlank()) {
             throw new IllegalArgumentException("workflowId is required");

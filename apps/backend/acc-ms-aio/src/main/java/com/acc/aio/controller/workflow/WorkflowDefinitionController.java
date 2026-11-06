@@ -1,6 +1,6 @@
 package com.acc.aio.controller.workflow;
 
-import com.acc.aio.config.WorkflowEngineConfiguration.WorkflowDefinitionRegistry;
+import com.acc.workflow.application.WorkflowDefinitionRegistry;
 import com.acc.fw.tenancy.TenantContextHolder;
 import com.acc.workflow.core.graph.AcyclicityGuard;
 import com.acc.workflow.core.model.WorkflowDefinition;
@@ -41,7 +41,7 @@ public class WorkflowDefinitionController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAuthority('workflow:definition:manage') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('workflow:definition:manage')")
     public ResponseEntity<?> registerDefinition(
         @RequestBody WorkflowDefinition definition
     ) {
@@ -60,7 +60,7 @@ public class WorkflowDefinitionController {
     }
 
     @GetMapping("/{key}")
-    @PreAuthorize("hasAuthority('workflow:definition:read') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('workflow:definition:read')")
     public ResponseEntity<?> getDefinition(
         @PathVariable("key") String key
     ) {
@@ -72,7 +72,7 @@ public class WorkflowDefinitionController {
     }
 
     @GetMapping("/{key}/versions")
-    @PreAuthorize("hasAuthority('workflow:definition:read') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('workflow:definition:read')")
     public ResponseEntity<?> listDefinitionVersions(
         @PathVariable("key") String key
     ) {
@@ -81,7 +81,7 @@ public class WorkflowDefinitionController {
     }
 
     @GetMapping("/{key}/versions/{version}")
-    @PreAuthorize("hasAuthority('workflow:definition:read') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('workflow:definition:read')")
     public ResponseEntity<?> getDefinitionVersion(
         @PathVariable("key") String key,
         @PathVariable("version") int version
@@ -93,7 +93,7 @@ public class WorkflowDefinitionController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAuthority('workflow:definition:read') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('workflow:definition:read')")
     public ResponseEntity<Collection<WorkflowDefinition>> listDefinitions() {
         String tenantId = TenantContextHolder.getRequiredTenantId();
         return ResponseEntity.ok(registry.list(tenantId).values());
@@ -102,7 +102,7 @@ public class WorkflowDefinitionController {
     // --- Execution Migration & Audit Endpoints ---
 
     @PostMapping("/executions/{id}/migrate/dry-run")
-    @PreAuthorize("hasAuthority('workflow:definition:manage') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('workflow:definition:manage')")
     public ResponseEntity<?> dryRunMigration(
         @PathVariable("id") String executionId,
         @RequestBody WorkflowDefinition targetDefinition
@@ -116,7 +116,7 @@ public class WorkflowDefinitionController {
     }
 
     @PostMapping("/executions/{id}/migrate")
-    @PreAuthorize("hasAuthority('workflow:definition:manage') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('workflow:definition:manage')")
     public ResponseEntity<?> migrateExecution(
         @PathVariable("id") String executionId,
         @RequestBody WorkflowDefinition targetDefinition,
@@ -133,13 +133,13 @@ public class WorkflowDefinitionController {
     }
 
     @GetMapping("/executions/{id}/audit")
-    @PreAuthorize("hasAuthority('workflow:definition:read') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('workflow:definition:read')")
     public ResponseEntity<?> getAuditLedger(@PathVariable("id") String executionId) {
         return ResponseEntity.ok(engineService.getAuditLedger(executionId));
     }
 
     @GetMapping("/executions/{id}/audit/verify")
-    @PreAuthorize("hasAuthority('workflow:definition:read') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('workflow:definition:read')")
     public ResponseEntity<?> verifyAuditLedger(@PathVariable("id") String executionId) {
         return ResponseEntity.ok(engineService.verifyAuditLedger(executionId));
     }
@@ -150,7 +150,7 @@ public class WorkflowDefinitionController {
     public record BatchMigrateRequest(int targetVersion, List<String> executionIds, Boolean autoMigrateCompatibleOnly) {}
 
     @PostMapping("/{key}/migration-preview")
-    @PreAuthorize("hasAuthority('workflow:definition:manage') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('workflow:definition:manage')")
     public ResponseEntity<?> migrationPreview(
         @PathVariable("key") String workflowKey,
         @RequestBody MigrationPreviewRequest req
@@ -213,7 +213,7 @@ public class WorkflowDefinitionController {
     }
 
     @PostMapping("/{key}/batch-migrate")
-    @PreAuthorize("hasAuthority('workflow:definition:manage') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('workflow:definition:manage')")
     public ResponseEntity<?> batchMigrate(
         @PathVariable("key") String workflowKey,
         @RequestBody BatchMigrateRequest req,
@@ -282,7 +282,7 @@ public class WorkflowDefinitionController {
     ) {}
 
     @PostMapping("/simulate")
-    @PreAuthorize("hasAuthority('workflow:definition:manage') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('workflow:definition:manage')")
     public ResponseEntity<?> simulateWorkflowDefinition(
         @RequestBody SimulateWorkflowRequest req
     ) {
