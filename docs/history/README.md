@@ -109,3 +109,4 @@
 | 443 | [Refine 24 Workflow Node Types Across Backend Engine and Visual DAG Studio](./443_refine_24_workflow_node_types_backend_and_dag_studio.md) | Completed |
 | 444 | [Compound Node Templates & Fast-Start Paired Workflow Engine](./444_compound_node_templates_fast_start_dag_studio.md) | Completed |
 | 445 | [Reusable Multi-Branch Node Expansion Framework](./445_reusable_multi_branch_node_expansion_framework.md) | Completed |
+| 446 | [Migration of tekgo-ui to Astro 5 + Preact + Tailwind CSS v4](./446_tekgo_ui_astro5_preact_migration.md) | Completed |

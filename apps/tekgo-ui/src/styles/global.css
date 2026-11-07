@@ -1,0 +1,315 @@
+@import 'tailwindcss';
+@plugin '@tailwindcss/forms';
+@plugin '@tailwindcss/typography';
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Core theme configuration */
+@theme {
+  /* Font families */
+  --font-sans: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+    'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
+  /* Colors */
+  --color-primary-50: oklch(0.971 0.014 343.198);
+  --color-primary-100: oklch(0.948 0.028 342.258);
+  --color-primary-200: oklch(0.899 0.061 343.231);
+  --color-primary-300: oklch(0.823 0.12 346.018);
+  --color-primary-400: oklch(0.718 0.202 349.761);
+  --color-primary-500: oklch(0.656 0.241 354.308);
+  --color-primary-600: oklch(0.592 0.249 0.584);
+  --color-primary-700: oklch(0.525 0.223 3.958);
+  --color-primary-800: oklch(0.459 0.187 3.815);
+  --color-primary-900: oklch(0.408 0.153 2.432);
+  --color-primary-950: oklch(0.284 0.109 3.907);
+
+  --color-gray-50: oklch(0.985 0.002 247.839);
+  --color-gray-100: oklch(0.967 0.003 264.542);
+  --color-gray-200: oklch(0.928 0.006 264.531);
+  --color-gray-300: oklch(0.872 0.01 258.338);
+  --color-gray-400: oklch(0.707 0.022 261.325);
+  --color-gray-500: oklch(0.551 0.027 264.364);
+  --color-gray-600: oklch(0.446 0.03 256.802);
+  --color-gray-700: oklch(0.373 0.034 259.733);
+  --color-gray-800: oklch(0.278 0.033 256.848);
+  --color-gray-900: oklch(0.21 0.034 264.665);
+  --color-gray-950: oklch(0.13 0.028 261.692);
+
+  /* Line heights */
+  --line-height-11: 2.75rem;
+  --line-height-12: 3rem;
+  --line-height-13: 3.25rem;
+  --line-height-14: 3.5rem;
+
+  /* Z-index values */
+  --z-60: 60;
+  --z-70: 70;
+  --z-80: 80;
+}
+
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentColor);
+  }
+
+  .dark *,
+  .dark ::after,
+  .dark ::before,
+  .dark ::backdrop,
+  .dark ::file-selector-button {
+    border-color: var(--color-gray-800, currentColor);
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--color-gray-50);
+    color: var(--color-gray-900);
+    transition-property: color, background-color;
+    transition-duration: 200ms;
+  }
+
+  .dark body {
+    background-color: var(--color-gray-950);
+    color: var(--color-gray-100);
+  }
+
+  a,
+  button {
+    outline-color: var(--color-primary-500);
+  }
+
+  a:focus-visible,
+  button:focus-visible {
+    outline: 2px solid;
+    border-radius: var(--radius-sm, 0.25rem);
+    outline-color: var(--color-primary-500);
+  }
+}
+
+/* Liquid Glass Editorial Utilities */
+.glass-header {
+  background-color: rgb(255 255 255 / 0.65);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid rgb(255 255 255 / 0.30);
+}
+
+.dark .glass-header {
+  background-color: rgb(2 6 23 / 0.65);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid rgb(255 255 255 / 0.10);
+}
+
+.glass-card {
+  background-color: rgb(255 255 255 / 0.65);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgb(255 255 255 / 0.30);
+  box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.05);
+}
+
+.dark .glass-card {
+  background-color: rgb(15 23 42 / 0.65);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgb(255 255 255 / 0.10);
+  box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.40);
+}
+
+.glass-modal {
+  background-color: rgb(255 255 255 / 0.85);
+  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: blur(32px);
+  border: 1px solid rgb(255 255 255 / 0.40);
+  box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.15);
+}
+
+.dark .glass-modal {
+  background-color: rgb(15 23 42 / 0.85);
+  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: blur(32px);
+  border: 1px solid rgb(255 255 255 / 0.15);
+  box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.60);
+}
+
+@layer utilities {
+  .prose {
+    & a {
+      color: var(--color-primary-500);
+      &:hover {
+        color: var(--color-primary-600);
+      }
+      & code {
+        color: var(--color-primary-400);
+      }
+    }
+    & :where(h1, h2) {
+      font-weight: 700;
+      letter-spacing: var(--tracking-tight, -0.025em);
+    }
+    & h3 {
+      font-weight: 600;
+    }
+    & :where(code):not(pre code) {
+      color: var(--color-indigo-500);
+    }
+  }
+
+  .prose-invert {
+    & a {
+      color: var(--color-primary-500);
+      &:hover {
+        color: var(--color-primary-400);
+      }
+      & code {
+        color: var(--color-primary-400);
+      }
+    }
+    & :where(h1, h2, h3, h4, h5, h6) {
+      color: var(--color-gray-100);
+    }
+  }
+}
+
+.task-list-item::before {
+  display: none;
+}
+
+.task-list-item {
+  list-style: none;
+}
+
+.footnotes {
+  margin-top: 3rem;
+  border-top-width: 1px;
+  border-color: var(--color-gray-200);
+  padding-top: 2rem;
+}
+
+.dark .footnotes {
+  border-color: var(--color-gray-700);
+}
+
+.data-footnote-backref {
+  text-decoration: none;
+}
+
+.csl-entry {
+  margin-top: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Prism syntax highlighting */
+.remark-code-title {
+  border-radius: 0.125rem;
+  background-color: var(--color-gray-700);
+  padding: 0.75rem 1.25rem;
+  font-family: monospace;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-gray-200);
+}
+
+.dark .remark-code-title {
+  background-color: var(--color-gray-800);
+}
+
+.token.comment,
+.token.prolog,
+.token.cdata {
+  color: rgb(99, 119, 119);
+  font-style: italic;
+}
+
+.token.punctuation {
+  color: rgb(199, 146, 234);
+}
+
+.namespace {
+  color: rgb(178, 204, 214);
+}
+
+.token.deleted {
+  color: rgba(239, 83, 80, 0.56);
+  font-style: italic;
+}
+
+.token.symbol,
+.token.property {
+  color: rgb(128, 203, 196);
+}
+
+.token.tag,
+.token.operator,
+.token.keyword {
+  color: rgb(127, 219, 202);
+}
+
+.token.boolean {
+  color: rgb(255, 88, 116);
+}
+
+.token.number {
+  color: rgb(247, 140, 108);
+}
+
+.token.constant,
+.token.function,
+.token.builtin,
+.token.char {
+  color: rgb(130, 170, 255);
+}
+
+.token.selector,
+.token.doctype {
+  color: rgb(199, 146, 234);
+  font-style: italic;
+}
+
+.token.attr-name,
+.token.inserted {
+  color: rgb(173, 219, 103);
+  font-style: italic;
+}
+
+.token.string,
+.token.url,
+.token.entity,
+.language-css .token.string,
+.style .token.string {
+  color: rgb(173, 219, 103);
+}
+
+.token.class-name,
+.token.atrule,
+.token.attr-value {
+  color: rgb(255, 203, 139);
+}
+
+.token.regex,
+.token.important,
+.token.variable {
+  color: rgb(214, 222, 235);
+}
+
+.token.important,
+.token.bold {
+  font-weight: bold;
+}
+
+.token.italic {
+  font-style: italic;
+}

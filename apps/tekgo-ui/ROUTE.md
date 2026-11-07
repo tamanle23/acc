@@ -1,6 +1,7 @@
 # Route & Screen Architecture: Tekgo UI (`tekgo-ui`)
-> **Routing Engine:** Next.js 15 App Router (`app/`)  
-> **Layout Shell:** Root Layout with Frosted Navigation (`app/layout.tsx`)  
+> **Routing Engine:** Astro 5 Hybrid/SSR Router (`src/pages/`)  
+> **Layout Shell:** Base Layout with Liquid Glass Header (`src/layouts/BaseLayout.astro`)  
+> **Islands Engine:** Preact (`@astrojs/preact` with `compat: true`)  
 > **Status:** Living Document & Foundation Specification
 
 ---
@@ -8,31 +9,31 @@
 ## 1. Routing Engine & Directory Architecture
 
 ### 1.1 Overview
-`tekgo-ui` is built on the **Next.js 15 App Router** using file-system routing under the `app/` directory. All public views share a consistent root layout (`app/layout.tsx`) featuring a sticky frosted glass navigation bar, responsive content container, and footer.
+`tekgo-ui` is built on **Astro 5** using file-system routing under `src/pages/`. All views share a base layout (`src/layouts/BaseLayout.astro`) featuring a sticky frosted glass navigation bar, responsive content container, and footer. Minimal client JavaScript is hydrated via isolated Preact islands (`client:*`).
 
 ### 1.2 Route Tree Hierarchy
 
 ```
-tekgo-ui/app/
-├── layout.tsx                                  # Global Root Layout (Header, Providers, Footer)
-├── page.tsx                                    # Route: "/" (Home / Featured Feed)
-├── Main.tsx                                    # Home layout component with newsletter & recent posts
-├── not-found.tsx                               # 404 Glass Error View
-├── robots.ts / sitemap.ts                      # SEO crawlers & indexing
+tekgo-ui/src/pages/
+├── 404.astro                                   # 404 Glass Error View
+├── index.astro                                 # Route: "/" (Home / Featured Feed)
+├── search.json.ts                              # API Route: "/search.json" (Search index)
 ├── about/
-│   └── page.tsx                                # Route: "/about" (Author profile & bio)
+│   └── index.astro                             # Route: "/about" (Author profile & bio)
 ├── blog/
-│   ├── page.tsx                                # Route: "/blog" (Blog index page 1)
-│   ├── page/[page]/page.tsx                    # Route: "/blog/page/:page" (Paginated archives)
-│   └── [...slug]/page.tsx                      # Route: "/blog/*" (Article reader & nested posts)
+│   ├── index.astro                             # Route: "/blog" (Blog index page 1)
+│   ├── page/[page].astro                       # Route: "/blog/page/:page" (Paginated archives)
+│   └── [...slug].astro                         # Route: "/blog/*" (Article reader & nested posts)
 ├── tags/
-│   ├── page.tsx                                # Route: "/tags" (Taxonomy catalog)
-│   ├── [tag]/page.tsx                          # Route: "/tags/:tag" (Tag-filtered articles)
-│   └── [tag]/page/[page]/page.tsx              # Route: "/tags/:tag/page/:page" (Paginated tag articles)
+│   ├── index.astro                             # Route: "/tags" (Taxonomy catalog)
+│   └── [tag]/
+│       ├── index.astro                         # Route: "/tags/:tag" (Tag-filtered articles)
+│       └── page/[page].astro                   # Route: "/tags/:tag/page/:page" (Paginated tag articles)
 ├── projects/
-│   └── page.tsx                                # Route: "/projects" (Showcase card grid)
+│   └── index.astro                             # Route: "/projects" (Showcase card grid)
 └── api/
-    └── newsletter/route.ts                     # API Route: "/api/newsletter" (Subscription handler)
+    ├── newsletter.ts                           # API Endpoint: "/api/newsletter" (Subscription handler)
+    └── revalidate.ts                           # API Endpoint: "/api/revalidate" (HMAC edge invalidation)
 ```
 
 ---
@@ -41,93 +42,28 @@ tekgo-ui/app/
 
 | Route Path | File Location | Render Type | Layout Shell | Primary User Action / Feature |
 | :--- | :--- | :--- | :--- | :--- |
-| `/` | `app/page.tsx` | Static / ISR | Root Layout | View hero greeting, read latest articles, subscribe to newsletter |
-| `/blog` | `app/blog/page.tsx` | Static / ISR | Root Layout | Search articles by keyword, view post cards, navigate pagination |
-| `/blog/page/[page]` | `app/blog/page/[page]/page.tsx`| Dynamic / SSG | Root Layout | Browse historical article archives by page number |
-| `/blog/[...slug]` | `app/blog/[...slug]/page.tsx` | Dynamic / SSG | PostLayout / Simple | Read long-form article, view code samples, post comments |
-| `/tags` | `app/tags/page.tsx` | Static | Root Layout | Browse topic tags with post frequency counters |
-| `/tags/[tag]` | `app/tags/[tag]/page.tsx` | Dynamic / SSG | Root Layout | View all posts associated with a specific topic tag |
-| `/tags/[tag]/page/[page]` | `app/tags/[tag]/page/[page]/page.tsx` | Dynamic / SSG | Root Layout | Paginated view of tag-specific post archives |
-| `/projects` | `app/projects/page.tsx` | Static | Root Layout | Browse portfolio cards with live demo and GitHub repository links |
-| `/about` | `app/about/page.tsx` | Static | AuthorLayout | View author biography, credentials, and social links |
-| `/api/newsletter` | `app/api/newsletter/route.ts` | Server Route | None | Handle email newsletter subscription submissions |
+| `/` | `src/pages/index.astro` | SSR | `BaseLayout.astro` | View hero greeting, read latest articles, subscribe to newsletter |
+| `/blog` | `src/pages/blog/index.astro` | SSR | `BaseLayout.astro` | Search articles by keyword (`BlogFilterList` island), browse posts |
+| `/blog/page/[page]` | `src/pages/blog/page/[page].astro` | SSR | `BaseLayout.astro` | Browse historical article archives by page number |
+| `/blog/[...slug]` | `src/pages/blog/[...slug].astro` | SSR | `PostLayout.astro` | Read long-form article (0 KB client JS prose), comments island |
+| `/tags` | `src/pages/tags/index.astro` | SSR | `BaseLayout.astro` | Browse topic tags with post frequency counters |
+| `/tags/[tag]` | `src/pages/tags/[tag]/index.astro` | SSR | `BaseLayout.astro` | View all posts associated with a specific topic tag |
+| `/projects` | `src/pages/projects/index.astro` | SSR | `BaseLayout.astro` | Browse portfolio cards with live demo and GitHub repository links |
+| `/about` | `src/pages/about/index.astro` | SSR | `AuthorLayout.astro` | View author biography, credentials, and social links |
+| `/search.json` | `src/pages/search.json.ts` | Endpoint | None | Provides JSON search index for `SearchModal.tsx` |
+| `/api/newsletter` | `src/pages/api/newsletter.ts` | Endpoint | None | Handle email newsletter subscription submissions |
+| `/api/revalidate` | `src/pages/api/revalidate.ts` | Endpoint | None | Handle HMAC-SHA256 cache invalidation webhooks |
 
 ---
 
-## 3. Detailed Screen Blueprints
+## 3. Hydration Islands & Interactive Boundaries
 
-### 3.1 Home Screen (`/`)
-- **Route:** `app/page.tsx` (renders `Main.tsx`)
-- **Layout:** Centered single-column layout within `SectionContainer`.
-- **Sections:**
-  - Hero introduction with subtle typography and animated welcome text.
-  - Latest Posts list (top 5 posts) with dates, tags, and summary snippets.
-  - "All Posts →" link leading to `/blog`.
-  - Frosted Newsletter Subscription Card with email input and submit button.
-
-### 3.2 Blog Catalog & Pagination (`/blog`, `/blog/page/[page]`)
-- **Routes:** `app/blog/page.tsx` & `app/blog/page/[page]/page.tsx`
-- **Features:**
-  - Top search input bar for client-side title/summary filtering.
-  - Paginated article stream (default 5 posts per page).
-  - Numbered pagination controls ("Previous" / "Next" buttons with frosted states).
-
-### 3.3 Article Reader (`/blog/[...slug]`)
-- **Route:** `app/blog/[...slug]/page.tsx`
-- **Layout Variants:**
-  - `PostLayout`: Standard editorial layout with author sidebar and Table of Contents.
-  - `PostSimple`: Minimalist reading layout without sidebars.
-  - `PostBanner`: Wide hero header banner image format.
-- **Components:** `PortableTextRenderer`, syntax-highlighted code blocks, `Comments` widget, `ScrollTopAndComment` floating glass action button.
-
-### 3.4 Taxonomy & Tags (`/tags`, `/tags/[tag]`)
-- **Routes:** `app/tags/page.tsx` & `app/tags/[tag]/page.tsx`
-- **Features:**
-  - Tag cloud index displaying tags alongside count pills (e.g., `next-js (3)`, `tailwind (2)`).
-  - Clicking any tag navigates to `/tags/[tag]` filtered feed.
-
-### 3.5 Projects Showcase (`/projects`)
-- **Route:** `app/projects/page.tsx`
-- **Components:** `Card.tsx` grid (`grid grid-cols-1 md:grid-cols-2 gap-6`).
-- **Features:** Cards render thumbnail banners, title, descriptive summary, and external link buttons.
-
-### 3.6 About Author (`/about`)
-- **Route:** `app/about/page.tsx`
-- **Data Source:** `data/authors/default.json` and `data/authors/sparrowhawk.json`.
-- **Components:** `AuthorLayout`, avatar image with specular glass ring, bio text, social icons (`@acc/ui`).
-
----
-
-## 4. User Navigation Flow
-
-```mermaid
-flowchart TD
-    A["Visitor"] --> B["Home Page (/)"]
-    
-    B -->|Click 'All Posts'| C["Blog Index (/blog)"]
-    B -->|Search Query| C
-    B -->|Click Tag Chip| D["Tags Index (/tags)"]
-    B -->|Click Project Card| E["Projects (/projects)"]
-    B -->|Click About| F["About (/about)"]
-    
-    C -->|Select Article| G["Article Reader (/blog/:slug)"]
-    C -->|Click Next Page| C1["Paginated Blog (/blog/page/:n)"]
-    
-    D -->|Select Tag| D1["Filtered Tag List (/tags/:tag)"]
-    D1 -->|Select Article| G
-    
-    G -->|Click Related Tag| D1
-    G -->|Click Author Profile| F
-    G -->|Scroll Bottom| H["Floating Glass Scroll-to-Top"]
-```
-
----
-
-## 5. Adding New Pages (Developer & Agent Playbook)
-
-When introducing a new section or route to `tekgo-ui`:
-1. **Create Page Directory:** Add `app/<feature-name>/page.tsx`.
-2. **Configure Navigation:** If the page should appear in the header, update `data/headerNavLinks.ts`.
-3. **Ensure SEO Metadata:** Export `genPageMetadata()` from `app/seo.tsx` for optimal search indexing.
-4. **Enforce Liquid Glass:** Utilize existing frosted styles (`bg-white/65 dark:bg-slate-900/65 backdrop-blur-xl border border-white/30 dark:border-white/10`) for cards and interactive panels.
-5. **Update ROUTE.md:** Document the route in Section 2 Matrix and Section 3 Blueprint.
+| Component | Location | Directive | State / Store | Role |
+| :--- | :--- | :--- | :--- | :--- |
+| `ThemeSwitch` | `src/components/ThemeSwitch.tsx` | `client:load` | `themeStore` | System/Dark/Light theme switcher with anti-FOUC |
+| `MobileNav` | `src/components/MobileNav.tsx` | `client:idle` | `isNavOpenStore` | Hamburger button & frosted mobile drawer |
+| `SearchButton` | `src/components/SearchButton.tsx` | `client:idle` | `isSearchOpenStore` | Header search trigger |
+| `SearchModal` | `src/components/SearchModal.tsx` | `client:idle` | `isSearchOpenStore` | Cmd+K Command palette search dialog |
+| `BlogFilterList` | `src/components/BlogFilterList.tsx` | `client:idle` | Preact `useState` | Real-time title/tag filtering on `/blog` |
+| `ScrollTopAndComment`| `src/components/ScrollTopAndComment.tsx` | `client:visible` | Preact `useState` | Floating smooth scroll & comment jump buttons |
+| `Comments` | `src/components/Comments.tsx` | `client:visible` | Preact `useState` | On-demand Giscus comments loader |

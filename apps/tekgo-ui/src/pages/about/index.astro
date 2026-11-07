@@ -1,0 +1,23 @@
+---
+import AuthorLayout from '../../layouts/AuthorLayout.astro';
+import PortableTextRenderer from '../../components/PortableTextRenderer';
+import { contentProvider } from '../../lib/cms/content-provider';
+
+export const prerender = false;
+
+const allAuthors = await contentProvider.getAllAuthors();
+const author =
+  allAuthors.find((a) => a.slug === 'default' || a.name === 'default') ||
+  allAuthors[0] || {
+    name: 'Tails Azimuth',
+    occupation: 'Software Engineer',
+    company: 'acc',
+    email: 'address@yoursite.com',
+    slug: 'default',
+    path: 'authors/default',
+    filePath: 'authors/default.json',
+  };
+---
+<AuthorLayout author={author}>
+  <PortableTextRenderer value={author.portableTextBody} />
+</AuthorLayout>

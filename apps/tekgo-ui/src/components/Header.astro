@@ -1,0 +1,60 @@
+---
+import siteMetadata from '@/data/siteMetadata';
+import headerNavLinks from '@/data/headerNavLinks';
+import ThemeSwitch from './ThemeSwitch';
+import MobileNav from './MobileNav';
+import SearchButton from './SearchButton';
+import SearchModal from './SearchModal';
+---
+<header class="glass-header sticky top-0 z-40 flex items-center justify-between w-full px-6 py-4 transition-colors">
+  <a href="/" aria-label={siteMetadata.headerTitle} class="flex items-center">
+    <div class="mr-3 flex items-center">
+      <svg
+        viewBox="344.56 330.28 111.74 91.22"
+        class="h-8 w-auto"
+        preserveAspectRatio="xMidYMid meet"
+      >
+        <defs>
+          <path d="M453.3 331.28L453.3 359.85L388.64 418.5L388.64 388.42L453.3 331.28Z" id="logo-path1"></path>
+          <linearGradient id="logo-grad1" gradientUnits="userSpaceOnUse" x1="420.97" y1="331.28" x2="420.97" y2="418.5">
+            <stop style="stop-color: #ec4899;stop-opacity: 1" offset="0%"></stop>
+            <stop style="stop-color: #8b5cf6;stop-opacity: 1" offset="100%"></stop>
+          </linearGradient>
+          <path d="M410.23 331.28L410.23 359.85L345.56 418.5L345.56 388.42L410.23 331.28Z" id="logo-path2"></path>
+          <linearGradient id="logo-grad2" gradientUnits="userSpaceOnUse" x1="377.89" y1="331.28" x2="377.89" y2="418.5">
+            <stop style="stop-color: #06b6d4;stop-opacity: 1" offset="0%"></stop>
+            <stop style="stop-color: #3b82f6;stop-opacity: 1" offset="100%"></stop>
+          </linearGradient>
+        </defs>
+        <g>
+          <use href="#logo-path1" opacity="1" fill="url(#logo-grad1)"></use>
+          <use href="#logo-path2" opacity="1" fill="url(#logo-grad2)"></use>
+        </g>
+      </svg>
+    </div>
+    <span class="hidden sm:block text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
+      {siteMetadata.headerTitle}
+    </span>
+  </a>
+
+  <div class="flex items-center space-x-4 leading-5 sm:space-x-6">
+    <div class="no-scrollbar hidden sm:flex items-center gap-x-6 overflow-x-auto">
+      {headerNavLinks
+        .filter((link) => link.href !== '/')
+        .map((link) => (
+          <a
+            href={link.href}
+            class="text-gray-900 font-medium transition-colors hover:text-primary-500 dark:text-gray-100 dark:hover:text-primary-400"
+          >
+            {link.title}
+          </a>
+        ))}
+    </div>
+
+    <SearchButton client:idle />
+    <ThemeSwitch client:load />
+    <MobileNav client:idle />
+  </div>
+
+  <SearchModal client:idle />
+</header>

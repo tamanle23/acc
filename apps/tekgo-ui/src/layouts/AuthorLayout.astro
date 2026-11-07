@@ -1,0 +1,47 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import { SocialIcon } from '@acc/ui/icons';
+import type { Authors } from '../lib/types';
+
+interface Props {
+  author: Authors;
+}
+
+const { author } = Astro.props;
+const { name, avatar, occupation, company, email, twitter, bluesky, linkedin, github } = author;
+---
+<BaseLayout title={`About - ${name}`}>
+  <div class="divide-y divide-gray-200 dark:divide-gray-800">
+    <div class="space-y-2 pt-6 pb-8 md:space-y-5">
+      <h1 class="text-3xl font-extrabold leading-9 tracking-tight text-gray-900 sm:text-4xl sm:leading-10 md:text-6xl md:leading-14 dark:text-gray-100">
+        About
+      </h1>
+    </div>
+    <div class="items-start space-y-2 xl:grid xl:grid-cols-3 xl:space-y-0 xl:gap-x-8">
+      <div class="flex flex-col items-center space-x-2 pt-8">
+        {avatar && (
+          <img
+            src={avatar}
+            alt="avatar"
+            width={192}
+            height={192}
+            class="h-48 w-48 rounded-full shadow-lg"
+          />
+        )}
+        <h3 class="pt-4 pb-2 text-2xl font-bold leading-8 tracking-tight">{name}</h3>
+        {occupation && <div class="text-gray-500 dark:text-gray-400">{occupation}</div>}
+        {company && <div class="text-gray-500 dark:text-gray-400">{company}</div>}
+        <div class="flex space-x-3 pt-6">
+          {email && <SocialIcon kind="mail" href={`mailto:${email}`} />}
+          {github && <SocialIcon kind="github" href={github} />}
+          {linkedin && <SocialIcon kind="linkedin" href={linkedin} />}
+          {twitter && <SocialIcon kind="x" href={twitter} />}
+          {bluesky && <SocialIcon kind="bluesky" href={bluesky} />}
+        </div>
+      </div>
+      <div class="prose dark:prose-invert max-w-none pt-8 pb-8 xl:col-span-2">
+        <slot />
+      </div>
+    </div>
+  </div>
+</BaseLayout>
