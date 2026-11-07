@@ -6,10 +6,14 @@ import { ProfileForm } from '../profile-form'
 import { useUserProfileQuery, useUpdateUserProfileMutation } from '../api/use-user-profile'
 import { useSpringAuthStore } from '@/features/spring-auth'
 
-vi.mock('../api/use-user-profile', () => ({
-  useUserProfileQuery: vi.fn(),
-  useUpdateUserProfileMutation: vi.fn(),
-}))
+vi.mock('../api/use-user-profile', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../api/use-user-profile')>()
+  return {
+    ...actual,
+    useUserProfileQuery: vi.fn(),
+    useUpdateUserProfileMutation: vi.fn(),
+  }
+})
 
 vi.mock('sonner', () => ({
   toast: {
@@ -244,5 +248,32 @@ describe('ProfileForm Component', () => {
     await waitFor(() => {
       expect((screen.getByLabelText(/first name/i) as HTMLInputElement).value).toBe('Alice')
     })
+  })
+
+  it('unwraps Spring Boot ResponseWrapper and does not reset to defaults', async () => {
+    vi.mocked(useUserProfileQuery).mockReturnValue({
+      data: {
+        status: 'success',
+        body: {
+          userId: 'usr-42',
+          username: 'alice_admin',
+          firstName: 'Alice',
+          lastName: 'Wonderland',
+          email: 'alice@wonderland.io',
+          phoneNumber: '+1-555-9999',
+          preferences: { language: 'vi', bio: 'Custom Bio' },
+        },
+      },
+      isLoading: false,
+    } as any)
+
+    renderComponent()
+
+    // Form inputs must not be empty or reset to fallback defaults ('User', 'admin@acc.io')
+    expect((screen.getByLabelText(/first name/i) as HTMLInputElement).value).toBe('Alice')
+    expect((screen.getByLabelText(/last name/i) as HTMLInputElement).value).toBe('Wonderland')
+    expect((screen.getByLabelText(/email address/i) as HTMLInputElement).value).toBe('alice@wonderland.io')
+    expect((screen.getByLabelText(/phone number/i) as HTMLInputElement).value).toBe('+1-555-9999')
+    expect((screen.getByLabelText(/biography/i) as HTMLTextAreaElement).value).toBe('Custom Bio')
   })
 })

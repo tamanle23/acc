@@ -49,7 +49,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
-import { useUserProfileQuery, useUpdateUserProfileMutation } from './api/use-user-profile'
+import { useUserProfileQuery, useUpdateUserProfileMutation, unwrapUserProfile } from './api/use-user-profile'
 import { useSpringAuthStore } from '@/features/spring-auth'
 import { getUserInitials } from '@/lib/user-avatar'
 
@@ -110,7 +110,8 @@ export type ProfileFormValues = z.infer<typeof profileFormSchema>
 
 export function ProfileForm() {
   const { i18n } = useTranslation(['console', 'common'])
-  const { data: profileData, isLoading: isProfileLoading } = useUserProfileQuery()
+  const { data: rawProfileData, isLoading: isProfileLoading } = useUserProfileQuery()
+  const profileData = unwrapUserProfile(rawProfileData)
   const updateProfileMutation = useUpdateUserProfileMutation()
   const authUser = useSpringAuthStore((s) => s.user)
   const currentTenantId = useSpringAuthStore((s) => s.currentTenantId)
@@ -134,7 +135,7 @@ export function ProfileForm() {
 
   // Hydrate form whenever server profileData resolves
   useEffect(() => {
-    if (profileData) {
+    if (rawProfileData) {
       const resolvedFirst = profileData.firstName || authUser?.username?.split(' ')[0] || ''
       const resolvedLast =
         profileData.lastName ||
@@ -157,7 +158,7 @@ export function ProfileForm() {
             : [{ value: 'https://acc.io' }],
       })
     }
-  }, [profileData, authUser, form, i18n.language])
+  }, [rawProfileData, authUser, form, i18n.language])
 
   const { fields, append, remove } = useFieldArray({
     name: 'urls',
@@ -172,7 +173,7 @@ export function ProfileForm() {
     try {
       const cleanUrls = data.urls?.filter((u) => u.value && u.value.trim().length > 0)
 
-      await updateProfileMutation.mutateAsync({
+      const updated = await updateProfileMutation.mutateAsync({
         firstName: data.firstName,
         lastName: data.lastName,
         email: data.email,
@@ -183,6 +184,15 @@ export function ProfileForm() {
           urls: cleanUrls,
         },
       })
+
+      // Keep auth store session user in sync with updated profile email & name
+      if (authUser) {
+        useSpringAuthStore.getState().setUser({
+          ...authUser,
+          email: updated.email || data.email,
+        })
+      }
+
       form.reset(data) // Reset dirty tracking to newly saved baseline
       toast.success('Profile updated successfully')
     } catch (err: any) {
@@ -191,7 +201,7 @@ export function ProfileForm() {
   }
 
   const handleReset = () => {
-    if (profileData) {
+    if (rawProfileData) {
       const resolvedFirst = profileData.firstName || authUser?.username?.split(' ')[0] || ''
       const resolvedLast =
         profileData.lastName ||

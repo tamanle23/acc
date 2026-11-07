@@ -5,14 +5,30 @@ import type { UserProfileDto, UpdateUserProfileRequest } from '@acc/client';
 export const USER_PROFILE_QUERY_KEY = ['user', 'profile'] as const;
 
 /**
+ * Standard Spring ResponseWrapper unwrapper.
+ * Extracts the inner payload if wrapped in { headers, status, body, errors },
+ * otherwise returns data directly.
+ */
+export function unwrapUserProfile(data: unknown): UserProfileDto {
+  if (!data || typeof data !== 'object') {
+    return {} as UserProfileDto;
+  }
+  const obj = data as Record<string, unknown>;
+  if ('body' in obj && obj.body && typeof obj.body === 'object') {
+    return obj.body as UserProfileDto;
+  }
+  return data as UserProfileDto;
+}
+
+/**
  * Hook to retrieve user profile details and preferences via GET /api/v1/user/profile.
  */
 export function useUserProfileQuery() {
   return useQuery({
     queryKey: USER_PROFILE_QUERY_KEY,
     queryFn: async (): Promise<UserProfileDto> => {
-      const { data } = await springApiClient.get<UserProfileDto>('/v1/user/profile');
-      return data;
+      const { data } = await springApiClient.get<unknown>('/v1/user/profile');
+      return unwrapUserProfile(data);
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -26,8 +42,8 @@ export function useUpdateUserProfileMutation() {
 
   return useMutation({
     mutationFn: async (payload: UpdateUserProfileRequest): Promise<UserProfileDto> => {
-      const { data } = await springApiClient.put<UserProfileDto>('/v1/user/profile', payload);
-      return data;
+      const { data } = await springApiClient.put<unknown>('/v1/user/profile', payload);
+      return unwrapUserProfile(data);
     },
     onSuccess: (updatedProfile) => {
       queryClient.setQueryData(USER_PROFILE_QUERY_KEY, updatedProfile);
