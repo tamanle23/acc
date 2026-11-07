@@ -3,7 +3,6 @@ import { type CompoundTemplateFactory, type CompoundTemplateOptions, type Compou
 import { ForkJoinTemplateFactory } from './factories/fork-join-template';
 import { SwitchTemplateFactory } from './factories/switch-template';
 import { DoWhileTemplateFactory } from './factories/do-while-template';
-import { HumanTemplateFactory } from './factories/human-template';
 import { SagaTemplateFactory } from './factories/saga-template';
 
 export class CompoundTemplateRegistry {
@@ -17,7 +16,6 @@ export class CompoundTemplateRegistry {
     this.register(new ForkJoinTemplateFactory());
     this.register(new SwitchTemplateFactory());
     this.register(new DoWhileTemplateFactory());
-    this.register(new HumanTemplateFactory());
     this.register(new SagaTemplateFactory());
   }
 

@@ -328,10 +328,10 @@ export const PALETTE_ITEMS: PaletteItem[] = [
   {
     type: 'HUMAN',
     label: 'Human Approval',
-    description: 'Spawns review gate with Approved/Rejected paths',
+    description: 'Reviewer approval gate: continues on approve, stops on reject, holds on escalate',
     category: 'human',
     icon: <UserCheck className="w-3.5 h-3.5 text-emerald-600" />,
-    isCompound: true,
+    isCompound: false,
     defaultData: {
       taskType: 'HUMAN',
       label: 'Human Approval',

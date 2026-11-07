@@ -10,7 +10,7 @@ describe('Compound Node Templates & Fast-Start Engine', () => {
     expect(compoundTemplateRegistry.isCompound('DYNAMIC_FORK')).toBe(true);
     expect(compoundTemplateRegistry.isCompound('SWITCH')).toBe(true);
     expect(compoundTemplateRegistry.isCompound('DO_WHILE')).toBe(true);
-    expect(compoundTemplateRegistry.isCompound('HUMAN')).toBe(true);
+    expect(compoundTemplateRegistry.isCompound('HUMAN')).toBe(false);
     expect(compoundTemplateRegistry.isCompound('SIMPLE')).toBe(false);
     expect(compoundTemplateRegistry.isCompound('HTTP')).toBe(false);
   });
@@ -183,33 +183,10 @@ describe('Compound Node Templates & Fast-Start Engine', () => {
     });
   });
 
-  describe('Topology 5: HUMAN + Approved + Rejected Path', () => {
-    it('generates 3 nodes and 2 decision edges', () => {
+  describe('Atomic Review Gate: HUMAN is non-compound', () => {
+    it('returns null from compound template creation so it stays an atomic task without dedicated sub-nodes', () => {
       const result = compoundTemplateRegistry.create('HUMAN', { x: 100, y: 100 });
-      expect(result).not.toBeNull();
-      if (!result) return;
-
-      const { nodes, edges, primaryNodeId, exitNodeId } = result;
-      expect(nodes).toHaveLength(3);
-      expect(edges).toHaveLength(2);
-
-      const humanNode = nodes.find((n) => n.data.taskType === 'HUMAN');
-      const approveNode = nodes.find((n) => n.data.taskReferenceName.startsWith('approve_action_'));
-      const rejectNode = nodes.find((n) => n.data.taskReferenceName.startsWith('reject_term_'));
-
-      expect(humanNode).toBeDefined();
-      expect(approveNode).toBeDefined();
-      expect(rejectNode).toBeDefined();
-      expect(rejectNode!.data.taskType).toBe('TERMINATE');
-
-      expect(primaryNodeId).toBe(humanNode!.id);
-      expect(exitNodeId).toBe(approveNode!.id);
-
-      const approvedEdge = edges.find((e) => e.sourceHandle === 'approved');
-      const rejectedEdge = edges.find((e) => e.sourceHandle === 'rejected');
-
-      expect(approvedEdge?.target).toBe(approveNode!.id);
-      expect(rejectedEdge?.target).toBe(rejectNode!.id);
+      expect(result).toBeNull();
     });
   });
 });

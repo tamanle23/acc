@@ -3,7 +3,6 @@ import { multiBranchRegistry } from './multi-branch-registry';
 import { SwitchBranchStrategy } from './strategies/switch-branch-strategy';
 import { ForkJoinBranchStrategy } from './strategies/fork-join-branch-strategy';
 import { DoWhileBranchStrategy } from './strategies/do-while-branch-strategy';
-import { HumanBranchStrategy } from './strategies/human-branch-strategy';
 import { type Node, type Edge } from '@xyflow/react';
 import { type DagNodeData } from '../../canvas/dag-node';
 import './index'; // triggers registration
@@ -13,7 +12,7 @@ describe('Multi-Branch Strategy Engine', () => {
     expect(multiBranchRegistry.supports('SWITCH')).toBe(true);
     expect(multiBranchRegistry.supports('FORK_JOIN')).toBe(true);
     expect(multiBranchRegistry.supports('DO_WHILE')).toBe(true);
-    expect(multiBranchRegistry.supports('HUMAN')).toBe(true);
+    expect(multiBranchRegistry.supports('HUMAN')).toBe(false); // HUMAN is an atomic review gate, not multi-branch
     expect(multiBranchRegistry.supports('SIMPLE')).toBe(false);
     expect(multiBranchRegistry.supports('HTTP')).toBe(false);
     expect(multiBranchRegistry.supports(undefined)).toBe(false);
@@ -216,38 +215,6 @@ describe('Multi-Branch Strategy Engine', () => {
 
       expect(() => strategy.removeBranch(data, 'step_1')).toThrow('Cannot reduce DO_WHILE below 1 body steps');
       expect(() => strategy.removeBranch(data, 'loop-exit')).toThrow('Loop exit port cannot be removed');
-    });
-  });
-
-  describe('HumanBranchStrategy', () => {
-    const strategy = new HumanBranchStrategy();
-
-    it('manages standard approved/rejected routes and allows custom outcome extensions', () => {
-      const data: DagNodeData = {
-        taskReferenceName: 'human_node',
-        taskType: 'HUMAN',
-        humanParams: {},
-      };
-
-      const branches = strategy.getBranches(data);
-      expect(branches).toHaveLength(2);
-      expect(branches[0].id).toBe('approved');
-      expect(branches[1].id).toBe('rejected');
-
-      expect(() => strategy.removeBranch(data, 'approved')).toThrow("Standard 'approved' route cannot be removed");
-      expect(() => strategy.removeBranch(data, 'rejected')).toThrow("Standard 'rejected' route cannot be removed");
-
-      const addResult = strategy.addBranch(data, { name: 'escalate' });
-      expect(addResult.newBranch.id).toBe('escalate');
-      expect(addResult.newBranch.handleId).toBe('outcome-escalate');
-
-      const extendedData: DagNodeData = {
-        ...data,
-        humanParams: addResult.updatedParentData.humanParams,
-      };
-
-      const removeResult = strategy.removeBranch(extendedData, 'escalate');
-      expect((removeResult.updatedParentData.humanParams as any).customOutcomes).toHaveLength(0);
     });
   });
 });

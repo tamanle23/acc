@@ -430,6 +430,22 @@ export function DagPropertyInspector({
             </div>
 
             <div className="space-y-1.5">
+              <Label htmlFor="humanEscalationRole" className="text-xs font-semibold">
+                Escalation Role / Target
+              </Label>
+              <Input
+                id="humanEscalationRole"
+                value={(p as any).escalationRole || ''}
+                onChange={(e) => handleSpecializedChange('humanParams', 'escalationRole', e.target.value)}
+                placeholder="SENIOR_REVIEWER"
+                className="font-mono text-xs h-8"
+              />
+              <p className="text-[10px] text-muted-foreground">
+                If escalated, task remains on hold at this node and reassigns to this role for review.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
               <Label htmlFor="humanInstructions" className="text-xs font-semibold">
                 Review Instructions
               </Label>
@@ -441,6 +457,15 @@ export function DagPropertyInspector({
                 rows={3}
                 className="text-xs"
               />
+            </div>
+
+            <div className="p-2.5 rounded-lg border border-border/50 bg-muted/20 space-y-1 text-xs">
+              <div className="font-semibold text-foreground text-[11px] mb-1">Execution Lifecycle</div>
+              <div className="text-[10px] text-muted-foreground space-y-1">
+                <div><span className="text-emerald-600 dark:text-emerald-400 font-semibold font-mono">Approve</span>: Execution continues to the connected next node.</div>
+                <div><span className="text-rose-600 dark:text-rose-400 font-semibold font-mono">Reject</span>: Execution terminates and stops at this human node.</div>
+                <div><span className="text-amber-600 dark:text-amber-400 font-semibold font-mono">Escalate</span>: Execution stays on hold on this node, waiting for reviewer.</div>
+              </div>
             </div>
           </div>
         );

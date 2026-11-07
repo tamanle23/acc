@@ -308,11 +308,14 @@ describe('DagWorkflowNodeComponent Unit Tests', () => {
     expect(screen.getByText('exit')).toBeDefined();
   });
 
-  it('renders HUMAN node with approved and rejected dual handles', () => {
+  it('renders HUMAN node with single standard output handle and review gate summary', () => {
     const data: DagNodeData = {
       taskReferenceName: 'managerApproval',
       taskType: 'HUMAN',
       label: 'Manager Approval',
+      humanParams: {
+        role: 'FINANCE_DIRECTOR',
+      },
     };
 
     render(
@@ -333,9 +336,11 @@ describe('DagWorkflowNodeComponent Unit Tests', () => {
 
     expect(screen.getByTestId('dag-handle-target-managerApproval')).toBeDefined();
     expect(screen.getByTestId('dag-handle-source-managerApproval')).toBeDefined();
-    expect(screen.getByTestId('dag-handle-rejected-managerApproval')).toBeDefined();
-    expect(screen.getByText('✓ approved')).toBeDefined();
-    expect(screen.getByText('✗ rejected')).toBeDefined();
+    expect(screen.queryByTestId('dag-handle-rejected-managerApproval')).toBeNull();
+    expect(screen.queryByText('✓ approved')).toBeNull();
+    expect(screen.getByText('FINANCE_DIRECTOR')).toBeDefined();
+    expect(screen.getByText('Approve → Next')).toBeDefined();
+    expect(screen.getByText('Reject stops · Escalate holds')).toBeDefined();
   });
 
   it('renders SWITCH node with case handles and default handle', () => {

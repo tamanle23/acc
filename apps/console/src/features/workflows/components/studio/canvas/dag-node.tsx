@@ -119,6 +119,7 @@ export interface HumanTaskParams {
   role?: string;
   instructions?: string;
   slaMinutes?: number;
+  escalationRole?: string;
   escalationHandlerRef?: string;
 }
 
@@ -639,6 +640,26 @@ export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagN
               Timeout: {data.timeoutSeconds}s {data.retryCount ? `· Retries: ${data.retryCount}` : ''}
             </div>
           )}
+
+          {data.taskType === 'HUMAN' && (
+            <div className="mt-1.5 pt-1 border-t border-border/30 space-y-1 text-[10px]">
+              <div className="flex items-center justify-between text-muted-foreground font-mono">
+                <span>Role:</span>
+                <span className="text-foreground font-semibold truncate max-w-[100px] bg-slate-500/10 px-1 py-0.2 rounded">
+                  {data.humanParams?.role || 'APPROVER'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-muted-foreground font-mono">
+                <span>Policy:</span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                  Approve → Next
+                </span>
+              </div>
+              <div className="text-[9px] text-muted-foreground/80 italic">
+                Reject stops · Escalate holds
+              </div>
+            </div>
+          )}
         </>
       )}
 
@@ -650,8 +671,8 @@ export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagN
         </div>
       )}
 
-      {/* Multi-Branch Universal Quick Action (SWITCH, FORK_JOIN, DO_WHILE, HUMAN) */}
-      {!isEnd && data.onAddBranch && (data.taskType === 'SWITCH' || data.taskType === 'FORK_JOIN' || data.taskType === 'DO_WHILE' || data.taskType === 'HUMAN') && (
+      {/* Multi-Branch Universal Quick Action (SWITCH, FORK_JOIN, DO_WHILE) */}
+      {!isEnd && data.onAddBranch && (data.taskType === 'SWITCH' || data.taskType === 'FORK_JOIN' || data.taskType === 'DO_WHILE') && (
         <div className="mt-2 pt-1.5 border-t border-border/40">
           <button
             type="button"
@@ -673,9 +694,7 @@ export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagN
                 ? '+ Add Case'
                 : data.taskType === 'FORK_JOIN'
                   ? '+ Add Branch'
-                  : data.taskType === 'DO_WHILE'
-                    ? '+ Add Step'
-                    : '+ Add Outcome'}
+                  : '+ Add Step'}
             </span>
           </button>
         </div>
@@ -714,39 +733,6 @@ export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagN
                   style={{ top: '70%' }}
                   data-testid={`dag-handle-exit-${data.taskReferenceName}`}
                   title="Loop exit port"
-                />
-              </div>
-            </>
-          ) : data.taskType === 'HUMAN' ? (
-            <>
-              {/* Approved output */}
-              <div className="absolute top-[32%] -right-1 flex items-center z-10">
-                <span className="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 font-mono mr-2 select-none bg-emerald-500/10 px-1 py-0.2 rounded border border-emerald-500/20">
-                  ✓ approved
-                </span>
-                <Handle
-                  type="source"
-                  position={Position.Right}
-                  id="approved"
-                  className="w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900 -right-1.5 transition-transform hover:scale-125"
-                  style={{ top: '35%' }}
-                  data-testid={`dag-handle-source-${data.taskReferenceName}`}
-                  title="Approved branch port"
-                />
-              </div>
-              {/* Rejected output */}
-              <div className="absolute top-[68%] -right-1 flex items-center z-10">
-                <span className="text-[8px] font-bold text-rose-600 dark:text-rose-400 font-mono mr-2 select-none bg-rose-500/10 px-1 py-0.2 rounded border border-rose-500/20">
-                  ✗ rejected
-                </span>
-                <Handle
-                  type="source"
-                  position={Position.Right}
-                  id="rejected"
-                  className="w-2.5 h-2.5 rounded-full bg-rose-500 border-2 border-white dark:border-slate-900 -right-1.5 transition-transform hover:scale-125"
-                  style={{ top: '70%' }}
-                  data-testid={`dag-handle-rejected-${data.taskReferenceName}`}
-                  title="Rejected branch port"
                 />
               </div>
             </>

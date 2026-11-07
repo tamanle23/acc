@@ -53,9 +53,6 @@ export function resolveSourceHandle(
   if (taskType === 'DO_WHILE') {
     return 'loop-exit';
   }
-  if (taskType === 'HUMAN') {
-    return 'approved';
-  }
   if (taskType === 'SWITCH') {
     const cases = Object.keys(sourceNode.data?.decisionCases || {});
     return cases.length > 0 ? `case-${cases[0]}` : 'case-default';
