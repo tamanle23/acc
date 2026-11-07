@@ -7,7 +7,6 @@ import { PlanPricingSelector } from './plan-pricing-selector';
 import { BillingHistoryTable } from './billing-history-table';
 import { VatInvoiceForm } from './vat-invoice-form';
 import { ContactEnterpriseModal } from './contact-enterprise-modal';
-import { SandboxBillingDock } from './sandbox-billing-dock';
 import { PayOsQrModal } from '@/features/metadata/components/billing/payos-qr-modal';
 
 export const BillingPanel: React.FC = () => {
@@ -49,9 +48,6 @@ export const BillingPanel: React.FC = () => {
 
         {/* Corporate VAT E-Invoice Form */}
         <VatInvoiceForm initialData={billing?.vatInvoice} />
-
-        {/* Developer Sandbox Dock */}
-        <SandboxBillingDock activeTenantId={activeTenantId || 'tenant-acme'} />
 
         {/* payOS Dynamic VietQR Modal */}
         <PayOsQrModal

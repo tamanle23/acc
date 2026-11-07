@@ -4,4 +4,3 @@ export * from './plan-pricing-selector';
 export * from './billing-history-table';
 export * from './vat-invoice-form';
 export * from './contact-enterprise-modal';
-export * from './sandbox-billing-dock';
