@@ -52,6 +52,7 @@ import {
 import { useUserProfileQuery, useUpdateUserProfileMutation, unwrapUserProfile } from './api/use-user-profile'
 import { useSpringAuthStore } from '@/features/spring-auth'
 import { getUserInitials } from '@/lib/user-avatar'
+import { getErrorMessage } from '@/core/utils/error-extractor'
 
 const languages = [
   { label: 'English (US)', value: 'en' },
@@ -195,8 +196,8 @@ export function ProfileForm() {
 
       form.reset(data) // Reset dirty tracking to newly saved baseline
       toast.success('Profile updated successfully')
-    } catch (err: any) {
-      toast.error(err?.message || 'Failed to update profile')
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to update profile'))
     }
   }
 
