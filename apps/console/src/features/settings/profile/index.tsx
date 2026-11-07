@@ -5,7 +5,7 @@ export function SettingsProfile() {
   return (
     <ContentSection
       title='Profile'
-      desc='This is how others will see you on the site.'
+      desc='Manage your personal identity, contact channels, and console preferences.'
     >
       <ProfileForm />
     </ContentSection>
