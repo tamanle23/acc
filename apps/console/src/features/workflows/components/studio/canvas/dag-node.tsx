@@ -32,6 +32,9 @@ import {
 } from 'lucide-react';
 
 export type DagNodeType =
+  // Boundaries (2)
+  | 'START_WORKFLOW'
+  | 'END_WORKFLOW'
   // Control Flow (9)
   | 'SIMPLE'
   | 'SWITCH'
@@ -43,7 +46,6 @@ export type DagNodeType =
   | 'EXCLUSIVE_JOIN'
   | 'TERMINATE'
   | 'SUB_WORKFLOW'
-  | 'START_WORKFLOW'
   // Data & Transformation (3)
   | 'JSON_JQ_TRANSFORM'
   | 'INLINE'
@@ -259,11 +261,14 @@ export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagN
   const displayedDurationMs =
     data.durationMs !== undefined ? data.durationMs : isRunning ? liveElapsedMs : undefined;
 
+  const isStart = Boolean(data.isStartNode || data.taskType === 'START_WORKFLOW');
+  const isEnd = Boolean(data.isEndNode || data.taskType === 'END_WORKFLOW');
+
   const getNodeIcon = () => {
-    if (data.isStartNode) {
+    if (isStart) {
       return <PlaySquare className="w-4 h-4 text-emerald-500" />;
     }
-    if (data.isEndNode) {
+    if (isEnd) {
       return <StopCircle className="w-4 h-4 text-purple-500" />;
     }
     switch (data.taskType) {
@@ -286,7 +291,9 @@ export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagN
       case 'SUB_WORKFLOW':
         return <Layers className="w-4 h-4 text-cyan-500" />;
       case 'START_WORKFLOW':
-        return <PlaySquare className="w-4 h-4 text-teal-500" />;
+        return <PlaySquare className="w-4 h-4 text-emerald-500" />;
+      case 'END_WORKFLOW':
+        return <StopCircle className="w-4 h-4 text-purple-500" />;
       // Data & Transformation
       case 'JSON_JQ_TRANSFORM':
         return <Braces className="w-4 h-4 text-orange-500" />;
@@ -366,14 +373,14 @@ export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagN
           </span>
         );
       default:
-        if (data.isStartNode) {
+        if (isStart) {
           return (
             <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full border border-emerald-500/20">
               INPUT
             </span>
           );
         }
-        if (data.isEndNode) {
+        if (isEnd) {
           return (
             <span className="text-[10px] font-semibold text-purple-600 dark:text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded-full border border-purple-500/20">
               OUTPUT
@@ -534,14 +541,38 @@ export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagN
         </div>
       )}
       {/* Target Handle (Left) - omitted on pure START node since in-degree is strictly 0 */}
-      {!data.isStartNode && (
-        <Handle
-          type="target"
-          position={Position.Left}
-          id="target-left"
-          className="w-2.5 h-2.5 rounded-full bg-slate-400 border-2 border-white dark:border-slate-900 -left-1.5"
-          data-testid={`dag-handle-target-${data.taskReferenceName}`}
-        />
+      {!isStart && (
+        <>
+          <Handle
+            type="target"
+            position={Position.Left}
+            id="target-left"
+            className={cn(
+              'w-2.5 h-2.5 rounded-full border-2 border-white dark:border-slate-900 -left-1.5 transition-transform hover:scale-125',
+              isEnd
+                ? 'bg-purple-500'
+                : data.taskType === 'TERMINATE'
+                  ? 'bg-rose-500'
+                  : 'bg-slate-400'
+            )}
+            data-testid={`dag-handle-target-${data.taskReferenceName}`}
+          />
+          {data.taskType === 'DO_WHILE' && (
+            <div className="absolute -top-3.5 left-6 flex items-center gap-1 z-10">
+              <Handle
+                type="target"
+                position={Position.Top}
+                id="loop-back"
+                className="w-2.5 h-2.5 rounded-full bg-amber-500 border-2 border-white dark:border-slate-900 !top-0 transition-transform hover:scale-125"
+                data-testid={`dag-handle-loopback-${data.taskReferenceName}`}
+                title="Loop-back Return Port"
+              />
+              <span className="text-[8px] font-bold text-amber-600 dark:text-amber-400 font-mono tracking-tighter select-none bg-amber-500/10 px-1 py-0.2 rounded border border-amber-500/20">
+                ↺ loop-back
+              </span>
+            </div>
+          )}
+        </>
       )}
 
       {/* Header */}
@@ -553,7 +584,7 @@ export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagN
           <span className="text-xs font-bold tracking-tight text-foreground truncate max-w-[120px]">
             {data.label || data.taskReferenceName}
           </span>
-          {data.isStartNode && (
+          {isStart && (
             <span
               className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
               data-testid={`dag-node-start-badge-${data.taskReferenceName}`}
@@ -561,7 +592,7 @@ export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagN
               START
             </span>
           )}
-          {data.isEndNode && (
+          {isEnd && (
             <span
               className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-purple-500/20 text-purple-600 dark:text-purple-400 border border-purple-500/30"
               data-testid={`dag-node-end-badge-${data.taskReferenceName}`}
@@ -574,11 +605,11 @@ export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagN
       </div>
 
       {/* Body details */}
-      {data.isStartNode ? (
+      {isStart ? (
         <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono mt-1">
           Workflow Input ({Object.keys(data.inputParameters || {}).length} params)
         </div>
-      ) : data.isEndNode ? (
+      ) : isEnd ? (
         <div className="text-[10px] text-purple-600 dark:text-purple-400 font-mono mt-1">
           Workflow Output ({Object.keys(data.inputParameters || {}).length} mappings)
         </div>
@@ -616,15 +647,142 @@ export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagN
         </div>
       )}
 
-      {/* Source Handle (Right) - omitted on pure END node since out-degree is strictly 0 */}
-      {!data.isEndNode && (
-        <Handle
-          type="source"
-          position={Position.Right}
-          id="source-right"
-          className="w-2.5 h-2.5 rounded-full bg-primary border-2 border-white dark:border-slate-900 -right-1.5"
-          data-testid={`dag-handle-source-${data.taskReferenceName}`}
-        />
+      {/* Source Handles (Right / Bottom) - omitted on pure END / TERMINATE node since out-degree is strictly 0 */}
+      {!isEnd && data.taskType !== 'TERMINATE' && (
+        <>
+          {data.taskType === 'DO_WHILE' ? (
+            <>
+              {/* Loop body iteration outbound */}
+              <div className="absolute top-[32%] -right-1 flex items-center z-10">
+                <span className="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 font-mono mr-2 select-none bg-emerald-500/10 px-1 py-0.2 rounded border border-emerald-500/20">
+                  body
+                </span>
+                <Handle
+                  type="source"
+                  position={Position.Right}
+                  id="loop-body"
+                  className="w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900 -right-1.5 transition-transform hover:scale-125"
+                  style={{ top: '35%' }}
+                  data-testid={`dag-handle-source-${data.taskReferenceName}`}
+                  title="Loop body iteration port"
+                />
+              </div>
+              {/* Loop exit outbound */}
+              <div className="absolute top-[68%] -right-1 flex items-center z-10">
+                <span className="text-[8px] font-bold text-sky-600 dark:text-sky-400 font-mono mr-2 select-none bg-sky-500/10 px-1 py-0.2 rounded border border-sky-500/20">
+                  exit
+                </span>
+                <Handle
+                  type="source"
+                  position={Position.Right}
+                  id="loop-exit"
+                  className="w-2.5 h-2.5 rounded-full bg-sky-500 border-2 border-white dark:border-slate-900 -right-1.5 transition-transform hover:scale-125"
+                  style={{ top: '70%' }}
+                  data-testid={`dag-handle-exit-${data.taskReferenceName}`}
+                  title="Loop exit port"
+                />
+              </div>
+            </>
+          ) : data.taskType === 'HUMAN' ? (
+            <>
+              {/* Approved output */}
+              <div className="absolute top-[32%] -right-1 flex items-center z-10">
+                <span className="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 font-mono mr-2 select-none bg-emerald-500/10 px-1 py-0.2 rounded border border-emerald-500/20">
+                  ✓ approved
+                </span>
+                <Handle
+                  type="source"
+                  position={Position.Right}
+                  id="approved"
+                  className="w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900 -right-1.5 transition-transform hover:scale-125"
+                  style={{ top: '35%' }}
+                  data-testid={`dag-handle-source-${data.taskReferenceName}`}
+                  title="Approved branch port"
+                />
+              </div>
+              {/* Rejected output */}
+              <div className="absolute top-[68%] -right-1 flex items-center z-10">
+                <span className="text-[8px] font-bold text-rose-600 dark:text-rose-400 font-mono mr-2 select-none bg-rose-500/10 px-1 py-0.2 rounded border border-rose-500/20">
+                  ✗ rejected
+                </span>
+                <Handle
+                  type="source"
+                  position={Position.Right}
+                  id="rejected"
+                  className="w-2.5 h-2.5 rounded-full bg-rose-500 border-2 border-white dark:border-slate-900 -right-1.5 transition-transform hover:scale-125"
+                  style={{ top: '70%' }}
+                  data-testid={`dag-handle-rejected-${data.taskReferenceName}`}
+                  title="Rejected branch port"
+                />
+              </div>
+            </>
+          ) : data.taskType === 'SWITCH' ? (
+            <>
+              {(() => {
+                const cases = Object.keys(data.decisionCases || {});
+                const activeCases = cases.length > 0 ? cases : ['case_1'];
+                return (
+                  <>
+                    {activeCases.map((caseKey, idx) => {
+                      const offsetPct = Math.round(25 + (idx * 45) / Math.max(1, activeCases.length));
+                      return (
+                        <div key={caseKey} className="absolute -right-1 flex items-center z-10" style={{ top: `${offsetPct}%` }}>
+                          <span className="text-[8px] font-bold text-amber-600 dark:text-amber-400 font-mono mr-2 select-none truncate max-w-[50px] bg-amber-500/10 px-1 py-0.2 rounded border border-amber-500/20">
+                            {caseKey}
+                          </span>
+                          <Handle
+                            type="source"
+                            position={Position.Right}
+                            id={`case-${caseKey}`}
+                            className="w-2.5 h-2.5 rounded-full bg-amber-500 border-2 border-white dark:border-slate-900 -right-1.5 transition-transform hover:scale-125"
+                            data-testid={`dag-handle-case-${caseKey}-${data.taskReferenceName}`}
+                            title={`Case: ${caseKey}`}
+                          />
+                        </div>
+                      );
+                    })}
+                    <div className="absolute top-[82%] -right-1 flex items-center z-10">
+                      <span className="text-[8px] font-bold text-slate-500 font-mono mr-2 select-none bg-slate-500/10 px-1 py-0.2 rounded border border-slate-500/20">
+                        default
+                      </span>
+                      <Handle
+                        type="source"
+                        position={Position.Right}
+                        id="case-default"
+                        className="w-2.5 h-2.5 rounded-full bg-slate-400 border-2 border-white dark:border-slate-900 -right-1.5 transition-transform hover:scale-125"
+                        data-testid={`dag-handle-default-${data.taskReferenceName}`}
+                        title="Default Case"
+                      />
+                    </div>
+                  </>
+                );
+              })()}
+            </>
+          ) : (
+            <>
+              <Handle
+                type="source"
+                position={Position.Right}
+                id="source-right"
+                className={cn(
+                  'w-2.5 h-2.5 rounded-full border-2 border-white dark:border-slate-900 -right-1.5 transition-transform hover:scale-125',
+                  isStart ? 'bg-emerald-500' : 'bg-primary'
+                )}
+                data-testid={`dag-handle-source-${data.taskReferenceName}`}
+              />
+              {!isStart && (
+                <Handle
+                  type="source"
+                  position={Position.Bottom}
+                  id="compensate"
+                  className="w-2 h-2 rounded-full bg-amber-500 border border-white dark:border-slate-900 -bottom-1 transition-transform hover:scale-125"
+                  data-testid={`dag-handle-compensate-${data.taskReferenceName}`}
+                  title="Compensation Failure Handler"
+                />
+              )}
+            </>
+          )}
+        </>
       )}
     </div>
   );

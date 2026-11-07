@@ -107,39 +107,81 @@ export function useDagStudioState({
 
   const isValidConnection = useCallback(
     (connection: Connection | Edge) => {
-      if (connection.source === connection.target) return false;
+      if (!connection.source || !connection.target || connection.source === connection.target) return false;
       const targetNode = nodes.find((n) => n.id === connection.target);
       const sourceNode = nodes.find((n) => n.id === connection.source);
+      if (!targetNode || !sourceNode) return false;
+
+      // 1. Boundary Guards:
       // START node cannot have incoming edges (in-degree is strictly 0)
-      if (targetNode?.data?.isStartNode) return false;
-      // END node cannot have outgoing edges (out-degree is strictly 0)
-      if (sourceNode?.data?.isEndNode) return false;
+      if (targetNode.data?.isStartNode || targetNode.data?.taskType === 'START_WORKFLOW') return false;
+      // END and TERMINATE nodes cannot have outgoing edges (out-degree is strictly 0)
+      if (
+        sourceNode.data?.isEndNode ||
+        sourceNode.data?.taskType === 'END_WORKFLOW' ||
+        sourceNode.data?.taskType === 'TERMINATE'
+      ) {
+        return false;
+      }
+
+      // 2. Loopback Target Gate on DO_WHILE:
+      if (connection.targetHandle === 'loop-back') {
+        if (targetNode.data?.taskType !== 'DO_WHILE') return false;
+
+        // Check if sourceNode is reachable starting from targetNode (loop body descendant)
+        const visited = new Set<string>();
+        const q = [connection.target];
+        visited.add(connection.target);
+        let isDescendant = false;
+
+        while (q.length > 0) {
+          const curr = q.shift()!;
+          for (const e of edges) {
+            if (e.source === curr && e.targetHandle !== 'loop-back') {
+              if (e.target === connection.source) {
+                isDescendant = true;
+                break;
+              }
+              if (!visited.has(e.target)) {
+                visited.add(e.target);
+                q.push(e.target);
+              }
+            }
+          }
+          if (isDescendant) break;
+        }
+
+        if (!isDescendant) return false;
+
+        // Single inbound edge check on loop-back handle
+        const hasExistingLoopback = edges.some(
+          (e) => e.target === connection.target && e.targetHandle === 'loop-back'
+        );
+        if (hasExistingLoopback) return false;
+      }
+
       return true;
     },
-    [nodes]
+    [nodes, edges]
   );
 
   const onConnect: OnConnect = useCallback(
     (params) => {
       if (isReadOnly) return;
-      const targetNode = nodes.find((n) => n.id === params.target);
-      const sourceNode = nodes.find((n) => n.id === params.source);
-      if (targetNode?.data?.isStartNode || sourceNode?.data?.isEndNode || params.source === params.target) {
-        return;
-      }
+      if (!isValidConnection(params)) return;
       setEdges((eds) =>
         addEdge(
           {
             ...params,
             type: 'dagEdge',
             animated: true,
-            data: {},
+            data: params.targetHandle === 'loop-back' ? { isLoopbackEdge: true } : {},
           },
           eds
         )
       );
     },
-    [isReadOnly, nodes]
+    [isReadOnly, isValidConnection]
   );
 
   const handleUpdateNodeData = useCallback(
@@ -356,10 +398,18 @@ export function useDagStudioState({
   const handleBulkDelete = useCallback(() => {
     if (isReadOnly) return;
     pushUndoSnapshot();
+    const isProtectedNode = (n: Node<DagNodeData>) =>
+      Boolean(
+        n.data.isPermanent ||
+        n.data.isStartNode ||
+        n.data.isEndNode ||
+        n.data.taskType === 'START_WORKFLOW' ||
+        n.data.taskType === 'END_WORKFLOW'
+      );
     const deletedNodeIds = new Set(
-      nodes.filter((n) => n.selected && !n.data.isPermanent).map((n) => n.id)
+      nodes.filter((n) => n.selected && !isProtectedNode(n)).map((n) => n.id)
     );
-    setNodes((nds) => nds.filter((n) => !n.selected || n.data.isPermanent));
+    setNodes((nds) => nds.filter((n) => !n.selected || isProtectedNode(n)));
     setEdges((eds) =>
       eds.filter((e) => !e.selected && !deletedNodeIds.has(e.source) && !deletedNodeIds.has(e.target))
     );
@@ -482,6 +532,56 @@ export function useDagStudioState({
           ...parsedData,
         },
       };
+
+      if (type === 'DO_WHILE') {
+        const bodyRef = `step_${uniqueSuffix}`;
+        const bodyNodeId = `node-${bodyRef}`;
+        const bodyNode: Node<DagNodeData> = {
+          id: bodyNodeId,
+          type: 'dagNode',
+          position: { x: position.x + 240, y: position.y },
+          data: {
+            taskReferenceName: bodyRef,
+            label: 'Loop Step 1',
+            taskType: 'SIMPLE',
+            executionState: 'PENDING',
+            domain: 'default',
+            timeoutSeconds: 30,
+            retryCount: 3,
+            retryDelaySeconds: 2,
+            backoffRate: 2.0,
+            inputParameters: {},
+          },
+        };
+
+        const bodyEdge: Edge = {
+          id: `e_${newNodeId}_${bodyNodeId}_body`,
+          type: 'dagEdge',
+          source: newNodeId,
+          target: bodyNodeId,
+          sourceHandle: 'loop-body',
+          targetHandle: 'target-left',
+          label: 'BODY',
+          animated: true,
+          data: {},
+        };
+
+        const loopbackEdge: Edge = {
+          id: `e_${bodyNodeId}_${newNodeId}_back`,
+          type: 'dagEdge',
+          source: bodyNodeId,
+          target: newNodeId,
+          sourceHandle: 'source-right',
+          targetHandle: 'loop-back',
+          label: 'LOOP-BACK',
+          animated: true,
+          data: { isLoopbackEdge: true },
+        };
+
+        setNodes((nds) => nds.concat(newNode, bodyNode));
+        setEdges((eds) => eds.concat(bodyEdge, loopbackEdge));
+        return;
+      }
 
       setNodes((nds) => nds.concat(newNode));
     },

@@ -37,12 +37,12 @@ public record WorkflowDefinition(
 
     public static WorkflowDefinition createBlank(String workflowKey, String name, String description) {
         TaskDefinition startTask = TaskDefinition.builder("workflow_start")
-            .taskType(TaskType.NOOP)
+            .taskType(TaskType.START_WORKFLOW)
             .domain("default")
             .build();
 
         TaskDefinition endTask = TaskDefinition.builder("workflow_end")
-            .taskType(TaskType.NOOP)
+            .taskType(TaskType.END_WORKFLOW)
             .domain("default")
             .build();
 

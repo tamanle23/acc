@@ -149,7 +149,9 @@ export function validateGraphTopology(
   for (const edge of edges) {
     if (adj.has(edge.source) && inDegree.has(edge.target)) {
       adj.get(edge.source)!.push(edge.target);
-      const isLoopback = Boolean((edge.data as any)?.isLoopbackEdge);
+      const isLoopback = Boolean(
+        (edge.data as any)?.isLoopbackEdge || edge.targetHandle === 'loop-back'
+      );
       if (!isLoopback) {
         forwardAdj.get(edge.source)!.push(edge.target);
         inDegree.set(edge.target, (inDegree.get(edge.target) || 0) + 1);
@@ -223,7 +225,17 @@ export function validateGraphTopology(
       }
     }
 
-    const endNodes = nodes.filter((n) => (outDegree.get(n.id) || 0) === 0);
+    const loopbackSourceIds = new Set(
+      edges
+        .filter((e) => e.targetHandle === 'loop-back' || (e.data as any)?.isLoopbackEdge)
+        .map((e) => e.source)
+    );
+    const compensateTargetIds = new Set(
+      edges.filter((e) => e.sourceHandle === 'compensate').map((e) => e.target)
+    );
+    const endNodes = nodes.filter(
+      (n) => (outDegree.get(n.id) || 0) === 0 && !loopbackSourceIds.has(n.id) && !compensateTargetIds.has(n.id)
+    );
     if (endNodes.length === 0) {
       errors.push({
         message: 'Workflow has no terminal end node (graph must converge to exactly one exit node)',
@@ -423,23 +435,93 @@ export function exportToWorkflowIR(
       inputParameters: node.data.inputParameters || {},
     };
 
-    if (node.data.compensateHandlerRef) {
+    // 1. Resolve compensateHandlerRef from edge or node data
+    const compEdge = edges.find((e) => e.source === node.id && e.sourceHandle === 'compensate');
+    if (compEdge) {
+      const compRef = idToNode.get(compEdge.target)?.data.taskReferenceName;
+      if (compRef) {
+        task.compensateHandlerRef = compRef;
+      }
+    } else if (node.data.compensateHandlerRef) {
       task.compensateHandlerRef = node.data.compensateHandlerRef;
     }
+
+    // 2. Resolve SWITCH cases from edge handles or node data
     if (node.data.taskType === 'SWITCH') {
-      task.decisionCases = node.data.decisionCases || {};
-      task.defaultCase = node.data.defaultCase || [];
+      const switchEdges = edges.filter((e) => e.source === node.id);
+      const derivedCases: Record<string, string[]> = { ...(node.data.decisionCases || {}) };
+      const derivedDefault: string[] = [...(node.data.defaultCase || [])];
+
+      for (const se of switchEdges) {
+        const targetRef = idToNode.get(se.target)?.data.taskReferenceName;
+        if (!targetRef) continue;
+
+        if (se.sourceHandle?.startsWith('case-')) {
+          const caseKey = se.sourceHandle.slice(5);
+          if (caseKey === 'default') {
+            if (!derivedDefault.includes(targetRef)) derivedDefault.push(targetRef);
+          } else {
+            derivedCases[caseKey] = derivedCases[caseKey] || [];
+            if (!derivedCases[caseKey].includes(targetRef)) derivedCases[caseKey].push(targetRef);
+          }
+        } else if (se.data?.decisionCase) {
+          const caseKey = se.data.decisionCase;
+          if (caseKey === 'DEFAULT' || se.data.isDefaultCase) {
+            if (!derivedDefault.includes(targetRef)) derivedDefault.push(targetRef);
+          } else {
+            derivedCases[caseKey] = derivedCases[caseKey] || [];
+            if (!derivedCases[caseKey].includes(targetRef)) derivedCases[caseKey].push(targetRef);
+          }
+        }
+      }
+      task.decisionCases = derivedCases;
+      task.defaultCase = derivedDefault;
     }
+
+    // 3. Resolve DO_WHILE loopOver and condition
     if (node.data.taskType === 'DO_WHILE') {
       task.loopCondition = node.data.loopCondition || node.data.condition || '';
+      const bodyEdge = edges.find((e) => e.source === node.id && e.sourceHandle === 'loop-body');
+      if (bodyEdge) {
+        const loopBodySet = new Set<string>();
+        const q = [bodyEdge.target];
+        loopBodySet.add(bodyEdge.target);
+
+        while (q.length > 0) {
+          const curr = q.shift()!;
+          for (const e of edges) {
+            if (e.source === curr && e.target !== node.id && !loopBodySet.has(e.target)) {
+              loopBodySet.add(e.target);
+              q.push(e.target);
+            }
+          }
+        }
+        task.loopOver = Array.from(loopBodySet)
+          .map((id) => idToNode.get(id)?.data.taskReferenceName)
+          .filter((ref): ref is string => Boolean(ref));
+      }
     }
+
+    // 4. Resolve JOIN / EXCLUSIVE_JOIN incoming prerequisites
     if (node.data.taskType === 'JOIN' || node.data.taskType === 'EXCLUSIVE_JOIN') {
       const incomingRefs = edges
-        .filter((e) => e.target === node.id)
+        .filter((e) => e.target === node.id && e.targetHandle !== 'loop-back')
         .map((e) => idToNode.get(e.source)?.data.taskReferenceName)
         .filter((ref): ref is string => Boolean(ref));
       task.joinOn = incomingRefs;
     }
+
+    // 5. General joinOn for non-start tasks
+    if (!task.joinOn && !node.data.isStartNode && node.data.taskType !== 'START_WORKFLOW') {
+      const inboundRefs = edges
+        .filter((e) => e.target === node.id && e.targetHandle !== 'loop-back' && !(e.data as any)?.isLoopbackEdge)
+        .map((e) => idToNode.get(e.source)?.data.taskReferenceName)
+        .filter((ref): ref is string => Boolean(ref));
+      if (inboundRefs.length > 0) {
+        task.joinOn = inboundRefs;
+      }
+    }
+
     if (node.data.taskType === 'FORK_JOIN') {
       const branchRefs = edges
         .filter((e) => e.source === node.id)
@@ -462,6 +544,17 @@ export function exportToWorkflowIR(
 
     tasks.push(task);
   }
+
+  (layoutMetadata as any).__edges = edges.map((e) => ({
+    id: e.id,
+    source: idToNode.get(e.source)?.data.taskReferenceName || e.source,
+    target: idToNode.get(e.target)?.data.taskReferenceName || e.target,
+    sourceHandle: e.sourceHandle,
+    targetHandle: e.targetHandle,
+    label: e.label,
+    animated: e.animated,
+    data: e.data,
+  }));
 
   return {
     $schema: 'http://json-schema.org/draft-07/schema#',
@@ -527,6 +620,7 @@ export function importFromWorkflowIR(
     const metaLayout = (ir.layoutMetadata?.[task.taskReferenceName] as any) || {};
     const isStartNode = Boolean(
       metaLayout.isStartNode ||
+        task.taskType === 'START_WORKFLOW' ||
         (idx === 0 &&
           (task.taskReferenceName === 'workflow_start' ||
             task.taskReferenceName === 'start' ||
@@ -534,6 +628,7 @@ export function importFromWorkflowIR(
     );
     const isEndNode = Boolean(
       metaLayout.isEndNode ||
+        task.taskType === 'END_WORKFLOW' ||
         (idx === tasksToProcess.length - 1 &&
           (task.taskReferenceName === 'workflow_end' ||
             task.taskReferenceName === 'end' ||
@@ -542,9 +637,12 @@ export function importFromWorkflowIR(
     const isPermanent = Boolean(metaLayout.isPermanent || isStartNode || isEndNode);
 
     const label =
-      task.taskReferenceName === 'workflow_start' || task.taskReferenceName === 'startTask'
+      task.taskReferenceName === 'workflow_start' ||
+      task.taskReferenceName === 'startTask' ||
+      task.taskType === 'START_WORKFLOW'
         ? 'Workflow Start'
-        : task.taskReferenceName === 'workflow_end'
+        : task.taskReferenceName === 'workflow_end' ||
+            task.taskType === 'END_WORKFLOW'
           ? 'Workflow End'
           : task.taskReferenceName;
 
@@ -585,93 +683,170 @@ export function importFromWorkflowIR(
     });
   });
 
-  // 2. Synthesize edges from joinOn, forkTasks, and decisionCases
+  // 2. Synthesize edges from saved __edges or reconstruct from joinOn, forkTasks, loopOver, compensateHandlerRef, and decisionCases
   const synthesizedEdges: Edge[] = [];
   const edgeSet = new Set<string>();
 
   const addEdgeSafe = (edge: Edge) => {
-    const key = `${edge.source}->${edge.target}`;
+    const key = `${edge.source}->${edge.target}${edge.sourceHandle ? ':' + edge.sourceHandle : ''}${edge.targetHandle ? '@' + edge.targetHandle : ''}`;
     if (!edgeSet.has(key)) {
       edgeSet.add(key);
       synthesizedEdges.push(edge);
     }
   };
 
-  // Reconstruct edges from joinOn
-  tasksToProcess.forEach((task) => {
-    const targetId = taskToNodeId.get(task.taskReferenceName);
-    if (targetId && Array.isArray(task.joinOn) && task.joinOn.length > 0) {
-      task.joinOn.forEach((prereqRef) => {
-        const sourceId = taskToNodeId.get(prereqRef);
-        if (sourceId) {
-          addEdgeSafe({
-            id: `e_${sourceId}_${targetId}`,
-            type: 'dagEdge',
-            source: sourceId,
-            target: targetId,
-            animated: true,
-          });
-        }
-      });
-    }
-  });
-
-  // Reconstruct edges from SWITCH decisionCases & defaultCase
-  tasksToProcess.forEach((task) => {
-    const sourceId = taskToNodeId.get(task.taskReferenceName);
-    if (sourceId && task.taskType === 'SWITCH') {
-      if (task.decisionCases) {
-        Object.entries(task.decisionCases).forEach(([caseKey, targetRefs]) => {
-          (targetRefs || []).forEach((tRef) => {
-            const targetId = taskToNodeId.get(tRef);
-            if (targetId) {
-              addEdgeSafe({
-                id: `e_${sourceId}_${targetId}_${caseKey}`,
-                type: 'dagEdge',
-                source: sourceId,
-                target: targetId,
-                label: caseKey,
-                animated: true,
-                data: { decisionCase: caseKey },
-              });
-            }
-          });
+  const savedEdges = (ir.layoutMetadata as any)?.__edges;
+  if (Array.isArray(savedEdges) && savedEdges.length > 0) {
+    savedEdges.forEach((se: any) => {
+      const sourceId = taskToNodeId.get(se.source) || se.source;
+      const targetId = taskToNodeId.get(se.target) || se.target;
+      if (sourceId && targetId) {
+        addEdgeSafe({
+          id: se.id || `e_${sourceId}_${targetId}`,
+          type: 'dagEdge',
+          source: sourceId,
+          target: targetId,
+          sourceHandle: se.sourceHandle,
+          targetHandle: se.targetHandle,
+          label: se.label,
+          animated: se.animated ?? true,
+          data: se.data || {},
         });
       }
-      if (task.defaultCase) {
-        (task.defaultCase || []).forEach((tRef) => {
-          const targetId = taskToNodeId.get(tRef);
-          if (targetId) {
+    });
+  } else {
+    // Reconstruct edges from joinOn
+    tasksToProcess.forEach((task) => {
+      const targetId = taskToNodeId.get(task.taskReferenceName);
+      if (targetId && Array.isArray(task.joinOn) && task.joinOn.length > 0) {
+        task.joinOn.forEach((prereqRef) => {
+          const sourceId = taskToNodeId.get(prereqRef);
+          if (sourceId) {
             addEdgeSafe({
-              id: `e_${sourceId}_${targetId}_default`,
+              id: `e_${sourceId}_${targetId}`,
               type: 'dagEdge',
               source: sourceId,
               target: targetId,
-              label: 'DEFAULT',
               animated: true,
-              data: { isDefaultCase: true, decisionCase: 'DEFAULT' },
             });
           }
         });
       }
-    }
-  });
+    });
 
-  // Fallback: If no explicit joinOn / switch edges were created, link sequentially
-  if (synthesizedEdges.length === 0) {
-    for (let i = 0; i < tasksToProcess.length - 1; i++) {
-      const curTask = tasksToProcess[i];
-      const nxtTask = tasksToProcess[i + 1];
-      const source = taskToNodeId.get(curTask.taskReferenceName);
-      const target = taskToNodeId.get(nxtTask.taskReferenceName);
-      if (source && target) {
-        addEdgeSafe({
-          id: `e_${source}_${target}`,
-          type: 'dagEdge',
-          source,
-          target,
-          animated: true,
-        });
+    // Reconstruct edges from SWITCH decisionCases & defaultCase
+    tasksToProcess.forEach((task) => {
+      const sourceId = taskToNodeId.get(task.taskReferenceName);
+      if (sourceId && task.taskType === 'SWITCH') {
+        if (task.decisionCases) {
+          Object.entries(task.decisionCases).forEach(([caseKey, targetRefs]) => {
+            (targetRefs || []).forEach((tRef) => {
+              const targetId = taskToNodeId.get(tRef);
+              if (targetId) {
+                addEdgeSafe({
+                  id: `e_${sourceId}_${targetId}_${caseKey}`,
+                  type: 'dagEdge',
+                  source: sourceId,
+                  target: targetId,
+                  sourceHandle: `case-${caseKey}`,
+                  label: caseKey,
+                  animated: true,
+                  data: { decisionCase: caseKey },
+                });
+              }
+            });
+          });
+        }
+        if (task.defaultCase) {
+          (task.defaultCase || []).forEach((tRef) => {
+            const targetId = taskToNodeId.get(tRef);
+            if (targetId) {
+              addEdgeSafe({
+                id: `e_${sourceId}_${targetId}_default`,
+                type: 'dagEdge',
+                source: sourceId,
+                target: targetId,
+                sourceHandle: 'case-default',
+                label: 'DEFAULT',
+                animated: true,
+                data: { isDefaultCase: true, decisionCase: 'DEFAULT' },
+              });
+            }
+          });
+        }
+      }
+    });
+
+    // Reconstruct edges from DO_WHILE loopOver
+    tasksToProcess.forEach((task) => {
+      if (task.taskType === 'DO_WHILE' && Array.isArray(task.loopOver) && task.loopOver.length > 0) {
+        const loopId = taskToNodeId.get(task.taskReferenceName);
+        const firstBodyId = taskToNodeId.get(task.loopOver[0]);
+        const lastBodyId = taskToNodeId.get(task.loopOver[task.loopOver.length - 1]);
+        if (loopId && firstBodyId) {
+          addEdgeSafe({
+            id: `e_${loopId}_${firstBodyId}_loop_body`,
+            type: 'dagEdge',
+            source: loopId,
+            target: firstBodyId,
+            sourceHandle: 'loop-body',
+            targetHandle: 'target-left',
+            label: 'BODY',
+            animated: true,
+          });
+        }
+        if (loopId && lastBodyId) {
+          addEdgeSafe({
+            id: `e_${lastBodyId}_${loopId}_loop_back`,
+            type: 'dagEdge',
+            source: lastBodyId,
+            target: loopId,
+            sourceHandle: 'source-right',
+            targetHandle: 'loop-back',
+            label: 'LOOP-BACK',
+            animated: true,
+            data: { isLoopbackEdge: true },
+          });
+        }
+      }
+    });
+
+    // Reconstruct edges from compensateHandlerRef
+    tasksToProcess.forEach((task) => {
+      if (task.compensateHandlerRef) {
+        const sourceId = taskToNodeId.get(task.taskReferenceName);
+        const compId = taskToNodeId.get(task.compensateHandlerRef);
+        if (sourceId && compId) {
+          addEdgeSafe({
+            id: `e_${sourceId}_${compId}_compensate`,
+            type: 'dagEdge',
+            source: sourceId,
+            target: compId,
+            sourceHandle: 'compensate',
+            targetHandle: 'target-left',
+            label: 'COMPENSATE',
+            animated: true,
+          });
+        }
+      }
+    });
+
+    // Fallback: If no explicit joinOn / switch edges were created, link sequentially
+    if (synthesizedEdges.length === 0) {
+      for (let i = 0; i < tasksToProcess.length - 1; i++) {
+        const curTask = tasksToProcess[i];
+        const nxtTask = tasksToProcess[i + 1];
+        const source = taskToNodeId.get(curTask.taskReferenceName);
+        const target = taskToNodeId.get(nxtTask.taskReferenceName);
+        if (source && target) {
+          addEdgeSafe({
+            id: `e_${source}_${target}`,
+            type: 'dagEdge',
+            source,
+            target,
+            animated: true,
+          });
+        }
       }
     }
   }

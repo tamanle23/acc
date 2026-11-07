@@ -188,9 +188,9 @@ class WorkflowEngineRestApiTest {
         assertThat(savedDef.workflowKey()).isEqualTo("blank-pipeline-test");
         assertThat(savedDef.tasks()).hasSize(2);
         assertThat(savedDef.tasks().get(0).taskReferenceName()).isEqualTo("workflow_start");
-        assertThat(savedDef.tasks().get(0).taskType()).isEqualTo(TaskType.NOOP);
+        assertThat(savedDef.tasks().get(0).taskType()).isEqualTo(TaskType.START_WORKFLOW);
         assertThat(savedDef.tasks().get(1).taskReferenceName()).isEqualTo("workflow_end");
-        assertThat(savedDef.tasks().get(1).taskType()).isEqualTo(TaskType.NOOP);
+        assertThat(savedDef.tasks().get(1).taskType()).isEqualTo(TaskType.END_WORKFLOW);
         assertThat(savedDef.layoutMetadata()).containsKey("workflow_start");
         assertThat(savedDef.layoutMetadata()).containsKey("workflow_end");
 

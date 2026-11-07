@@ -675,12 +675,12 @@ export class WorkflowSandboxRepository {
       tasks = [
         {
           taskReferenceName: 'workflow_start',
-          taskType: 'NOOP',
+          taskType: 'START_WORKFLOW',
           domain: 'default',
         },
         {
           taskReferenceName: 'workflow_end',
-          taskType: 'NOOP',
+          taskType: 'END_WORKFLOW',
           domain: 'default',
         },
       ];

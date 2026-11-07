@@ -521,6 +521,100 @@ describe('Workflow IR Converter & Graph Validation Engine', () => {
       expect(result.edges[0].source).toBe(startNode?.id);
       expect(result.edges[0].target).toBe(endNode?.id);
     });
+
+    it('derives SWITCH cases, loopback, and compensation handles losslessly on export and import', () => {
+      const nodes: Node<DagNodeData>[] = [
+        {
+          id: 'n-start',
+          type: 'dagNode',
+          position: { x: 0, y: 0 },
+          data: { taskReferenceName: 'start', taskType: 'START_WORKFLOW', isStartNode: true },
+        },
+        {
+          id: 'n-switch',
+          type: 'dagNode',
+          position: { x: 200, y: 0 },
+          data: { taskReferenceName: 'switchStep', taskType: 'SWITCH' },
+        },
+        {
+          id: 'n-express',
+          type: 'dagNode',
+          position: { x: 400, y: -100 },
+          data: { taskReferenceName: 'expressTask', taskType: 'SIMPLE' },
+        },
+        {
+          id: 'n-standard',
+          type: 'dagNode',
+          position: { x: 400, y: 100 },
+          data: { taskReferenceName: 'standardTask', taskType: 'SIMPLE' },
+        },
+        {
+          id: 'n-loop',
+          type: 'dagNode',
+          position: { x: 600, y: 0 },
+          data: { taskReferenceName: 'loopStep', taskType: 'DO_WHILE' },
+        },
+        {
+          id: 'n-body',
+          type: 'dagNode',
+          position: { x: 800, y: 0 },
+          data: { taskReferenceName: 'bodyTask', taskType: 'SIMPLE' },
+        },
+        {
+          id: 'n-comp',
+          type: 'dagNode',
+          position: { x: 800, y: 150 },
+          data: { taskReferenceName: 'compTask', taskType: 'SIMPLE' },
+        },
+        {
+          id: 'n-end',
+          type: 'dagNode',
+          position: { x: 1000, y: 0 },
+          data: { taskReferenceName: 'end', taskType: 'END_WORKFLOW', isEndNode: true },
+        },
+      ];
+
+      const edges: Edge[] = [
+        { id: 'e1', source: 'n-start', target: 'n-switch' },
+        { id: 'e2', source: 'n-switch', target: 'n-express', sourceHandle: 'case-EXPRESS' },
+        { id: 'e3', source: 'n-switch', target: 'n-standard', sourceHandle: 'case-default' },
+        { id: 'e4', source: 'n-express', target: 'n-loop' },
+        { id: 'e5', source: 'n-standard', target: 'n-loop' },
+        { id: 'e6', source: 'n-loop', target: 'n-body', sourceHandle: 'loop-body' },
+        { id: 'e7', source: 'n-body', target: 'n-loop', targetHandle: 'loop-back' },
+        { id: 'e8', source: 'n-body', target: 'n-comp', sourceHandle: 'compensate' },
+        { id: 'e9', source: 'n-loop', target: 'n-end', sourceHandle: 'loop-exit' },
+      ];
+
+      // 1. Validation must pass with back-edge recognized
+      const valErrors = validateGraphTopology(nodes, edges);
+      expect(valErrors).toHaveLength(0);
+
+      // 2. Export to WorkflowIR
+      const ir = exportToWorkflowIR(nodes, edges, { workflowKey: 'complex-roundtrip', name: 'Complex Flow' });
+      expect(ir.tasks).toHaveLength(8);
+
+      const switchTask = ir.tasks.find((t) => t.taskReferenceName === 'switchStep');
+      expect(switchTask?.decisionCases?.['EXPRESS']).toContain('expressTask');
+      expect(switchTask?.defaultCase).toContain('standardTask');
+
+      const loopTask = ir.tasks.find((t) => t.taskReferenceName === 'loopStep');
+      expect(loopTask?.loopOver).toContain('bodyTask');
+
+      const bodyTask = ir.tasks.find((t) => t.taskReferenceName === 'bodyTask');
+      expect(bodyTask?.compensateHandlerRef).toBe('compTask');
+
+      // 3. Lossless Re-Import
+      const roundtrip = importFromWorkflowIR(ir);
+      expect(roundtrip.nodes).toHaveLength(8);
+      expect(roundtrip.edges).toHaveLength(9);
+
+      const restoredLoopback = roundtrip.edges.find((e) => e.targetHandle === 'loop-back');
+      expect(restoredLoopback).toBeDefined();
+
+      const restoredComp = roundtrip.edges.find((e) => e.sourceHandle === 'compensate');
+      expect(restoredComp).toBeDefined();
+    });
   });
 });
 

@@ -275,4 +275,158 @@ describe('DagWorkflowNodeComponent Unit Tests', () => {
     };
     expect(areDagNodePropsEqual(baseNodeProps, changedSelectionProps)).toBe(false);
   });
+
+  it('renders DO_WHILE node with 4 distinct port handles', () => {
+    const data: DagNodeData = {
+      taskReferenceName: 'reviewLoop',
+      taskType: 'DO_WHILE',
+      label: 'Review Loop',
+    };
+
+    render(
+      <ReactFlowProvider>
+        <DagWorkflowNodeComponent
+          id="loop-node"
+          type="dagNode"
+          data={data}
+          selected={false}
+          zIndex={0}
+          isConnectable={true}
+          positionAbsoluteX={0}
+          positionAbsoluteY={0}
+          dragging={false}
+        />
+      </ReactFlowProvider>
+    );
+
+    expect(screen.getByTestId('dag-handle-target-reviewLoop')).toBeDefined();
+    expect(screen.getByTestId('dag-handle-loopback-reviewLoop')).toBeDefined();
+    expect(screen.getByTestId('dag-handle-source-reviewLoop')).toBeDefined();
+    expect(screen.getByTestId('dag-handle-exit-reviewLoop')).toBeDefined();
+    expect(screen.getByText('↺ loop-back')).toBeDefined();
+    expect(screen.getByText('body')).toBeDefined();
+    expect(screen.getByText('exit')).toBeDefined();
+  });
+
+  it('renders HUMAN node with approved and rejected dual handles', () => {
+    const data: DagNodeData = {
+      taskReferenceName: 'managerApproval',
+      taskType: 'HUMAN',
+      label: 'Manager Approval',
+    };
+
+    render(
+      <ReactFlowProvider>
+        <DagWorkflowNodeComponent
+          id="human-node"
+          type="dagNode"
+          data={data}
+          selected={false}
+          zIndex={0}
+          isConnectable={true}
+          positionAbsoluteX={0}
+          positionAbsoluteY={0}
+          dragging={false}
+        />
+      </ReactFlowProvider>
+    );
+
+    expect(screen.getByTestId('dag-handle-target-managerApproval')).toBeDefined();
+    expect(screen.getByTestId('dag-handle-source-managerApproval')).toBeDefined();
+    expect(screen.getByTestId('dag-handle-rejected-managerApproval')).toBeDefined();
+    expect(screen.getByText('✓ approved')).toBeDefined();
+    expect(screen.getByText('✗ rejected')).toBeDefined();
+  });
+
+  it('renders SWITCH node with case handles and default handle', () => {
+    const data: DagNodeData = {
+      taskReferenceName: 'routingSwitch',
+      taskType: 'SWITCH',
+      label: 'Routing Switch',
+      decisionCases: {
+        EXPRESS: ['courier'],
+        STANDARD: ['postal'],
+      },
+    };
+
+    render(
+      <ReactFlowProvider>
+        <DagWorkflowNodeComponent
+          id="switch-node"
+          type="dagNode"
+          data={data}
+          selected={false}
+          zIndex={0}
+          isConnectable={true}
+          positionAbsoluteX={0}
+          positionAbsoluteY={0}
+          dragging={false}
+        />
+      </ReactFlowProvider>
+    );
+
+    expect(screen.getByTestId('dag-handle-case-EXPRESS-routingSwitch')).toBeDefined();
+    expect(screen.getByTestId('dag-handle-case-STANDARD-routingSwitch')).toBeDefined();
+    expect(screen.getByTestId('dag-handle-default-routingSwitch')).toBeDefined();
+    expect(screen.getByText('EXPRESS')).toBeDefined();
+    expect(screen.getByText('STANDARD')).toBeDefined();
+    expect(screen.getByText('default')).toBeDefined();
+  });
+
+  it('renders END_WORKFLOW node with target handle and omits source handle', () => {
+    const data: DagNodeData = {
+      taskReferenceName: 'workflow_end',
+      taskType: 'END_WORKFLOW',
+      label: 'Workflow End',
+      isEndNode: true,
+    };
+
+    render(
+      <ReactFlowProvider>
+        <DagWorkflowNodeComponent
+          id="end-node"
+          type="dagNode"
+          data={data}
+          selected={false}
+          zIndex={0}
+          isConnectable={true}
+          positionAbsoluteX={0}
+          positionAbsoluteY={0}
+          dragging={false}
+        />
+      </ReactFlowProvider>
+    );
+
+    expect(screen.getByTestId('dag-handle-target-workflow_end')).toBeDefined();
+    expect(screen.queryByTestId('dag-handle-source-workflow_end')).toBeNull();
+    expect(screen.getByText('END')).toBeDefined();
+  });
+
+  it('renders standard task with compensation handle on bottom', () => {
+    const data: DagNodeData = {
+      taskReferenceName: 'chargePayment',
+      taskType: 'HTTP',
+      label: 'Charge Payment',
+    };
+
+    render(
+      <ReactFlowProvider>
+        <DagWorkflowNodeComponent
+          id="task-node"
+          type="dagNode"
+          data={data}
+          selected={false}
+          zIndex={0}
+          isConnectable={true}
+          positionAbsoluteX={0}
+          positionAbsoluteY={0}
+          dragging={false}
+        />
+      </ReactFlowProvider>
+    );
+
+    expect(screen.getByTestId('dag-handle-target-chargePayment')).toBeDefined();
+    expect(screen.getByTestId('dag-handle-source-chargePayment')).toBeDefined();
+    expect(screen.getByTestId('dag-handle-compensate-chargePayment')).toBeDefined();
+  });
 });
