@@ -1,6 +1,8 @@
 import { PortableText } from '@portabletext/react';
-import { refractor } from 'refractor';
+import refractorPkg from 'refractor';
 import GithubSlugger from 'github-slugger';
+
+const refractor: any = (refractorPkg as any).default || refractorPkg;
 
 const portableTextComponents: any = {
   types: {
@@ -184,3 +186,4 @@ export default function PortableTextRenderer({ value }: { value: any }) {
     </div>
   );
 }
+

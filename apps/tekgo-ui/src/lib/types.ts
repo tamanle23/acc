@@ -62,3 +62,4 @@ export interface Authors extends AuthorInput {
 }
 
 export type CoreContent<T> = Omit<T, 'portableTextBody' | 'structuredData'>;
+

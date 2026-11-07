@@ -12,3 +12,4 @@ export function formatDate(date: string, locale = 'en-US'): string {
 export function slug(text: string): string {
   return new GithubSlugger().slug(text);
 }
+

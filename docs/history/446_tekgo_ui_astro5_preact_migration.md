@@ -49,3 +49,4 @@
 2. **Instant Theme Toggle:** Clicking the theme toggle switches between Light, Dark, and System states via Nano Stores; page reloads execute anti-FOUC script before body render.
 3. **Liquid Glass Command Palette:** Hitting `Cmd+K` or clicking search opens `SearchModal.tsx`, querying `/search.json` and filtering articles in real time.
 4. **WinterTC Edge Webhooks:** Revalidate endpoint cryptographically verifies HMAC-SHA256 signatures with Web Crypto `crypto.subtle` within a 300-second replay window.
+

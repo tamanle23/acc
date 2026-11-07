@@ -12,3 +12,4 @@ export const collections = {
     schema: authorSchema,
   }),
 };
+

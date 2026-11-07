@@ -13,3 +13,4 @@ export function closeSearch() {
 export function toggleSearch() {
   isSearchOpenStore.set(!isSearchOpenStore.get());
 }
+

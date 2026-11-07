@@ -9,3 +9,4 @@ export function toggleNav() {
 export function closeNav() {
   isNavOpenStore.set(false);
 }
+
