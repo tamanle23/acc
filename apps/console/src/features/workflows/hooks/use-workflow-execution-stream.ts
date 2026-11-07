@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { ExecutionState } from '@/features/workflows/components/studio';
 import { useWorkflowExecutionStatus } from '../api/workflow-api';
+import { useSpringAuthStore } from '@/features/spring-auth';
 
 export type SseConnectionState =
   | 'IDLE'
@@ -250,7 +251,8 @@ export function useWorkflowExecutionStream(executionId: string | null) {
     const connectSse = () => {
       if (isCancelled) return;
 
-      const sseUrl = `/api/v1/workflow/executions/${executionId}/events`;
+      const token = useSpringAuthStore.getState().accessToken;
+      const sseUrl = `/api/v1/workflow/executions/${executionId}/events${token ? `?token=${encodeURIComponent(token)}` : ''}`;
 
       setStreamState((prev) => ({
         ...prev,

@@ -26,7 +26,10 @@ public class NotificationSseController {
     private final Map<String, List<SseEmitter>> tenantEmitters = new ConcurrentHashMap<>();
 
     @GetMapping(value = "/api/v1/notifications/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter streamNotifications(@RequestParam(required = false) String tenantId) {
+    public SseEmitter streamNotifications(
+            @RequestParam(required = false) String tenantId,
+            @RequestParam(required = false) String token
+    ) {
         String activeTenantId = (tenantId != null && !tenantId.isBlank())
                 ? tenantId
                 : TenantContextHolder.getTenantId();
@@ -59,6 +62,10 @@ public class NotificationSseController {
         }
 
         return emitter;
+    }
+
+    public SseEmitter streamNotifications(String tenantId) {
+        return streamNotifications(tenantId, null);
     }
 
     public void broadcast(String tenantId, String eventName, Object payload) {

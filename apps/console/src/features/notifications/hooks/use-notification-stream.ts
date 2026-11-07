@@ -15,7 +15,7 @@ import type { NotificationItem, NotificationSeverity, NotificationCategory } fro
  */
 export function useNotificationStream() {
   const queryClient = useQueryClient();
-  const { isAuthenticated, isSandbox } = useSpringAuthStore();
+  const { isAuthenticated, isSandbox, accessToken } = useSpringAuthStore();
   const activeTenantId = useMetadataUiStore((s) => s.activeTenantId);
   const sandboxTenantId = useSandboxStore((s) => s.activeTenantId);
   const { data: userProfile } = useUserProfileQuery();
@@ -54,6 +54,12 @@ export function useNotificationStream() {
       return;
     }
 
+    // In offline sandbox mode, simulate a connected notification stream without failing backend requests
+    if (isSandbox) {
+      setConnected(true);
+      return;
+    }
+
     let isSubscribed = true;
 
     const connectSSE = () => {
@@ -64,10 +70,13 @@ export function useNotificationStream() {
           eventSourceRef.current.close();
         }
 
-        const streamUrl = `/api/v1/notifications/stream?tenantId=${encodeURIComponent(
-          effectiveTenantId
-        )}`;
+        const queryParams = new URLSearchParams();
+        queryParams.set('tenantId', effectiveTenantId);
+        if (accessToken) {
+          queryParams.set('token', accessToken);
+        }
 
+        const streamUrl = `/api/v1/notifications/stream?${queryParams.toString()}`;
         const es = new EventSource(streamUrl);
         eventSourceRef.current = es;
 
@@ -267,6 +276,8 @@ export function useNotificationStream() {
     };
   }, [
     isAuthenticated,
+    isSandbox,
+    accessToken,
     effectiveTenantId,
     queryClient,
     addNotification,

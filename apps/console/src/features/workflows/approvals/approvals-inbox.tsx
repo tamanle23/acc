@@ -28,6 +28,7 @@ import { useTranslation } from 'react-i18next';
 import { announceToScreenReader } from '@/hooks/use-aria-announce';
 import { useApprovalTasks, useResolveApprovalTask, type ApprovalTask } from '../api/workflow-api';
 import { approvalTaskMockStore } from '@/core/sandbox';
+import { useSpringAuthStore } from '@/features/spring-auth';
 
 export type { ApprovalTask };
 
@@ -67,7 +68,22 @@ export function ApprovalsInbox() {
       try {
         if (typeof EventSource === 'undefined') return;
 
-        eventSource = new EventSource('/api/v1/notifications/stream');
+        const authState = useSpringAuthStore.getState();
+        if (authState.isSandbox) {
+          if (isMounted) setSseConnected(true);
+          return;
+        }
+
+        const queryParams = new URLSearchParams();
+        if (authState.currentTenantId) {
+          queryParams.set('tenantId', authState.currentTenantId);
+        }
+        if (authState.accessToken) {
+          queryParams.set('token', authState.accessToken);
+        }
+
+        const streamUrl = `/api/v1/notifications/stream${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+        eventSource = new EventSource(streamUrl);
         eventSource.onopen = () => {
           if (isMounted) setSseConnected(true);
         };

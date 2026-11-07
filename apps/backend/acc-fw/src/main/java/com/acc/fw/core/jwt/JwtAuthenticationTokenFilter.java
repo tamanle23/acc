@@ -120,7 +120,17 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
         .filter(t -> t.startsWith("Bearer "))
         .map(t -> t.substring(7))
         .orElse(null);
-    String authenticationToken = this.readCookie(request, jwtCookieName).orElse(header);
+
+    // Support token query parameter for SSE (EventSource) and WebSocket connections (RFC 6750 §2.3)
+    String queryToken = request.getParameter("token");
+    if (StringUtils.isBlank(queryToken)) {
+      queryToken = request.getParameter("access_token");
+    }
+
+    String authenticationToken = this.readCookie(request, jwtCookieName)
+        .or(() -> Optional.ofNullable(header))
+        .or(() -> Optional.ofNullable(queryToken))
+        .orElse(null);
     String path = request.getRequestURI();
 
     if (StringUtils.isBlank(authenticationToken)
@@ -139,6 +149,16 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
     Optional<JwtAuthenticationToken> authResult = attemptAuthentication(request, authenticationToken);
     if (!authResult.isPresent()) {
       securityContextHolderStrategy.clearContext();
+      String servletPath = request.getServletPath();
+      boolean isPermitted = "/api/v1/notifications/stream".equals(servletPath)
+          || (applicationProperties.getSecurity() != null
+              && applicationProperties.getSecurity().getPermitAlls() != null
+              && Arrays.stream(applicationProperties.getSecurity().getPermitAlls())
+                  .anyMatch(pattern -> pathMatcher.match(pattern, servletPath)));
+      if (isPermitted) {
+        filterChain.doFilter(request, response);
+        return;
+      }
       response.setStatus(HttpStatus.UNAUTHORIZED.value());
       return;
     }
