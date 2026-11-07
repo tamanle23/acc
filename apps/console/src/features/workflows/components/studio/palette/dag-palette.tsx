@@ -51,6 +51,7 @@ export interface DagPaletteProps {
   defaultCollapsed?: boolean;
   isCollapsed?: boolean;
   onCollapsedChange?: (collapsed: boolean) => void;
+  onInsertNode?: (type: DagNodeType, defaultData?: Partial<DagNodeData>) => void;
 }
 
 export const CATEGORIES: { id: PaletteItem['category']; label: string }[] = [
@@ -397,6 +398,7 @@ export function DagPalette({
   defaultCollapsed = false,
   isCollapsed: controlledCollapsed,
   onCollapsedChange,
+  onInsertNode,
 }: DagPaletteProps = {}) {
   const [internalCollapsed, setInternalCollapsed] = useState(defaultCollapsed);
   const isCollapsed = controlledCollapsed !== undefined ? controlledCollapsed : internalCollapsed;
@@ -491,8 +493,10 @@ export function DagPalette({
                 key={item.type}
                 draggable
                 onDragStart={(e) => onDragStart(e, item)}
-                title={`${item.label} (${item.type}): ${item.description}`}
-                className="p-2 rounded-xl border border-white/40 dark:border-white/5 bg-white/50 dark:bg-slate-800/40 hover:bg-white/90 dark:hover:bg-slate-800/90 hover:border-primary/40 hover:shadow-md transition-all cursor-grab active:cursor-grabbing select-none shrink-0"
+                onClick={() => onInsertNode?.(item.type, item.defaultData)}
+                title={`${item.label} (${item.type}): Click to insert into workflow, or drag onto canvas`}
+                data-testid={`dag-palette-rail-item-${item.type}`}
+                className="p-2 rounded-xl border border-white/40 dark:border-white/5 bg-white/50 dark:bg-slate-800/40 hover:bg-white/90 dark:hover:bg-slate-800/90 hover:border-primary/40 hover:shadow-md transition-all cursor-pointer active:scale-95 select-none shrink-0"
               >
                 {item.icon}
               </div>
@@ -592,9 +596,12 @@ export function DagPalette({
                       key={item.type}
                       draggable
                       onDragStart={(e) => onDragStart(e, item)}
-                      className="group flex items-center gap-2 p-1.5 rounded-xl border border-white/40 dark:border-white/5 bg-white/50 dark:bg-slate-800/40 hover:bg-white/90 dark:hover:bg-slate-800/90 hover:border-primary/40 hover:shadow-md transition-all cursor-grab active:cursor-grabbing select-none"
+                      onClick={() => onInsertNode?.(item.type, item.defaultData)}
+                      title={`Click to insert into workflow, or drag onto canvas: ${item.label} (${item.type})`}
+                      data-testid={`dag-palette-item-${item.type}`}
+                      className="group flex items-center gap-2 p-1.5 rounded-xl border border-white/40 dark:border-white/5 bg-white/50 dark:bg-slate-800/40 hover:bg-white/90 dark:hover:bg-slate-800/90 hover:border-primary/40 hover:shadow-md transition-all cursor-pointer active:scale-95 select-none"
                     >
-                      <GripVertical className="w-3 h-3 text-muted-foreground/40 group-hover:text-muted-foreground shrink-0" />
+                      <GripVertical className="w-3 h-3 text-muted-foreground/40 group-hover:text-muted-foreground shrink-0 cursor-grab" />
                       <div className="p-1 rounded-lg bg-background/80 border border-border/50 shrink-0">
                         {item.icon}
                       </div>

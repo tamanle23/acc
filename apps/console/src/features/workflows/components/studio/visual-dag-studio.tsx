@@ -163,6 +163,7 @@ function DagStudioCanvas({
     isWorkflowBlank,
     setIsDismissedEmptyState,
     handleInsertStarterTask,
+    handleInsertNode,
     handleUpdateNodeData,
     handleSaveEdgeCondition,
     handleNewBlank,
@@ -756,6 +757,7 @@ function DagStudioCanvas({
           >
             <DagPalette
               defaultCollapsed={containerWidth < 900}
+              onInsertNode={isReadOnly ? undefined : handleInsertNode}
               style={{
                 maxHeight: `${computedMaxHeight}px`,
               }}

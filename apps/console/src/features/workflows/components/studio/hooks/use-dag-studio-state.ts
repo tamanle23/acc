@@ -35,6 +35,100 @@ export interface UseDagStudioStateOptions {
   screenToFlowPosition: (position: { x: number; y: number }) => { x: number; y: number };
 }
 
+/**
+ * Resolves the appropriate source handle ID for an edge originating from sourceNode.
+ * Prevents invalid/undefined handle IDs from breaking ReactFlow connections.
+ */
+export function resolveSourceHandle(
+  sourceNode?: Node<DagNodeData>,
+  existingHandle?: string | null
+): string {
+  if (existingHandle && existingHandle !== 'source' && existingHandle !== 'default') {
+    return existingHandle;
+  }
+  if (!sourceNode) return 'source-right';
+
+  const taskType = sourceNode.data?.taskType;
+  if (taskType === 'DO_WHILE') {
+    return 'loop-exit';
+  }
+  if (taskType === 'HUMAN') {
+    return 'approved';
+  }
+  if (taskType === 'SWITCH') {
+    const cases = Object.keys(sourceNode.data?.decisionCases || {});
+    return cases.length > 0 ? `case-${cases[0]}` : 'case-default';
+  }
+  return 'source-right';
+}
+
+/**
+ * Resolves the appropriate target handle ID for an edge targeting targetNode.
+ */
+export function resolveTargetHandle(
+  targetNode?: Node<DagNodeData>,
+  existingHandle?: string | null
+): string {
+  if (existingHandle && existingHandle !== 'target' && existingHandle !== 'default') {
+    return existingHandle;
+  }
+  if (targetNode?.data?.taskType === 'DO_WHILE' && existingHandle === 'loop-back') {
+    return 'loop-back';
+  }
+  return 'target-left';
+}
+
+/**
+ * Finds the nearest edge to the given drop position using point-to-line-segment distance math.
+ * Returns null if the closest edge is farther than maxDistance (default 140px).
+ */
+export function findNearestEdge(
+  pos: { x: number; y: number },
+  nodes: Node<DagNodeData>[],
+  edges: Edge[],
+  maxDistance = 140
+): Edge | null {
+  const nodeMap = new Map<string, Node<DagNodeData>>();
+  nodes.forEach((n) => nodeMap.set(n.id, n));
+
+  let closestEdge: Edge | null = null;
+  let minDistance = Infinity;
+
+  for (const edge of edges) {
+    if (edge.targetHandle === 'loop-back') continue;
+
+    const sourceNode = nodeMap.get(edge.source);
+    const targetNode = nodeMap.get(edge.target);
+    if (!sourceNode || !targetNode) continue;
+
+    const ax = sourceNode.position.x + 220;
+    const ay = sourceNode.position.y + 35;
+    const bx = targetNode.position.x;
+    const by = targetNode.position.y + 35;
+
+    const vx = bx - ax;
+    const vy = by - ay;
+    const lenSq = vx * vx + vy * vy;
+
+    let dist: number;
+    if (lenSq === 0) {
+      dist = Math.hypot(pos.x - ax, pos.y - ay);
+    } else {
+      const t = Math.max(0, Math.min(1, ((pos.x - ax) * vx + (pos.y - ay) * vy) / lenSq));
+      const projX = ax + t * vx;
+      const projY = ay + t * vy;
+      dist = Math.hypot(pos.x - projX, pos.y - projY);
+    }
+
+    if (dist < minDistance && dist <= maxDistance) {
+      minDistance = dist;
+      closestEdge = edge;
+    }
+  }
+
+  return closestEdge;
+}
+
 export function useDagStudioState({
   isReadOnly,
   initialNodes,
@@ -207,7 +301,12 @@ export function useDagStudioState({
   );
 
   const handleSplitEdge = useCallback(
-    (edgeId: string, newNodeType: DagNodeType = 'SIMPLE', customData?: Partial<DagNodeData>) => {
+    (
+      edgeId: string,
+      newNodeType: DagNodeType = 'SIMPLE',
+      customData?: Partial<DagNodeData>,
+      overridePosition?: { x: number; y: number }
+    ) => {
       if (isReadOnly) return;
       const targetEdge = edges.find((e) => e.id === edgeId);
       if (!targetEdge) return;
@@ -220,8 +319,11 @@ export function useDagStudioState({
       const sourcePos = sourceNode?.position || { x: 100, y: 200 };
       const targetPos = targetNode?.position || { x: 500, y: 200 };
 
-      const newX = Math.round((sourcePos.x + targetPos.x) / 2);
-      const newY = Math.round((sourcePos.y + targetPos.y) / 2);
+      const newX = overridePosition ? overridePosition.x : Math.round((sourcePos.x + targetPos.x) / 2);
+      const newY = overridePosition ? overridePosition.y : Math.round((sourcePos.y + targetPos.y) / 2);
+
+      const resolvedSourceHandle = resolveSourceHandle(sourceNode, targetEdge.sourceHandle);
+      const resolvedTargetHandle = resolveTargetHandle(targetNode, targetEdge.targetHandle);
 
       // Check for compound templates (FORK_JOIN, DYNAMIC_FORK, SWITCH, DO_WHILE, HUMAN, etc.)
       if (compoundTemplateRegistry.isCompound(newNodeType, { customData })) {
@@ -255,7 +357,7 @@ export function useDagStudioState({
             type: 'dagEdge',
             source: targetEdge.source,
             target: template.primaryNodeId,
-            sourceHandle: targetEdge.sourceHandle,
+            sourceHandle: resolvedSourceHandle,
             targetHandle: 'target-left',
             animated: true,
             label: targetEdge.label,
@@ -268,7 +370,7 @@ export function useDagStudioState({
             source: template.exitNodeId,
             target: targetEdge.target,
             sourceHandle: template.exitHandle || 'source-right',
-            targetHandle: targetEdge.targetHandle || 'target-left',
+            targetHandle: resolvedTargetHandle,
             animated: true,
           };
 
@@ -302,12 +404,34 @@ export function useDagStudioState({
         },
       };
 
+      // Downstream clearance for single node too if targetPos.x <= newX
+      const requiredClearance = newX + 220 + 80;
+      const deltaX = targetPos.x < requiredClearance ? requiredClearance - targetPos.x : 0;
+      let updatedNodes = nodes;
+      if (deltaX > 0 && targetNode) {
+        const descendants = new Set<string>();
+        const q = [targetNode.id];
+        descendants.add(targetNode.id);
+        while (q.length > 0) {
+          const curr = q.shift()!;
+          for (const e of edges) {
+            if (e.source === curr && !descendants.has(e.target) && e.targetHandle !== 'loop-back') {
+              descendants.add(e.target);
+              q.push(e.target);
+            }
+          }
+        }
+        updatedNodes = updatedNodes.map((n) =>
+          descendants.has(n.id) ? { ...n, position: { ...n.position, x: n.position.x + deltaX } } : n
+        );
+      }
+
       const edgeIn: Edge = {
         id: `e_${targetEdge.source}_to_${newNodeId}`,
         type: 'dagEdge',
         source: targetEdge.source,
         target: newNodeId,
-        sourceHandle: targetEdge.sourceHandle,
+        sourceHandle: resolvedSourceHandle,
         targetHandle: 'target-left',
         animated: true,
         label: targetEdge.label,
@@ -319,13 +443,13 @@ export function useDagStudioState({
         type: 'dagEdge',
         source: newNodeId,
         target: targetEdge.target,
-        sourceHandle: 'source-right',
-        targetHandle: targetEdge.targetHandle || 'target-left',
+        sourceHandle: resolveSourceHandle(newNode, 'source-right'),
+        targetHandle: resolvedTargetHandle,
         animated: true,
       };
 
-      setNodes((nds) => [...nds, newNode]);
-      setEdges((eds) => [...eds.filter((e) => e.id !== edgeId), edgeIn, edgeOut]);
+      setNodes([...updatedNodes, newNode]);
+      setEdges([...edges.filter((e) => e.id !== edgeId), edgeIn, edgeOut]);
       setSelectedNodeId(newNodeId);
     },
     [isReadOnly, edges, nodes, pushUndoSnapshot]
@@ -572,6 +696,62 @@ export function useDagStudioState({
         y: event.clientY,
       });
 
+      // 1. Proximity-based Edge Split Check:
+      // If dropped near an existing workflow edge, auto-split and insert connected to both sides!
+      const nearestEdge = findNearestEdge(position, nodes, edges, 140);
+      if (nearestEdge) {
+        handleSplitEdge(nearestEdge.id, type, parsedData, position);
+        return;
+      }
+
+      // 2. Flow-aware Fallback Insertion:
+      // If dropped on canvas without direct edge proximity, connect into the active flow
+      // rather than leaving a disconnected orphan node.
+      let targetFlowEdge: Edge | undefined;
+
+      if (selectedNodeId) {
+        const selectedOutgoing = edges.find(
+          (e) => e.source === selectedNodeId && e.targetHandle !== 'loop-back'
+        );
+        if (selectedOutgoing) {
+          targetFlowEdge = selectedOutgoing;
+        } else {
+          const selectedIncoming = edges.find((e) => e.target === selectedNodeId);
+          if (selectedIncoming) {
+            targetFlowEdge = selectedIncoming;
+          }
+        }
+      }
+
+      if (!targetFlowEdge) {
+        const endEdge = edges.find((e) => {
+          const target = nodes.find((n) => n.id === e.target);
+          return target?.data.isEndNode || target?.data.taskType === 'END_WORKFLOW';
+        });
+        if (endEdge) {
+          targetFlowEdge = endEdge;
+        } else if (edges.length > 0) {
+          targetFlowEdge = edges[0];
+        }
+      }
+
+      if (targetFlowEdge) {
+        handleSplitEdge(targetFlowEdge.id, type, parsedData, position);
+        return;
+      }
+
+      // 3. Fallback for completely empty/disconnected canvas (0 edges):
+      pushUndoSnapshot();
+      if (compoundTemplateRegistry.isCompound(type, { customData: parsedData })) {
+        const template = compoundTemplateRegistry.create(type, position, { customData: parsedData });
+        if (template) {
+          setNodes((nds) => nds.concat(template.nodes));
+          setEdges((eds) => eds.concat(template.edges));
+          setSelectedNodeId(template.primaryNodeId);
+          return;
+        }
+      }
+
       const uniqueSuffix = Date.now().toString().slice(-4);
       const taskRef = `${type.toLowerCase()}_task_${uniqueSuffix}`;
       const newNodeId = `node-${taskRef}`;
@@ -594,22 +774,10 @@ export function useDagStudioState({
         },
       };
 
-      if (compoundTemplateRegistry.isCompound(type, { customData: parsedData })) {
-        pushUndoSnapshot();
-        const template = compoundTemplateRegistry.create(type, position, { customData: parsedData });
-        if (template) {
-          setNodes((nds) => nds.concat(template.nodes));
-          setEdges((eds) => eds.concat(template.edges));
-          setSelectedNodeId(template.primaryNodeId);
-          return;
-        }
-      }
-
-      pushUndoSnapshot();
       setNodes((nds) => nds.concat(newNode));
       setSelectedNodeId(newNodeId);
     },
-    [isReadOnly, screenToFlowPosition, pushUndoSnapshot]
+    [isReadOnly, screenToFlowPosition, nodes, edges, selectedNodeId, handleSplitEdge, pushUndoSnapshot]
   );
 
   const isWorkflowBlank = useMemo(() => {
@@ -670,6 +838,46 @@ export function useDagStudioState({
       setIsDismissedEmptyState(true);
     },
     [edges, nodes, handleSplitEdge, pushUndoSnapshot]
+  );
+
+  const handleInsertNode = useCallback(
+    (type: DagNodeType, customData?: Partial<DagNodeData>) => {
+      if (isReadOnly) return;
+      let targetFlowEdge: Edge | undefined;
+
+      if (selectedNodeId) {
+        const selectedOutgoing = edges.find(
+          (e) => e.source === selectedNodeId && e.targetHandle !== 'loop-back'
+        );
+        if (selectedOutgoing) {
+          targetFlowEdge = selectedOutgoing;
+        } else {
+          const selectedIncoming = edges.find((e) => e.target === selectedNodeId);
+          if (selectedIncoming) {
+            targetFlowEdge = selectedIncoming;
+          }
+        }
+      }
+
+      if (!targetFlowEdge) {
+        const endEdge = edges.find((e) => {
+          const target = nodes.find((n) => n.id === e.target);
+          return target?.data.isEndNode || target?.data.taskType === 'END_WORKFLOW';
+        });
+        if (endEdge) {
+          targetFlowEdge = endEdge;
+        } else if (edges.length > 0) {
+          targetFlowEdge = edges[0];
+        }
+      }
+
+      if (targetFlowEdge) {
+        handleSplitEdge(targetFlowEdge.id, type, customData);
+      } else {
+        handleInsertStarterTask(type, customData);
+      }
+    },
+    [isReadOnly, selectedNodeId, edges, nodes, handleSplitEdge, handleInsertStarterTask]
   );
 
   const handleSaveEdgeCondition = useCallback(
@@ -822,6 +1030,7 @@ export function useDagStudioState({
     isWorkflowBlank,
     setIsDismissedEmptyState,
     handleInsertStarterTask,
+    handleInsertNode,
     handleUpdateNodeData,
     handleSaveEdgeCondition,
     handleNewBlank,

@@ -41,22 +41,31 @@ To eliminate this friction and prevent invalid graph states, we implemented the 
 - **`handleInsertStarterTask`**:
   - Enables instant 1-click fast-start from a blank workflow directly into a fully-wired, valid parallel fork or switch structure.
 
-### 3. Cognitive UI/UX Affordances (`dag-palette.tsx` & `dag-quick-insert-popover.tsx`)
+### 3. DOM Handle Binding & Canvas Proximity Auto-Connection
+- **DOM Handle IDs**:
+  - Aligned all template factory edge definitions and exit handles to match DOM handle elements rendered by `DagWorkflowNodeComponent` (`source-right`, `target-left`, `loop-exit`, `approved`, `case-*`).
+- **`resolveSourceHandle` & `resolveTargetHandle`**:
+  - Enforced automatic fallback resolution for unannotated edges (such as `BLANK_WORKFLOW_EDGES`), preventing `undefined` handle bindings in ReactFlow.
+- **Edge Proximity Math (`findNearestEdge`)**:
+  - Implemented point-to-line-segment orthogonal distance math ($d \le 140\text{px}$). When a node or compound bundle is dropped near an existing workflow edge, it automatically splits the edge and connects both upstream and downstream sides.
+- **Flow-Aware Fallback & 1-Click Palette Insert (`handleInsertNode`)**:
+  - When dropped on free canvas or clicked directly in the palette, nodes auto-connect to the active flow (between selected node and downstream, or preceding `END_WORKFLOW`), completely eliminating disconnected orphan nodes.
+
+### 4. Cognitive UI/UX Affordances (`dag-palette.tsx` & `dag-quick-insert-popover.tsx`)
 - Added `Template` visual badges and updated descriptions to highlight auto-paired bundles in `DagPalette`.
+- Added 1-click insertion on both expanded palette items and collapsed rail items via `onInsertNode`.
 - Surfaced `Template` badges in `DagQuickInsertPopover` search list.
 
 ---
 
 ## Verification
 - **Compound Templates Unit Tests**:
-  - `compound-templates.test.ts`: 7/7 tests passed verifying node counts, edge counts, `joinOn` arrays, and handle mappings.
+  - `compound-templates.test.ts`: 7/7 tests passed verifying node counts, edge counts, `joinOn` arrays, and handle mappings (`source-right`, `target-left`).
 - **Canvas Integration Tests**:
-  - `compound-canvas-integration.test.ts`: 5/5 tests passed verifying edge splitting, blank canvas fast-start, downstream collision push, and canvas drop.
+  - `compound-canvas-integration.test.ts`: 7/7 tests passed verifying edge splitting, blank canvas fast-start, downstream collision push, canvas drop proximity splitting, and 1-click flow insertion.
 - **Console Workflow Suite**:
-  - `pnpm --filter @acc/console test "src/features/workflows"`: 26 test files passed, 130 tests passed.
+  - `pnpm --filter @acc/console test "src/features/workflows"`: 26 test files passed, 132 tests passed.
 - **Console TypeScript Strict Typing**:
   - `pnpm --filter @acc/console exec tsc --noEmit`: 0 errors.
 - **Unified Sandbox Parity**:
   - `pnpm --filter @acc/sandbox test`: 11 test files passed, 103 tests passed.
-- **Backend Workflow Engine**:
-  - `pnpm --filter @acc/backend exec node mvnw.cjs -pl workflow-engine test`: 74 tests passed, 0 failures.

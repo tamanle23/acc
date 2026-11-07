@@ -190,7 +190,7 @@ export class SwitchTemplateFactory implements CompoundTemplateFactory {
       edges,
       primaryNodeId: switchNodeId,
       exitNodeId: ejNodeId,
-      exitHandle: 'source',
+      exitHandle: 'source-right',
       envelopeWidth: 520,
       envelopeHeight: 240,
     };

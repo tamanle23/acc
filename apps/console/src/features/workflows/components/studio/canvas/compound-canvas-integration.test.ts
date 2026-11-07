@@ -66,13 +66,17 @@ describe('Compound Canvas Integration & Fast-Start Workflows', () => {
     expect(forkNode).toBeDefined();
     expect(joinNode).toBeDefined();
 
-    // Inbound edge connects start-node to forkNode
+    // Inbound edge connects start-node to forkNode with exact handle IDs
     const inbound = currentEdges.find((e) => e.source === 'start-node');
     expect(inbound?.target).toBe(forkNode!.id);
+    expect(inbound?.sourceHandle).toBe('source-right');
+    expect(inbound?.targetHandle).toBe('target-left');
 
-    // Outbound edge connects joinNode to end-node
+    // Outbound edge connects joinNode to end-node with exact handle IDs
     const outbound = currentEdges.find((e) => e.target === 'end-node');
     expect(outbound?.source).toBe(joinNode!.id);
+    expect(outbound?.sourceHandle).toBe('source-right');
+    expect(outbound?.targetHandle).toBe('target-left');
 
     // Full graph topology validation
     const errors = validateGraphTopology(currentNodes, currentEdges);
@@ -107,9 +111,13 @@ describe('Compound Canvas Integration & Fast-Start Workflows', () => {
 
     const inbound = currentEdges.find((e) => e.source === 'start-node');
     expect(inbound?.target).toBe(switchNode!.id);
+    expect(inbound?.sourceHandle).toBe('source-right');
+    expect(inbound?.targetHandle).toBe('target-left');
 
     const outbound = currentEdges.find((e) => e.target === 'end-node');
     expect(outbound?.source).toBe(ejNode!.id);
+    expect(outbound?.sourceHandle).toBe('source-right');
+    expect(outbound?.targetHandle).toBe('target-left');
 
     const errors = validateGraphTopology(currentNodes, currentEdges);
     expect(errors).toHaveLength(0);
@@ -205,7 +213,96 @@ describe('Compound Canvas Integration & Fast-Start Workflows', () => {
 
     // Initial 2 nodes + 4 dropped nodes = 6 nodes
     expect(result.current.nodes).toHaveLength(6);
-    // Initial 1 edge + 4 dropped edges = 5 edges
-    expect(result.current.edges).toHaveLength(5);
+    // Inbound edge + 4 template edges + Outbound edge = 6 edges (fully connected on both sides!)
+    expect(result.current.edges).toHaveLength(6);
+
+    const forkNode = result.current.nodes.find((n) => n.data.taskType === 'FORK_JOIN');
+    const joinNode = result.current.nodes.find((n) => n.data.taskType === 'JOIN');
+    expect(forkNode).toBeDefined();
+    expect(joinNode).toBeDefined();
+
+    // Verify connections to both sides with correct handles
+    const inbound = result.current.edges.find((e) => e.source === 'start-node');
+    expect(inbound?.target).toBe(forkNode!.id);
+    expect(inbound?.sourceHandle).toBe('source-right');
+    expect(inbound?.targetHandle).toBe('target-left');
+
+    const outbound = result.current.edges.find((e) => e.target === 'end-node');
+    expect(outbound?.source).toBe(joinNode!.id);
+    expect(outbound?.sourceHandle).toBe('source-right');
+    expect(outbound?.targetHandle).toBe('target-left');
+
+    // Complete graph topology passes validation without orphans
+    const errors = validateGraphTopology(result.current.nodes, result.current.edges);
+    expect(errors).toHaveLength(0);
+  });
+
+  it('inserts node via handleInsertNode into active flow and connects to both sides', () => {
+    const { result } = renderHook(() =>
+      useDagStudioState({
+        initialNodes: [blankStartNode, blankEndNode],
+        initialEdges: [directBlankEdge],
+        screenToFlowPosition: (pos) => pos,
+      })
+    );
+
+    // 1-click insert from palette without explicit selection targets direct flow edge
+    act(() => {
+      result.current.handleInsertNode('HTTP', { label: 'Fetch Order API' });
+    });
+
+    // 2 boundaries + 1 HTTP task = 3 nodes
+    expect(result.current.nodes).toHaveLength(3);
+    // Inbound + Outbound = 2 edges
+    expect(result.current.edges).toHaveLength(2);
+
+    const httpNode = result.current.nodes.find((n) => n.data.taskType === 'HTTP');
+    expect(httpNode).toBeDefined();
+
+    const inEdge = result.current.edges.find((e) => e.source === 'start-node');
+    expect(inEdge?.target).toBe(httpNode!.id);
+    expect(inEdge?.sourceHandle).toBe('source-right');
+    expect(inEdge?.targetHandle).toBe('target-left');
+
+    const outEdge = result.current.edges.find((e) => e.target === 'end-node');
+    expect(outEdge?.source).toBe(httpNode!.id);
+    expect(outEdge?.sourceHandle).toBe('source-right');
+    expect(outEdge?.targetHandle).toBe('target-left');
+
+    const errors = validateGraphTopology(result.current.nodes, result.current.edges);
+    expect(errors).toHaveLength(0);
+  });
+
+  it('splits edge when dropping a simple node in between with correct handle IDs', () => {
+    const { result } = renderHook(() =>
+      useDagStudioState({
+        initialNodes: [blankStartNode, blankEndNode],
+        initialEdges: [directBlankEdge],
+        screenToFlowPosition: (pos) => pos,
+      })
+    );
+
+    act(() => {
+      result.current.handleSplitEdge('e_start_to_end', 'SIMPLE', { label: 'Process Payment' });
+    });
+
+    expect(result.current.nodes).toHaveLength(3);
+    expect(result.current.edges).toHaveLength(2);
+
+    const simpleNode = result.current.nodes.find((n) => n.data.taskType === 'SIMPLE');
+    expect(simpleNode).toBeDefined();
+
+    const inEdge = result.current.edges.find((e) => e.source === 'start-node');
+    expect(inEdge?.target).toBe(simpleNode!.id);
+    expect(inEdge?.sourceHandle).toBe('source-right');
+    expect(inEdge?.targetHandle).toBe('target-left');
+
+    const outEdge = result.current.edges.find((e) => e.target === 'end-node');
+    expect(outEdge?.source).toBe(simpleNode!.id);
+    expect(outEdge?.sourceHandle).toBe('source-right');
+    expect(outEdge?.targetHandle).toBe('target-left');
+
+    const errors = validateGraphTopology(result.current.nodes, result.current.edges);
+    expect(errors).toHaveLength(0);
   });
 });

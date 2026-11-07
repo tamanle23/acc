@@ -35,17 +35,20 @@ describe('Compound Node Templates & Fast-Start Engine', () => {
 
       expect(primaryNodeId).toBe(forkNode!.id);
       expect(exitNodeId).toBe(joinNode!.id);
-      expect(exitHandle).toBe('source');
+      expect(exitHandle).toBe('source-right');
 
       const branchRefs = branchNodes.map((n) => n.data.taskReferenceName);
       expect(joinNode!.data.joinOn).toEqual(expect.arrayContaining(branchRefs));
       expect(forkNode!.data.forkTasks).toEqual([[branchRefs[0]], [branchRefs[1]]]);
 
-      // Check wiring
+      // Check wiring and handle binding
       const forkEdges = edges.filter((e) => e.source === forkNode!.id);
       expect(forkEdges).toHaveLength(2);
+      expect(forkEdges.every((e) => e.sourceHandle === 'source-right' && e.targetHandle === 'target-left')).toBe(true);
+
       const joinEdges = edges.filter((e) => e.target === joinNode!.id);
       expect(joinEdges).toHaveLength(2);
+      expect(joinEdges.every((e) => e.sourceHandle === 'source-right' && e.targetHandle === 'target-left')).toBe(true);
     });
 
     it('validates without errors when enclosed in START_WORKFLOW and END_WORKFLOW', () => {
@@ -102,6 +105,9 @@ describe('Compound Node Templates & Fast-Start Engine', () => {
       expect(joinNode!.data.joinOn).toEqual([dynNode!.data.taskReferenceName]);
       expect(primaryNodeId).toBe(dynNode!.id);
       expect(exitNodeId).toBe(joinNode!.id);
+      expect(result.exitHandle).toBe('source-right');
+      expect(edges[0].sourceHandle).toBe('source-right');
+      expect(edges[0].targetHandle).toBe('target-left');
     });
   });
 
@@ -125,6 +131,7 @@ describe('Compound Node Templates & Fast-Start Engine', () => {
 
       expect(primaryNodeId).toBe(switchNode!.id);
       expect(exitNodeId).toBe(exclusiveJoinNode!.id);
+      expect(result.exitHandle).toBe('source-right');
 
       const actionRefs = actionNodes.map((n) => n.data.taskReferenceName);
       expect(exclusiveJoinNode!.data.joinOn).toEqual(expect.arrayContaining(actionRefs));
