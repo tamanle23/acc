@@ -20,6 +20,7 @@ import { LanguageSwitch } from '@/components/language-switch';
 import { ThemeSwitch } from '@/components/theme-switch';
 import { ConfigDrawer } from '@/components/config-drawer';
 import { ProfileDropdown } from '@/components/profile-dropdown';
+import { NotificationDropdown } from '@/features/notifications';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { AuthorizedButton } from '@/components/auth';
@@ -109,6 +110,7 @@ export const MetadataFeature: React.FC = () => {
       <Header>
         <Search />
         <div className="ms-auto flex items-center space-x-4">
+          <NotificationDropdown />
           <LanguageSwitch />
           <ThemeSwitch />
           <ConfigDrawer />

@@ -3,6 +3,7 @@ import { type ColumnDef } from '@tanstack/react-table';
 import { Link } from '@tanstack/react-router';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { AuthorizedButton, AuthorizedDropdownMenuItem } from '@/components/auth';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -213,7 +214,8 @@ export const createDlqColumns = ({
             Inspect
           </Button>
           {item.status === 'ISOLATED' && (
-            <Button
+            <AuthorizedButton
+              permission="platform:dlq:manage"
               variant="outline"
               size="sm"
               disabled={isReplaying}
@@ -231,7 +233,7 @@ export const createDlqColumns = ({
                 <RotateCcw className="h-3.5 w-3.5 mr-1" />
               )}
               {isReplaying ? 'Replaying...' : 'Replay'}
-            </Button>
+            </AuthorizedButton>
           )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -250,19 +252,23 @@ export const createDlqColumns = ({
                 View Details
               </DropdownMenuItem>
               {item.status === 'ISOLATED' && (
-                <DropdownMenuItem onClick={() => onReplay(item)}>
+                <AuthorizedDropdownMenuItem
+                  permission="platform:dlq:manage"
+                  onClick={() => onReplay(item)}
+                >
                   <Play className="mr-2 h-3.5 w-3.5 text-emerald-500" />
                   Replay Task
-                </DropdownMenuItem>
+                </AuthorizedDropdownMenuItem>
               )}
               <DropdownMenuSeparator />
-              <DropdownMenuItem
+              <AuthorizedDropdownMenuItem
+                permission="platform:dlq:manage"
                 onClick={() => onDiscard(item)}
                 className="text-destructive focus:text-destructive"
               >
                 <Trash2 className="mr-2 h-3.5 w-3.5" />
                 Discard Task
-              </DropdownMenuItem>
+              </AuthorizedDropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

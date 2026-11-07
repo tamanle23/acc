@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Header } from '@/components/layout/header';
 import { Main } from '@/components/layout/main';
 import { ProfileDropdown } from '@/components/profile-dropdown';
+import { NotificationDropdown } from '@/features/notifications';
 import { ThemeSwitch } from '@/components/theme-switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -100,6 +101,7 @@ export function DlqFeature() {
               <RefreshCw className={`h-3.5 w-3.5 ${isRefetching ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
+            <NotificationDropdown />
             <ThemeSwitch />
             <ProfileDropdown />
           </div>

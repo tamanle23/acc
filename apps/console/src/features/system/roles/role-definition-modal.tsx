@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { AuthorizedButton } from '@/components/auth';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -184,7 +185,8 @@ export function RoleDefinitionModal({
             >
               Cancel
             </Button>
-            <Button
+            <AuthorizedButton
+              permission="platform:roles:manage"
               type="submit"
               disabled={!roleName.trim() || createRoleMutation.isPending}
               className="gap-1.5"
@@ -200,7 +202,7 @@ export function RoleDefinitionModal({
                   Create Role
                 </>
               )}
-            </Button>
+            </AuthorizedButton>
           </DialogFooter>
         </form>
       </DialogContent>

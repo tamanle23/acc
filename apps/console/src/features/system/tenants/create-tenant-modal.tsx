@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { AuthorizedButton } from '@/components/auth';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -147,7 +148,8 @@ export function CreateTenantModal({ open, onOpenChange }: CreateTenantModalProps
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button
+            <AuthorizedButton
+              permission="platform:fleet:mutate"
               type="submit"
               disabled={createTenantMutation.isPending || !tenantId || !tenantName}
               className="gap-1.5 shadow-md shadow-primary/20"
@@ -163,7 +165,7 @@ export function CreateTenantModal({ open, onOpenChange }: CreateTenantModalProps
                   Deploy Organization
                 </>
               )}
-            </Button>
+            </AuthorizedButton>
           </DialogFooter>
         </form>
       </DialogContent>

@@ -7,12 +7,14 @@ import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/layout/app-sidebar'
 import { SkipToMain } from '@/components/skip-to-main'
 import { AssumeTenantBar } from '@/components/layout/assume-tenant-bar'
+import { useNotificationStream } from '@/features/notifications'
 
 type AuthenticatedLayoutProps = {
   children?: React.ReactNode
 }
 
 export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
+  useNotificationStream()
 
   const defaultOpen = getCookie('sidebar_state') !== 'false'
   return (

@@ -4,6 +4,7 @@ type User = {
   name: string
   email: string
   avatar: string
+  initials?: string
 }
 
 type Team = {

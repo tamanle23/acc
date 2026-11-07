@@ -8,6 +8,7 @@ import {
   type SortingState,
 } from '@tanstack/react-table';
 import { Button } from '@/components/ui/button';
+import { AuthorizedButton } from '@/components/auth';
 import {
   Select,
   SelectContent,
@@ -191,14 +192,15 @@ export function FleetTenantsTable() {
               <RefreshCw className="h-3.5 w-3.5 me-1.5" />
               Refresh
             </Button>
-            <Button
+            <AuthorizedButton
+              permission="platform:fleet:mutate"
               size="sm"
               onClick={() => setCreateModalOpen(true)}
               className="h-8 gap-1.5 shadow-md shadow-primary/20 text-xs"
             >
               <Plus className="h-3.5 w-3.5" />
               Provision Tenant
-            </Button>
+            </AuthorizedButton>
           </div>
         }
       />

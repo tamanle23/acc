@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { AuthorizedButton } from '@/components/auth';
 import { Label } from '@/components/ui/label';
 import {
   AlertTriangle,
@@ -209,7 +210,8 @@ export function DlqInspectorSheet({
         </div>
 
         <SheetFooter className="mt-auto pt-4 border-t border-border/30 flex sm:justify-between items-center gap-2">
-          <Button
+          <AuthorizedButton
+            permission="platform:dlq:manage"
             variant="ghost"
             size="sm"
             className="text-xs text-destructive hover:bg-destructive/10"
@@ -220,14 +222,15 @@ export function DlqInspectorSheet({
           >
             <Trash2 className="h-3.5 w-3.5 mr-1" />
             Discard Task
-          </Button>
+          </AuthorizedButton>
 
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
               Close
             </Button>
             {record.status === 'ISOLATED' && (
-              <Button
+              <AuthorizedButton
+                permission="platform:dlq:manage"
                 size="sm"
                 disabled={isReplaying}
                 className="bg-emerald-700 hover:bg-emerald-800 text-white font-medium shadow-sm min-w-[110px]"
@@ -239,7 +242,7 @@ export function DlqInspectorSheet({
                   <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
                 )}
                 <span>{isReplaying ? 'Replaying...' : 'Replay Task'}</span>
-              </Button>
+              </AuthorizedButton>
             )}
           </div>
         </SheetFooter>

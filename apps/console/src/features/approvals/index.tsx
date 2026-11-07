@@ -7,6 +7,8 @@ import { ThemeSwitch } from '@/components/theme-switch';
 import { LanguageSwitch } from '@/components/language-switch';
 import { ConfigDrawer } from '@/components/config-drawer';
 import { ProfileDropdown } from '@/components/profile-dropdown';
+import { NotificationDropdown } from '@/features/notifications';
+import { useSpringAuthStore } from '@/features/spring-auth';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -18,7 +20,8 @@ import type { ApprovalTask } from '@acc/client';
 
 export const ApprovalsFeature: React.FC = () => {
   const { t } = useTranslation('console');
-  const currentUserId = 'satnaing';
+  const { user } = useSpringAuthStore();
+  const currentUserId = user?.username || 'user';
 
   const { data: approvals = [], isLoading, refetch } = useApprovalsQuery();
   const [activeTab, setActiveTab] = useState<'myReview' | 'unassigned' | 'history'>('myReview');
@@ -61,6 +64,7 @@ export const ApprovalsFeature: React.FC = () => {
       <Header fixed>
         <Search />
         <div className="ms-auto flex items-center space-x-4">
+          <NotificationDropdown />
           <LanguageSwitch />
           <ThemeSwitch />
           <ConfigDrawer />
