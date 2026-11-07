@@ -164,6 +164,8 @@ function DagStudioCanvas({
     setIsDismissedEmptyState,
     handleInsertStarterTask,
     handleInsertNode,
+    handleAddNodeBranch,
+    handleRemoveNodeBranch,
     handleUpdateNodeData,
     handleSaveEdgeCondition,
     handleNewBlank,
@@ -489,11 +491,11 @@ function DagStudioCanvas({
 
       const isStart = hasExplicitStart
         ? Boolean(
-            n.data.isStartNode ||
-              n.id === 'node-start' ||
-              n.data.taskReferenceName === 'workflow_start' ||
-              n.data.taskReferenceName === 'startTask'
-          )
+          n.data.isStartNode ||
+          n.id === 'node-start' ||
+          n.data.taskReferenceName === 'workflow_start' ||
+          n.data.taskReferenceName === 'startTask'
+        )
         : degIn === 0;
 
       // An entry/start node MUST NOT be an end node (guarantees right connector handle is never suppressed)
@@ -501,10 +503,10 @@ function DagStudioCanvas({
         ? false
         : hasExplicitEnd
           ? Boolean(
-              n.data.isEndNode ||
-                n.id === 'node-end' ||
-                n.data.taskReferenceName === 'workflow_end'
-            )
+            n.data.isEndNode ||
+            n.id === 'node-end' ||
+            n.data.taskReferenceName === 'workflow_end'
+          )
           : degOut === 0;
 
       return {
@@ -517,10 +519,12 @@ function DagStudioCanvas({
           onToggleBreakpoint: isExecutionMode ? handleToggleBreakpoint : undefined,
           // Wire hover-popover "Inspect I/O & Logs" button to open telemetry drawer
           onInspectTask: isExecutionMode ? handleInspectTask : undefined,
+          onAddBranch: isReadOnly ? undefined : handleAddNodeBranch,
+          onRemoveBranch: isReadOnly ? undefined : handleRemoveNodeBranch,
         },
       };
     });
-  }, [nodes, edges, breakpoints, handleToggleBreakpoint, handleInspectTask, isExecutionMode]);
+  }, [nodes, edges, breakpoints, handleToggleBreakpoint, handleInspectTask, isExecutionMode, isReadOnly, handleAddNodeBranch, handleRemoveNodeBranch]);
 
   // Decorate edges with EdgeExecutionFlowState semantics.
   // DagConditionEdge reads data.executionFlowState and owns all execution-time styling —
@@ -608,9 +612,9 @@ function DagStudioCanvas({
       !isLiveHead && replayedVariables
         ? replayedVariables
         : (stream.snapshot as any)?.variables || {
-            orderId: 'ORD-2026-991',
-            tier: 'EXPRESS',
-          };
+          orderId: 'ORD-2026-991',
+          tier: 'EXPRESS',
+        };
 
     return {
       workflowStatus:
@@ -864,6 +868,8 @@ function DagStudioCanvas({
           onOpenChange={setIsInspectorOpen}
           onUpdateNodeData={handleUpdateNodeData}
           availableTaskRefs={availableTaskRefs}
+          onAddBranch={handleAddNodeBranch}
+          onRemoveBranch={handleRemoveNodeBranch}
         />
       )}
 
@@ -880,14 +886,14 @@ function DagStudioCanvas({
               nds.map((n) =>
                 n.data.taskReferenceName === taskRef
                   ? {
-                      ...n,
-                      data: {
-                        ...n.data,
-                        inputParameters: overrideInput,
-                        executionState: 'IN_PROGRESS',
-                        error: undefined,
-                      },
-                    }
+                    ...n,
+                    data: {
+                      ...n.data,
+                      inputParameters: overrideInput,
+                      executionState: 'IN_PROGRESS',
+                      error: undefined,
+                    },
+                  }
                   : n
               )
             );

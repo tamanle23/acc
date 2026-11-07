@@ -27,6 +27,7 @@ import {
 } from '../utils/workflow-ir-converter';
 import { getLayoutStrategy, type LayoutAlgorithm } from '../utils/layout';
 import { compoundTemplateRegistry } from '../utils/compound-templates';
+import { multiBranchRegistry } from '../utils/branch-strategies';
 
 export interface UseDagStudioStateOptions {
   isReadOnly?: boolean;
@@ -880,6 +881,281 @@ export function useDagStudioState({
     [isReadOnly, selectedNodeId, edges, nodes, handleSplitEdge, handleInsertStarterTask]
   );
 
+  const handleAddNodeBranch = useCallback(
+    (nodeId: string, customBranchName?: string) => {
+      if (isReadOnly) return;
+      const parentNode = nodes.find((n) => n.id === nodeId);
+      if (!parentNode) return;
+
+      const strategy = multiBranchRegistry.get(parentNode.data.taskType);
+      if (!strategy) return;
+
+      pushUndoSnapshot();
+
+      // 1. Compute new branch descriptor and updated parent node data
+      const { updatedParentData, newBranch, suggestedTaskType, initialBranchLabel } = strategy.addBranch(
+        parentNode.data,
+        { name: customBranchName }
+      );
+
+      // 2. Discover downstream barrier node
+      const barrierNode = strategy.findBarrierNode(parentNode, nodes, edges);
+
+      // 3. Compute Symmetrical Vertical Slotting
+      const mergedParentData = { ...parentNode.data, ...updatedParentData };
+      const allBranches = strategy.getBranches(mergedParentData);
+      const totalBranches = Math.max(allBranches.length, 2);
+
+      const deltaY = 110;
+      const deltaX = 260;
+      const totalSpan = (totalBranches - 1) * deltaY;
+      const yTop = parentNode.position.y - totalSpan / 2;
+
+      // Map existing branch task references to their new slot Y
+      const branchSlotYMap = new Map<string, number>();
+      allBranches.forEach((b, idx) => {
+        const slotY = Math.round(yTop + idx * deltaY);
+        if (b.targetTaskRef) {
+          branchSlotYMap.set(b.targetTaskRef, slotY);
+        }
+      });
+
+      const newSlotY =
+        branchSlotYMap.get(newBranch.targetTaskRef!) ??
+        Math.round(yTop + (allBranches.length - 1) * deltaY);
+
+      // 4. Downstream clearance math
+      const requiredBarrierX = parentNode.position.x + 520;
+      let deltaClearance = 0;
+      if (barrierNode && barrierNode.id !== parentNode.id) {
+        if (barrierNode.position.x < requiredBarrierX) {
+          deltaClearance = requiredBarrierX - barrierNode.position.x;
+        }
+      }
+
+      // Collect transitive downstream descendants from barrierNode to shift right
+      const shiftDescendants = new Set<string>();
+      if (deltaClearance > 0 && barrierNode && barrierNode.id !== parentNode.id) {
+        const q = [barrierNode.id];
+        shiftDescendants.add(barrierNode.id);
+        while (q.length > 0) {
+          const curr = q.shift()!;
+          for (const e of edges) {
+            if (e.source === curr && !shiftDescendants.has(e.target) && e.targetHandle !== 'loop-back') {
+              shiftDescendants.add(e.target);
+              q.push(e.target);
+            }
+          }
+        }
+      }
+
+      // 5. Update existing nodes
+      const newNodeId = `node-${newBranch.targetTaskRef}`;
+      const newBranchNode: Node<DagNodeData> = {
+        id: newNodeId,
+        type: 'dagNode',
+        position: { x: parentNode.position.x + deltaX, y: newSlotY },
+        data: {
+          taskReferenceName: newBranch.targetTaskRef!,
+          taskType: suggestedTaskType,
+          label: initialBranchLabel,
+          executionState: 'PENDING',
+          domain: 'default',
+          timeoutSeconds: 30,
+          retryCount: 3,
+          retryDelaySeconds: 2,
+          backoffRate: 2.0,
+          inputParameters: {},
+        },
+      };
+
+      const barrierSyncData = barrierNode
+        ? strategy.syncBarrierNode(barrierNode, 'add', newBranch.targetTaskRef!)
+        : {};
+
+      const updatedNodes = nodes.map((n) => {
+        if (n.id === parentNode.id) {
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              ...updatedParentData,
+            },
+          };
+        }
+        if (barrierNode && n.id === barrierNode.id) {
+          const shiftedX = shiftDescendants.has(n.id) ? n.position.x + deltaClearance : n.position.x;
+          return {
+            ...n,
+            position: { ...n.position, x: shiftedX },
+            data: {
+              ...n.data,
+              ...barrierSyncData,
+            },
+          };
+        }
+        if (shiftDescendants.has(n.id)) {
+          return {
+            ...n,
+            position: { ...n.position, x: n.position.x + deltaClearance },
+          };
+        }
+        if (branchSlotYMap.has(n.data.taskReferenceName)) {
+          return {
+            ...n,
+            position: {
+              ...n.position,
+              x: parentNode.position.x + deltaX,
+              y: branchSlotYMap.get(n.data.taskReferenceName)!,
+            },
+          };
+        }
+        return n;
+      });
+
+      // 6. Create connecting edges
+      const edgeIn: Edge = {
+        id: `e_${parentNode.id}_to_${newNodeId}_${newBranch.id}`,
+        type: 'dagEdge',
+        source: parentNode.id,
+        target: newNodeId,
+        sourceHandle: newBranch.handleId,
+        targetHandle: 'target-left',
+        label: newBranch.label,
+        animated: true,
+      };
+
+      const newEdges: Edge[] = [edgeIn];
+
+      if (barrierNode && barrierNode.id !== parentNode.id) {
+        const edgeOut: Edge = {
+          id: `e_${newNodeId}_to_${barrierNode.id}`,
+          type: 'dagEdge',
+          source: newNodeId,
+          target: barrierNode.id,
+          sourceHandle: 'source-right',
+          targetHandle: barrierNode.data.taskType === 'DO_WHILE' ? 'loop-back' : 'target-left',
+          animated: true,
+        };
+        newEdges.push(edgeOut);
+      } else if (barrierNode && barrierNode.id === parentNode.id) {
+        // Loopback case for DO_WHILE
+        const edgeBack: Edge = {
+          id: `e_${newNodeId}_to_${parentNode.id}_loopback`,
+          type: 'dagEdge',
+          source: newNodeId,
+          target: parentNode.id,
+          sourceHandle: 'source-right',
+          targetHandle: 'loop-back',
+          label: 'LOOP-BACK',
+          animated: true,
+          data: { isLoopbackEdge: true },
+        };
+        newEdges.push(edgeBack);
+      }
+
+      setNodes([...updatedNodes, newBranchNode]);
+      setEdges([...edges, ...newEdges]);
+      setSelectedNodeId(newNodeId);
+    },
+    [isReadOnly, nodes, edges, pushUndoSnapshot]
+  );
+
+  const handleRemoveNodeBranch = useCallback(
+    (nodeId: string, branchId: string) => {
+      if (isReadOnly) return;
+      const parentNode = nodes.find((n) => n.id === nodeId);
+      if (!parentNode) return;
+
+      const strategy = multiBranchRegistry.get(parentNode.data.taskType);
+      if (!strategy) return;
+
+      let removalResult;
+      try {
+        removalResult = strategy.removeBranch(parentNode.data, branchId);
+      } catch {
+        return;
+      }
+
+      const { updatedParentData, removedBranch, prunedTaskRefs } = removalResult;
+
+      pushUndoSnapshot();
+
+      const barrierNode = strategy.findBarrierNode(parentNode, nodes, edges);
+      const barrierSyncData = barrierNode
+        ? strategy.syncBarrierNode(barrierNode, 'remove', removedBranch.targetTaskRef || branchId)
+        : {};
+
+      const prunedRefsSet = new Set(prunedTaskRefs);
+      const prunedNodeIds = new Set(
+        nodes.filter((n) => prunedRefsSet.has(n.data.taskReferenceName)).map((n) => n.id)
+      );
+
+      // Re-calculate symmetrical Y slots for remaining branches
+      const mergedParentData = { ...parentNode.data, ...updatedParentData };
+      const remainingBranches = strategy.getBranches(mergedParentData);
+      const deltaY = 110;
+      const deltaX = 260;
+      const totalSpan = Math.max(0, (remainingBranches.length - 1) * deltaY);
+      const yTop = parentNode.position.y - totalSpan / 2;
+
+      const branchSlotYMap = new Map<string, number>();
+      remainingBranches.forEach((b, idx) => {
+        if (b.targetTaskRef) {
+          branchSlotYMap.set(b.targetTaskRef, Math.round(yTop + idx * deltaY));
+        }
+      });
+
+      const updatedNodes = nodes
+        .filter((n) => !prunedNodeIds.has(n.id))
+        .map((n) => {
+          if (n.id === parentNode.id) {
+            return {
+              ...n,
+              data: {
+                ...n.data,
+                ...updatedParentData,
+              },
+            };
+          }
+          if (barrierNode && n.id === barrierNode.id) {
+            return {
+              ...n,
+              data: {
+                ...n.data,
+                ...barrierSyncData,
+              },
+            };
+          }
+          if (branchSlotYMap.has(n.data.taskReferenceName)) {
+            return {
+              ...n,
+              position: {
+                ...n.position,
+                x: parentNode.position.x + deltaX,
+                y: branchSlotYMap.get(n.data.taskReferenceName)!,
+              },
+            };
+          }
+          return n;
+        });
+
+      // Filter out edges connecting to/from pruned nodes or matching the removed handle
+      const updatedEdges = edges.filter((e) => {
+        if (prunedNodeIds.has(e.source) || prunedNodeIds.has(e.target)) return false;
+        if (e.source === parentNode.id && e.sourceHandle === removedBranch.handleId) return false;
+        return true;
+      });
+
+      setNodes(updatedNodes);
+      setEdges(updatedEdges);
+      if (selectedNodeId && prunedNodeIds.has(selectedNodeId)) {
+        setSelectedNodeId(parentNode.id);
+      }
+    },
+    [isReadOnly, nodes, edges, selectedNodeId, pushUndoSnapshot]
+  );
+
   const handleSaveEdgeCondition = useCallback(
     (
       edgeId: string,
@@ -1031,6 +1307,8 @@ export function useDagStudioState({
     setIsDismissedEmptyState,
     handleInsertStarterTask,
     handleInsertNode,
+    handleAddNodeBranch,
+    handleRemoveNodeBranch,
     handleUpdateNodeData,
     handleSaveEdgeCondition,
     handleNewBlank,

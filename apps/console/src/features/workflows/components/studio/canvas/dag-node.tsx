@@ -181,6 +181,9 @@ export interface DagNodeData {
   hasBreakpoint?: boolean;
   onToggleBreakpoint?: (taskReferenceName: string) => void;
   onInspectTask?: (taskReferenceName: string) => void;
+  // Multi-Branch Node Expansion
+  onAddBranch?: (nodeId: string) => void;
+  onRemoveBranch?: (nodeId: string, branchId: string) => void;
   // Topology Boundary & Permanence Invariants (Iteration 15)
   isPermanent?: boolean;
   isStartNode?: boolean;
@@ -644,6 +647,37 @@ export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagN
         <div className="mt-2 flex items-center gap-1 p-1 rounded bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-[10px] font-medium leading-tight">
           <AlertCircle className="w-3 h-3 shrink-0" />
           <span className="truncate">{data.validationError}</span>
+        </div>
+      )}
+
+      {/* Multi-Branch Universal Quick Action (SWITCH, FORK_JOIN, DO_WHILE, HUMAN) */}
+      {!isEnd && data.onAddBranch && (data.taskType === 'SWITCH' || data.taskType === 'FORK_JOIN' || data.taskType === 'DO_WHILE' || data.taskType === 'HUMAN') && (
+        <div className="mt-2 pt-1.5 border-t border-border/40">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              data.onAddBranch?.(id);
+            }}
+            className={cn(
+              'w-full flex items-center justify-center gap-1 py-1 px-2 rounded-lg text-[10px] font-semibold transition-all duration-150 select-none shadow-sm',
+              'border border-primary/25 dark:border-primary/35 bg-primary/10 hover:bg-primary/20 text-primary hover:border-primary/60 active:scale-[0.98]',
+              'backdrop-blur-md'
+            )}
+            title={`Add new branch to ${data.label || data.taskType}`}
+            data-testid={`dag-node-add-branch-btn-${data.taskReferenceName}`}
+          >
+            <GitFork className="w-2.5 h-2.5 shrink-0" />
+            <span>
+              {data.taskType === 'SWITCH'
+                ? '+ Add Case'
+                : data.taskType === 'FORK_JOIN'
+                  ? '+ Add Branch'
+                  : data.taskType === 'DO_WHILE'
+                    ? '+ Add Step'
+                    : '+ Add Outcome'}
+            </span>
+          </button>
         </div>
       )}
 
