@@ -8,6 +8,7 @@ import {
   SheetFooter,
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
+import { AuthorizedButton } from '@/components/auth';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
@@ -247,7 +248,8 @@ export function QuotaTuningDrawer({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button
+          <AuthorizedButton
+            permission="platform:quotas:manage"
             onClick={handleSave}
             disabled={updateQuotasMutation.isPending || !reason.trim()}
             className="gap-1.5 shadow-md shadow-primary/20"
@@ -263,7 +265,7 @@ export function QuotaTuningDrawer({
                 Save Quotas
               </>
             )}
-          </Button>
+          </AuthorizedButton>
         </SheetFooter>
       </SheetContent>
     </Sheet>

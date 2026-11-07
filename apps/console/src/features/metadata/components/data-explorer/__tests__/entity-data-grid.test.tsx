@@ -131,11 +131,24 @@ vi.mock('../../../api/metadata-api', async (importOriginal) => {
   };
 });
 
+import { useSpringAuthStore } from '@/features/spring-auth';
+
 describe('EntityDataGrid Component Integration Tests', () => {
   let queryClient: QueryClient;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    useSpringAuthStore.setState({
+      user: {
+        id: 'usr-admin',
+        username: 'admin',
+        email: 'admin@acc.io',
+        roles: ['ROLE_ADMIN'],
+        permissions: ['entity:record:create', 'metadata:schema:write'],
+        isSovereign: true,
+        tenantId: 'SYSTEM',
+      },
+    });
     queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });

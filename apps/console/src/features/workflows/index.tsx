@@ -7,6 +7,7 @@ import { ThemeSwitch } from '@/components/theme-switch';
 import { LanguageSwitch } from '@/components/language-switch';
 import { ConfigDrawer } from '@/components/config-drawer';
 import { ProfileDropdown } from '@/components/profile-dropdown';
+import { NotificationDropdown } from '@/features/notifications';
 import { VisualDagStudio } from './components/studio';
 import { Workflow, ArrowLeft } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -48,6 +49,7 @@ export const WorkflowsFeature: React.FC = () => {
       <Header fixed>
         <Search />
         <div className="ms-auto flex items-center space-x-4">
+          <NotificationDropdown />
           <LanguageSwitch />
           <ThemeSwitch />
           <ConfigDrawer />

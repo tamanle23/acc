@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { AuthorizedButton } from '@/components/auth';
 import { ShieldAlert, Loader2 } from 'lucide-react';
 import {
   useUpdateTenantStatus,
@@ -103,7 +104,8 @@ export function SuspendTenantDialog({
 
         <AlertDialogFooter className="gap-2 sm:gap-0">
           <AlertDialogCancel onClick={() => onOpenChange(false)}>Cancel</AlertDialogCancel>
-          <AlertDialogAction
+          <AuthorizedButton
+            permission="platform:fleet:mutate"
             onClick={handleConfirm}
             disabled={!reason.trim() || updateStatusMutation.isPending}
             className={
@@ -122,7 +124,7 @@ export function SuspendTenantDialog({
             ) : (
               'Reactivate Tenant'
             )}
-          </AlertDialogAction>
+          </AuthorizedButton>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { AuthorizedButton } from '@/components/auth'
 import { Input } from '@/components/ui/input'
 import type { StorageProvider } from './data/storages'
 import { toast } from 'sonner'
@@ -375,9 +376,13 @@ export function StorageManageDialog({
             <Button variant='outline' onClick={() => onOpenChange(false)} className='w-full sm:w-auto'>
               {t('storage.actions.cancel', 'Cancel')}
             </Button>
-            <Button onClick={handleSave} className='w-full sm:w-auto'>
+            <AuthorizedButton
+              permission='workspace:settings:manage'
+              onClick={handleSave}
+              className='w-full sm:w-auto'
+            >
               {t('storage.actions.save', 'Save Changes')}
-            </Button>
+            </AuthorizedButton>
           </div>
         </DialogFooter>
       </DialogContent>

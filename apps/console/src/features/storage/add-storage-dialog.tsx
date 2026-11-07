@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { AuthorizedButton } from '@/components/auth'
 import { predefinedProviderTemplates, type StorageProvider } from './data/storages'
 
 interface AddStorageDialogProps {
@@ -66,14 +67,15 @@ export function AddStorageDialog({
               <p className='text-xs text-muted-foreground line-clamp-2 flex-1'>
                 {t(template.descKey, template.defaultDesc)}
               </p>
-              <Button
+              <AuthorizedButton
+                permission='workspace:settings:manage'
                 variant='outline'
                 className='mt-2 w-full bg-white/50 hover:bg-white/70 dark:bg-white/10 dark:hover:bg-white/20'
                 onClick={() => handleSelectTemplate(template)}
               >
                 <Plus className='mr-2 size-4' />
                 {t('storage.actions.addProvider', 'Add Provider')}
-              </Button>
+              </AuthorizedButton>
             </div>
           ))}
         </div>

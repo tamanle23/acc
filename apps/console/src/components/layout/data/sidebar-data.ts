@@ -34,6 +34,8 @@ import { type SidebarData } from '../types'
 import { useTranslation } from 'react-i18next'
 import { useMemo } from 'react'
 import { useSpringAuthStore } from '@/features/spring-auth'
+import { useUserProfileQuery } from '@/features/settings/profile/api/use-user-profile'
+import { getUserInitials } from '@/lib/user-avatar'
 import { useSandboxStore } from '@/core/sandbox/store/sandbox-store'
 import { useProfileStore } from '@/stores/profile-store'
 import { useMetadataUiStore } from '@/features/metadata/store/use-metadata-ui-store'
@@ -71,6 +73,7 @@ export const sidebarTeams = [
 export const useSidebarData = (): SidebarData => {
   const { t } = useTranslation('console');
   const { user } = useSpringAuthStore();
+  const { data: userProfile } = useUserProfileQuery();
   const { activePersonaId, activeTenantId: sandboxTenantId } = useSandboxStore();
   const profiles = useProfileStore((state) => state.profiles);
   const activeWorkspaceId = useMetadataUiStore((state) => state.activeWorkspaceId);
@@ -89,11 +92,19 @@ export const useSidebarData = (): SidebarData => {
   // An orphaned tenant has zero workspaces or empty workspace id
   const hasActiveWorkspace = Boolean(activeWorkspaceId && activeWorkspaceId.trim() !== '' && tenantWorkspaces.length > 0);
 
+  const displayName = userProfile
+    ? `${userProfile.firstName || ''} ${userProfile.lastName || ''}`.trim() || userProfile.username || user?.username || 'User'
+    : user?.username || 'User';
+  const displayEmail = userProfile?.email || user?.username || '';
+  const avatarUrl = userProfile?.preferences?.avatarUrl || '/avatars/shadcn.jpg';
+  const initials = getUserInitials(displayName || displayEmail, 'U');
+
   return useMemo(() => ({
     user: {
-      name: 'satnaing',
-      email: 'satnaingdev@gmail.com',
-      avatar: '/avatars/shadcn.jpg',
+      name: displayName,
+      email: displayEmail,
+      avatar: avatarUrl,
+      initials,
     },
     teams: (profiles && profiles.length > 0 ? profiles : sidebarTeams) as typeof sidebarTeams,
     navGroups: [
@@ -318,5 +329,5 @@ export const useSidebarData = (): SidebarData => {
         ],
       },
     ],
-  }), [t, isSovereign, isAssumed, profiles, hasActiveWorkspace])
+  }), [t, isSovereign, isAssumed, profiles, hasActiveWorkspace, displayName, displayEmail, avatarUrl, initials])
 }

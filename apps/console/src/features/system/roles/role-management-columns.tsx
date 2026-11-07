@@ -7,6 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { AuthorizedDropdownMenuItem } from '@/components/auth';
 import {
   MoreVertical,
   Eye,
@@ -127,13 +128,14 @@ export function getRoleManagementColumns({
                   <span>Inspect Atoms</span>
                 </DropdownMenuItem>
                 {!role.systemRole && (
-                  <DropdownMenuItem
+                  <AuthorizedDropdownMenuItem
+                    permission="platform:roles:manage"
                     className="gap-2 text-destructive cursor-pointer"
                     onClick={() => onDelete(role)}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                     <span>Delete Role</span>
-                  </DropdownMenuItem>
+                  </AuthorizedDropdownMenuItem>
                 )}
               </DropdownMenuContent>
             </DropdownMenu>

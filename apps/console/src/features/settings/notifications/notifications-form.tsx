@@ -1,8 +1,9 @@
+import React, { useEffect } from 'react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link } from '@tanstack/react-router'
-import { showSubmittedData } from '@/lib/show-submitted-data'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -16,6 +17,10 @@ import {
 } from '@/components/ui/form'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Switch } from '@/components/ui/switch'
+import {
+  useUserProfileQuery,
+  useUpdateUserProfileMutation,
+} from '@/features/settings/profile/api/use-user-profile'
 
 const notificationsFormSchema = z.object({
   type: z.enum(['all', 'mentions', 'none'], {
@@ -33,24 +38,69 @@ const notificationsFormSchema = z.object({
 
 type NotificationsFormValues = z.infer<typeof notificationsFormSchema>
 
-// This can come from your database or API.
+// Default notification values
 const defaultValues: Partial<NotificationsFormValues> = {
+  type: 'all',
   communication_emails: false,
   marketing_emails: false,
   social_emails: true,
   security_emails: true,
+  mobile: false,
 }
 
 export function NotificationsForm() {
+  const { data: profile, isLoading } = useUserProfileQuery()
+  const updateMutation = useUpdateUserProfileMutation()
+
   const form = useForm<NotificationsFormValues>({
     resolver: zodResolver(notificationsFormSchema),
     defaultValues,
   })
 
+  useEffect(() => {
+    if (profile?.preferences?.notifications) {
+      const notifs = profile.preferences.notifications as Record<string, any>
+      form.reset({
+        type: (notifs.type as 'all' | 'mentions' | 'none') || 'all',
+        communication_emails: notifs.communication_emails ?? false,
+        marketing_emails: notifs.marketing_emails ?? false,
+        social_emails: notifs.social_emails ?? true,
+        security_emails: notifs.security_emails ?? true,
+        mobile: notifs.mobile ?? false,
+      })
+    }
+  }, [profile, form])
+
+  const onSubmit = (data: NotificationsFormValues) => {
+    if (!profile) return
+    updateMutation.mutate(
+      {
+        firstName: profile.firstName || '',
+        lastName: profile.lastName || '',
+        email: profile.email || '',
+        phoneNumber: profile.phoneNumber,
+        preferences: {
+          ...profile.preferences,
+          notifications: data,
+        },
+      },
+      {
+        onSuccess: () => {
+          toast.success('Notification preferences updated successfully')
+        },
+        onError: (err: any) => {
+          toast.error(
+            `Failed to update notifications: ${err.message || 'Unknown error'}`
+          )
+        },
+      }
+    )
+  }
+
   return (
     <Form {...form}>
       <form
-        onSubmit={form.handleSubmit((data) => showSubmittedData(data))}
+        onSubmit={form.handleSubmit(onSubmit)}
         className='space-y-8'
       >
         <FormField
@@ -213,7 +263,9 @@ export function NotificationsForm() {
             </FormItem>
           )}
         />
-        <Button type='submit'>Update</Button>
+        <Button type='submit' disabled={updateMutation.isPending}>
+          {updateMutation.isPending ? 'Updating...' : 'Update'}
+        </Button>
       </form>
     </Form>
   )
