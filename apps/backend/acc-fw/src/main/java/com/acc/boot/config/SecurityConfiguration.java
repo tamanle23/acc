@@ -85,8 +85,7 @@ public class SecurityConfiguration {
         authz.requestMatchers(
             "/api/auth/token",
             "/api/auth/refresh",
-            "/api/auth/passkey/**",
-            "/api/v1/notifications/stream"
+            "/api/auth/passkey/**"
         ).permitAll();
         authz.anyRequest().authenticated();
       });

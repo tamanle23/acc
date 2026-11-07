@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import type { ExecutionState } from '@/features/workflows/components/studio';
 import { useWorkflowExecutionStatus } from '../api/workflow-api';
 import { useSpringAuthStore } from '@/features/spring-auth';
+import { FetchEventSource } from '@/core/sse/fetch-sse';
 
 export type SseConnectionState =
   | 'IDLE'
@@ -78,7 +79,7 @@ export function useWorkflowExecutionStream(executionId: string | null) {
   });
 
   const [usePollingFallback, setUsePollingFallback] = useState(false);
-  const eventSourceRef = useRef<EventSource | null>(null);
+  const eventSourceRef = useRef<FetchEventSource | null>(null);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const rafBatchRef = useRef<number | null>(null);
   const pendingUpdatesRef = useRef<{
@@ -251,8 +252,8 @@ export function useWorkflowExecutionStream(executionId: string | null) {
     const connectSse = () => {
       if (isCancelled) return;
 
-      const token = useSpringAuthStore.getState().accessToken;
-      const sseUrl = `/api/v1/workflow/executions/${executionId}/events${token ? `?token=${encodeURIComponent(token)}` : ''}`;
+      const authState = useSpringAuthStore.getState();
+      const sseUrl = `/api/v1/workflow/executions/${executionId}/events`;
 
       setStreamState((prev) => ({
         ...prev,
@@ -268,11 +269,11 @@ export function useWorkflowExecutionStream(executionId: string | null) {
       );
 
       try {
-        if (typeof EventSource === 'undefined') {
-          throw new Error('EventSource is not supported');
-        }
-
-        const es = new EventSource(sseUrl);
+        const es = new FetchEventSource(sseUrl, {
+          token: authState.accessToken,
+          isSandbox: authState.isSandbox,
+          maxRetries: 0, // Managed by outer adaptive retry loop with polling fallback
+        });
         eventSourceRef.current = es;
 
         es.onopen = () => {

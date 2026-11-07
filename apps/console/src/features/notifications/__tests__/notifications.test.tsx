@@ -6,7 +6,46 @@ import { useNotificationStore } from '../store/use-notification-store';
 import { NotificationDropdown } from '../components/notification-dropdown';
 import { useNotificationStream } from '../hooks/use-notification-stream';
 import { useSpringAuthStore } from '@/features/spring-auth';
+import { FetchEventSource } from '@/core/sse/fetch-sse';
 import type { ConsoleNotification } from '../types';
+
+vi.mock('@/core/sse/fetch-sse', () => {
+  class MockFetchEventSource {
+    public static instances: MockFetchEventSource[] = [];
+    public url: string;
+    public options: any;
+    public onopen: (() => void) | null = null;
+    public onerror: ((err: any) => void) | null = null;
+    private listeners: Map<string, Array<(e: any) => void>> = new Map();
+
+    constructor(url: string, options: any = {}) {
+      this.url = url;
+      this.options = options;
+      MockFetchEventSource.instances.push(this);
+    }
+
+    addEventListener(type: string, listener: (e: any) => void) {
+      if (!this.listeners.has(type)) {
+        this.listeners.set(type, []);
+      }
+      this.listeners.get(type)!.push(listener);
+    }
+
+    emit(type: string, data: any) {
+      const list = this.listeners.get(type) || [];
+      list.forEach((cb) => cb({ type, data: typeof data === 'string' ? data : JSON.stringify(data) }));
+    }
+
+    close() {
+      // closed
+    }
+  }
+
+  return {
+    FetchEventSource: MockFetchEventSource,
+    createFetchEventSource: (url: string, options: any) => new MockFetchEventSource(url, options),
+  };
+});
 
 vi.mock('@/features/settings/profile/api/use-user-profile', () => ({
   useUserProfileQuery: () => ({ data: null }),
@@ -21,35 +60,6 @@ vi.mock('sonner', () => ({
     success: vi.fn(),
   },
 }));
-
-class MockEventSource {
-  public static instances: MockEventSource[] = [];
-  public url: string;
-  public onopen: (() => void) | null = null;
-  public onerror: ((err: any) => void) | null = null;
-  private listeners: Map<string, Array<(e: any) => void>> = new Map();
-
-  constructor(url: string) {
-    this.url = url;
-    MockEventSource.instances.push(this);
-  }
-
-  addEventListener(type: string, listener: (e: any) => void) {
-    if (!this.listeners.has(type)) {
-      this.listeners.set(type, []);
-    }
-    this.listeners.get(type)!.push(listener);
-  }
-
-  emit(type: string, data: any) {
-    const list = this.listeners.get(type) || [];
-    list.forEach((cb) => cb({ data: typeof data === 'string' ? data : JSON.stringify(data) }));
-  }
-
-  close() {
-    // closed
-  }
-}
 
 describe('useNotificationStore', () => {
   beforeEach(() => {
@@ -193,8 +203,7 @@ describe('useNotificationStream', () => {
     queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
-    MockEventSource.instances = [];
-    (globalThis as any).EventSource = MockEventSource;
+    (FetchEventSource as any).instances = [];
     useNotificationStore.getState().clearAll();
     useNotificationStore.getState().setConnected(false);
   });
@@ -217,11 +226,11 @@ describe('useNotificationStream', () => {
 
     renderHook(() => useNotificationStream(), { wrapper });
 
-    expect(MockEventSource.instances.length).toBe(0);
+    expect((FetchEventSource as any).instances.length).toBe(0);
     expect(useNotificationStore.getState().isConnected).toBe(false);
   });
 
-  it('short-circuits network EventSource and marks connected in offline sandbox mode', () => {
+  it('passes isSandbox flag to FetchEventSource in offline sandbox mode', () => {
     useSpringAuthStore.setState({
       isAuthenticated: true,
       isSandbox: true,
@@ -230,11 +239,11 @@ describe('useNotificationStream', () => {
 
     renderHook(() => useNotificationStream(), { wrapper });
 
-    expect(MockEventSource.instances.length).toBe(0);
-    expect(useNotificationStore.getState().isConnected).toBe(true);
+    expect((FetchEventSource as any).instances.length).toBe(1);
+    expect((FetchEventSource as any).instances[0].options.isSandbox).toBe(true);
   });
 
-  it('connects to SSE endpoint with token query parameter when authenticated', () => {
+  it('connects to SSE endpoint with token option and zero tokens in URL when authenticated', () => {
     useSpringAuthStore.setState({
       isAuthenticated: true,
       isSandbox: false,
@@ -243,11 +252,14 @@ describe('useNotificationStream', () => {
 
     renderHook(() => useNotificationStream(), { wrapper });
 
-    expect(MockEventSource.instances.length).toBe(1);
-    const es = MockEventSource.instances[0];
+    expect((FetchEventSource as any).instances.length).toBe(1);
+    const es = (FetchEventSource as any).instances[0];
     expect(es.url).toContain('/api/v1/notifications/stream');
-    expect(es.url).toContain('token=secure-bearer-jwt-token');
+    // Zero token parameter in the URL (prevents log leakage)
+    expect(es.url).not.toContain('token=');
     expect(es.url).toContain('tenantId=');
+    // Token supplied securely in options for Authorization header
+    expect(es.options.token).toBe('secure-bearer-jwt-token');
   });
 
   it('receives INIT event and sets connected to true', () => {
@@ -259,7 +271,7 @@ describe('useNotificationStream', () => {
 
     renderHook(() => useNotificationStream(), { wrapper });
 
-    const es = MockEventSource.instances[0];
+    const es = (FetchEventSource as any).instances[0];
     act(() => {
       es.emit('INIT', { status: 'OK' });
     });
@@ -276,7 +288,7 @@ describe('useNotificationStream', () => {
 
     renderHook(() => useNotificationStream(), { wrapper });
 
-    const es = MockEventSource.instances[0];
+    const es = (FetchEventSource as any).instances[0];
     act(() => {
       es.emit('APPROVAL_REQUESTED', {
         taskId: 'task-99',

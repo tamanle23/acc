@@ -29,6 +29,7 @@ import { announceToScreenReader } from '@/hooks/use-aria-announce';
 import { useApprovalTasks, useResolveApprovalTask, type ApprovalTask } from '../api/workflow-api';
 import { approvalTaskMockStore } from '@/core/sandbox';
 import { useSpringAuthStore } from '@/features/spring-auth';
+import { FetchEventSource } from '@/core/sse/fetch-sse';
 
 export type { ApprovalTask };
 
@@ -60,30 +61,23 @@ export function ApprovalsInbox() {
 
   // Connect to real-time SSE stream with automatic reconnection resilience
   useEffect(() => {
-    let eventSource: EventSource | null = null;
+    let eventSource: FetchEventSource | null = null;
     let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
     let isMounted = true;
 
     const connectSse = () => {
       try {
-        if (typeof EventSource === 'undefined') return;
-
         const authState = useSpringAuthStore.getState();
-        if (authState.isSandbox) {
-          if (isMounted) setSseConnected(true);
-          return;
-        }
-
         const queryParams = new URLSearchParams();
         if (authState.currentTenantId) {
           queryParams.set('tenantId', authState.currentTenantId);
         }
-        if (authState.accessToken) {
-          queryParams.set('token', authState.accessToken);
-        }
 
         const streamUrl = `/api/v1/notifications/stream${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-        eventSource = new EventSource(streamUrl);
+        eventSource = new FetchEventSource(streamUrl, {
+          token: authState.accessToken,
+          isSandbox: authState.isSandbox,
+        });
         eventSource.onopen = () => {
           if (isMounted) setSseConnected(true);
         };

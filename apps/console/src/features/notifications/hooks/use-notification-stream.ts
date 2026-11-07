@@ -5,13 +5,15 @@ import { useSpringAuthStore } from '@/features/spring-auth';
 import { useMetadataUiStore } from '@/features/metadata/store/use-metadata-ui-store';
 import { useSandboxStore } from '@/core/sandbox/store/sandbox-store';
 import { useUserProfileQuery } from '@/features/settings/profile/api/use-user-profile';
+import { FetchEventSource } from '@/core/sse/fetch-sse';
 import { useNotificationStore } from '../store/use-notification-store';
 import type { NotificationItem, NotificationSeverity, NotificationCategory } from '../types';
 
 /**
  * Global SSE notification stream hook.
- * Connects to /api/v1/notifications/stream, listens for real-time domain events,
- * writes to useNotificationStore, invalidates React Query caches, and dispatches Sonner toasts.
+ * Connects to /api/v1/notifications/stream with Authorization: Bearer headers via FetchEventSource,
+ * listens for real-time domain events, writes to useNotificationStore, invalidates React Query caches,
+ * and dispatches Sonner toasts.
  */
 export function useNotificationStream() {
   const queryClient = useQueryClient();
@@ -23,7 +25,7 @@ export function useNotificationStream() {
   const addNotification = useNotificationStore((s) => s.addNotification);
   const setConnected = useNotificationStore((s) => s.setConnected);
 
-  const eventSourceRef = useRef<EventSource | null>(null);
+  const eventSourceRef = useRef<FetchEventSource | null>(null);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reconnectAttemptsRef = useRef<number>(0);
 
@@ -54,12 +56,6 @@ export function useNotificationStream() {
       return;
     }
 
-    // In offline sandbox mode, simulate a connected notification stream without failing backend requests
-    if (isSandbox) {
-      setConnected(true);
-      return;
-    }
-
     let isSubscribed = true;
 
     const connectSSE = () => {
@@ -72,13 +68,20 @@ export function useNotificationStream() {
 
         const queryParams = new URLSearchParams();
         queryParams.set('tenantId', effectiveTenantId);
-        if (accessToken) {
-          queryParams.set('token', accessToken);
-        }
 
+        // Security Invariant: Token is sent strictly via HTTP Authorization: Bearer header, never in the URL.
         const streamUrl = `/api/v1/notifications/stream?${queryParams.toString()}`;
-        const es = new EventSource(streamUrl);
+        const es = new FetchEventSource(streamUrl, {
+          token: accessToken,
+          isSandbox,
+        });
         eventSourceRef.current = es;
+
+        es.onopen = () => {
+          if (!isSubscribed) return;
+          setConnected(true);
+          reconnectAttemptsRef.current = 0;
+        };
 
         es.addEventListener('INIT', (e) => {
           if (!isSubscribed) return;

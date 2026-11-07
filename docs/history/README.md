@@ -114,3 +114,4 @@
 | 448 | [tekgo-ui Pure PortableText to HTML Migration](./448_tekgo_ui_pure_portabletext_to_html.md) | Completed |
 | 449 | [Visual DAG Studio 2.0 - Enterprise Data Pipeline & DAG Designer Upgrade](./449_visual_dag_studio_2_data_pipeline_designer.md) | Completed |
 | 450 | [Fix Notification SSE Stream 401 Unauthorized](./450_fix_notification_sse_stream_401_unauthorized.md) | Completed |
+| 451 | [Eliminate URL Tokens and Harden Server-Sent Events Security](./451_eliminate_url_tokens_and_harden_sse_security.md) | Completed |

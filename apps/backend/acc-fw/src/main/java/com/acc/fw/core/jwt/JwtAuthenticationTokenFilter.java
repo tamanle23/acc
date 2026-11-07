@@ -121,15 +121,8 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
         .map(t -> t.substring(7))
         .orElse(null);
 
-    // Support token query parameter for SSE (EventSource) and WebSocket connections (RFC 6750 §2.3)
-    String queryToken = request.getParameter("token");
-    if (StringUtils.isBlank(queryToken)) {
-      queryToken = request.getParameter("access_token");
-    }
-
     String authenticationToken = this.readCookie(request, jwtCookieName)
         .or(() -> Optional.ofNullable(header))
-        .or(() -> Optional.ofNullable(queryToken))
         .orElse(null);
     String path = request.getRequestURI();
 
@@ -150,11 +143,10 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
     if (!authResult.isPresent()) {
       securityContextHolderStrategy.clearContext();
       String servletPath = request.getServletPath();
-      boolean isPermitted = "/api/v1/notifications/stream".equals(servletPath)
-          || (applicationProperties.getSecurity() != null
-              && applicationProperties.getSecurity().getPermitAlls() != null
-              && Arrays.stream(applicationProperties.getSecurity().getPermitAlls())
-                  .anyMatch(pattern -> pathMatcher.match(pattern, servletPath)));
+      boolean isPermitted = applicationProperties.getSecurity() != null
+          && applicationProperties.getSecurity().getPermitAlls() != null
+          && Arrays.stream(applicationProperties.getSecurity().getPermitAlls())
+              .anyMatch(pattern -> pathMatcher.match(pattern, servletPath));
       if (isPermitted) {
         filterChain.doFilter(request, response);
         return;
