@@ -219,9 +219,16 @@ export const DagQuickInsertPopover: React.FC<DagQuickInsertPopoverProps> = ({
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold truncate leading-tight">
-                      {item.label}
-                    </span>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="text-xs font-semibold truncate leading-tight">
+                        {item.label}
+                      </span>
+                      {item.isCompound && (
+                        <span className="text-[9px] font-medium px-1 py-0 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25 shrink-0">
+                          Template
+                        </span>
+                      )}
+                    </div>
                     <span className="text-[9px] font-mono opacity-60 uppercase shrink-0 ml-1">
                       {item.type}
                     </span>

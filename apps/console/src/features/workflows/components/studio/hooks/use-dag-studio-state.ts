@@ -26,6 +26,7 @@ import {
   type GraphValidationError,
 } from '../utils/workflow-ir-converter';
 import { getLayoutStrategy, type LayoutAlgorithm } from '../utils/layout';
+import { compoundTemplateRegistry } from '../utils/compound-templates';
 
 export interface UseDagStudioStateOptions {
   isReadOnly?: boolean;
@@ -222,6 +223,62 @@ export function useDagStudioState({
       const newX = Math.round((sourcePos.x + targetPos.x) / 2);
       const newY = Math.round((sourcePos.y + targetPos.y) / 2);
 
+      // Check for compound templates (FORK_JOIN, DYNAMIC_FORK, SWITCH, DO_WHILE, HUMAN, etc.)
+      if (compoundTemplateRegistry.isCompound(newNodeType, { customData })) {
+        const template = compoundTemplateRegistry.create(newNodeType, { x: newX, y: newY }, { customData });
+        if (template) {
+          // Downstream Node Push Invariant: Avoid overlapping nodes by shifting downstream descendants
+          const requiredClearance = newX + template.envelopeWidth + 120;
+          const deltaX = targetPos.x < requiredClearance ? requiredClearance - targetPos.x : 0;
+
+          let updatedNodes = nodes;
+          if (deltaX > 0 && targetNode) {
+            const descendants = new Set<string>();
+            const q = [targetNode.id];
+            descendants.add(targetNode.id);
+            while (q.length > 0) {
+              const curr = q.shift()!;
+              for (const e of edges) {
+                if (e.source === curr && !descendants.has(e.target) && e.targetHandle !== 'loop-back') {
+                  descendants.add(e.target);
+                  q.push(e.target);
+                }
+              }
+            }
+            updatedNodes = updatedNodes.map((n) =>
+              descendants.has(n.id) ? { ...n, position: { ...n.position, x: n.position.x + deltaX } } : n
+            );
+          }
+
+          const edgeIn: Edge = {
+            id: `e_${targetEdge.source}_to_${template.primaryNodeId}`,
+            type: 'dagEdge',
+            source: targetEdge.source,
+            target: template.primaryNodeId,
+            sourceHandle: targetEdge.sourceHandle,
+            targetHandle: 'target-left',
+            animated: true,
+            label: targetEdge.label,
+            data: targetEdge.data ? { ...targetEdge.data } : {},
+          };
+
+          const edgeOut: Edge = {
+            id: `e_${template.exitNodeId}_to_${targetEdge.target}`,
+            type: 'dagEdge',
+            source: template.exitNodeId,
+            target: targetEdge.target,
+            sourceHandle: template.exitHandle || 'source-right',
+            targetHandle: targetEdge.targetHandle || 'target-left',
+            animated: true,
+          };
+
+          setNodes([...updatedNodes, ...template.nodes]);
+          setEdges([...edges.filter((e) => e.id !== edgeId), edgeIn, ...template.edges, edgeOut]);
+          setSelectedNodeId(template.primaryNodeId);
+          return;
+        }
+      }
+
       const uniqueSuffix = Date.now().toString().slice(-4);
       const taskRef = `${newNodeType.toLowerCase()}_task_${uniqueSuffix}`;
       const newNodeId = `node-${taskRef}`;
@@ -250,6 +307,8 @@ export function useDagStudioState({
         type: 'dagEdge',
         source: targetEdge.source,
         target: newNodeId,
+        sourceHandle: targetEdge.sourceHandle,
+        targetHandle: 'target-left',
         animated: true,
         label: targetEdge.label,
         data: targetEdge.data ? { ...targetEdge.data } : {},
@@ -260,6 +319,8 @@ export function useDagStudioState({
         type: 'dagEdge',
         source: newNodeId,
         target: targetEdge.target,
+        sourceHandle: 'source-right',
+        targetHandle: targetEdge.targetHandle || 'target-left',
         animated: true,
       };
 
@@ -533,59 +594,22 @@ export function useDagStudioState({
         },
       };
 
-      if (type === 'DO_WHILE') {
-        const bodyRef = `step_${uniqueSuffix}`;
-        const bodyNodeId = `node-${bodyRef}`;
-        const bodyNode: Node<DagNodeData> = {
-          id: bodyNodeId,
-          type: 'dagNode',
-          position: { x: position.x + 240, y: position.y },
-          data: {
-            taskReferenceName: bodyRef,
-            label: 'Loop Step 1',
-            taskType: 'SIMPLE',
-            executionState: 'PENDING',
-            domain: 'default',
-            timeoutSeconds: 30,
-            retryCount: 3,
-            retryDelaySeconds: 2,
-            backoffRate: 2.0,
-            inputParameters: {},
-          },
-        };
-
-        const bodyEdge: Edge = {
-          id: `e_${newNodeId}_${bodyNodeId}_body`,
-          type: 'dagEdge',
-          source: newNodeId,
-          target: bodyNodeId,
-          sourceHandle: 'loop-body',
-          targetHandle: 'target-left',
-          label: 'BODY',
-          animated: true,
-          data: {},
-        };
-
-        const loopbackEdge: Edge = {
-          id: `e_${bodyNodeId}_${newNodeId}_back`,
-          type: 'dagEdge',
-          source: bodyNodeId,
-          target: newNodeId,
-          sourceHandle: 'source-right',
-          targetHandle: 'loop-back',
-          label: 'LOOP-BACK',
-          animated: true,
-          data: { isLoopbackEdge: true },
-        };
-
-        setNodes((nds) => nds.concat(newNode, bodyNode));
-        setEdges((eds) => eds.concat(bodyEdge, loopbackEdge));
-        return;
+      if (compoundTemplateRegistry.isCompound(type, { customData: parsedData })) {
+        pushUndoSnapshot();
+        const template = compoundTemplateRegistry.create(type, position, { customData: parsedData });
+        if (template) {
+          setNodes((nds) => nds.concat(template.nodes));
+          setEdges((eds) => eds.concat(template.edges));
+          setSelectedNodeId(template.primaryNodeId);
+          return;
+        }
       }
 
+      pushUndoSnapshot();
       setNodes((nds) => nds.concat(newNode));
+      setSelectedNodeId(newNodeId);
     },
-    [isReadOnly, screenToFlowPosition]
+    [isReadOnly, screenToFlowPosition, pushUndoSnapshot]
   );
 
   const isWorkflowBlank = useMemo(() => {
@@ -609,6 +633,16 @@ export function useDagStudioState({
         handleSplitEdge(directEdge.id, taskType, customData);
       } else {
         pushUndoSnapshot();
+        if (compoundTemplateRegistry.isCompound(taskType, { customData })) {
+          const template = compoundTemplateRegistry.create(taskType, { x: 300, y: 200 }, { customData });
+          if (template) {
+            setNodes((nds) => [...nds, ...template.nodes]);
+            setEdges((eds) => [...eds, ...template.edges]);
+            setSelectedNodeId(template.primaryNodeId);
+            setIsDismissedEmptyState(true);
+            return;
+          }
+        }
         const uniqueSuffix = Date.now().toString().slice(-4);
         const taskRef = `${taskType.toLowerCase()}_task_${uniqueSuffix}`;
         const newNodeId = `node-${taskRef}`;

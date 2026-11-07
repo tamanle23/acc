@@ -42,6 +42,7 @@ export interface PaletteItem {
   category: 'control' | 'data' | 'connectors' | 'human' | 'ai';
   icon: React.ReactNode;
   defaultData: Partial<DagNodeData>;
+  isCompound?: boolean;
 }
 
 export interface DagPaletteProps {
@@ -78,9 +79,10 @@ export const PALETTE_ITEMS: PaletteItem[] = [
   {
     type: 'SWITCH',
     label: 'Switch Node',
-    description: 'Conditional branch router',
+    description: 'Spawns switch cases with Exclusive Join merge',
     category: 'control',
     icon: <Split className="w-3.5 h-3.5 text-amber-500" />,
+    isCompound: true,
     defaultData: {
       taskType: 'SWITCH',
       label: 'Switch Condition',
@@ -90,9 +92,10 @@ export const PALETTE_ITEMS: PaletteItem[] = [
   {
     type: 'FORK_JOIN',
     label: 'Fork (Parallel Split)',
-    description: 'Diverges execution into concurrent branches',
+    description: 'Spawns parallel branches with paired Join barrier',
     category: 'control',
     icon: <GitFork className="w-3.5 h-3.5 text-indigo-500" />,
+    isCompound: true,
     defaultData: {
       taskType: 'FORK_JOIN',
       label: 'Parallel Fork',
@@ -125,9 +128,10 @@ export const PALETTE_ITEMS: PaletteItem[] = [
   {
     type: 'DYNAMIC_FORK',
     label: 'Dynamic Fork',
-    description: 'Runtime generated parallel tasks',
+    description: 'Spawns dynamic fork with paired Join barrier',
     category: 'control',
     icon: <GitFork className="w-3.5 h-3.5 text-purple-500" />,
+    isCompound: true,
     defaultData: {
       taskType: 'DYNAMIC_FORK',
       label: 'Dynamic Fork',
@@ -148,9 +152,10 @@ export const PALETTE_ITEMS: PaletteItem[] = [
   {
     type: 'DO_WHILE',
     label: 'Do-While Loop',
-    description: 'Iterative loop until condition met',
+    description: 'Spawns loop body with return back-edge',
     category: 'control',
     icon: <Repeat className="w-3.5 h-3.5 text-emerald-500" />,
+    isCompound: true,
     defaultData: {
       taskType: 'DO_WHILE',
       label: 'Do-While Loop',
@@ -322,9 +327,10 @@ export const PALETTE_ITEMS: PaletteItem[] = [
   {
     type: 'HUMAN',
     label: 'Human Approval',
-    description: 'Manual approval & review gate',
+    description: 'Spawns review gate with Approved/Rejected paths',
     category: 'human',
     icon: <UserCheck className="w-3.5 h-3.5 text-emerald-600" />,
+    isCompound: true,
     defaultData: {
       taskType: 'HUMAN',
       label: 'Human Approval',
@@ -593,7 +599,14 @@ export function DagPalette({
                         {item.icon}
                       </div>
                       <div className="flex flex-col min-w-0 flex-1">
-                        <span className="text-xs font-semibold text-foreground truncate">{item.label}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-semibold text-foreground truncate">{item.label}</span>
+                          {item.isCompound && (
+                            <span className="text-[9px] font-medium px-1 py-0 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25 shrink-0">
+                              Template
+                            </span>
+                          )}
+                        </div>
                         <span className="text-[10px] text-muted-foreground truncate">{item.description}</span>
                       </div>
                     </div>

@@ -107,3 +107,4 @@
 | 441 | [Backend Hardening: Modulith Decoupling, Workflow Durability & Canonical Authorization](./441_backend_hardening_modulith_workflow_canonical_auth.md) | Completed |
 | 442 | [Fix Blank Workflow Missing End Node and Start Connector Handle](./442_fix_blank_workflow_missing_end_node_and_start_connector.md) | Completed |
 | 443 | [Refine 24 Workflow Node Types Across Backend Engine and Visual DAG Studio](./443_refine_24_workflow_node_types_backend_and_dag_studio.md) | Completed |
+| 444 | [Compound Node Templates & Fast-Start Paired Workflow Engine](./444_compound_node_templates_fast_start_dag_studio.md) | Completed |
