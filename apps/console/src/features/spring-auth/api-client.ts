@@ -50,17 +50,47 @@ const MUTATION_PERMISSION_RULES: RoutePermissionRule[] = [
 
   // Billing Plane
   { pattern: /^\/api\/v1\/billing\/(upgrade|subscription)/i, method: 'ALL', permission: 'billing:subscription:upgrade' },
+
+  // Storage Plane
+  { pattern: /^\/api\/(v1\/)?storage(\/.*)?$/i, method: 'ALL', permission: 'workspace:settings:manage' },
+
+  // Dead-Letter Queue (DLQ) Plane
+  { pattern: /^\/api\/(v1\/)?system\/dlq(\/.*)?$/i, method: 'ALL', permission: 'platform:dlq:manage' },
+
+  // Fleet Tenants Plane
+  { pattern: /^\/api\/(v1\/)?system\/tenants\/[^/]+\/status/i, method: 'ALL', permission: 'platform:fleet:mutate' },
+  { pattern: /^\/api\/(v1\/)?system\/tenants\/[^/]+\/assume/i, method: 'ALL', permission: 'platform:tenant:assume' },
+  { pattern: /^\/api\/(v1\/)?system\/tenants\/[^/]+\/subscription/i, method: 'ALL', permission: 'billing:tier:override' },
+  { pattern: /^\/api\/(v1\/)?system\/tenants\/[^/]+\/quotas/i, method: 'ALL', permission: 'platform:quotas:manage' },
+  { pattern: /^\/api\/(v1\/)?system\/tenants(\/.*)?$/i, method: 'POST', permission: 'platform:fleet:mutate' },
+
+  // System Roles & RBAC Plane
+  { pattern: /^\/api\/(v1\/)?system\/roles(\/.*)?$/i, method: 'ALL', permission: 'platform:roles:manage' },
+  { pattern: /^\/api\/(v1\/)?system\/users\/[^/]+\/lock/i, method: 'ALL', permission: 'platform:users:manage' },
+
+  // Audit Studio Plane
+  { pattern: /^\/api\/(v1\/)?system\/audit\/verify/i, method: 'POST', permission: 'audit:hash:verify' },
+  { pattern: /^\/api\/(v1\/)?system\/audit\/export/i, method: 'GET', permission: 'audit:compliance:export' },
 ];
 
 function checkPreflightAuthorization(config: import('axios').InternalAxiosRequestConfig): void {
   const method = (config.method || 'GET').toUpperCase();
-  if (['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+  if (['HEAD', 'OPTIONS'].includes(method)) {
     return;
   }
 
   const fullUrl = config.url?.startsWith('http')
     ? new URL(config.url).pathname
     : (config.baseURL || '') + (config.url || '');
+
+  if (method === 'GET') {
+    const hasSensitiveGetRule = MUTATION_PERMISSION_RULES.some(
+      (rule) => rule.method === 'GET' && rule.pattern.test(fullUrl)
+    );
+    if (!hasSensitiveGetRule) {
+      return;
+    }
+  }
 
   const matchingRule = MUTATION_PERMISSION_RULES.find((rule) => {
     if (rule.method !== 'ALL' && rule.method !== method) return false;

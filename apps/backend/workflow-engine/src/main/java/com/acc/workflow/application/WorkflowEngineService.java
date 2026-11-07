@@ -341,6 +341,21 @@ public class WorkflowEngineService {
         return true;
     }
 
+    public void quarantineTamperedWorkflow(String workflowId, String reason) {
+        long now = System.currentTimeMillis();
+        persistencePort.updateWorkflowStatus(workflowId, WorkflowStatus.TAMPERED, Collections.emptyMap(), reason, now);
+        persistencePort.getWorkflowSnapshot(workflowId).ifPresent(snap -> {
+            if (snap.tasksByRef() != null) {
+                for (TaskSnapshot t : snap.tasksByRef().values()) {
+                    if (t != null && !t.status().isTerminal()) {
+                        persistencePort.updateTaskExecution(t.taskId(), TaskStatus.FAILED, Map.of("error", reason), reason, now);
+                        persistencePort.removeQueueTask(t.taskId());
+                    }
+                }
+            }
+        });
+    }
+
     public TopologicalCompatibilityValidator.MigrationValidationReport validateMigration(
         String workflowId,
         WorkflowDefinition targetDef

@@ -9,6 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { AuthorizedDropdownMenuItem } from '@/components/auth';
 import {
   Building2,
   Sliders,
@@ -227,51 +228,57 @@ export function getFleetTenantsColumns({
                 <DropdownMenuSeparator />
 
                 {!isSystem && (
-                  <DropdownMenuItem
+                  <AuthorizedDropdownMenuItem
+                    permission="platform:tenant:assume"
                     onClick={() => onAssumeTenant(tenant)}
                     className="gap-2 cursor-pointer text-amber-600 dark:text-amber-400 font-medium"
                   >
                     <UserCheck className="h-4 w-4" />
                     Assume Tenant
-                  </DropdownMenuItem>
+                  </AuthorizedDropdownMenuItem>
                 )}
 
-                <DropdownMenuItem
+                <AuthorizedDropdownMenuItem
+                  permission="workspace:settings:manage"
                   onClick={() => onOpenWorkspaces(tenant)}
                   className="gap-2 cursor-pointer"
                 >
                   <Layers className="h-4 w-4" />
                   Manage Workspaces
-                </DropdownMenuItem>
+                </AuthorizedDropdownMenuItem>
 
-                <DropdownMenuItem
+                <AuthorizedDropdownMenuItem
+                  permission="platform:users:manage"
                   onClick={() => onOpenUsers(tenant)}
                   className="gap-2 cursor-pointer"
                 >
                   <UsersIcon className="h-4 w-4" />
                   Manage Users
-                </DropdownMenuItem>
+                </AuthorizedDropdownMenuItem>
 
-                <DropdownMenuItem
+                <AuthorizedDropdownMenuItem
+                  permission="billing:tier:override"
                   onClick={() => onOpenSubscription(tenant)}
                   className="gap-2 cursor-pointer"
                 >
                   <CreditCard className="h-4 w-4" />
                   Edit Subscription
-                </DropdownMenuItem>
+                </AuthorizedDropdownMenuItem>
 
-                <DropdownMenuItem
+                <AuthorizedDropdownMenuItem
+                  permission="platform:quotas:manage"
                   onClick={() => onOpenQuotas(tenant)}
                   className="gap-2 cursor-pointer"
                 >
                   <Sliders className="h-4 w-4" />
                   Tune Quotas (∞)
-                </DropdownMenuItem>
+                </AuthorizedDropdownMenuItem>
 
                 {!isSystem && (
                   <>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem
+                    <AuthorizedDropdownMenuItem
+                      permission="platform:fleet:mutate"
                       onClick={() => onToggleSuspend(tenant)}
                       className={`gap-2 cursor-pointer ${
                         tenant.status === 'ACTIVE' ? 'text-destructive' : 'text-emerald-600'
@@ -288,7 +295,7 @@ export function getFleetTenantsColumns({
                           Reactivate Tenant
                         </>
                       )}
-                    </DropdownMenuItem>
+                    </AuthorizedDropdownMenuItem>
                   </>
                 )}
               </DropdownMenuContent>

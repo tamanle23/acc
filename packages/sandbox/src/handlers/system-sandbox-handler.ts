@@ -683,6 +683,8 @@ export const systemSandboxHandler: SandboxRouteHandler = {
 
       const authorities = [
         'ROLE_SYSTEM_ROOT',
+        'ROLE_SYSTEM_CUSTODIAN',
+        'ROLE_SYSTEM_SUPPORT',
         'ROLE_WORKSPACE_OWNER',
         'ROLE_STANDARD_MEMBER',
         'platform:tenant:assume',

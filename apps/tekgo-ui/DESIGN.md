@@ -1,7 +1,7 @@
 # Design Specification: Tekgo UI (`tekgo-ui`)
 > **Target Tool / Feed:** Google Stitch AI Design Canvas & Antigravity Agents  
 > **Aesthetic System:** Liquid Glass Editorial Design Language  
-> **Platform:** Responsive Web & Content Hub (Next.js 15 App Router / React 19)  
+> **Platform:** Responsive Web & Content Hub (Astro 5 Hybrid/SSR / Preact 10)  
 > **Status:** Living Document & Foundation Specification
 
 ---

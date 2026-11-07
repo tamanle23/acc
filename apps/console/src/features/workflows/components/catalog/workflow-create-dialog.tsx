@@ -33,21 +33,13 @@ export const WorkflowCreateDialog: React.FC<WorkflowCreateDialogProps> = ({
   const handleCreate = () => {
     if (!workflowKey.trim() || !name.trim()) return;
 
+    // Send definition metadata to backend; backend initializes canonical blank workflow with Start & End nodes
     const initialIr: WorkflowIR = {
       workflowKey: workflowKey.trim(),
       name: name.trim(),
       version: 1,
       description: description.trim() || undefined,
-      tasks: [
-        {
-          taskReferenceName: 'startTask',
-          taskType: 'SIMPLE',
-          domain: 'default',
-        },
-      ],
-      layoutMetadata: {
-        startTask: { x: 100, y: 150 },
-      },
+      tasks: [],
     };
 
     saveMutation.mutate(initialIr, {

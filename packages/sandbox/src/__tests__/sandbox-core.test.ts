@@ -170,7 +170,7 @@ describe('Sandbox Core Infrastructure Suite', () => {
       const state = store.getState();
       expect(state.enabled).toBe(false);
       expect(state.activePersonaId).toBe('admin');
-      expect(state.activeTenantId).toBe('tenant-us-east-1');
+      expect(state.activeTenantId).toBe('tenant-acme');
     });
 
     it('updates persona and synchronously binds default tenant', () => {
@@ -180,12 +180,12 @@ describe('Sandbox Core Infrastructure Suite', () => {
 
       store.setActivePersona('creator');
       expect(store.getState().activePersonaId).toBe('creator');
-      expect(store.getState().activeTenantId).toBe('tenant-eu-central-1');
+      expect(store.getState().activeTenantId).toBe('tenant-acme');
 
       // Unknown persona defaults to admin
       store.setActivePersona('non_existent' as any);
       expect(store.getState().activePersonaId).toBe('non_existent');
-      expect(store.getState().activeTenantId).toBe('tenant-us-east-1');
+      expect(store.getState().activeTenantId).toBe('tenant-acme');
     });
 
     it('updates active tenant independently', () => {
@@ -227,7 +227,7 @@ describe('Sandbox Core Infrastructure Suite', () => {
       store.resetToDefaults();
       const state = store.getState();
       expect(state.enabled).toBe(false);
-      expect(state.activeTenantId).toBe('tenant-us-east-1');
+      expect(state.activeTenantId).toBe('tenant-acme');
       expect(state.networkSimulation.latencyMinMs).toBe(0);
     });
   });

@@ -47,15 +47,20 @@ public final class StartWorkflowStrategy implements NodeEvaluatorStrategy {
         String targetWfKey = (String) resolvedInput.getOrDefault("workflowKey", resolvedInput.get("targetWorkflowKey"));
 
         if (targetWfKey == null || targetWfKey.isBlank()) {
-            String error = "START_WORKFLOW requires 'workflowKey'";
-            List<EngineCommand> commands = List.of(new EngineCommand.UpdateTaskStatus(
+            // When acting as the canonical entry boundary of the workflow itself
+            Map<String, Object> output = new LinkedHashMap<>(snapshot.inputPayload() != null ? snapshot.inputPayload() : Collections.emptyMap());
+            if (taskDef.inputParameters() != null && !taskDef.inputParameters().isEmpty()) {
+                output.putAll(resolvedInput);
+            }
+            List<EngineCommand> commands = new ArrayList<>();
+            commands.add(new EngineCommand.UpdateTaskStatus(
                 snapshot.workflowId() + "_" + refName,
                 refName,
-                TaskStatus.FAILED,
-                Collections.emptyMap(),
-                error
+                TaskStatus.COMPLETED,
+                output,
+                null
             ));
-            return NodeEvaluationResult.failed(commands, error);
+            return new NodeEvaluationResult(TaskStatus.COMPLETED, commands, output, false);
         }
 
         String asyncExecutionId = snapshot.workflowId() + "_async_" + refName;

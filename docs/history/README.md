@@ -101,3 +101,14 @@
 | 435 | [Seed Sandbox Personas and UserDetails into Sandbox PostgreSQL](./435_seed_sandbox_personas_and_userdetails_into_sandbox_postgres.md) | Completed |
 | 436 | [Suppress HTTP Basic Auth Dialog and Wire Dedicated JWT Authentication Entry Point](./436_suppress_http_basic_and_wire_jwt_auth_entry_point.md) | Completed |
 | 437 | [Declarative Client Authorization Safeguards & Dual-Gate Pre-Flight Defense](./437_declarative_client_authorization_safeguards.md) | Completed |
+| 438 | [Fix Workflow Catalog Table Missing Button and Guard Empty State Action](./438_fix_workflow_catalog_table_missing_button_and_guard_empty_state.md) | Completed |
+| 439 | [Mirror Backend Sandbox Personas to Console's Sandbox](./439_mirror_backend_sandbox_personas_to_console.md) | Completed |
+| 440 | [Fix Sandbox Store Duplicate Import SyntaxError](./440_fix_sandbox_store_duplicate_import_syntax_error.md) | Completed |
+| 441 | [Backend Hardening: Modulith Decoupling, Workflow Durability & Canonical Authorization](./441_backend_hardening_modulith_workflow_canonical_auth.md) | Completed |
+| 442 | [Fix Blank Workflow Missing End Node and Start Connector Handle](./442_fix_blank_workflow_missing_end_node_and_start_connector.md) | Completed |
+| 443 | [Refine 24 Workflow Node Types Across Backend Engine and Visual DAG Studio](./443_refine_24_workflow_node_types_backend_and_dag_studio.md) | Completed |
+| 444 | [Compound Node Templates & Fast-Start Paired Workflow Engine](./444_compound_node_templates_fast_start_dag_studio.md) | Completed |
+| 445 | [Reusable Multi-Branch Node Expansion Framework](./445_reusable_multi_branch_node_expansion_framework.md) | Completed |
+| 446 | [Migration of tekgo-ui to Astro 5 + Preact + Tailwind CSS v4](./446_tekgo_ui_astro5_preact_migration.md) | Completed |
+| 447 | [Refactor Human Approval Node to Atomic In-Line Review Gate](./447_refactor_human_approval_to_atomic_review_gate.md) | Completed |
+| 448 | [tekgo-ui Pure PortableText to HTML Migration](./448_tekgo_ui_pure_portabletext_to_html.md) | Completed |

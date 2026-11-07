@@ -26,12 +26,105 @@ import {
   type GraphValidationError,
 } from '../utils/workflow-ir-converter';
 import { getLayoutStrategy, type LayoutAlgorithm } from '../utils/layout';
+import { compoundTemplateRegistry } from '../utils/compound-templates';
+import { multiBranchRegistry } from '../utils/branch-strategies';
 
 export interface UseDagStudioStateOptions {
   isReadOnly?: boolean;
   initialNodes?: Node<DagNodeData>[];
   initialEdges?: Edge[];
   screenToFlowPosition: (position: { x: number; y: number }) => { x: number; y: number };
+}
+
+/**
+ * Resolves the appropriate source handle ID for an edge originating from sourceNode.
+ * Prevents invalid/undefined handle IDs from breaking ReactFlow connections.
+ */
+export function resolveSourceHandle(
+  sourceNode?: Node<DagNodeData>,
+  existingHandle?: string | null
+): string {
+  if (existingHandle && existingHandle !== 'source' && existingHandle !== 'default') {
+    return existingHandle;
+  }
+  if (!sourceNode) return 'source-right';
+
+  const taskType = sourceNode.data?.taskType;
+  if (taskType === 'DO_WHILE') {
+    return 'loop-exit';
+  }
+  if (taskType === 'SWITCH') {
+    const cases = Object.keys(sourceNode.data?.decisionCases || {});
+    return cases.length > 0 ? `case-${cases[0]}` : 'case-default';
+  }
+  return 'source-right';
+}
+
+/**
+ * Resolves the appropriate target handle ID for an edge targeting targetNode.
+ */
+export function resolveTargetHandle(
+  targetNode?: Node<DagNodeData>,
+  existingHandle?: string | null
+): string {
+  if (existingHandle && existingHandle !== 'target' && existingHandle !== 'default') {
+    return existingHandle;
+  }
+  if (targetNode?.data?.taskType === 'DO_WHILE' && existingHandle === 'loop-back') {
+    return 'loop-back';
+  }
+  return 'target-left';
+}
+
+/**
+ * Finds the nearest edge to the given drop position using point-to-line-segment distance math.
+ * Returns null if the closest edge is farther than maxDistance (default 140px).
+ */
+export function findNearestEdge(
+  pos: { x: number; y: number },
+  nodes: Node<DagNodeData>[],
+  edges: Edge[],
+  maxDistance = 140
+): Edge | null {
+  const nodeMap = new Map<string, Node<DagNodeData>>();
+  nodes.forEach((n) => nodeMap.set(n.id, n));
+
+  let closestEdge: Edge | null = null;
+  let minDistance = Infinity;
+
+  for (const edge of edges) {
+    if (edge.targetHandle === 'loop-back') continue;
+
+    const sourceNode = nodeMap.get(edge.source);
+    const targetNode = nodeMap.get(edge.target);
+    if (!sourceNode || !targetNode) continue;
+
+    const ax = sourceNode.position.x + 220;
+    const ay = sourceNode.position.y + 35;
+    const bx = targetNode.position.x;
+    const by = targetNode.position.y + 35;
+
+    const vx = bx - ax;
+    const vy = by - ay;
+    const lenSq = vx * vx + vy * vy;
+
+    let dist: number;
+    if (lenSq === 0) {
+      dist = Math.hypot(pos.x - ax, pos.y - ay);
+    } else {
+      const t = Math.max(0, Math.min(1, ((pos.x - ax) * vx + (pos.y - ay) * vy) / lenSq));
+      const projX = ax + t * vx;
+      const projY = ay + t * vy;
+      dist = Math.hypot(pos.x - projX, pos.y - projY);
+    }
+
+    if (dist < minDistance && dist <= maxDistance) {
+      minDistance = dist;
+      closestEdge = edge;
+    }
+  }
+
+  return closestEdge;
 }
 
 export function useDagStudioState({
@@ -107,39 +200,81 @@ export function useDagStudioState({
 
   const isValidConnection = useCallback(
     (connection: Connection | Edge) => {
-      if (connection.source === connection.target) return false;
+      if (!connection.source || !connection.target || connection.source === connection.target) return false;
       const targetNode = nodes.find((n) => n.id === connection.target);
       const sourceNode = nodes.find((n) => n.id === connection.source);
+      if (!targetNode || !sourceNode) return false;
+
+      // 1. Boundary Guards:
       // START node cannot have incoming edges (in-degree is strictly 0)
-      if (targetNode?.data?.isStartNode) return false;
-      // END node cannot have outgoing edges (out-degree is strictly 0)
-      if (sourceNode?.data?.isEndNode) return false;
+      if (targetNode.data?.isStartNode || targetNode.data?.taskType === 'START_WORKFLOW') return false;
+      // END and TERMINATE nodes cannot have outgoing edges (out-degree is strictly 0)
+      if (
+        sourceNode.data?.isEndNode ||
+        sourceNode.data?.taskType === 'END_WORKFLOW' ||
+        sourceNode.data?.taskType === 'TERMINATE'
+      ) {
+        return false;
+      }
+
+      // 2. Loopback Target Gate on DO_WHILE:
+      if (connection.targetHandle === 'loop-back') {
+        if (targetNode.data?.taskType !== 'DO_WHILE') return false;
+
+        // Check if sourceNode is reachable starting from targetNode (loop body descendant)
+        const visited = new Set<string>();
+        const q = [connection.target];
+        visited.add(connection.target);
+        let isDescendant = false;
+
+        while (q.length > 0) {
+          const curr = q.shift()!;
+          for (const e of edges) {
+            if (e.source === curr && e.targetHandle !== 'loop-back') {
+              if (e.target === connection.source) {
+                isDescendant = true;
+                break;
+              }
+              if (!visited.has(e.target)) {
+                visited.add(e.target);
+                q.push(e.target);
+              }
+            }
+          }
+          if (isDescendant) break;
+        }
+
+        if (!isDescendant) return false;
+
+        // Single inbound edge check on loop-back handle
+        const hasExistingLoopback = edges.some(
+          (e) => e.target === connection.target && e.targetHandle === 'loop-back'
+        );
+        if (hasExistingLoopback) return false;
+      }
+
       return true;
     },
-    [nodes]
+    [nodes, edges]
   );
 
   const onConnect: OnConnect = useCallback(
     (params) => {
       if (isReadOnly) return;
-      const targetNode = nodes.find((n) => n.id === params.target);
-      const sourceNode = nodes.find((n) => n.id === params.source);
-      if (targetNode?.data?.isStartNode || sourceNode?.data?.isEndNode || params.source === params.target) {
-        return;
-      }
+      if (!isValidConnection(params)) return;
       setEdges((eds) =>
         addEdge(
           {
             ...params,
             type: 'dagEdge',
             animated: true,
-            data: {},
+            data: params.targetHandle === 'loop-back' ? { isLoopbackEdge: true } : {},
           },
           eds
         )
       );
     },
-    [isReadOnly, nodes]
+    [isReadOnly, isValidConnection]
   );
 
   const handleUpdateNodeData = useCallback(
@@ -164,7 +299,12 @@ export function useDagStudioState({
   );
 
   const handleSplitEdge = useCallback(
-    (edgeId: string, newNodeType: DagNodeType = 'SIMPLE', customData?: Partial<DagNodeData>) => {
+    (
+      edgeId: string,
+      newNodeType: DagNodeType = 'SIMPLE',
+      customData?: Partial<DagNodeData>,
+      overridePosition?: { x: number; y: number }
+    ) => {
       if (isReadOnly) return;
       const targetEdge = edges.find((e) => e.id === edgeId);
       if (!targetEdge) return;
@@ -177,8 +317,67 @@ export function useDagStudioState({
       const sourcePos = sourceNode?.position || { x: 100, y: 200 };
       const targetPos = targetNode?.position || { x: 500, y: 200 };
 
-      const newX = Math.round((sourcePos.x + targetPos.x) / 2);
-      const newY = Math.round((sourcePos.y + targetPos.y) / 2);
+      const newX = overridePosition ? overridePosition.x : Math.round((sourcePos.x + targetPos.x) / 2);
+      const newY = overridePosition ? overridePosition.y : Math.round((sourcePos.y + targetPos.y) / 2);
+
+      const resolvedSourceHandle = resolveSourceHandle(sourceNode, targetEdge.sourceHandle);
+      const resolvedTargetHandle = resolveTargetHandle(targetNode, targetEdge.targetHandle);
+
+      // Check for compound templates (FORK_JOIN, DYNAMIC_FORK, SWITCH, DO_WHILE, HUMAN, etc.)
+      if (compoundTemplateRegistry.isCompound(newNodeType, { customData })) {
+        const template = compoundTemplateRegistry.create(newNodeType, { x: newX, y: newY }, { customData });
+        if (template) {
+          // Downstream Node Push Invariant: Avoid overlapping nodes by shifting downstream descendants
+          const requiredClearance = newX + template.envelopeWidth + 120;
+          const deltaX = targetPos.x < requiredClearance ? requiredClearance - targetPos.x : 0;
+
+          let updatedNodes = nodes;
+          if (deltaX > 0 && targetNode) {
+            const descendants = new Set<string>();
+            const q = [targetNode.id];
+            descendants.add(targetNode.id);
+            while (q.length > 0) {
+              const curr = q.shift()!;
+              for (const e of edges) {
+                if (e.source === curr && !descendants.has(e.target) && e.targetHandle !== 'loop-back') {
+                  descendants.add(e.target);
+                  q.push(e.target);
+                }
+              }
+            }
+            updatedNodes = updatedNodes.map((n) =>
+              descendants.has(n.id) ? { ...n, position: { ...n.position, x: n.position.x + deltaX } } : n
+            );
+          }
+
+          const edgeIn: Edge = {
+            id: `e_${targetEdge.source}_to_${template.primaryNodeId}`,
+            type: 'dagEdge',
+            source: targetEdge.source,
+            target: template.primaryNodeId,
+            sourceHandle: resolvedSourceHandle,
+            targetHandle: 'target-left',
+            animated: true,
+            label: targetEdge.label,
+            data: targetEdge.data ? { ...targetEdge.data } : {},
+          };
+
+          const edgeOut: Edge = {
+            id: `e_${template.exitNodeId}_to_${targetEdge.target}`,
+            type: 'dagEdge',
+            source: template.exitNodeId,
+            target: targetEdge.target,
+            sourceHandle: template.exitHandle || 'source-right',
+            targetHandle: resolvedTargetHandle,
+            animated: true,
+          };
+
+          setNodes([...updatedNodes, ...template.nodes]);
+          setEdges([...edges.filter((e) => e.id !== edgeId), edgeIn, ...template.edges, edgeOut]);
+          setSelectedNodeId(template.primaryNodeId);
+          return;
+        }
+      }
 
       const uniqueSuffix = Date.now().toString().slice(-4);
       const taskRef = `${newNodeType.toLowerCase()}_task_${uniqueSuffix}`;
@@ -203,11 +402,35 @@ export function useDagStudioState({
         },
       };
 
+      // Downstream clearance for single node too if targetPos.x <= newX
+      const requiredClearance = newX + 220 + 80;
+      const deltaX = targetPos.x < requiredClearance ? requiredClearance - targetPos.x : 0;
+      let updatedNodes = nodes;
+      if (deltaX > 0 && targetNode) {
+        const descendants = new Set<string>();
+        const q = [targetNode.id];
+        descendants.add(targetNode.id);
+        while (q.length > 0) {
+          const curr = q.shift()!;
+          for (const e of edges) {
+            if (e.source === curr && !descendants.has(e.target) && e.targetHandle !== 'loop-back') {
+              descendants.add(e.target);
+              q.push(e.target);
+            }
+          }
+        }
+        updatedNodes = updatedNodes.map((n) =>
+          descendants.has(n.id) ? { ...n, position: { ...n.position, x: n.position.x + deltaX } } : n
+        );
+      }
+
       const edgeIn: Edge = {
         id: `e_${targetEdge.source}_to_${newNodeId}`,
         type: 'dagEdge',
         source: targetEdge.source,
         target: newNodeId,
+        sourceHandle: resolvedSourceHandle,
+        targetHandle: 'target-left',
         animated: true,
         label: targetEdge.label,
         data: targetEdge.data ? { ...targetEdge.data } : {},
@@ -218,11 +441,13 @@ export function useDagStudioState({
         type: 'dagEdge',
         source: newNodeId,
         target: targetEdge.target,
+        sourceHandle: resolveSourceHandle(newNode, 'source-right'),
+        targetHandle: resolvedTargetHandle,
         animated: true,
       };
 
-      setNodes((nds) => [...nds, newNode]);
-      setEdges((eds) => [...eds.filter((e) => e.id !== edgeId), edgeIn, edgeOut]);
+      setNodes([...updatedNodes, newNode]);
+      setEdges([...edges.filter((e) => e.id !== edgeId), edgeIn, edgeOut]);
       setSelectedNodeId(newNodeId);
     },
     [isReadOnly, edges, nodes, pushUndoSnapshot]
@@ -356,10 +581,18 @@ export function useDagStudioState({
   const handleBulkDelete = useCallback(() => {
     if (isReadOnly) return;
     pushUndoSnapshot();
+    const isProtectedNode = (n: Node<DagNodeData>) =>
+      Boolean(
+        n.data.isPermanent ||
+        n.data.isStartNode ||
+        n.data.isEndNode ||
+        n.data.taskType === 'START_WORKFLOW' ||
+        n.data.taskType === 'END_WORKFLOW'
+      );
     const deletedNodeIds = new Set(
-      nodes.filter((n) => n.selected && !n.data.isPermanent).map((n) => n.id)
+      nodes.filter((n) => n.selected && !isProtectedNode(n)).map((n) => n.id)
     );
-    setNodes((nds) => nds.filter((n) => !n.selected || n.data.isPermanent));
+    setNodes((nds) => nds.filter((n) => !n.selected || isProtectedNode(n)));
     setEdges((eds) =>
       eds.filter((e) => !e.selected && !deletedNodeIds.has(e.source) && !deletedNodeIds.has(e.target))
     );
@@ -461,6 +694,62 @@ export function useDagStudioState({
         y: event.clientY,
       });
 
+      // 1. Proximity-based Edge Split Check:
+      // If dropped near an existing workflow edge, auto-split and insert connected to both sides!
+      const nearestEdge = findNearestEdge(position, nodes, edges, 140);
+      if (nearestEdge) {
+        handleSplitEdge(nearestEdge.id, type, parsedData, position);
+        return;
+      }
+
+      // 2. Flow-aware Fallback Insertion:
+      // If dropped on canvas without direct edge proximity, connect into the active flow
+      // rather than leaving a disconnected orphan node.
+      let targetFlowEdge: Edge | undefined;
+
+      if (selectedNodeId) {
+        const selectedOutgoing = edges.find(
+          (e) => e.source === selectedNodeId && e.targetHandle !== 'loop-back'
+        );
+        if (selectedOutgoing) {
+          targetFlowEdge = selectedOutgoing;
+        } else {
+          const selectedIncoming = edges.find((e) => e.target === selectedNodeId);
+          if (selectedIncoming) {
+            targetFlowEdge = selectedIncoming;
+          }
+        }
+      }
+
+      if (!targetFlowEdge) {
+        const endEdge = edges.find((e) => {
+          const target = nodes.find((n) => n.id === e.target);
+          return target?.data.isEndNode || target?.data.taskType === 'END_WORKFLOW';
+        });
+        if (endEdge) {
+          targetFlowEdge = endEdge;
+        } else if (edges.length > 0) {
+          targetFlowEdge = edges[0];
+        }
+      }
+
+      if (targetFlowEdge) {
+        handleSplitEdge(targetFlowEdge.id, type, parsedData, position);
+        return;
+      }
+
+      // 3. Fallback for completely empty/disconnected canvas (0 edges):
+      pushUndoSnapshot();
+      if (compoundTemplateRegistry.isCompound(type, { customData: parsedData })) {
+        const template = compoundTemplateRegistry.create(type, position, { customData: parsedData });
+        if (template) {
+          setNodes((nds) => nds.concat(template.nodes));
+          setEdges((eds) => eds.concat(template.edges));
+          setSelectedNodeId(template.primaryNodeId);
+          return;
+        }
+      }
+
       const uniqueSuffix = Date.now().toString().slice(-4);
       const taskRef = `${type.toLowerCase()}_task_${uniqueSuffix}`;
       const newNodeId = `node-${taskRef}`;
@@ -484,8 +773,9 @@ export function useDagStudioState({
       };
 
       setNodes((nds) => nds.concat(newNode));
+      setSelectedNodeId(newNodeId);
     },
-    [isReadOnly, screenToFlowPosition]
+    [isReadOnly, screenToFlowPosition, nodes, edges, selectedNodeId, handleSplitEdge, pushUndoSnapshot]
   );
 
   const isWorkflowBlank = useMemo(() => {
@@ -509,6 +799,16 @@ export function useDagStudioState({
         handleSplitEdge(directEdge.id, taskType, customData);
       } else {
         pushUndoSnapshot();
+        if (compoundTemplateRegistry.isCompound(taskType, { customData })) {
+          const template = compoundTemplateRegistry.create(taskType, { x: 300, y: 200 }, { customData });
+          if (template) {
+            setNodes((nds) => [...nds, ...template.nodes]);
+            setEdges((eds) => [...eds, ...template.edges]);
+            setSelectedNodeId(template.primaryNodeId);
+            setIsDismissedEmptyState(true);
+            return;
+          }
+        }
         const uniqueSuffix = Date.now().toString().slice(-4);
         const taskRef = `${taskType.toLowerCase()}_task_${uniqueSuffix}`;
         const newNodeId = `node-${taskRef}`;
@@ -536,6 +836,321 @@ export function useDagStudioState({
       setIsDismissedEmptyState(true);
     },
     [edges, nodes, handleSplitEdge, pushUndoSnapshot]
+  );
+
+  const handleInsertNode = useCallback(
+    (type: DagNodeType, customData?: Partial<DagNodeData>) => {
+      if (isReadOnly) return;
+      let targetFlowEdge: Edge | undefined;
+
+      if (selectedNodeId) {
+        const selectedOutgoing = edges.find(
+          (e) => e.source === selectedNodeId && e.targetHandle !== 'loop-back'
+        );
+        if (selectedOutgoing) {
+          targetFlowEdge = selectedOutgoing;
+        } else {
+          const selectedIncoming = edges.find((e) => e.target === selectedNodeId);
+          if (selectedIncoming) {
+            targetFlowEdge = selectedIncoming;
+          }
+        }
+      }
+
+      if (!targetFlowEdge) {
+        const endEdge = edges.find((e) => {
+          const target = nodes.find((n) => n.id === e.target);
+          return target?.data.isEndNode || target?.data.taskType === 'END_WORKFLOW';
+        });
+        if (endEdge) {
+          targetFlowEdge = endEdge;
+        } else if (edges.length > 0) {
+          targetFlowEdge = edges[0];
+        }
+      }
+
+      if (targetFlowEdge) {
+        handleSplitEdge(targetFlowEdge.id, type, customData);
+      } else {
+        handleInsertStarterTask(type, customData);
+      }
+    },
+    [isReadOnly, selectedNodeId, edges, nodes, handleSplitEdge, handleInsertStarterTask]
+  );
+
+  const handleAddNodeBranch = useCallback(
+    (nodeId: string, customBranchName?: string) => {
+      if (isReadOnly) return;
+      const parentNode = nodes.find((n) => n.id === nodeId);
+      if (!parentNode) return;
+
+      const strategy = multiBranchRegistry.get(parentNode.data.taskType);
+      if (!strategy) return;
+
+      pushUndoSnapshot();
+
+      // 1. Compute new branch descriptor and updated parent node data
+      const { updatedParentData, newBranch, suggestedTaskType, initialBranchLabel } = strategy.addBranch(
+        parentNode.data,
+        { name: customBranchName }
+      );
+
+      // 2. Discover downstream barrier node
+      const barrierNode = strategy.findBarrierNode(parentNode, nodes, edges);
+
+      // 3. Compute Symmetrical Vertical Slotting
+      const mergedParentData = { ...parentNode.data, ...updatedParentData };
+      const allBranches = strategy.getBranches(mergedParentData);
+      const totalBranches = Math.max(allBranches.length, 2);
+
+      const deltaY = 110;
+      const deltaX = 260;
+      const totalSpan = (totalBranches - 1) * deltaY;
+      const yTop = parentNode.position.y - totalSpan / 2;
+
+      // Map existing branch task references to their new slot Y
+      const branchSlotYMap = new Map<string, number>();
+      allBranches.forEach((b, idx) => {
+        const slotY = Math.round(yTop + idx * deltaY);
+        if (b.targetTaskRef) {
+          branchSlotYMap.set(b.targetTaskRef, slotY);
+        }
+      });
+
+      const newSlotY =
+        branchSlotYMap.get(newBranch.targetTaskRef!) ??
+        Math.round(yTop + (allBranches.length - 1) * deltaY);
+
+      // 4. Downstream clearance math
+      const requiredBarrierX = parentNode.position.x + 520;
+      let deltaClearance = 0;
+      if (barrierNode && barrierNode.id !== parentNode.id) {
+        if (barrierNode.position.x < requiredBarrierX) {
+          deltaClearance = requiredBarrierX - barrierNode.position.x;
+        }
+      }
+
+      // Collect transitive downstream descendants from barrierNode to shift right
+      const shiftDescendants = new Set<string>();
+      if (deltaClearance > 0 && barrierNode && barrierNode.id !== parentNode.id) {
+        const q = [barrierNode.id];
+        shiftDescendants.add(barrierNode.id);
+        while (q.length > 0) {
+          const curr = q.shift()!;
+          for (const e of edges) {
+            if (e.source === curr && !shiftDescendants.has(e.target) && e.targetHandle !== 'loop-back') {
+              shiftDescendants.add(e.target);
+              q.push(e.target);
+            }
+          }
+        }
+      }
+
+      // 5. Update existing nodes
+      const newNodeId = `node-${newBranch.targetTaskRef}`;
+      const newBranchNode: Node<DagNodeData> = {
+        id: newNodeId,
+        type: 'dagNode',
+        position: { x: parentNode.position.x + deltaX, y: newSlotY },
+        data: {
+          taskReferenceName: newBranch.targetTaskRef!,
+          taskType: suggestedTaskType,
+          label: initialBranchLabel,
+          executionState: 'PENDING',
+          domain: 'default',
+          timeoutSeconds: 30,
+          retryCount: 3,
+          retryDelaySeconds: 2,
+          backoffRate: 2.0,
+          inputParameters: {},
+        },
+      };
+
+      const barrierSyncData = barrierNode
+        ? strategy.syncBarrierNode(barrierNode, 'add', newBranch.targetTaskRef!)
+        : {};
+
+      const updatedNodes = nodes.map((n) => {
+        if (n.id === parentNode.id) {
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              ...updatedParentData,
+            },
+          };
+        }
+        if (barrierNode && n.id === barrierNode.id) {
+          const shiftedX = shiftDescendants.has(n.id) ? n.position.x + deltaClearance : n.position.x;
+          return {
+            ...n,
+            position: { ...n.position, x: shiftedX },
+            data: {
+              ...n.data,
+              ...barrierSyncData,
+            },
+          };
+        }
+        if (shiftDescendants.has(n.id)) {
+          return {
+            ...n,
+            position: { ...n.position, x: n.position.x + deltaClearance },
+          };
+        }
+        if (branchSlotYMap.has(n.data.taskReferenceName)) {
+          return {
+            ...n,
+            position: {
+              ...n.position,
+              x: parentNode.position.x + deltaX,
+              y: branchSlotYMap.get(n.data.taskReferenceName)!,
+            },
+          };
+        }
+        return n;
+      });
+
+      // 6. Create connecting edges
+      const edgeIn: Edge = {
+        id: `e_${parentNode.id}_to_${newNodeId}_${newBranch.id}`,
+        type: 'dagEdge',
+        source: parentNode.id,
+        target: newNodeId,
+        sourceHandle: newBranch.handleId,
+        targetHandle: 'target-left',
+        label: newBranch.label,
+        animated: true,
+      };
+
+      const newEdges: Edge[] = [edgeIn];
+
+      if (barrierNode && barrierNode.id !== parentNode.id) {
+        const edgeOut: Edge = {
+          id: `e_${newNodeId}_to_${barrierNode.id}`,
+          type: 'dagEdge',
+          source: newNodeId,
+          target: barrierNode.id,
+          sourceHandle: 'source-right',
+          targetHandle: barrierNode.data.taskType === 'DO_WHILE' ? 'loop-back' : 'target-left',
+          animated: true,
+        };
+        newEdges.push(edgeOut);
+      } else if (barrierNode && barrierNode.id === parentNode.id) {
+        // Loopback case for DO_WHILE
+        const edgeBack: Edge = {
+          id: `e_${newNodeId}_to_${parentNode.id}_loopback`,
+          type: 'dagEdge',
+          source: newNodeId,
+          target: parentNode.id,
+          sourceHandle: 'source-right',
+          targetHandle: 'loop-back',
+          label: 'LOOP-BACK',
+          animated: true,
+          data: { isLoopbackEdge: true },
+        };
+        newEdges.push(edgeBack);
+      }
+
+      setNodes([...updatedNodes, newBranchNode]);
+      setEdges([...edges, ...newEdges]);
+      setSelectedNodeId(newNodeId);
+    },
+    [isReadOnly, nodes, edges, pushUndoSnapshot]
+  );
+
+  const handleRemoveNodeBranch = useCallback(
+    (nodeId: string, branchId: string) => {
+      if (isReadOnly) return;
+      const parentNode = nodes.find((n) => n.id === nodeId);
+      if (!parentNode) return;
+
+      const strategy = multiBranchRegistry.get(parentNode.data.taskType);
+      if (!strategy) return;
+
+      let removalResult;
+      try {
+        removalResult = strategy.removeBranch(parentNode.data, branchId);
+      } catch {
+        return;
+      }
+
+      const { updatedParentData, removedBranch, prunedTaskRefs } = removalResult;
+
+      pushUndoSnapshot();
+
+      const barrierNode = strategy.findBarrierNode(parentNode, nodes, edges);
+      const barrierSyncData = barrierNode
+        ? strategy.syncBarrierNode(barrierNode, 'remove', removedBranch.targetTaskRef || branchId)
+        : {};
+
+      const prunedRefsSet = new Set(prunedTaskRefs);
+      const prunedNodeIds = new Set(
+        nodes.filter((n) => prunedRefsSet.has(n.data.taskReferenceName)).map((n) => n.id)
+      );
+
+      // Re-calculate symmetrical Y slots for remaining branches
+      const mergedParentData = { ...parentNode.data, ...updatedParentData };
+      const remainingBranches = strategy.getBranches(mergedParentData);
+      const deltaY = 110;
+      const deltaX = 260;
+      const totalSpan = Math.max(0, (remainingBranches.length - 1) * deltaY);
+      const yTop = parentNode.position.y - totalSpan / 2;
+
+      const branchSlotYMap = new Map<string, number>();
+      remainingBranches.forEach((b, idx) => {
+        if (b.targetTaskRef) {
+          branchSlotYMap.set(b.targetTaskRef, Math.round(yTop + idx * deltaY));
+        }
+      });
+
+      const updatedNodes = nodes
+        .filter((n) => !prunedNodeIds.has(n.id))
+        .map((n) => {
+          if (n.id === parentNode.id) {
+            return {
+              ...n,
+              data: {
+                ...n.data,
+                ...updatedParentData,
+              },
+            };
+          }
+          if (barrierNode && n.id === barrierNode.id) {
+            return {
+              ...n,
+              data: {
+                ...n.data,
+                ...barrierSyncData,
+              },
+            };
+          }
+          if (branchSlotYMap.has(n.data.taskReferenceName)) {
+            return {
+              ...n,
+              position: {
+                ...n.position,
+                x: parentNode.position.x + deltaX,
+                y: branchSlotYMap.get(n.data.taskReferenceName)!,
+              },
+            };
+          }
+          return n;
+        });
+
+      // Filter out edges connecting to/from pruned nodes or matching the removed handle
+      const updatedEdges = edges.filter((e) => {
+        if (prunedNodeIds.has(e.source) || prunedNodeIds.has(e.target)) return false;
+        if (e.source === parentNode.id && e.sourceHandle === removedBranch.handleId) return false;
+        return true;
+      });
+
+      setNodes(updatedNodes);
+      setEdges(updatedEdges);
+      if (selectedNodeId && prunedNodeIds.has(selectedNodeId)) {
+        setSelectedNodeId(parentNode.id);
+      }
+    },
+    [isReadOnly, nodes, edges, selectedNodeId, pushUndoSnapshot]
   );
 
   const handleSaveEdgeCondition = useCallback(
@@ -688,6 +1303,9 @@ export function useDagStudioState({
     isWorkflowBlank,
     setIsDismissedEmptyState,
     handleInsertStarterTask,
+    handleInsertNode,
+    handleAddNodeBranch,
+    handleRemoveNodeBranch,
     handleUpdateNodeData,
     handleSaveEdgeCondition,
     handleNewBlank,

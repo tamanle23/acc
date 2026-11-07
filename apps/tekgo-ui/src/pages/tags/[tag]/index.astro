@@ -1,0 +1,27 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import BlogFilterList from '../../../components/BlogFilterList';
+import { contentProvider } from '../../../lib/cms/content-provider';
+import { allCoreContent } from '../../../lib/content';
+import { slug } from '../../../lib/utils';
+
+export const prerender = false;
+
+const rawTag = Astro.params.tag || '';
+const allPosts = await contentProvider.getAllBlogs();
+const filteredPosts = allPosts.filter(
+  (post) => post.tags && post.tags.map((t) => slug(t)).includes(rawTag)
+);
+
+const posts = allCoreContent(filteredPosts);
+const title = `#${rawTag}`;
+---
+<BaseLayout title={title}>
+  <BlogFilterList
+    posts={posts}
+    initialDisplayPosts={posts}
+    title={title}
+    client:idle
+  />
+</BaseLayout>
+

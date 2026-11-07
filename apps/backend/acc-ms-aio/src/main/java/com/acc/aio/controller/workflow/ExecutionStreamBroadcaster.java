@@ -1,7 +1,10 @@
 package com.acc.aio.controller.workflow;
 
+import com.acc.workflow.events.TaskLogBroadcastEvent;
+import com.acc.workflow.events.WorkflowExecutionBroadcastEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -135,6 +138,16 @@ public class ExecutionStreamBroadcaster {
                 executionEmitters.remove(executionId);
             }
         }
+    }
+
+    @EventListener
+    public void onWorkflowExecutionEvent(WorkflowExecutionBroadcastEvent event) {
+        broadcast(event.workflowId(), event.eventType(), event.payload());
+    }
+
+    @EventListener
+    public void onTaskLogEvent(TaskLogBroadcastEvent event) {
+        broadcastTaskLog(event.executionId(), event.taskId(), event.taskReferenceName(), event.level(), event.message(), event.raw());
     }
 }
 

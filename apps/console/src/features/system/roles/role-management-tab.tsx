@@ -8,6 +8,7 @@ import {
   type SortingState,
 } from '@tanstack/react-table';
 import { Button } from '@/components/ui/button';
+import { AuthorizedButton } from '@/components/auth';
 import { Input } from '@/components/ui/input';
 import { Search, Plus } from 'lucide-react';
 import { DataTable } from '@/components/data-table/data-table';
@@ -127,10 +128,15 @@ export function RoleManagementTab() {
             </button>
           </div>
 
-          <Button onClick={() => setCreateModalOpen(true)} size="sm" className="gap-1.5 h-9">
+          <AuthorizedButton
+            permission="platform:roles:manage"
+            onClick={() => setCreateModalOpen(true)}
+            size="sm"
+            className="gap-1.5 h-9"
+          >
             <Plus className="h-4 w-4" />
             <span>Create Role</span>
-          </Button>
+          </AuthorizedButton>
         </div>
       </div>
 

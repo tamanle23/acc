@@ -1,0 +1,46 @@
+---
+import PostLayout from '../../layouts/PostLayout.astro';
+import PortableTextRenderer from '../../components/PortableTextRenderer.astro';
+import { contentProvider } from '../../lib/cms/content-provider';
+
+export const prerender = false;
+
+const rawSlug = Astro.params.slug || '';
+const slug = rawSlug.replace(/^\/+/, '').replace(/\/+$/, '');
+
+const allPosts = await contentProvider.getAllBlogs();
+const postIndex = allPosts.findIndex((p) => p.slug === slug);
+
+if (postIndex === -1) {
+  return new Response(null, {
+    status: 404,
+    statusText: 'Not found',
+  });
+}
+
+const post = allPosts[postIndex];
+const prev = postIndex + 1 < allPosts.length ? allPosts[postIndex + 1] : undefined;
+const next = postIndex - 1 >= 0 ? allPosts[postIndex - 1] : undefined;
+
+const allAuthors = await contentProvider.getAllAuthors();
+const authorDetails = (post.authors || ['default']).map((authorName) => {
+  const found = allAuthors.find((a) => a.slug === authorName || a.name === authorName);
+  return (
+    found || {
+      name: authorName,
+      slug: authorName,
+      path: `authors/${authorName}`,
+      filePath: `authors/${authorName}.json`,
+    }
+  );
+});
+---
+<PostLayout
+  post={post}
+  authorDetails={authorDetails}
+  prev={prev ? { slug: prev.slug, title: prev.title } : undefined}
+  next={next ? { slug: next.slug, title: next.title } : undefined}
+>
+  <PortableTextRenderer value={post.portableTextBody} />
+</PostLayout>
+

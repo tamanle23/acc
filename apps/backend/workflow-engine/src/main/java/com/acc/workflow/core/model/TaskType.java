@@ -17,6 +17,7 @@ public enum TaskType {
     TERMINATE,
     SUB_WORKFLOW,
     START_WORKFLOW,
+    END_WORKFLOW,
     EVENT,
     DYNAMIC,
     LLM_CHAT_COMPLETE,

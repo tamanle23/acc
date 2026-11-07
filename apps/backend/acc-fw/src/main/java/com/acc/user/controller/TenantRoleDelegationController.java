@@ -33,7 +33,7 @@ public class TenantRoleDelegationController {
   private final TenantRoleDelegationService delegationService;
 
   @GetMapping("/roles")
-  @PreAuthorize("hasAnyRole('SYSTEM_ROOT', 'WORKSPACE_OWNER', 'OPERATIONS_MANAGER') or hasAuthority('workspace:members:manage') or hasAuthority('org:member:manage')")
+  @PreAuthorize("hasAuthority('workspace:members:manage') or hasAuthority('org:member:manage')")
   public ResponseEntity<List<RoleDto>> getTenantAssignableRoles(
       @PathVariable String tenantId,
       Authentication authentication
@@ -46,7 +46,7 @@ public class TenantRoleDelegationController {
   }
 
   @PutMapping("/users/{userId}/delegation")
-  @PreAuthorize("hasAnyRole('SYSTEM_ROOT', 'WORKSPACE_OWNER') or hasAuthority('workspace:members:manage') or hasAuthority('org:member:manage')")
+  @PreAuthorize("hasAuthority('workspace:members:manage') or hasAuthority('org:member:manage')")
   public ResponseEntity<UserDelegationResult> delegateUserRolesAndOverrides(
       @PathVariable String tenantId,
       @PathVariable String userId,

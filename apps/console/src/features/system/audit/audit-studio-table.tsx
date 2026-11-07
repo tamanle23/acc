@@ -7,6 +7,7 @@ import {
 import { DataTable } from '@/components/data-table/data-table';
 import { DataTablePagination } from '@/components/data-table/pagination';
 import { Button } from '@/components/ui/button';
+import { AuthorizedButton } from '@/components/auth';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -118,7 +119,8 @@ export function AuditStudioTable() {
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Button
+          <AuthorizedButton
+            permission="audit:compliance:export"
             variant="outline"
             size="sm"
             onClick={handleExport}
@@ -131,9 +133,10 @@ export function AuditStudioTable() {
               <Download className="h-4 w-4" />
             )}
             <span>Export Evidence (.json)</span>
-          </Button>
+          </AuthorizedButton>
 
-          <Button
+          <AuthorizedButton
+            permission="audit:hash:verify"
             size="sm"
             onClick={handleVerify}
             disabled={verifyMutation.isPending}
@@ -145,7 +148,7 @@ export function AuditStudioTable() {
               <FileCheck2 className="h-4 w-4" />
             )}
             <span>Verify Chain Integrity</span>
-          </Button>
+          </AuthorizedButton>
         </div>
       </div>
 

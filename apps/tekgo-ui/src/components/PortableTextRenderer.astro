@@ -1,0 +1,15 @@
+---
+import { renderPortableTextToHtml } from '../lib/portabletext';
+
+interface Props {
+  value: any;
+}
+
+const { value } = Astro.props;
+const html = renderPortableTextToHtml(value);
+---
+{html ? (
+  <div class="prose dark:prose-invert max-w-none">
+    <Fragment set:html={html} />
+  </div>
+) : null}

@@ -1,6 +1,6 @@
 package com.acc.aio.controller.workflow;
 
-import com.acc.aio.config.WorkflowEngineConfiguration.WorkflowDefinitionRegistry;
+import com.acc.workflow.application.WorkflowDefinitionRegistry;
 import com.acc.workflow.adapters.transport.InProcessTransportAdapter;
 import com.acc.workflow.application.WorkflowEngineService;
 import com.acc.workflow.core.model.WorkflowDefinition;

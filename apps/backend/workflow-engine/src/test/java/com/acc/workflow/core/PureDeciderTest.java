@@ -246,4 +246,48 @@ class PureDeciderTest {
         assertThat(deserialized.tasks().get(0).domain()).isEqualTo("billing");
         assertThat(deserialized.layoutMetadata()).isNotEmpty();
     }
+
+    @Test
+    @DisplayName("Should verify END_WORKFLOW acts as fan-in barrier and completes workflow")
+    void shouldVerifyEndWorkflowActsAsFanInBarrierAndCompletes() {
+        WorkflowDefinition def = WorkflowDefinition.builder("fanin-end")
+            .version(1)
+            .tasks(List.of(
+                TaskDefinition.builder("start").taskType(TaskType.START_WORKFLOW).build(),
+                TaskDefinition.builder("branch1").taskType(TaskType.SIMPLE).joinOn(List.of("start")).build(),
+                TaskDefinition.builder("branch2").taskType(TaskType.SIMPLE).joinOn(List.of("start")).build(),
+                TaskDefinition.builder("end").taskType(TaskType.END_WORKFLOW).joinOn(List.of("branch1", "branch2"))
+                    .inputParameters(Map.of("finalStatus", "SUCCESS"))
+                    .build()
+            ))
+            .build();
+
+        // Scenario 1: Only branch1 is complete, branch2 is still running
+        TaskSnapshot snapStart = new TaskSnapshot("wf_start", "start", TaskType.START_WORKFLOW, "default", TaskStatus.COMPLETED, 1, Map.of(), Map.of(), null, 1000L, 1000L, null);
+        TaskSnapshot snapBranch1 = new TaskSnapshot("wf_b1", "branch1", TaskType.SIMPLE, "default", TaskStatus.COMPLETED, 1, Map.of(), Map.of("b1Out", 42), null, 1000L, 1000L, null);
+
+        WorkflowSnapshot partialSnapshot = new WorkflowSnapshot(
+            "wf-fanin", "acme", "default", "fanin-end", 1,
+            WorkflowStatus.RUNNING, Map.of(), Map.of(),
+            null, Map.of("start", snapStart, "branch1", snapBranch1)
+        );
+
+        DecisionResult partialResult = decider.decide(def, partialSnapshot, 1000L);
+        // Branch 2 is scheduled, END_WORKFLOW holds execution
+        assertThat(partialResult.workflowStatus()).isEqualTo(WorkflowStatus.RUNNING);
+        boolean endTaskExecuted = partialResult.commands().stream().anyMatch(c -> c instanceof EngineCommand.UpdateTaskStatus u && u.referenceName().equals("end"));
+        assertThat(endTaskExecuted).isFalse();
+
+        // Scenario 2: Both branch1 and branch2 are complete
+        TaskSnapshot snapBranch2 = new TaskSnapshot("wf_b2", "branch2", TaskType.SIMPLE, "default", TaskStatus.COMPLETED, 1, Map.of(), Map.of("b2Out", 99), null, 1000L, 1000L, null);
+        WorkflowSnapshot fullSnapshot = new WorkflowSnapshot(
+            "wf-fanin", "acme", "default", "fanin-end", 1,
+            WorkflowStatus.RUNNING, Map.of(), Map.of(),
+            null, Map.of("start", snapStart, "branch1", snapBranch1, "branch2", snapBranch2)
+        );
+
+        DecisionResult completedResult = decider.decide(def, fullSnapshot, 1000L);
+        assertThat(completedResult.workflowStatus()).isEqualTo(WorkflowStatus.COMPLETED);
+        assertThat(completedResult.outputPayload()).containsEntry("finalStatus", "SUCCESS");
+    }
 }

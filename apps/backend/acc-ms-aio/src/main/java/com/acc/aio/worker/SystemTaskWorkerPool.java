@@ -1,15 +1,16 @@
 package com.acc.aio.worker;
 
-import com.acc.aio.config.WorkflowEngineConfiguration.WorkflowDefinitionRegistry;
-import com.acc.aio.controller.workflow.ExecutionStreamBroadcaster;
+import com.acc.workflow.application.WorkflowDefinitionRegistry;
 import com.acc.workflow.application.WorkflowEngineService;
 import com.acc.workflow.core.model.TaskSnapshot;
 import com.acc.workflow.core.model.WorkflowDefinition;
 import com.acc.workflow.core.model.WorkflowSnapshot;
+import com.acc.workflow.events.WorkflowExecutionBroadcastEvent;
 import com.acc.workflow.ports.PersistencePort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -40,7 +41,7 @@ public class SystemTaskWorkerPool {
     private final PersistencePort persistencePort;
     private final WorkflowEngineService engineService;
     private final WorkflowDefinitionRegistry registry;
-    private final ExecutionStreamBroadcaster broadcaster;
+    private final ApplicationEventPublisher eventPublisher;
     private final HttpClient httpClient;
     private final ExecutorService virtualThreadExecutor;
     private final AtomicBoolean drainScheduled = new AtomicBoolean(false);
@@ -58,13 +59,13 @@ public class SystemTaskWorkerPool {
         PersistencePort persistencePort,
         WorkflowEngineService engineService,
         WorkflowDefinitionRegistry registry,
-        ExecutionStreamBroadcaster broadcaster
+        ApplicationEventPublisher eventPublisher
     ) {
         this(
             persistencePort,
             engineService,
             registry,
-            broadcaster,
+            eventPublisher,
             HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build(),
             createVirtualThreadExecutor()
         );
@@ -74,14 +75,14 @@ public class SystemTaskWorkerPool {
         PersistencePort persistencePort,
         WorkflowEngineService engineService,
         WorkflowDefinitionRegistry registry,
-        ExecutionStreamBroadcaster broadcaster,
+        ApplicationEventPublisher eventPublisher,
         HttpClient httpClient,
         ExecutorService virtualThreadExecutor
     ) {
         this.persistencePort = persistencePort;
         this.engineService = engineService;
         this.registry = registry;
-        this.broadcaster = broadcaster;
+        this.eventPublisher = eventPublisher;
         this.httpClient = httpClient;
         this.virtualThreadExecutor = virtualThreadExecutor;
     }
@@ -406,23 +407,25 @@ public class SystemTaskWorkerPool {
         );
 
         String eventStatus = completed ? "TASK_COMPLETED" : "TASK_FAILED";
-        broadcaster.broadcast(task.workflowId(), eventStatus, Map.of(
-            "workflowId", task.workflowId(),
-            "taskId", task.taskId(),
-            "taskReferenceName", task.taskReferenceName(),
-            "status", completed ? "COMPLETED" : "FAILED",
-            "output", output != null ? output : Collections.emptyMap(),
-            "error", error != null ? error : "",
-            "timestamp", now
-        ));
+        if (eventPublisher != null) {
+            eventPublisher.publishEvent(new WorkflowExecutionBroadcastEvent(task.workflowId(), eventStatus, Map.of(
+                "workflowId", task.workflowId(),
+                "taskId", task.taskId(),
+                "taskReferenceName", task.taskReferenceName(),
+                "status", completed ? "COMPLETED" : "FAILED",
+                "output", output != null ? output : Collections.emptyMap(),
+                "error", error != null ? error : "",
+                "timestamp", now
+            )));
+        }
 
         persistencePort.getWorkflowSnapshot(task.workflowId()).ifPresent(updatedWf -> {
-            if (updatedWf.status().isTerminal()) {
-                broadcaster.broadcast(task.workflowId(), "WORKFLOW_" + updatedWf.status().name(), Map.of(
+            if (updatedWf.status().isTerminal() && eventPublisher != null) {
+                eventPublisher.publishEvent(new WorkflowExecutionBroadcastEvent(task.workflowId(), "WORKFLOW_" + updatedWf.status().name(), Map.of(
                     "workflowId", task.workflowId(),
                     "status", updatedWf.status().name(),
                     "timestamp", System.currentTimeMillis()
-                ));
+                )));
             }
         });
     }

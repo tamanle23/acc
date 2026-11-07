@@ -6,6 +6,7 @@ import { LanguageSwitch } from '@/components/language-switch';
 import { ThemeSwitch } from '@/components/theme-switch';
 import { ConfigDrawer } from '@/components/config-drawer';
 import { ProfileDropdown } from '@/components/profile-dropdown';
+import { NotificationDropdown } from '@/features/notifications';
 import { EntityDataGrid } from './data-explorer';
 import { useEntityType } from '../api/metadata-api';
 import { MetadataDialogs } from './metadata-dialogs';
@@ -22,6 +23,7 @@ export const CustomerAccountsExplorer: React.FC = () => {
       <Header fixed>
         <Search />
         <div className="ml-auto flex items-center space-x-4">
+          <NotificationDropdown />
           <LanguageSwitch />
           <ThemeSwitch />
           <ConfigDrawer />

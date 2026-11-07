@@ -16,7 +16,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/workflow/workers")
-@PreAuthorize("hasAuthority('ROLE_SYSTEM_CUSTODIAN') or hasAuthority('platform:workers:manage') or hasRole('ADMIN')")
+@PreAuthorize("hasAuthority('platform:workers:manage')")
 public class WorkerFleetController {
 
     private final WorkerRegistry workerRegistry;

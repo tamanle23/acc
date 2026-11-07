@@ -163,6 +163,9 @@ function DagStudioCanvas({
     isWorkflowBlank,
     setIsDismissedEmptyState,
     handleInsertStarterTask,
+    handleInsertNode,
+    handleAddNodeBranch,
+    handleRemoveNodeBranch,
     handleUpdateNodeData,
     handleSaveEdgeCondition,
     handleNewBlank,
@@ -468,23 +471,60 @@ function DagStudioCanvas({
       if (outDegree.has(e.source)) outDegree.set(e.source, (outDegree.get(e.source) || 0) + 1);
     });
 
+    const hasExplicitStart = nodes.some(
+      (n) =>
+        n.data.isStartNode ||
+        n.id === 'node-start' ||
+        n.data.taskReferenceName === 'workflow_start' ||
+        n.data.taskReferenceName === 'startTask'
+    );
+    const hasExplicitEnd = nodes.some(
+      (n) =>
+        n.data.isEndNode ||
+        n.id === 'node-end' ||
+        n.data.taskReferenceName === 'workflow_end'
+    );
+
     return nodes.map((n) => {
       const degIn = inDegree.get(n.id) ?? 0;
       const degOut = outDegree.get(n.id) ?? 0;
+
+      const isStart = hasExplicitStart
+        ? Boolean(
+          n.data.isStartNode ||
+          n.id === 'node-start' ||
+          n.data.taskReferenceName === 'workflow_start' ||
+          n.data.taskReferenceName === 'startTask'
+        )
+        : degIn === 0;
+
+      // An entry/start node MUST NOT be an end node (guarantees right connector handle is never suppressed)
+      const isEnd = isStart
+        ? false
+        : hasExplicitEnd
+          ? Boolean(
+            n.data.isEndNode ||
+            n.id === 'node-end' ||
+            n.data.taskReferenceName === 'workflow_end'
+          )
+          : degOut === 0;
+
       return {
         ...n,
         data: {
           ...n.data,
-          isStartNode: degIn === 0,
-          isEndNode: degOut === 0,
+          isStartNode: isStart,
+          isEndNode: isEnd,
           hasBreakpoint: isExecutionMode ? breakpoints.includes(n.data.taskReferenceName) : false,
           onToggleBreakpoint: isExecutionMode ? handleToggleBreakpoint : undefined,
           // Wire hover-popover "Inspect I/O & Logs" button to open telemetry drawer
           onInspectTask: isExecutionMode ? handleInspectTask : undefined,
+          onAddBranch: isReadOnly ? undefined : handleAddNodeBranch,
+          onRemoveBranch: isReadOnly ? undefined : handleRemoveNodeBranch,
         },
       };
     });
-  }, [nodes, edges, breakpoints, handleToggleBreakpoint, handleInspectTask, isExecutionMode]);
+  }, [nodes, edges, breakpoints, handleToggleBreakpoint, handleInspectTask, isExecutionMode, isReadOnly, handleAddNodeBranch, handleRemoveNodeBranch]);
 
   // Decorate edges with EdgeExecutionFlowState semantics.
   // DagConditionEdge reads data.executionFlowState and owns all execution-time styling —
@@ -572,9 +612,9 @@ function DagStudioCanvas({
       !isLiveHead && replayedVariables
         ? replayedVariables
         : (stream.snapshot as any)?.variables || {
-            orderId: 'ORD-2026-991',
-            tier: 'EXPRESS',
-          };
+          orderId: 'ORD-2026-991',
+          tier: 'EXPRESS',
+        };
 
     return {
       workflowStatus:
@@ -721,6 +761,7 @@ function DagStudioCanvas({
           >
             <DagPalette
               defaultCollapsed={containerWidth < 900}
+              onInsertNode={isReadOnly ? undefined : handleInsertNode}
               style={{
                 maxHeight: `${computedMaxHeight}px`,
               }}
@@ -827,6 +868,8 @@ function DagStudioCanvas({
           onOpenChange={setIsInspectorOpen}
           onUpdateNodeData={handleUpdateNodeData}
           availableTaskRefs={availableTaskRefs}
+          onAddBranch={handleAddNodeBranch}
+          onRemoveBranch={handleRemoveNodeBranch}
         />
       )}
 
@@ -843,14 +886,14 @@ function DagStudioCanvas({
               nds.map((n) =>
                 n.data.taskReferenceName === taskRef
                   ? {
-                      ...n,
-                      data: {
-                        ...n.data,
-                        inputParameters: overrideInput,
-                        executionState: 'IN_PROGRESS',
-                        error: undefined,
-                      },
-                    }
+                    ...n,
+                    data: {
+                      ...n.data,
+                      inputParameters: overrideInput,
+                      executionState: 'IN_PROGRESS',
+                      error: undefined,
+                    },
+                  }
                   : n
               )
             );

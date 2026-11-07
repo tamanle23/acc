@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 import {
   Plus,
   Trash2,
+  GitFork,
   CheckCircle2,
   AlertTriangle,
   ShieldAlert,
@@ -31,6 +32,7 @@ import {
 } from 'lucide-react';
 import { useWorkerCatalog, type TaskWorkerDescriptor } from '@/features/workers/api/worker-fleet-api';
 import { VisualJsonEditor } from '@/components/ui/json-editor';
+import { multiBranchRegistry } from '../utils/branch-strategies';
 
 interface DagPropertyInspectorProps {
   nodeId: string | null;
@@ -40,6 +42,8 @@ interface DagPropertyInspectorProps {
   onUpdateNodeData: (nodeId: string, updatedData: Partial<DagNodeData>) => void;
   availableTaskRefs: string[];
   defaultTab?: string;
+  onAddBranch?: (nodeId: string, customBranchName?: string) => void;
+  onRemoveBranch?: (nodeId: string, branchId: string) => void;
 }
 
 export function DagPropertyInspector({
@@ -50,6 +54,8 @@ export function DagPropertyInspector({
   onUpdateNodeData,
   availableTaskRefs,
   defaultTab,
+  onAddBranch,
+  onRemoveBranch,
 }: DagPropertyInspectorProps) {
   const [formData, setFormData] = useState<DagNodeData | null>(nodeData);
   const [paramKey, setParamKey] = useState('');
@@ -424,6 +430,22 @@ export function DagPropertyInspector({
             </div>
 
             <div className="space-y-1.5">
+              <Label htmlFor="humanEscalationRole" className="text-xs font-semibold">
+                Escalation Role / Target
+              </Label>
+              <Input
+                id="humanEscalationRole"
+                value={(p as any).escalationRole || ''}
+                onChange={(e) => handleSpecializedChange('humanParams', 'escalationRole', e.target.value)}
+                placeholder="SENIOR_REVIEWER"
+                className="font-mono text-xs h-8"
+              />
+              <p className="text-[10px] text-muted-foreground">
+                If escalated, task remains on hold at this node and reassigns to this role for review.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
               <Label htmlFor="humanInstructions" className="text-xs font-semibold">
                 Review Instructions
               </Label>
@@ -435,6 +457,15 @@ export function DagPropertyInspector({
                 rows={3}
                 className="text-xs"
               />
+            </div>
+
+            <div className="p-2.5 rounded-lg border border-border/50 bg-muted/20 space-y-1 text-xs">
+              <div className="font-semibold text-foreground text-[11px] mb-1">Execution Lifecycle</div>
+              <div className="text-[10px] text-muted-foreground space-y-1">
+                <div><span className="text-emerald-600 dark:text-emerald-400 font-semibold font-mono">Approve</span>: Execution continues to the connected next node.</div>
+                <div><span className="text-rose-600 dark:text-rose-400 font-semibold font-mono">Reject</span>: Execution terminates and stops at this human node.</div>
+                <div><span className="text-amber-600 dark:text-amber-400 font-semibold font-mono">Escalate</span>: Execution stays on hold on this node, waiting for reviewer.</div>
+              </div>
             </div>
           </div>
         );
@@ -1227,6 +1258,90 @@ export function DagPropertyInspector({
                   Node type <span className="font-mono font-semibold">{formData.taskType}</span> uses standard sequential DAG routing.
                 </p>
               )}
+
+              {/* Universal Multi-Branch Management Section */}
+              {multiBranchRegistry.supports(formData.taskType) && (() => {
+                const branchStrategy = multiBranchRegistry.get(formData.taskType);
+                if (!branchStrategy) return null;
+                const activeBranches = branchStrategy.getBranches(formData);
+
+                return (
+                  <div className="space-y-3 pt-3 border-t border-border/40">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <GitFork className="w-3.5 h-3.5 text-primary" />
+                        <span className="text-xs font-bold text-foreground">
+                          Active Branches ({activeBranches.length})
+                        </span>
+                      </div>
+                      {onAddBranch && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => onAddBranch(nodeId)}
+                          className="h-7 px-2 text-[10px] font-semibold flex items-center gap-1 border-primary/30 hover:border-primary/60 text-primary bg-primary/5 hover:bg-primary/10"
+                          data-testid="property-inspector-add-branch-btn"
+                        >
+                          <Plus className="w-3 h-3" />
+                          <span>{branchStrategy.addActionLabel}</span>
+                        </Button>
+                      )}
+                    </div>
+
+                    <div className="space-y-1.5 max-h-[220px] overflow-y-auto pr-0.5">
+                      {activeBranches.map((branch) => (
+                        <div
+                          key={branch.id}
+                          className="flex items-center justify-between gap-2 p-2 rounded-xl border border-white/30 dark:border-white/10 bg-white/40 dark:bg-slate-800/40 backdrop-blur-md text-xs shadow-sm"
+                          data-testid={`branch-item-${branch.id}`}
+                        >
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                'text-[9px] px-1.5 py-0 shrink-0 font-mono font-semibold',
+                                branch.isDefault
+                                  ? 'bg-slate-500/15 text-slate-600 dark:text-slate-400 border-slate-500/30'
+                                  : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
+                              )}
+                            >
+                              {branch.id}
+                            </Badge>
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <span className="text-xs font-semibold text-foreground truncate">
+                                {branch.label}
+                              </span>
+                              {branch.targetTaskRef && (
+                                <span className="text-[10px] font-mono text-muted-foreground truncate">
+                                  Target: {branch.targetTaskRef}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {branch.isRemovable && onRemoveBranch && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              disabled={activeBranches.filter((b) => b.isRemovable).length <= 1}
+                              onClick={() => onRemoveBranch(nodeId, branch.id)}
+                              className="h-6 w-6 p-0 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 shrink-0"
+                              title={
+                                activeBranches.filter((b) => b.isRemovable).length <= 1
+                                  ? 'Minimum branches reached'
+                                  : `Remove branch ${branch.id}`
+                              }
+                              data-testid={`branch-delete-btn-${branch.id}`}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
             </TabsContent>
           </div>
         </Tabs>

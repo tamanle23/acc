@@ -3,6 +3,7 @@ import { getRouteApi } from '@tanstack/react-router'
 import { SlidersHorizontal, ArrowUpAZ, ArrowDownAZ } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
+import { AuthorizedButton } from '@/components/auth'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import {
@@ -17,6 +18,7 @@ import { ConfigDrawer } from '@/components/config-drawer'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
+import { NotificationDropdown } from '@/features/notifications'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { LanguageSwitch } from '@/components/language-switch'
@@ -127,6 +129,7 @@ export function StorageIntegration() {
       <Header>
         <Search />
         <div className='ms-auto flex items-center gap-4'>
+          <NotificationDropdown />
           <LanguageSwitch />
           <ThemeSwitch />
           <ConfigDrawer />
@@ -173,9 +176,13 @@ export function StorageIntegration() {
                 </SelectItem>
               </SelectContent>
             </Select>
-            <Button onClick={() => setAddDialog(true)} className='h-9'>
+            <AuthorizedButton
+              permission='workspace:settings:manage'
+              onClick={() => setAddDialog(true)}
+              className='h-9'
+            >
               {t('storage.actions.addProvider', 'Add Provider')}
-            </Button>
+            </AuthorizedButton>
           </div>
 
           <Select value={sort} onValueChange={handleSortChange}>
@@ -237,23 +244,25 @@ export function StorageIntegration() {
                       </span>
                     </div>
                     <div className='flex items-center gap-2'>
-                      <Button
+                      <AuthorizedButton
+                        permission='workspace:settings:manage'
                         variant='outline'
                         size='sm'
                         className='liquid-glass-interactive h-8 text-xs relative overflow-hidden bg-white/20 hover:bg-white/30 dark:bg-white/10 dark:hover:bg-white/15 border border-white/30 dark:border-white/15 backdrop-blur-md text-foreground shadow-sm transition-all duration-200 active:scale-95'
                         onClick={() => setManageDialog({ open: true, provider: storage })}
                       >
                         {t('storage.actions.manage', 'Manage')}
-                      </Button>
+                      </AuthorizedButton>
                       {storage.lifecycleStatus !== 'Draft' && (
-                        <Button
+                        <AuthorizedButton
+                          permission='workspace:settings:manage'
                           variant='outline'
                           size='sm'
                           className='liquid-glass-interactive h-8 text-xs relative overflow-hidden bg-white/20 hover:bg-white/30 dark:bg-white/10 dark:hover:bg-white/15 border border-white/30 dark:border-white/15 backdrop-blur-md text-foreground shadow-sm transition-all duration-200 active:scale-95'
                           onClick={() => setAssignmentsDialog({ open: true, provider: storage })}
                         >
                           {t('storage.actions.assignments', 'Assignments')}
-                        </Button>
+                        </AuthorizedButton>
                       )}
                     </div>
                   </div>

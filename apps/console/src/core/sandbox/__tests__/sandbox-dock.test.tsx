@@ -48,7 +48,7 @@ describe('SandboxDock UI Component', () => {
     fireEvent.click(creatorBtn);
 
     expect(useSandboxStore.getState().activePersonaId).toBe('creator');
-    expect(useSandboxStore.getState().activeTenantId).toBe('tenant-eu-central-1');
+    expect(useSandboxStore.getState().activeTenantId).toBe('tenant-acme');
     expect(useSpringAuthStore.getState().user?.sub).toBe('creator');
   });
 

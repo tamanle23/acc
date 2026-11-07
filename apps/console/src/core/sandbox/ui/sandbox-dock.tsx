@@ -102,6 +102,13 @@ export function SandboxDock() {
     toast.success('Unified Sandbox: Reset all domain records and user preferences to pristine baseline');
   };
 
+  const handleSwitchPersona = (pId: SandboxPersonaId) => {
+    sandboxManager.switchPersona(pId);
+    queryClient.invalidateQueries({ queryKey: ['user', 'profile'] });
+    queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
+    queryClient.invalidateQueries();
+  };
+
   const handleTestDashboard = async () => {
     try {
       const { data } = await springApiClient.get('/admin/dashboard');
@@ -269,7 +276,7 @@ export function SandboxDock() {
                 return (
                   <button
                     key={pId}
-                    onClick={() => sandboxManager.switchPersona(pId)}
+                    onClick={() => handleSwitchPersona(pId)}
                     className={`flex flex-col items-center justify-center p-2 rounded-lg border text-center transition-all ${isActive
                       ? isSys
                         ? 'border-amber-500 bg-amber-500/15 text-amber-950 dark:text-amber-200 font-semibold shadow-xs ring-1 ring-amber-500/40'

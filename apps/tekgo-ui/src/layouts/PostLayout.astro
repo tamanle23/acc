@@ -1,0 +1,152 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import ScrollTopAndComment from '../components/ScrollTopAndComment';
+import Comments from '../components/Comments';
+import PageTitle from '../components/PageTitle.astro';
+import Tag from '../components/Tag.astro';
+import siteMetadata from '@/data/siteMetadata';
+import type { Blog, Authors } from '../lib/types';
+import { formatDate } from '../lib/utils';
+
+interface Props {
+  post: Blog;
+  authorDetails: Authors[];
+  next?: { slug: string; title: string };
+  prev?: { slug: string; title: string };
+}
+
+const { post, authorDetails, next, prev } = Astro.props;
+const { filePath, slug, date, title, tags, summary } = post;
+const editUrl = `${siteMetadata.siteRepo}/blob/main/data/${filePath}`;
+const discussUrl = `https://mobile.twitter.com/search?q=${encodeURIComponent(`${siteMetadata.siteUrl}/blog/${slug}`)}`;
+---
+<BaseLayout title={title} description={summary}>
+  <ScrollTopAndComment client:visible />
+  <article>
+    <div class="xl:divide-y xl:divide-gray-200 xl:dark:divide-gray-800">
+      <header class="pt-6 xl:pb-6">
+        <div class="space-y-1 text-center">
+          <dl class="space-y-10">
+            <div>
+              <dt class="sr-only">Published on</dt>
+              <dd class="text-base font-medium leading-6 text-gray-500 dark:text-gray-400">
+                <time datetime={date}>{formatDate(date, siteMetadata.locale)}</time>
+              </dd>
+            </div>
+          </dl>
+          <div>
+            <PageTitle>{title}</PageTitle>
+          </div>
+        </div>
+      </header>
+
+      <div class="grid-rows-[auto_1fr] divide-y divide-gray-200 pb-8 xl:grid xl:grid-cols-4 xl:gap-x-6 xl:divide-y-0 dark:divide-gray-800">
+        <dl class="pt-6 pb-10 xl:border-b xl:border-gray-200 xl:pt-11 xl:dark:border-gray-800">
+          <dt class="sr-only">Authors</dt>
+          <dd>
+            <ul class="flex flex-wrap justify-center gap-4 sm:space-x-12 xl:block xl:space-y-8 xl:space-x-0">
+              {authorDetails.map((author) => (
+                <li class="flex items-center space-x-2">
+                  {author.avatar && (
+                    <img
+                      src={author.avatar}
+                      width={38}
+                      height={38}
+                      alt="avatar"
+                      class="h-10 w-10 rounded-full"
+                    />
+                  )}
+                  <dl class="text-sm font-medium leading-5 whitespace-nowrap">
+                    <dt class="sr-only">Name</dt>
+                    <dd class="text-gray-900 dark:text-gray-100">{author.name}</dd>
+                    {author.twitter && (
+                      <>
+                        <dt class="sr-only">Twitter</dt>
+                        <dd>
+                          <a
+                            href={author.twitter}
+                            class="text-primary-500 hover:text-primary-600 dark:hover:text-primary-400"
+                          >
+                            {author.twitter.replace('https://twitter.com/', '@').replace('https://x.com/', '@')}
+                          </a>
+                        </dd>
+                      </>
+                    )}
+                  </dl>
+                </li>
+              ))}
+            </ul>
+          </dd>
+        </dl>
+
+        <div class="divide-y divide-gray-200 xl:col-span-3 xl:row-span-2 xl:pb-0 dark:divide-gray-800">
+          <div class="prose dark:prose-invert max-w-none pt-10 pb-8">
+            <slot />
+          </div>
+          <div class="pt-6 pb-6 text-sm text-gray-700 dark:text-gray-300">
+            <a href={discussUrl} rel="nofollow" class="hover:underline">
+              Discuss on Twitter
+            </a>
+            <span> • </span>
+            <a href={editUrl} class="hover:underline">View on GitHub</a>
+          </div>
+          {siteMetadata.comments && (
+            <div class="pt-6 pb-6 text-center" id="comment">
+              <Comments slug={slug} client:visible />
+            </div>
+          )}
+        </div>
+
+        <footer>
+          <div class="divide-gray-200 text-sm font-medium leading-5 xl:col-start-1 xl:row-start-2 xl:divide-y dark:divide-gray-800">
+            {tags && (
+              <div class="py-4 xl:py-8">
+                <h2 class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                  Tags
+                </h2>
+                <div class="flex flex-wrap mt-2">
+                  {tags.map((tag) => (
+                    <Tag text={tag} />
+                  ))}
+                </div>
+              </div>
+            )}
+            {(next || prev) && (
+              <div class="flex justify-between py-4 xl:block xl:space-y-8 xl:py-8">
+                {prev && (
+                  <div>
+                    <h2 class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                      Previous Article
+                    </h2>
+                    <div class="text-primary-500 hover:text-primary-600 dark:hover:text-primary-400 mt-1">
+                      <a href={`/blog/${prev.slug}`}>{prev.title}</a>
+                    </div>
+                  </div>
+                )}
+                {next && (
+                  <div>
+                    <h2 class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                      Next Article
+                    </h2>
+                    <div class="text-primary-500 hover:text-primary-600 dark:hover:text-primary-400 mt-1">
+                      <a href={`/blog/${next.slug}`}>{next.title}</a>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          <div class="pt-4 xl:pt-8">
+            <a
+              href="/blog"
+              class="text-primary-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+              aria-label="Back to the blog"
+            >
+              &larr; Back to the blog
+            </a>
+          </div>
+        </footer>
+      </div>
+    </div>
+  </article>
+</BaseLayout>

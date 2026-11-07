@@ -1,69 +1,29 @@
 {
+  "extends": "astro/tsconfigs/strict",
   "compilerOptions": {
-    "incremental": true,
-    "target": "ES6",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
-    "allowJs": true,
-    "skipLibCheck": true,
-    "strict": false,
-    "forceConsistentCasingInFileNames": true,
-    "noEmit": true,
-    "composite": true,
-    "esModuleInterop": true,
-    "module": "esnext",
+    "target": "ESNext",
+    "module": "ESNext",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve",
+    "allowJs": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact",
     "baseUrl": ".",
     "paths": {
-      "@/components/*": [
-        "components/*"
-      ],
-      "@/data/*": [
-        "data/*"
-      ],
-      "@/layouts/*": [
-        "layouts/*"
-      ],
-      "@/lib/*": [
-        "lib/*"
-      ],
-      "@/css/*": [
-        "css/*"
-      ],
-      "contentlayer/generated": [
-        "./.contentlayer/generated"
-      ],
-      "pliny/*": [
-        "node_modules/pliny/*"
-      ]
-    },
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
-    "strictNullChecks": true
+      "@/*": ["src/*"],
+      "@/data/*": ["data/*"]
+    }
   },
   "include": [
-    "**/*.js",
-    "**/*.json",
-    "**/*.mjs",
-    "**/*.ts",
-    "**/*.tsx",
-    ".contentlayer/generated",
-    ".contentlayer/generated/**/*.json",
-    ".next/dev/types/**/*.ts",
-    ".next/types/**/*.ts",
-    "next-env.d.ts",
-    "dist/types/**/*.ts"
+    "src/**/*",
+    "data/**/*",
+    "astro.config.mjs"
   ],
   "exclude": [
+    "dist",
     "node_modules"
   ]
 }

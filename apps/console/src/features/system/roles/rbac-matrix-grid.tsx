@@ -6,6 +6,7 @@ import {
 } from '@tanstack/react-table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { AuthorizedButton } from '@/components/auth';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { DataTable } from '@/components/data-table/data-table';
@@ -274,14 +275,15 @@ export function RbacMatrixGrid() {
               </button>
             </div>
 
-            <Button
+            <AuthorizedButton
+              permission="platform:roles:manage"
               size="sm"
               onClick={() => setCreateRoleOpen(true)}
               className="gap-1.5 h-9"
             >
               <PlusCircle className="h-4 w-4" />
               <span>Create Role</span>
-            </Button>
+            </AuthorizedButton>
           </div>
         </div>
 
@@ -362,7 +364,8 @@ export function RbacMatrixGrid() {
               <RotateCcw className="h-3 w-3 me-1" />
               Discard All
             </Button>
-            <Button
+            <AuthorizedButton
+              permission="platform:roles:manage"
               size="sm"
               onClick={handleCommitAll}
               disabled={updateRoleMutation.isPending}
@@ -379,7 +382,7 @@ export function RbacMatrixGrid() {
                   Commit Changes ({stagedCount})
                 </>
               )}
-            </Button>
+            </AuthorizedButton>
           </div>
         </div>
       )}
