@@ -391,7 +391,7 @@ export const authSandboxHandler: SandboxRouteHandler = {
         userId: persona.uid || `usr-${persona.id}`,
         username: persona.username,
         ...mockUserProfileState,
-        email: persona.username,
+        email: persona.username?.includes('@') ? persona.username : `${persona.username || 'user'}@acc.io`,
       };
 
       return {
