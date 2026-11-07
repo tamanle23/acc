@@ -153,4 +153,44 @@ describe('DagPropertyInspector Drawer', () => {
     expect(screen.queryByText('Bind to Registered SIMPLE Worker')).toBeNull();
     expect(screen.queryByText('Policies')).toBeNull();
   });
+
+  it('runs isolated sandbox step test in Data tab payloads view', () => {
+    const nodeData: DagNodeData = {
+      taskReferenceName: 'sendConfirmation',
+      taskType: 'SIMPLE',
+      label: 'Send Confirmation',
+      inputParameters: {
+        orderId: '${workflow.input.orderId}',
+      },
+      mockOutputPayload: {
+        sent: true,
+        messageId: 'msg-9921',
+      },
+    };
+
+    renderWithClient(
+      <DagPropertyInspector
+        nodeId="node-send"
+        nodeData={nodeData}
+        open={true}
+        onOpenChange={vi.fn()}
+        onUpdateNodeData={vi.fn()}
+        availableTaskRefs={['start', 'sendConfirmation']}
+        defaultTab="params"
+      />
+    );
+
+    // Switch to Payloads sub-tab
+    fireEvent.click(screen.getByTestId('dag-inspector-tab-payloads'));
+
+    const testStepBtn = screen.getByTestId('property-inspector-test-step-btn');
+    expect(testStepBtn).toBeDefined();
+
+    fireEvent.click(testStepBtn);
+
+    const resultBox = screen.getByTestId('property-inspector-step-test-result');
+    expect(resultBox).toBeDefined();
+    expect(resultBox.textContent).toContain('COMPLETED');
+    expect(resultBox.textContent).toContain('msg-9921');
+  });
 });

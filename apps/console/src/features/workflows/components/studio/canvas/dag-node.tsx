@@ -1,6 +1,7 @@
-import React, { memo, useState, useEffect, useRef } from 'react';
+import React, { memo, useState, useEffect, useRef, useMemo } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { cn } from '@/lib/utils';
+import { taskContractRegistry } from '../utils/contracts';
 import {
   Play,
   Split,
@@ -149,6 +150,8 @@ export interface DagNodeData {
   executionState?: ExecutionState;
   inputParameters?: Record<string, unknown>;
   outputParameters?: Record<string, unknown>;
+  declaredOutputSchema?: Record<string, unknown>;
+  mockOutputPayload?: Record<string, unknown>;
   retryCount?: number;
   retryDelaySeconds?: number;
   backoffRate?: number;
@@ -185,6 +188,8 @@ export interface DagNodeData {
   // Multi-Branch Node Expansion
   onAddBranch?: (nodeId: string) => void;
   onRemoveBranch?: (nodeId: string, branchId: string) => void;
+  // View Density Mode
+  viewDensity?: 'compact' | 'standard' | 'dataFlow';
   // Topology Boundary & Permanence Invariants (Iteration 15)
   isPermanent?: boolean;
   isStartNode?: boolean;
@@ -224,6 +229,9 @@ export function areDagNodePropsEqual(
     p.retryCount === n.retryCount &&
     p.inputParameters === n.inputParameters &&
     p.outputParameters === n.outputParameters &&
+    p.declaredOutputSchema === n.declaredOutputSchema &&
+    p.mockOutputPayload === n.mockOutputPayload &&
+    p.viewDensity === n.viewDensity &&
     p.onToggleBreakpoint === n.onToggleBreakpoint &&
     p.onInspectTask === n.onInspectTask
   );
@@ -267,6 +275,17 @@ export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagN
 
   const isStart = Boolean(data.isStartNode || data.taskType === 'START_WORKFLOW');
   const isEnd = Boolean(data.isEndNode || data.taskType === 'END_WORKFLOW');
+
+  const viewDensity = data.viewDensity || 'standard';
+  const isCompact = viewDensity === 'compact';
+  const isDataFlow = viewDensity === 'dataFlow';
+
+  const inputCount = Object.keys(data.inputParameters || {}).length;
+  const effectiveOutputSchema = useMemo(() => {
+    return taskContractRegistry.resolveOutputSchema(data);
+  }, [data.taskType, data.declaredOutputSchema, data.outputParameters, data.mockOutputPayload]);
+  const outputKeys = Object.keys((effectiveOutputSchema?.properties as Record<string, unknown>) || {});
+  const outputCount = outputKeys.length;
 
   const getNodeIcon = () => {
     if (isStart) {
@@ -609,7 +628,7 @@ export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagN
       </div>
 
       {/* Body details */}
-      {isStart ? (
+      {isCompact ? null : isStart ? (
         <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono mt-1">
           Workflow Input ({Object.keys(data.inputParameters || {}).length} params)
         </div>
@@ -657,6 +676,87 @@ export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagN
               </div>
               <div className="text-[9px] text-muted-foreground/80 italic">
                 Reject stops · Escalate holds
+              </div>
+            </div>
+          )}
+
+          {/* I/O Schema Badges (Standard & DataFlow) */}
+          <div
+            data-testid={`dag-node-io-badges-${data.taskReferenceName}`}
+            className="mt-1.5 flex items-center gap-1.5 text-[9px] font-mono text-muted-foreground"
+          >
+            <span
+              title={`${inputCount} bound input parameters`}
+              className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20"
+            >
+              <span>📥</span>
+              <span>{inputCount} in</span>
+            </span>
+            <span
+              title={`${outputCount} declared schema output properties`}
+              className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20"
+            >
+              <span>📤</span>
+              <span>{outputCount} out</span>
+            </span>
+          </div>
+
+          {/* Expanded Data Flow Contract Panel */}
+          {isDataFlow && (
+            <div
+              data-testid={`dag-node-dataflow-panel-${data.taskReferenceName}`}
+              className="mt-2 pt-2 border-t border-border/30 text-[10px] space-y-1.5 font-mono"
+            >
+              <div>
+                <div className="text-[9px] font-semibold text-sky-600 dark:text-sky-400 uppercase tracking-wider mb-0.5">
+                  Inputs ({inputCount})
+                </div>
+                {inputCount === 0 ? (
+                  <div className="text-[9px] text-muted-foreground italic">No inputs bound</div>
+                ) : (
+                  <div className="space-y-0.5">
+                    {Object.entries(data.inputParameters || {}).slice(0, 3).map(([key, val]) => (
+                      <div
+                        key={key}
+                        className="flex items-center justify-between gap-1 text-[9px] truncate bg-sky-500/5 px-1 py-0.5 rounded border border-sky-500/10"
+                      >
+                        <span className="font-semibold text-foreground/90 truncate">{key}:</span>
+                        <span className="text-muted-foreground truncate max-w-[80px]" title={String(val)}>
+                          {String(val)}
+                        </span>
+                      </div>
+                    ))}
+                    {inputCount > 3 && (
+                      <div className="text-[8px] text-muted-foreground">+{inputCount - 3} more...</div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <div className="text-[9px] font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wider mb-0.5">
+                  Outputs ({outputCount})
+                </div>
+                {outputCount === 0 ? (
+                  <div className="text-[9px] text-muted-foreground italic">Generic object</div>
+                ) : (
+                  <div className="flex flex-wrap gap-1">
+                    {outputKeys.slice(0, 4).map((prop) => {
+                      const propType = (effectiveOutputSchema?.properties?.[prop] as any)?.type || 'any';
+                      return (
+                        <span
+                          key={prop}
+                          className="px-1 py-0.5 rounded bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20 text-[8px]"
+                        >
+                          {prop} <span className="opacity-60">({propType})</span>
+                        </span>
+                      );
+                    })}
+                    {outputCount > 4 && (
+                      <span className="text-[8px] text-muted-foreground self-center">+{outputCount - 4} more</span>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}

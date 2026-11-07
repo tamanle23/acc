@@ -28,6 +28,7 @@ import {
   Eye,
   EyeOff,
   Check,
+  Search,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -83,6 +84,14 @@ export interface DagHeaderCommandBarProps {
   onCloseExecution?: () => void;
   followLive?: boolean;
   onToggleFollowLive?: () => void;
+  // Visual DAG Studio 2.0 Enhancements
+  viewDensity?: 'compact' | 'standard' | 'dataFlow';
+  onChangeViewDensity?: (mode: 'compact' | 'standard' | 'dataFlow') => void;
+  showDataLineage?: boolean;
+  onToggleDataLineage?: () => void;
+  onOpenDiagnostics?: () => void;
+  diagnosticIssuesCount?: number;
+  onToggleSearch?: () => void;
 }
 
 export const DagHeaderCommandBar: React.FC<DagHeaderCommandBarProps> = ({
@@ -130,6 +139,13 @@ export const DagHeaderCommandBar: React.FC<DagHeaderCommandBarProps> = ({
   onCloseExecution,
   followLive,
   onToggleFollowLive,
+  viewDensity,
+  onChangeViewDensity,
+  showDataLineage,
+  onToggleDataLineage,
+  onOpenDiagnostics,
+  diagnosticIssuesCount,
+  onToggleSearch,
 }) => {
   return (
     <div
@@ -398,6 +414,86 @@ export const DagHeaderCommandBar: React.FC<DagHeaderCommandBarProps> = ({
             )}
           </Button>
 
+          {/* Data Lineage toggle */}
+          {onToggleDataLineage && (
+            <Button
+              size="sm"
+              variant={showDataLineage ? 'default' : 'outline'}
+              className={cn(
+                'h-7 px-2 text-xs gap-1',
+                showDataLineage && 'bg-purple-600 hover:bg-purple-700 text-white'
+              )}
+              onClick={onToggleDataLineage}
+              title={`Data Flow Lineage: ${showDataLineage ? 'ON' : 'OFF'}`}
+              aria-label="Toggle Data Lineage"
+              data-testid="dag-data-lineage-btn"
+            >
+              <Spline className={cn('w-3 h-3', showDataLineage ? 'text-white' : 'text-purple-500')} />
+              <span className="hidden sm:inline">Lineage</span>
+            </Button>
+          )}
+
+          {/* Density mode switcher */}
+          {onChangeViewDensity && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 px-2 text-xs gap-1"
+                  title={`View Density: ${viewDensity || 'standard'}`}
+                  aria-label="Select View Density"
+                  data-testid="dag-view-density-btn"
+                >
+                  <LayoutGrid className="w-3 h-3 text-sky-500" />
+                  <span className="hidden md:inline capitalize">
+                    {viewDensity === 'dataFlow' ? 'Data Flow' : viewDensity || 'Standard'}
+                  </span>
+                  <ChevronDown className="w-2.5 h-2.5 opacity-60" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-40">
+                <DropdownMenuItem
+                  onClick={() => onChangeViewDensity('compact')}
+                  className="text-xs cursor-pointer"
+                  data-testid="dag-density-compact"
+                >
+                  Compact
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => onChangeViewDensity('standard')}
+                  className="text-xs cursor-pointer"
+                  data-testid="dag-density-standard"
+                >
+                  Standard
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => onChangeViewDensity('dataFlow')}
+                  className="text-xs cursor-pointer"
+                  data-testid="dag-density-dataflow"
+                >
+                  Data Flow (Expanded)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
+          {/* Quick Search Button */}
+          {onToggleSearch && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 px-2 text-xs gap-1"
+              onClick={onToggleSearch}
+              title="Find Nodes in DAG (Ctrl+F)"
+              aria-label="Find Nodes"
+              data-testid="dag-find-nodes-btn"
+            >
+              <Search className="w-3 h-3 text-muted-foreground" />
+              <span className="hidden md:inline">Find</span>
+            </Button>
+          )}
+
           <div className="h-3.5 w-[1px] bg-border/50 mx-0.5" />
 
           {/* Undo / Redo pair */}
@@ -526,6 +622,35 @@ export const DagHeaderCommandBar: React.FC<DagHeaderCommandBarProps> = ({
               )}
               <span className="hidden lg:inline">Validate DAG</span>
             </Button>
+
+            {onOpenDiagnostics && (
+              <Button
+                size="sm"
+                variant="outline"
+                className={cn(
+                  'h-7 px-2 text-xs gap-1 transition-all',
+                  diagnosticIssuesCount && diagnosticIssuesCount > 0
+                    ? 'border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20'
+                    : 'text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20'
+                )}
+                onClick={onOpenDiagnostics}
+                title="Open Static Semantic Diagnostics"
+                aria-label="DAG Diagnostics"
+                data-testid="dag-diagnostics-pill-btn"
+              >
+                {diagnosticIssuesCount && diagnosticIssuesCount > 0 ? (
+                  <>
+                    <AlertTriangle className="w-3 h-3 text-amber-500" />
+                    <span className="hidden sm:inline">{diagnosticIssuesCount} Issues</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                    <span className="hidden sm:inline">Semantics OK</span>
+                  </>
+                )}
+              </Button>
+            )}
 
             <Button
               size="sm"

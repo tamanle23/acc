@@ -14,6 +14,7 @@ import {
   type DagNodeType,
 } from './canvas/dag-node';
 import { DagConditionEdge, type DagConditionEdgeData } from './canvas/dag-condition-edge';
+import { DataLineageEdgeComponent, buildDataLineageEdges } from './canvas/data-lineage-edge';
 import { DagCanvasEmptyState } from './canvas/dag-canvas-empty-state';
 import { DagQuickInsertPopover } from './canvas/dag-quick-insert-popover';
 import { DagSelectionToolbar } from './canvas/dag-selection-toolbar';
@@ -21,6 +22,8 @@ import { DagSelectionToolbar } from './canvas/dag-selection-toolbar';
 import { DagHeaderCommandBar } from './toolbar/dag-header-command-bar';
 import { DagDebuggerSubpill } from './toolbar/dag-debugger-subpill';
 import { DagValidationBanner } from './toolbar/dag-validation-banner';
+import { DagDiagnosticDrawer } from './toolbar/dag-diagnostic-drawer';
+import { DagCanvasSearch } from './toolbar/dag-canvas-search';
 
 import { DagPalette } from './palette/dag-palette';
 import { DagPropertyInspector } from './inspectors/dag-property-inspector';
@@ -45,6 +48,7 @@ import {
   importFromWorkflowIR,
   validateGraphTopology,
 } from './utils/workflow-ir-converter';
+import { lintDagSemantics } from './utils/validation/dag-semantic-linter';
 import {
   BLANK_WORKFLOW_NODES,
   BLANK_WORKFLOW_EDGES,
@@ -94,6 +98,7 @@ const nodeTypes = {
 
 const edgeTypes = {
   dagEdge: DagConditionEdge,
+  dataLineage: DataLineageEdgeComponent,
 };
 
 function DagStudioCanvas({
@@ -115,7 +120,12 @@ function DagStudioCanvas({
   const [containerHeight, setContainerHeight] = useState<number>(650);
   const [containerWidth, setContainerWidth] = useState<number>(1200);
 
-  const { screenToFlowPosition } = useReactFlow();
+  const { screenToFlowPosition, setCenter } = useReactFlow();
+
+  const [showDataLineage, setShowDataLineage] = useState<boolean>(false);
+  const [viewDensity, setViewDensity] = useState<'compact' | 'standard' | 'dataFlow'>('standard');
+  const [isDiagnosticsOpen, setIsDiagnosticsOpen] = useState<boolean>(false);
+  const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
 
   // Core DAG state management hook
   const {
@@ -276,6 +286,52 @@ function DagStudioCanvas({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isFullscreen]);
+
+  // Ctrl+F / Cmd+F shortcut to open canvas node search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        setIsSearchOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const handleFocusNode = useCallback(
+    (node: Node<DagNodeData>) => {
+      setSelectedNodeId(node.id);
+      setIsInspectorOpen(true);
+      if (setCenter && node.position) {
+        setCenter(node.position.x + 100, node.position.y + 40, { zoom: 1.2, duration: 300 });
+      }
+    },
+    [setSelectedNodeId, setCenter]
+  );
+
+  const handleSelectDiagnosticNode = useCallback(
+    (nodeId: string) => {
+      setSelectedNodeId(nodeId);
+      setIsInspectorOpen(true);
+      const targetNode = nodes.find((n) => n.id === nodeId);
+      if (targetNode && setCenter && targetNode.position) {
+        setCenter(targetNode.position.x + 100, targetNode.position.y + 40, { zoom: 1.2, duration: 300 });
+      }
+    },
+    [nodes, setSelectedNodeId, setCenter]
+  );
+
+  // Compute Static Semantic Pre-Flight Diagnostics (Pillar 5)
+  const diagnosticIssues = useMemo(() => {
+    return lintDagSemantics(nodes, edges);
+  }, [nodes, edges]);
+
+  // Synthesize Data Flow Lineage Edges (Pillar 3)
+  const dataLineageEdges = useMemo(() => {
+    if (!showDataLineage) return [];
+    return buildDataLineageEdges(nodes);
+  }, [showDataLineage, nodes]);
 
   // Load existing workflow definition from backend catalog
   useEffect(() => {
@@ -513,6 +569,7 @@ function DagStudioCanvas({
         ...n,
         data: {
           ...n.data,
+          viewDensity,
           isStartNode: isStart,
           isEndNode: isEnd,
           hasBreakpoint: isExecutionMode ? breakpoints.includes(n.data.taskReferenceName) : false,
@@ -524,7 +581,7 @@ function DagStudioCanvas({
         },
       };
     });
-  }, [nodes, edges, breakpoints, handleToggleBreakpoint, handleInspectTask, isExecutionMode, isReadOnly, handleAddNodeBranch, handleRemoveNodeBranch]);
+  }, [nodes, edges, breakpoints, handleToggleBreakpoint, handleInspectTask, isExecutionMode, isReadOnly, handleAddNodeBranch, handleRemoveNodeBranch, viewDensity]);
 
   // Decorate edges with EdgeExecutionFlowState semantics.
   // DagConditionEdge reads data.executionFlowState and owns all execution-time styling —
@@ -697,6 +754,13 @@ function DagStudioCanvas({
         onCloseExecution={onCloseExecution}
         followLive={followLive}
         onToggleFollowLive={handleToggleFollowLive}
+        showDataLineage={showDataLineage}
+        onToggleDataLineage={() => setShowDataLineage((prev) => !prev)}
+        viewDensity={viewDensity}
+        onChangeViewDensity={setViewDensity}
+        onToggleSearch={() => setIsSearchOpen(true)}
+        onOpenDiagnostics={() => setIsDiagnosticsOpen(true)}
+        diagnosticIssuesCount={diagnosticIssues.length}
       />
 
       {/* 2. Floating Debugger Sub-Pill */}
@@ -801,7 +865,7 @@ function DagStudioCanvas({
       ) : (
         <DagCanvasContainer
           nodes={decoratedNodes}
-          edges={decoratedEdges}
+          edges={[...decoratedEdges, ...dataLineageEdges]}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           isReadOnly={isReadOnly}
@@ -870,6 +934,8 @@ function DagStudioCanvas({
           availableTaskRefs={availableTaskRefs}
           onAddBranch={handleAddNodeBranch}
           onRemoveBranch={handleRemoveNodeBranch}
+          nodes={nodes}
+          edges={edges}
         />
       )}
 
@@ -999,6 +1065,22 @@ function DagStudioCanvas({
         isStepping={stepOverExecutionMutation.isPending}
         isHotMigrationOpen={isHotMigrationOpen}
         onCloseHotMigration={() => setIsHotMigrationOpen(false)}
+      />
+
+      {/* 13. Pre-Flight Semantic Diagnostics Drawer */}
+      <DagDiagnosticDrawer
+        isOpen={isDiagnosticsOpen}
+        onClose={() => setIsDiagnosticsOpen(false)}
+        issues={diagnosticIssues}
+        onSelectNode={handleSelectDiagnosticNode}
+      />
+
+      {/* 14. Floating In-Canvas Search (Ctrl+F) */}
+      <DagCanvasSearch
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        nodes={nodes}
+        onFocusNode={handleFocusNode}
       />
     </div>
   );

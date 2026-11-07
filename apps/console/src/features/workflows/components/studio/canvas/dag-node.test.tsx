@@ -434,4 +434,95 @@ describe('DagWorkflowNodeComponent Unit Tests', () => {
     expect(screen.getByTestId('dag-handle-source-chargePayment')).toBeDefined();
     expect(screen.getByTestId('dag-handle-compensate-chargePayment')).toBeDefined();
   });
+
+  it('renders in-canvas I/O badges in standard density mode', () => {
+    const data: DagNodeData = {
+      taskReferenceName: 'fetchUser',
+      taskType: 'HTTP',
+      label: 'Fetch User',
+      inputParameters: {
+        userId: 'USR-101',
+        timeout: 5000,
+      },
+    };
+
+    render(
+      <ReactFlowProvider>
+        <DagWorkflowNodeComponent
+          id="fetch-node"
+          type="dagNode"
+          data={data}
+          selected={false}
+          zIndex={0}
+          isConnectable={true}
+          positionAbsoluteX={0}
+          positionAbsoluteY={0}
+          dragging={false}
+        />
+      </ReactFlowProvider>
+    );
+
+    const badges = screen.getByTestId('dag-node-io-badges-fetchUser');
+    expect(badges).toBeDefined();
+    expect(badges.textContent).toContain('2 in');
+    expect(badges.textContent).toContain('out');
+  });
+
+  it('renders expanded dataflow panel in dataFlow density mode and hides body in compact mode', () => {
+    const data: DagNodeData = {
+      taskReferenceName: 'processOrder',
+      taskType: 'SIMPLE',
+      label: 'Process Order',
+      inputParameters: {
+        orderId: '${workflow.input.orderId}',
+      },
+      mockOutputPayload: {
+        orderStatus: 'PROCESSED',
+        totalAmount: 199.99,
+      },
+      viewDensity: 'dataFlow',
+    };
+
+    const { rerender } = render(
+      <ReactFlowProvider>
+        <DagWorkflowNodeComponent
+          id="order-node"
+          type="dagNode"
+          data={data}
+          selected={false}
+          zIndex={0}
+          isConnectable={true}
+          positionAbsoluteX={0}
+          positionAbsoluteY={0}
+          dragging={false}
+        />
+      </ReactFlowProvider>
+    );
+
+    const dataFlowPanel = screen.getByTestId('dag-node-dataflow-panel-processOrder');
+    expect(dataFlowPanel).toBeDefined();
+    expect(dataFlowPanel.textContent).toContain('Inputs (1)');
+    expect(dataFlowPanel.textContent).toContain('Outputs (2)');
+    expect(dataFlowPanel.textContent).toContain('orderStatus');
+
+    // Re-render in compact mode
+    rerender(
+      <ReactFlowProvider>
+        <DagWorkflowNodeComponent
+          id="order-node"
+          type="dagNode"
+          data={{ ...data, viewDensity: 'compact' }}
+          selected={false}
+          zIndex={0}
+          isConnectable={true}
+          positionAbsoluteX={0}
+          positionAbsoluteY={0}
+          dragging={false}
+        />
+      </ReactFlowProvider>
+    );
+
+    expect(screen.queryByTestId('dag-node-dataflow-panel-processOrder')).toBeNull();
+    expect(screen.queryByTestId('dag-node-io-badges-processOrder')).toBeNull();
+  });
 });

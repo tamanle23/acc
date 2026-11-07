@@ -615,6 +615,70 @@ describe('Workflow IR Converter & Graph Validation Engine', () => {
       const restoredComp = roundtrip.edges.find((e) => e.sourceHandle === 'compensate');
       expect(restoredComp).toBeDefined();
     });
+
+    it('preserves outputParameters, outputSchema, and mockOutputPayload across IR export and import roundtrip', () => {
+      const nodes: Node<DagNodeData>[] = [
+        {
+          id: 'node-start',
+          type: 'dagNode',
+          position: { x: 0, y: 0 },
+          data: {
+            taskReferenceName: 'start',
+            taskType: 'START_WORKFLOW',
+            inputParameters: { customerId: 'CUST-10' },
+          },
+        },
+        {
+          id: 'node-http',
+          type: 'dagNode',
+          position: { x: 200, y: 0 },
+          data: {
+            taskReferenceName: 'fetchUser',
+            taskType: 'HTTP',
+            inputParameters: { url: 'https://api.acme.com/users' },
+            outputParameters: { mappedId: '${fetchUser.output.body.id}' },
+            declaredOutputSchema: {
+              type: 'object',
+              properties: {
+                token: { type: 'string' },
+              },
+            },
+            mockOutputPayload: {
+              status: 200,
+              body: { id: 'usr-99', name: 'Alice' },
+            },
+          },
+        },
+        {
+          id: 'node-end',
+          type: 'dagNode',
+          position: { x: 400, y: 0 },
+          data: {
+            taskReferenceName: 'end',
+            taskType: 'END_WORKFLOW',
+          },
+        },
+      ];
+
+      const edges: Edge[] = [
+        { id: 'e1', source: 'node-start', target: 'node-http' },
+        { id: 'e2', source: 'node-http', target: 'node-end' },
+      ];
+
+      // Export
+      const ir = exportToWorkflowIR(nodes, edges, { workflowKey: 'test-data-contracts', version: 1 });
+      const httpTask = ir.tasks.find((t) => t.taskReferenceName === 'fetchUser');
+      expect(httpTask?.outputParameters).toEqual({ mappedId: '${fetchUser.output.body.id}' });
+      expect(httpTask?.outputSchema).toEqual({ type: 'object', properties: { token: { type: 'string' } } });
+      expect(httpTask?.mockOutputPayload).toEqual({ status: 200, body: { id: 'usr-99', name: 'Alice' } });
+
+      // Import roundtrip
+      const imported = importFromWorkflowIR(ir);
+      const importedHttpNode = imported.nodes.find((n) => n.data.taskReferenceName === 'fetchUser');
+      expect(importedHttpNode?.data.outputParameters).toEqual({ mappedId: '${fetchUser.output.body.id}' });
+      expect(importedHttpNode?.data.declaredOutputSchema).toEqual({ type: 'object', properties: { token: { type: 'string' } } });
+      expect(importedHttpNode?.data.mockOutputPayload).toEqual({ status: 200, body: { id: 'usr-99', name: 'Alice' } });
+    });
   });
 });
 

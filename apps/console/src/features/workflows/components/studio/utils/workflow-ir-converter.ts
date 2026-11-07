@@ -27,6 +27,9 @@ export interface WorkflowTaskIR {
   retryDelaySeconds?: number;
   backoffRate?: number;
   inputParameters?: Record<string, unknown>;
+  outputParameters?: Record<string, unknown>;
+  outputSchema?: Record<string, unknown>;
+  mockOutputPayload?: Record<string, unknown>;
   compensateHandlerRef?: string;
   decisionCases?: Record<string, string[]>;
   defaultCase?: string[];
@@ -433,6 +436,9 @@ export function exportToWorkflowIR(
       retryDelaySeconds: node.data.retryDelaySeconds ?? 2,
       backoffRate: node.data.backoffRate ?? 2.0,
       inputParameters: node.data.inputParameters || {},
+      ...(node.data.outputParameters ? { outputParameters: node.data.outputParameters } : {}),
+      ...(node.data.declaredOutputSchema ? { outputSchema: node.data.declaredOutputSchema } : {}),
+      ...(node.data.mockOutputPayload ? { mockOutputPayload: node.data.mockOutputPayload } : {}),
     };
 
     // 1. Resolve compensateHandlerRef from edge or node data
@@ -660,6 +666,9 @@ export function importFromWorkflowIR(
         retryDelaySeconds: task.retryDelaySeconds ?? 2,
         backoffRate: task.backoffRate ?? 2.0,
         inputParameters: task.inputParameters,
+        outputParameters: task.outputParameters,
+        declaredOutputSchema: task.outputSchema,
+        mockOutputPayload: task.mockOutputPayload,
         compensateHandlerRef: task.compensateHandlerRef,
         decisionCases: task.decisionCases,
         defaultCase: task.defaultCase,
