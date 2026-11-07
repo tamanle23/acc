@@ -20,7 +20,7 @@
     "@astrojs/node": "^9.0.0",
     "@astrojs/preact": "^4.0.0",
     "@nanostores/preact": "^1.0.0",
-    "@portabletext/react": "^8.0.1",
+    "@portabletext/to-html": "^6.0.0",
     "@tailwindcss/forms": "^0.5.11",
     "@tailwindcss/typography": "^0.5.19",
     "@tailwindcss/vite": "^4.1.18",

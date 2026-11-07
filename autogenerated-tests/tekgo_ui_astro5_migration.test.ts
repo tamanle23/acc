@@ -6,6 +6,7 @@ import { isNavOpenStore, toggleNav, closeNav } from '../apps/tekgo-ui/src/stores
 import { isSearchOpenStore, openSearch, closeSearch, toggleSearch } from '../apps/tekgo-ui/src/stores/search';
 import { POST as newsletterHandler } from '../apps/tekgo-ui/src/pages/api/newsletter';
 import { POST as revalidateHandler } from '../apps/tekgo-ui/src/pages/api/revalidate';
+import { renderPortableTextToHtml } from '../apps/tekgo-ui/src/lib/portabletext';
 
 describe('tekgo-ui Astro 5 & Preact Migration Test Suite', () => {
   describe('Content Layer & Provider', () => {
@@ -187,6 +188,97 @@ describe('tekgo-ui Astro 5 & Preact Migration Test Suite', () => {
       });
       const expiredRes = await (revalidateHandler as any)({ request: expiredReq });
       expect(expiredRes.status).toBe(401);
+    });
+  });
+
+  describe('Pure PortableText HTML Serializer (@portabletext/to-html)', () => {
+    it('should return empty string for null or empty input', () => {
+      expect(renderPortableTextToHtml(null)).toBe('');
+      expect(renderPortableTextToHtml(undefined)).toBe('');
+      expect(renderPortableTextToHtml([])).toBe('');
+    });
+
+    it('should serialize paragraphs, links and marks', () => {
+      const blocks = [
+        {
+          _type: 'block',
+          style: 'normal',
+          children: [
+            { _type: 'span', text: 'Visit our ' },
+            {
+              _type: 'span',
+              text: 'Website',
+              marks: ['link1'],
+            },
+          ],
+          markDefs: [
+            {
+              _key: 'link1',
+              _type: 'link',
+              href: 'https://example.com',
+            },
+          ],
+        },
+      ];
+
+      const html = renderPortableTextToHtml(blocks);
+      expect(html).toContain('<p class="mb-4 leading-relaxed">');
+      expect(html).toContain('href="https://example.com"');
+      expect(html).toContain('text-primary-500 hover:text-primary-600 underline font-medium');
+      expect(html).toContain('Website</a>');
+    });
+
+    it('should generate slugged heading anchor IDs', () => {
+      const blocks = [
+        {
+          _type: 'block',
+          style: 'h2',
+          children: [{ _type: 'span', text: 'Deep Architecture Overview' }],
+        },
+        {
+          _type: 'block',
+          style: 'h3',
+          children: [{ _type: 'span', text: 'Micro-Frontend Strategy' }],
+        },
+      ];
+
+      const html = renderPortableTextToHtml(blocks);
+      expect(html).toContain('<h2 id="deep-architecture-overview" class="text-2xl font-bold mt-6 mb-3 tracking-tight">Deep Architecture Overview</h2>');
+      expect(html).toContain('<h3 id="micro-frontend-strategy" class="text-xl font-bold mt-5 mb-2 tracking-tight">Micro-Frontend Strategy</h3>');
+    });
+
+    it('should syntax-highlight code blocks using refractor', () => {
+      const blocks = [
+        {
+          _type: 'code',
+          language: 'js',
+          code: 'const answer = 42;',
+        },
+      ];
+
+      const html = renderPortableTextToHtml(blocks);
+      expect(html).toContain('<pre class="overflow-x-auto rounded-xl bg-gray-900 p-4 text-sm text-gray-100 my-4">');
+      expect(html).toContain('<code class="language-js">');
+      expect(html).toContain('class="token keyword">const</span>');
+      expect(html).toContain('class="token number">42</span>');
+    });
+
+    it('should render math blocks and blockquotes', () => {
+      const blocks = [
+        {
+          _type: 'math',
+          code: 'E = mc^2',
+        },
+        {
+          _type: 'block',
+          style: 'blockquote',
+          children: [{ _type: 'span', text: 'Simplicity is prerequisite for reliability.' }],
+        },
+      ];
+
+      const html = renderPortableTextToHtml(blocks);
+      expect(html).toContain('<pre class="math overflow-x-auto rounded-xl bg-gray-900 p-4 text-sm text-gray-100">E = mc^2</pre>');
+      expect(html).toContain('<blockquote class="border-l-4 border-primary-500 pl-4 py-1 italic my-4 text-gray-600 dark:text-gray-300">Simplicity is prerequisite for reliability.</blockquote>');
     });
   });
 });

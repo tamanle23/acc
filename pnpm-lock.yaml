@@ -645,9 +645,9 @@ importers:
       '@nanostores/preact':
         specifier: ^1.0.0
         version: 1.1.1(nanostores@1.5.5)(preact@10.29.8(preact-render-to-string@6.8.2))
-      '@portabletext/react':
-        specifier: ^8.0.1
-        version: 8.0.1(react@19.2.4)
+      '@portabletext/to-html':
+        specifier: ^6.0.0
+        version: 6.0.0
       '@tailwindcss/forms':
         specifier: ^0.5.11
         version: 0.5.11(tailwindcss@4.2.4)
@@ -2795,11 +2795,9 @@ packages:
     engines: {node: '>=20'}
     hasBin: true
 
-  '@portabletext/react@8.0.1':
-    resolution: {integrity: sha512-Fy9UxVhppgEckEvczZytg4bBxiPcZIM49NrJ3sizEoz19aNzJWEYoUj7f3TI94907psEk0yfR145eoOgkedM2A==}
+  '@portabletext/to-html@6.0.0':
+    resolution: {integrity: sha512-kMqr55pJDBsIyOHLeVccFMFfJxSdozS+A1TeYhiihIinSDhb6ibUxpQIpg0B1n54vZJJW8rDs+QayP3vQqLKUg==}
     engines: {node: '>=22.12'}
-    peerDependencies:
-      react: ^19
 
   '@portabletext/toolkit@6.0.0':
     resolution: {integrity: sha512-+qSqe0KnefuZfNLUhzQRTpbSKxslZof+3pNwxg0DC8dfZ1yLKyyBUw6iR7EpDL+SJlrnpiBfEcfmEuFitK1NSQ==}
@@ -13873,11 +13871,10 @@ snapshots:
     dependencies:
       playwright: 1.64.0
 
-  '@portabletext/react@8.0.1(react@19.2.4)':
+  '@portabletext/to-html@6.0.0':
     dependencies:
       '@portabletext/toolkit': 6.0.0
       '@portabletext/types': 4.0.2
-      react: 19.2.4
 
   '@portabletext/toolkit@6.0.0':
     dependencies:
