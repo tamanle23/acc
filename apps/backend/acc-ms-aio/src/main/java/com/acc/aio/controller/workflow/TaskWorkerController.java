@@ -1,6 +1,6 @@
 package com.acc.aio.controller.workflow;
 
-import com.acc.aio.config.WorkflowEngineConfiguration.WorkflowDefinitionRegistry;
+import com.acc.workflow.application.WorkflowDefinitionRegistry;
 import com.acc.fw.tenancy.TenantContextHolder;
 import com.acc.workflow.application.WorkflowEngineService;
 import com.acc.workflow.core.model.TaskSnapshot;
@@ -23,7 +23,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/workflow/tasks")
-@PreAuthorize("hasAuthority('platform:workers:manage') or hasAuthority('workflow:execution:submit') or hasRole('ADMIN')")
+@PreAuthorize("hasAuthority('platform:workers:manage')")
 public class TaskWorkerController {
 
     private final WorkflowEngineService engineService;

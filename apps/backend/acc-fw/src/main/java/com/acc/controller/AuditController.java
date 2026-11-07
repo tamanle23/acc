@@ -71,7 +71,7 @@ public class AuditController {
     ) {}
 
     @GetMapping("/records")
-    @PreAuthorize("hasAuthority('platform:audit:verify') or hasAuthority('org:audit:read') or hasRole('SYSTEM_ROOT')")
+    @PreAuthorize("hasAuthority('platform:audit:verify') or hasAuthority('org:audit:read')")
     public ResponseEntity<AuditQueryResponse> getAuditLogs(
             @RequestParam(defaultValue = "SYSTEM") String tenantId,
             @RequestParam(required = false) String operation,
@@ -100,7 +100,7 @@ public class AuditController {
     }
 
     @PostMapping("/verify")
-    @PreAuthorize("hasAuthority('platform:audit:verify') or hasRole('SYSTEM_ROOT')")
+    @PreAuthorize("hasAuthority('platform:audit:verify')")
     public ResponseEntity<AuditVerificationResult> verifyChain(
             @RequestBody(required = false) VerifyChainRequest request
     ) {
@@ -113,7 +113,7 @@ public class AuditController {
     }
 
     @GetMapping("/export")
-    @PreAuthorize("hasAuthority('platform:compliance:export') or hasRole('SYSTEM_ROOT')")
+    @PreAuthorize("hasAuthority('platform:compliance:export')")
     public ResponseEntity<ComplianceExportResponse> exportCompliancePackage(
             @RequestParam(defaultValue = "SYSTEM") String tenantId
     ) {

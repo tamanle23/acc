@@ -1,0 +1,84 @@
+---
+import siteMetadata from '@/data/siteMetadata';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import SectionContainer from '../components/SectionContainer.astro';
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+  canonicalUrl?: string;
+}
+
+const {
+  title,
+  description = siteMetadata.description,
+  image = siteMetadata.socialBanner,
+  canonicalUrl,
+} = Astro.props;
+
+const pageTitle = title ? `${title} - ${siteMetadata.title}` : siteMetadata.title;
+const url = canonicalUrl || Astro.url.href;
+---
+<!doctype html>
+<html lang={siteMetadata.language} class="scroll-smooth">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={url} />
+
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicons/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/favicons/favicon-16x16.png" />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={url} />
+    <meta property="og:site_name" content={siteMetadata.title} />
+    <meta property="og:image" content={image} />
+    <meta property="og:type" content="website" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content={siteMetadata.x} />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={image} />
+
+    <!-- Typography: Space Grotesk -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Anti-FOUC Theme Script -->
+    <script is:inline>
+      try {
+        const theme = localStorage.getItem('theme') || 'system';
+        const isDark =
+          theme === 'dark' ||
+          (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.classList.toggle('dark', isDark);
+      } catch (e) {}
+    </script>
+  </head>
+  <body class="bg-gray-50 text-gray-900 transition-colors duration-200 dark:bg-gray-950 dark:text-gray-100 min-h-screen flex flex-col justify-between antialiased">
+    <Header />
+    <SectionContainer>
+      <main class="mb-auto">
+        <slot />
+      </main>
+    </SectionContainer>
+    <SectionContainer>
+      <Footer />
+    </SectionContainer>
+  </body>
+</html>
+

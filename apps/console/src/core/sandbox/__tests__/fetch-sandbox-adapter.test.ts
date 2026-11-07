@@ -81,6 +81,6 @@ describe('Fetch Sandbox Adapter', () => {
 
   it('should fall back to original fetch if endpoint is unhandled', async () => {
     // Unhandled route will attempt real fetch (which jsdom fails gracefully)
-    await expect(window.fetch('/unhandled/route')).rejects.toThrow();
+    await expect(window.fetch('http://127.0.0.1:59999/unhandled/route')).rejects.toThrow();
   });
 });

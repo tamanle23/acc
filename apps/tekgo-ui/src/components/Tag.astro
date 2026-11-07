@@ -1,0 +1,16 @@
+---
+import { slug } from '../lib/utils';
+
+interface Props {
+  text: string;
+}
+
+const { text } = Astro.props;
+---
+<a
+  href={`/tags/${slug(text)}`}
+  class="mr-3 text-sm font-medium uppercase text-primary-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+>
+  #{text}
+</a>
+

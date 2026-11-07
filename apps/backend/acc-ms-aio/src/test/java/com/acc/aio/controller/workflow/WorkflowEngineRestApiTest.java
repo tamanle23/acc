@@ -1,12 +1,13 @@
 package com.acc.aio.controller.workflow;
 
-import com.acc.aio.config.WorkflowEngineConfiguration.WorkflowDefinitionRegistry;
+import com.acc.workflow.application.WorkflowDefinitionRegistry;
 import com.acc.fw.tenancy.TenantContextHolder;
 import com.acc.workflow.adapters.storage.InMemoryPersistenceAdapter;
 import com.acc.workflow.application.WorkflowEngineService;
 import com.acc.workflow.core.decider.PureDecider;
 import com.acc.workflow.core.model.TaskDefinition;
 import com.acc.workflow.core.model.TaskSnapshot;
+import com.acc.workflow.core.model.TaskType;
 import com.acc.workflow.core.model.WorkflowDefinition;
 import com.acc.workflow.core.model.WorkflowSnapshot;
 import com.acc.workflow.core.model.WorkflowStatus;
@@ -167,5 +168,36 @@ class WorkflowEngineRestApiTest {
         assertThat(finalExecResp.getStatusCode()).isEqualTo(HttpStatus.OK);
         WorkflowSnapshot finalSnap = (WorkflowSnapshot) finalExecResp.getBody();
         assertThat(finalSnap.status()).isEqualTo(WorkflowStatus.COMPLETED);
+    }
+
+    @Test
+    @DisplayName("Blank workflow registration automatically initializes canonical Start and End boundary nodes")
+    void testRegisterBlankWorkflowInitializesStartAndEndNodes() {
+        WorkflowDefinition blankReq = WorkflowDefinition.builder("blank-pipeline-test")
+            .name("Blank Pipeline")
+            .version(1)
+            .description("A newly created blank workflow")
+            .tasks(List.of())
+            .build();
+
+        ResponseEntity<?> regResp = definitionController.registerDefinition(blankReq);
+        assertThat(regResp.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(regResp.getBody()).isInstanceOf(WorkflowDefinition.class);
+        WorkflowDefinition savedDef = (WorkflowDefinition) regResp.getBody();
+
+        assertThat(savedDef.workflowKey()).isEqualTo("blank-pipeline-test");
+        assertThat(savedDef.tasks()).hasSize(2);
+        assertThat(savedDef.tasks().get(0).taskReferenceName()).isEqualTo("workflow_start");
+        assertThat(savedDef.tasks().get(0).taskType()).isEqualTo(TaskType.START_WORKFLOW);
+        assertThat(savedDef.tasks().get(1).taskReferenceName()).isEqualTo("workflow_end");
+        assertThat(savedDef.tasks().get(1).taskType()).isEqualTo(TaskType.END_WORKFLOW);
+        assertThat(savedDef.layoutMetadata()).containsKey("workflow_start");
+        assertThat(savedDef.layoutMetadata()).containsKey("workflow_end");
+
+        // Verify retrieval matches initialized boundary nodes
+        ResponseEntity<?> getDefResp = definitionController.getDefinition("blank-pipeline-test");
+        assertThat(getDefResp.getStatusCode()).isEqualTo(HttpStatus.OK);
+        WorkflowDefinition fetchedDef = (WorkflowDefinition) getDefResp.getBody();
+        assertThat(fetchedDef.tasks()).hasSize(2);
     }
 }

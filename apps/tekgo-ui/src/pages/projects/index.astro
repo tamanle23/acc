@@ -1,0 +1,32 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Card from '../../components/Card.astro';
+import projectsData from '@/data/projectsData';
+
+export const prerender = false;
+---
+<BaseLayout title="Projects" description="Showcase of recent open-source systems, libraries, and applications.">
+  <div class="divide-y divide-gray-200 dark:divide-gray-800">
+    <div class="space-y-2 pt-6 pb-8 md:space-y-5">
+      <h1 class="text-3xl font-extrabold leading-9 tracking-tight text-gray-900 sm:text-4xl sm:leading-10 md:text-6xl md:leading-14 dark:text-gray-100">
+        Projects
+      </h1>
+      <p class="text-lg leading-7 text-gray-500 dark:text-gray-400">
+        Showcase of recent open-source systems, libraries, and applications.
+      </p>
+    </div>
+    <div class="container py-12">
+      <div class="-m-4 flex flex-wrap">
+        {projectsData.map((d) => (
+          <Card
+            title={d.title}
+            description={d.description}
+            imgSrc={d.imgSrc}
+            href={d.href}
+          />
+        ))}
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+

@@ -1,7 +1,6 @@
 package com.acc.aio.worker;
 
-import com.acc.aio.config.WorkflowEngineConfiguration.WorkflowDefinitionRegistry;
-import com.acc.aio.controller.workflow.ExecutionStreamBroadcaster;
+import com.acc.workflow.application.WorkflowDefinitionRegistry;
 import com.acc.workflow.adapters.storage.InMemoryPersistenceAdapter;
 import com.acc.workflow.application.WorkflowEngineService;
 import com.acc.workflow.core.decider.PureDecider;
@@ -13,6 +12,7 @@ import com.acc.workflow.core.model.WorkflowStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.List;
 import java.util.Map;
@@ -26,7 +26,7 @@ class SystemTaskWorkerPoolTest {
     private PureDecider decider;
     private WorkflowEngineService engineService;
     private WorkflowDefinitionRegistry registry;
-    private ExecutionStreamBroadcaster broadcaster;
+    private ApplicationEventPublisher eventPublisher;
     private SystemTaskWorkerPool workerPool;
 
     @BeforeEach
@@ -35,12 +35,12 @@ class SystemTaskWorkerPoolTest {
         decider = new PureDecider();
         engineService = new WorkflowEngineService(persistencePort, decider);
         registry = new WorkflowDefinitionRegistry(persistencePort);
-        broadcaster = new ExecutionStreamBroadcaster();
+        eventPublisher = event -> {};
         workerPool = new SystemTaskWorkerPool(
             persistencePort,
             engineService,
             registry,
-            broadcaster,
+            eventPublisher,
             java.net.http.HttpClient.newHttpClient(),
             createAsyncExecutor()
         );

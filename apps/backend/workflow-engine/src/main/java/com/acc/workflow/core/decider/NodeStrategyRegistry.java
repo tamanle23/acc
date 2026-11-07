@@ -2,6 +2,7 @@ package com.acc.workflow.core.decider;
 
 import com.acc.workflow.core.decider.strategy.DoWhileStrategy;
 import com.acc.workflow.core.decider.strategy.DynamicForkStrategy;
+import com.acc.workflow.core.decider.strategy.EndWorkflowStrategy;
 import com.acc.workflow.core.decider.strategy.ForkJoinStrategy;
 import com.acc.workflow.core.decider.strategy.NodeEvaluatorStrategy;
 import com.acc.workflow.core.decider.strategy.SimpleTaskStrategy;
@@ -58,6 +59,7 @@ public final class NodeStrategyRegistry {
         register(TaskType.TERMINATE, new TerminateNodeStrategy());
         register(TaskType.SUB_WORKFLOW, new SubWorkflowStrategy());
         register(TaskType.START_WORKFLOW, new StartWorkflowStrategy());
+        register(TaskType.END_WORKFLOW, new EndWorkflowStrategy());
         register(TaskType.EVENT, new EventNodeStrategy());
         register(TaskType.DYNAMIC, new DynamicTaskStrategy());
         register(TaskType.LLM_CHAT_COMPLETE, new LlmChatCompleteStrategy());

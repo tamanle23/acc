@@ -156,4 +156,77 @@ class AcyclicityGuardTest {
         List<String> order = guard.validateAndSort(def);
         assertThat(order).contains("start-task", "fork-task", "b1", "b2", "join-barrier", "end-task");
     }
+
+    @Test
+    @DisplayName("Should accept valid DO_WHILE loop by eliminating back-edge for topological sorting")
+    void shouldAcceptValidDoWhileLoop() {
+        WorkflowDefinition def = WorkflowDefinition.builder("valid-do-while")
+            .tasks(List.of(
+                TaskDefinition.builder("start").taskType(TaskType.START_WORKFLOW).build(),
+                TaskDefinition.builder("loopNode").taskType(TaskType.DO_WHILE).joinOn(List.of("start", "step2")).build(),
+                TaskDefinition.builder("step1").joinOn(List.of("loopNode")).build(),
+                TaskDefinition.builder("step2").joinOn(List.of("step1")).build(),
+                TaskDefinition.builder("end").taskType(TaskType.END_WORKFLOW).joinOn(List.of("loopNode")).build()
+            ))
+            .build();
+
+        List<String> order = guard.validateAndSort(def);
+        assertThat(order).contains("start", "loopNode", "step1", "step2", "end");
+        assertThat(order.indexOf("start")).isLessThan(order.indexOf("loopNode"));
+        assertThat(order.indexOf("loopNode")).isLessThan(order.indexOf("step1"));
+        assertThat(order.indexOf("step1")).isLessThan(order.indexOf("step2"));
+        assertThat(order.indexOf("loopNode")).isLessThan(order.indexOf("end"));
+    }
+
+    @Test
+    @DisplayName("Should reject DO_WHILE with multiple incoming loopback edges")
+    void shouldRejectDoWhileWithMultipleLoopbackEdges() {
+        WorkflowDefinition def = WorkflowDefinition.builder("multi-loopback")
+            .tasks(List.of(
+                TaskDefinition.builder("start").build(),
+                TaskDefinition.builder("loopNode").taskType(TaskType.DO_WHILE).joinOn(List.of("start", "branchA", "branchB")).build(),
+                TaskDefinition.builder("fork").joinOn(List.of("loopNode")).build(),
+                TaskDefinition.builder("branchA").joinOn(List.of("fork")).build(),
+                TaskDefinition.builder("branchB").joinOn(List.of("fork")).build(),
+                TaskDefinition.builder("end").joinOn(List.of("loopNode")).build()
+            ))
+            .build();
+
+        assertThatThrownBy(() -> guard.validateAndSort(def))
+            .isInstanceOf(WorkflowTopologyException.class)
+            .hasMessageContaining("multiple incoming loopback edges");
+    }
+
+    @Test
+    @DisplayName("Should reject DO_WHILE if loop body leaks to external node")
+    void shouldRejectDoWhileLoopBodyLeakage() {
+        WorkflowDefinition def = WorkflowDefinition.builder("leaking-loop")
+            .tasks(List.of(
+                TaskDefinition.builder("start").build(),
+                TaskDefinition.builder("loopNode").taskType(TaskType.DO_WHILE).joinOn(List.of("start", "step1")).build(),
+                TaskDefinition.builder("step1").joinOn(List.of("loopNode")).build(),
+                TaskDefinition.builder("leakTarget").joinOn(List.of("step1")).build(),
+                TaskDefinition.builder("end").joinOn(List.of("loopNode", "leakTarget")).build()
+            ))
+            .build();
+
+        assertThatThrownBy(() -> guard.validateAndSort(def))
+            .isInstanceOf(WorkflowTopologyException.class)
+            .hasMessageContaining("inside loop body 'loopNode' connects to external node 'leakTarget'");
+    }
+
+    @Test
+    @DisplayName("Should enforce START_WORKFLOW as start node and END_WORKFLOW as end node")
+    void shouldEnforceCanonicalStartAndEndTypes() {
+        WorkflowDefinition def = WorkflowDefinition.builder("canonical-boundaries")
+            .tasks(List.of(
+                TaskDefinition.builder("start").taskType(TaskType.START_WORKFLOW).build(),
+                TaskDefinition.builder("task1").joinOn(List.of("start")).build(),
+                TaskDefinition.builder("end").taskType(TaskType.END_WORKFLOW).joinOn(List.of("task1")).build()
+            ))
+            .build();
+
+        List<String> order = guard.validateAndSort(def);
+        assertThat(order).containsExactly("start", "task1", "end");
+    }
 }

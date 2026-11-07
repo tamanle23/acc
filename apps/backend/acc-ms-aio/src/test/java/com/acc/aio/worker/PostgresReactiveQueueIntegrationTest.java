@@ -1,6 +1,6 @@
 package com.acc.aio.worker;
 
-import com.acc.aio.config.WorkflowEngineConfiguration.WorkflowDefinitionRegistry;
+import com.acc.workflow.application.WorkflowDefinitionRegistry;
 import com.acc.aio.controller.workflow.ExecutionStreamBroadcaster;
 import com.acc.workflow.adapters.storage.PostgresJdbcPersistenceAdapter;
 import com.acc.workflow.application.WorkflowEngineService;
@@ -82,12 +82,17 @@ class PostgresReactiveQueueIntegrationTest {
         WorkflowEngineService engineService = new WorkflowEngineService(adapter, decider);
         WorkflowDefinitionRegistry registry = new WorkflowDefinitionRegistry(adapter);
         ExecutionStreamBroadcaster broadcaster = new ExecutionStreamBroadcaster();
+        org.springframework.context.ApplicationEventPublisher publisher = event -> {
+            if (event instanceof com.acc.workflow.events.WorkflowExecutionBroadcastEvent e) {
+                broadcaster.onWorkflowExecutionEvent(e);
+            }
+        };
 
         SystemTaskWorkerPool workerPool = new SystemTaskWorkerPool(
             adapter,
             engineService,
             registry,
-            broadcaster,
+            publisher,
             HttpClient.newHttpClient(),
             Executors.newCachedThreadPool()
         );

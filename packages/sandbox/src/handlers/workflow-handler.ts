@@ -666,9 +666,35 @@ export class WorkflowSandboxRepository {
   public saveDefinition(def: WorkflowDefinitionIR, tenantId?: string): WorkflowDefinitionIR {
     const map = this.getDefinitionMap(tenantId);
     const existing = map.get(def.workflowKey);
+
+    let tasks = def.tasks || existing?.tasks;
+    let layoutMetadata = def.layoutMetadata || existing?.layoutMetadata;
+
+    // Backend parity: When creating a blank workflow (empty/no tasks), initialize canonical boundary nodes (Start & End)
+    if (!tasks || tasks.length === 0) {
+      tasks = [
+        {
+          taskReferenceName: 'workflow_start',
+          taskType: 'START_WORKFLOW',
+          domain: 'default',
+        },
+        {
+          taskReferenceName: 'workflow_end',
+          taskType: 'END_WORKFLOW',
+          domain: 'default',
+        },
+      ];
+      layoutMetadata = {
+        workflow_start: { x: 100, y: 200, isPermanent: true, isStartNode: true },
+        workflow_end: { x: 500, y: 200, isPermanent: true, isEndNode: true },
+      };
+    }
+
     const record: WorkflowDefinitionIR = {
       ...existing,
       ...def,
+      tasks,
+      layoutMetadata,
       updatedAt: 'Just now',
       version: existing ? (existing.version || 1) + 1 : def.version || 1,
       status: def.status || existing?.status || 'ACTIVE',

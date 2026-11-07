@@ -1,4 +1,4 @@
-FROM node:18-alpine AS base
+FROM node:20-alpine AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable pnpm
@@ -32,20 +32,14 @@ WORKDIR /app
 
 # Don't run production as root
 RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-USER nextjs
+RUN adduser --system --uid 1001 astrouser
+USER astrouser
 
-COPY --from=installer /app/apps/tekgo-ui/next.config.js .
-COPY --from=installer /app/apps/tekgo-ui/package.json .
+COPY --from=installer --chown=astrouser:nodejs /app/apps/tekgo-ui/dist ./apps/tekgo-ui/dist
+COPY --from=installer --chown=astrouser:nodejs /app/apps/tekgo-ui/package.json ./apps/tekgo-ui/package.json
 
-# Automatically leverage output traces to reduce image size
-# https://nextjs.org/docs/advanced-features/output-file-tracing
-COPY --from=installer --chown=nextjs:nodejs /app/apps/tekgo-ui/.next/standalone ./
-COPY --from=installer --chown=nextjs:nodejs /app/apps/tekgo-ui/.next/static ./apps/tekgo-ui/.next/static
-COPY --from=installer --chown=nextjs:nodejs /app/apps/tekgo-ui/public ./apps/tekgo-ui/public
+EXPOSE 4321
+ENV PORT=4321
+ENV HOST=0.0.0.0
 
-EXPOSE 3000
-ENV PORT=3000
-ENV HOSTNAME="0.0.0.0"
-
-CMD ["node", "apps/tekgo-ui/server.js"]
+CMD ["node", "apps/tekgo-ui/dist/server/entry.mjs"]

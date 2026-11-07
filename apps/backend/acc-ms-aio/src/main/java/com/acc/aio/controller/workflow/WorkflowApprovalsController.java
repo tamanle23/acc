@@ -1,6 +1,6 @@
 package com.acc.aio.controller.workflow;
 
-import com.acc.aio.config.WorkflowEngineConfiguration.WorkflowDefinitionRegistry;
+import com.acc.workflow.application.WorkflowDefinitionRegistry;
 import com.acc.fw.tenancy.TenantContextHolder;
 import com.acc.workflow.application.WorkflowEngineService;
 import com.acc.workflow.core.model.TaskSnapshot;
@@ -175,7 +175,7 @@ public class WorkflowApprovalsController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAuthority('workflow:execution:read') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('workflow:execution:read')")
     public ResponseEntity<List<ApprovalTaskDto>> listApprovals(
         @RequestParam(value = "status", required = false) String statusFilter
     ) {
@@ -196,7 +196,7 @@ public class WorkflowApprovalsController {
     }
 
     @PostMapping("/{id}/resolve")
-    @PreAuthorize("hasAuthority('workflow:approval:execute') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('workflow:approval:execute')")
     public ResponseEntity<?> resolveApproval(
         @PathVariable("id") String id,
         @RequestBody ResolveApprovalRequest req

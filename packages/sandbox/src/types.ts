@@ -11,6 +11,10 @@ export interface SandboxPersona {
   roles: string[];
   defaultTenantId: string;
   description: string;
+  actorTenantId?: string | null;
+  uid?: string;
+  aliases?: string[];
+  permissions?: string[];
 }
 
 export interface SandboxRequest {
