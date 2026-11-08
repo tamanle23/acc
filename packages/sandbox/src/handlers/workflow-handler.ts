@@ -83,8 +83,10 @@ export interface WorkflowDefinitionIR {
   version: number;
   name: string;
   description?: string;
+  inputSchema?: Record<string, any>;
+  outputSchema?: Record<string, any>;
   tasks: any[];
-  layoutMetadata?: Record<string, { x: number; y: number }>;
+  layoutMetadata?: Record<string, { x: number; y: number; isPermanent?: boolean; isStartNode?: boolean; isEndNode?: boolean }>;
   status?: 'ACTIVE' | 'DISABLED';
   updatedAt?: string;
   tenantId?: string;
@@ -114,13 +116,135 @@ export interface WorkflowExecution {
 
 const DEFAULT_DEFINITIONS: WorkflowDefinitionIR[] = [
   {
+    workflowKey: 'order-fulfillment-pipeline',
+    name: 'Order Fulfillment & Logistics Pipeline',
+    version: 1,
+    description: 'Production demonstration: validates order compliance, checks inventory allocation, captures payment settlement, and books courier air freight.',
+    status: 'ACTIVE',
+    updatedAt: 'Just now',
+    inputSchema: {
+      $schema: 'http://json-schema.org/draft-07/schema#',
+      type: 'object',
+      required: ['orderId', 'sku', 'quantity', 'amount', 'customerEmail'],
+      properties: {
+        orderId: { type: 'string', description: 'Target order identifier' },
+        sku: { type: 'string', description: 'Stock Keeping Unit code' },
+        quantity: { type: 'integer', description: 'Requested item count' },
+        amount: { type: 'number', description: 'Total order monetary amount' },
+        customerEmail: { type: 'string', description: 'Customer notification email' },
+      },
+      additionalProperties: false,
+    },
+    outputSchema: {
+      $schema: 'http://json-schema.org/draft-07/schema#',
+      type: 'object',
+      required: ['fulfillmentStatus', 'orderId', 'reservationCode', 'transactionId', 'trackingNumber'],
+      properties: {
+        fulfillmentStatus: { type: 'string' },
+        orderId: { type: 'string' },
+        reservationCode: { type: 'string' },
+        transactionId: { type: 'string' },
+        trackingNumber: { type: 'string' },
+      },
+      additionalProperties: false,
+    },
+    tasks: [
+      {
+        taskReferenceName: 'workflow_start',
+        taskType: 'START_WORKFLOW',
+      },
+      {
+        taskReferenceName: 'validateOrder',
+        taskType: 'SIMPLE',
+        domain: 'default',
+        inputParameters: { orderId: '${workflow.input.orderId}' },
+      },
+      {
+        taskReferenceName: 'checkInventory',
+        taskType: 'SIMPLE',
+        domain: 'default',
+        inputParameters: {
+          orderId: '${workflow.input.orderId}',
+          sku: '${workflow.input.sku}',
+          quantity: '${workflow.input.quantity}',
+        },
+        compensateHandlerRef: 'cancelInventoryReservation',
+      },
+      {
+        taskReferenceName: 'chargePayment',
+        taskType: 'SIMPLE',
+        domain: 'default',
+        inputParameters: {
+          orderId: '${workflow.input.orderId}',
+          amount: '${workflow.input.amount}',
+        },
+      },
+      {
+        taskReferenceName: 'expressCourier',
+        taskType: 'SIMPLE',
+        domain: 'default',
+        inputParameters: { orderId: '${workflow.input.orderId}' },
+        compensateHandlerRef: 'cancelCourierBooking',
+      },
+      {
+        taskReferenceName: 'workflow_end',
+        taskType: 'END_WORKFLOW',
+        inputParameters: {
+          fulfillmentStatus: 'COMPLETED',
+          orderId: '${workflow.input.orderId}',
+          reservationCode: '${checkInventory.output.reservationCode}',
+          transactionId: '${chargePayment.output.transactionId}',
+          trackingNumber: '${expressCourier.output.trackingNumber}',
+        },
+      },
+    ],
+    layoutMetadata: {
+      workflow_start: { x: 60, y: 200 },
+      validateOrder: { x: 260, y: 200 },
+      checkInventory: { x: 480, y: 200 },
+      chargePayment: { x: 700, y: 200 },
+      expressCourier: { x: 920, y: 200 },
+      workflow_end: { x: 1140, y: 200 },
+    },
+  },
+  {
     workflowKey: 'order-fulfillment-v1',
     name: 'Order Fulfillment Pipeline',
     version: 1,
     description: 'Multi-stage e-commerce order routing, automated warehouse allocation, and postal delivery.',
     status: 'ACTIVE',
     updatedAt: '2 hours ago',
+    inputSchema: {
+      $schema: 'http://json-schema.org/draft-07/schema#',
+      type: 'object',
+      required: ['orderId', 'sku', 'quantity', 'speed'],
+      properties: {
+        orderId: { type: 'string' },
+        sku: { type: 'string' },
+        quantity: { type: 'integer' },
+        speed: { type: 'string' },
+        postalCode: { type: 'string' },
+      },
+      additionalProperties: false,
+    },
+    outputSchema: {
+      $schema: 'http://json-schema.org/draft-07/schema#',
+      type: 'object',
+      required: ['fulfillmentStatus', 'orderId', 'warehouseId'],
+      properties: {
+        fulfillmentStatus: { type: 'string' },
+        orderId: { type: 'string' },
+        warehouseId: { type: 'string' },
+        carrier: { type: 'string' },
+        trackingNumber: { type: 'string' },
+      },
+      additionalProperties: false,
+    },
     tasks: [
+      {
+        taskReferenceName: 'workflow_start',
+        taskType: 'START_WORKFLOW',
+      },
       {
         taskReferenceName: 'checkInventory',
         taskType: 'SIMPLE',
@@ -158,12 +282,25 @@ const DEFAULT_DEFINITIONS: WorkflowDefinitionIR[] = [
         retryCount: 2,
         inputParameters: { postalCode: '${workflow.input.postalCode}' },
       },
+      {
+        taskReferenceName: 'workflow_end',
+        taskType: 'END_WORKFLOW',
+        inputParameters: {
+          fulfillmentStatus: 'COMPLETED',
+          orderId: '${workflow.input.orderId}',
+          warehouseId: '${checkInventory.output.warehouseId}',
+          carrier: '${expressCourier.output.carrier}',
+          trackingNumber: '${expressCourier.output.trackingNumber}',
+        },
+      },
     ],
     layoutMetadata: {
-      checkInventory: { x: 50, y: 150 },
-      routeShipping: { x: 340, y: 150 },
-      expressCourier: { x: 620, y: 70 },
-      groundPostal: { x: 620, y: 230 },
+      workflow_start: { x: 50, y: 150 },
+      checkInventory: { x: 260, y: 150 },
+      routeShipping: { x: 500, y: 150 },
+      expressCourier: { x: 740, y: 70 },
+      groundPostal: { x: 740, y: 230 },
+      workflow_end: { x: 980, y: 150 },
     },
   },
   {

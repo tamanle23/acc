@@ -31,8 +31,10 @@ class SandboxDataPreWarmerTest {
         ObjectProvider<CmsDataScaffoldingGenerator> cmsProvider = mock(ObjectProvider.class);
         @SuppressWarnings("unchecked")
         ObjectProvider<SandboxUserSeeder> userSeederProvider = mock(ObjectProvider.class);
+        @SuppressWarnings("unchecked")
+        ObjectProvider<SandboxWorkflowSeeder> workflowSeederProvider = mock(ObjectProvider.class);
 
-        SandboxDataPreWarmer preWarmer = new SandboxDataPreWarmer(properties, billingProvider, provisioningProvider, cmsProvider, userSeederProvider);
+        SandboxDataPreWarmer preWarmer = new SandboxDataPreWarmer(properties, billingProvider, provisioningProvider, cmsProvider, userSeederProvider, workflowSeederProvider);
 
         preWarmer.onApplicationEvent(mock(ApplicationReadyEvent.class));
 
@@ -40,6 +42,7 @@ class SandboxDataPreWarmerTest {
         verifyNoInteractions(provisioningProvider);
         verifyNoInteractions(cmsProvider);
         verifyNoInteractions(userSeederProvider);
+        verifyNoInteractions(workflowSeederProvider);
     }
 
     @Test
@@ -56,6 +59,7 @@ class SandboxDataPreWarmerTest {
         TenantProvisioningService provisioningService = mock(TenantProvisioningService.class);
         CmsDataScaffoldingGenerator cmsGenerator = mock(CmsDataScaffoldingGenerator.class);
         SandboxUserSeeder userSeeder = mock(SandboxUserSeeder.class);
+        SandboxWorkflowSeeder workflowSeeder = mock(SandboxWorkflowSeeder.class);
 
         @SuppressWarnings("unchecked")
         ObjectProvider<TenantBillingRepository> billingProvider = mock(ObjectProvider.class);
@@ -73,12 +77,19 @@ class SandboxDataPreWarmerTest {
         ObjectProvider<SandboxUserSeeder> userSeederProvider = mock(ObjectProvider.class);
         when(userSeederProvider.getIfAvailable()).thenReturn(userSeeder);
 
-        SandboxDataPreWarmer preWarmer = new SandboxDataPreWarmer(properties, billingProvider, provisioningProvider, cmsProvider, userSeederProvider);
+        @SuppressWarnings("unchecked")
+        ObjectProvider<SandboxWorkflowSeeder> workflowSeederProvider = mock(ObjectProvider.class);
+        when(workflowSeederProvider.getIfAvailable()).thenReturn(workflowSeeder);
+
+        SandboxDataPreWarmer preWarmer = new SandboxDataPreWarmer(properties, billingProvider, provisioningProvider, cmsProvider, userSeederProvider, workflowSeederProvider);
 
         preWarmer.onApplicationEvent(mock(ApplicationReadyEvent.class));
 
         // Verify users seeded
         verify(userSeeder, times(1)).seedUsersIfMissing();
+
+        // Verify workflows seeded
+        verify(workflowSeeder, times(1)).seedSampleWorkflowsIfMissing();
 
         // Verify billing records saved
         verify(billingRepo, times(2)).save(any(TenantBilling.class));

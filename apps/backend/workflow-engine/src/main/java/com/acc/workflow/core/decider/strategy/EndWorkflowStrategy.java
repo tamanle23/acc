@@ -51,14 +51,13 @@ public final class EndWorkflowStrategy implements NodeEvaluatorStrategy {
             }
         }
 
-        // 2. Resolve output mappings from inputParameters
+        // 2. Resolve output mappings from inputParameters (if defined, strictly use them; otherwise fall back to outputPayload)
         Map<String, Object> resolvedOutput = new LinkedHashMap<>();
-        if (snapshot.outputPayload() != null) {
-            resolvedOutput.putAll(snapshot.outputPayload());
-        }
         if (taskDef.inputParameters() != null && !taskDef.inputParameters().isEmpty()) {
             Map<String, Object> resolved = resolver.resolve(taskDef.inputParameters(), snapshot);
             resolvedOutput.putAll(resolved);
+        } else if (snapshot.outputPayload() != null) {
+            resolvedOutput.putAll(snapshot.outputPayload());
         }
 
         // 3. Strict Exit Gate: Validate resolved output against outputSchema if defined

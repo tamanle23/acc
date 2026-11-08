@@ -72,6 +72,44 @@ class EndWorkflowStrategyValidationTest {
     }
 
     @Test
+    @DisplayName("Should strictly isolate resolved output from intermediate snapshot payload when inputParameters is provided")
+    void testOutputSchemaValidationExcludesIntermediateSnapshotPayload() {
+        Map<String, Object> outputSchema = Map.of(
+            "type", "object",
+            "required", List.of("orderId", "status"),
+            "properties", Map.of(
+                "orderId", Map.of("type", "string"),
+                "status", Map.of("type", "string")
+            ),
+            "additionalProperties", false
+        );
+
+        TaskDefinition endTask = TaskDefinition.builder("end")
+            .taskType(TaskType.END_WORKFLOW)
+            .inputParameters(Map.of(
+                "orderId", "ORD-12345",
+                "status", "COMPLETED"
+            ))
+            .outputSchema(outputSchema)
+            .build();
+
+        // Snapshot has accumulated intermediate variables that would fail additionalProperties: false
+        WorkflowSnapshot snapshot = new WorkflowSnapshot(
+            "wf_1", "t1", "w1", "test_key", 1, WorkflowStatus.RUNNING,
+            Map.of("rawInput", "foo"), Map.of("intermediateVar", "bar", "amount", 100.0), null, Collections.emptyMap()
+        );
+
+        NodeEvaluatorStrategy.NodeEvaluationResult result = strategy.evaluate(
+            endTask, snapshot, System.currentTimeMillis(), parameterResolver
+        );
+
+        assertEquals(TaskStatus.COMPLETED, result.nodeStatus());
+        assertFalse(result.output().containsKey("intermediateVar"));
+        assertFalse(result.output().containsKey("amount"));
+        assertEquals("ORD-12345", result.output().get("orderId"));
+    }
+
+    @Test
     @DisplayName("Should fail workflow when output violates outputSchema (missing required field)")
     void testOutputSchemaValidationFailMissingRequired() {
         Map<String, Object> outputSchema = Map.of(
