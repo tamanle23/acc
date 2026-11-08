@@ -79,9 +79,15 @@ export function useViewportRenderStrategy(options: UseViewportRenderStrategyOpti
       }
     }
 
-    PreviewWorkerCoordinator.getInstance().preflightTimeline(targetTimeline, {
-      prioritizedFrame: options.currentFrame,
-    });
+    // Run preflight only when the project timeline structure changes,
+    // avoiding aggressive background tasks on every single playhead tick.
+    const lastPreflightTimeline = (useViewportRenderStrategy as any)._lastPreflight;
+    if (lastPreflightTimeline !== targetTimeline) {
+      (useViewportRenderStrategy as any)._lastPreflight = targetTimeline;
+      PreviewWorkerCoordinator.getInstance().preflightTimeline(targetTimeline, {
+        prioritizedFrame: options.currentFrame,
+      });
+    }
   });
 
   const unsubWarmed = PreviewWorkerCoordinator.getInstance().onModifierWarmed(() => {

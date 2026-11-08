@@ -17,7 +17,7 @@ export class WorkerRenderStrategy implements IPreviewRenderStrategy {
   private assets: Record<string, any> = {};
 
   constructor(bridge?: PreviewWorkerBridge) {
-    this.bridge = bridge || new PreviewWorkerBridge();
+    this.bridge = bridge || PreviewWorkerBridge.getInstance();
   }
 
   public get isReady(): boolean {

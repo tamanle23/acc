@@ -241,7 +241,13 @@ async function renderCurrentFrame(
     has: (id: string) => textureCache.has(id),
     get: (id: string) => textureCache.get(id),
     onAssetDrawn: (assetId: string, asset: any) => {
-      if (asset && (asset as any)._isTransient && typeof (asset as any).close === 'function') {
+      // Only close transient one-off textures (e.g. scratch canvases) that are not shared ping-pong slots
+      if (
+        asset &&
+        (asset as any)._isTransient &&
+        !(asset as any)._isShared &&
+        typeof (asset as any).close === 'function'
+      ) {
         try {
           (asset as any).close();
         } catch { }
@@ -269,9 +275,14 @@ async function renderCurrentFrame(
     frameScope.dispose();
     backCtx.restore();
     drainDisposalQueue();
-    // Synchronously close any remaining playback transient bitmaps in textureCache
+    // Synchronously close any remaining unshared transient bitmaps in disposal queue
     for (const [id, val] of textureCache.entries()) {
-      if (val && (val as any)._isTransient && typeof (val as any).close === 'function') {
+      if (
+        val &&
+        (val as any)._isTransient &&
+        !(val as any)._isShared &&
+        typeof (val as any).close === 'function'
+      ) {
         try {
           (val as any).close();
         } catch { }

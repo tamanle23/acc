@@ -227,6 +227,7 @@ export class PreviewRenderWorkerCore {
 }
 
 export class PreviewWorkerBridge implements Disposable {
+  private static instance: PreviewWorkerBridge | null = null;
   private worker: Worker | null = null;
   private isSupported: boolean = false;
   private isTransferred: boolean = false;
@@ -235,6 +236,28 @@ export class PreviewWorkerBridge implements Disposable {
   private onFrameUpdateCallback: ((frame: number, ended?: boolean) => void) | null = null;
   private onFrameRenderedCallback: ((frame: number, latencyMs: number) => void) | null = null;
   private onReadyCallback: (() => void) | null = null;
+  private workerMessageListeners = new Set<(e: MessageEvent) => void>();
+
+  public static getInstance(): PreviewWorkerBridge {
+    if (!PreviewWorkerBridge.instance) {
+      PreviewWorkerBridge.instance = new PreviewWorkerBridge();
+    }
+    return PreviewWorkerBridge.instance;
+  }
+
+  public getWorker(): Worker | null {
+    if (!this.worker && this.isSupported) {
+      this.ensureWorker();
+    }
+    return this.worker;
+  }
+
+  public addMessageListener(listener: (e: MessageEvent) => void): () => void {
+    this.workerMessageListeners.add(listener);
+    return () => {
+      this.workerMessageListeners.delete(listener);
+    };
+  }
 
   public onFrameRendered(callback: (frame: number, latencyMs: number) => void): () => void {
     this.onFrameRenderedCallback = callback;
@@ -255,6 +278,44 @@ export class PreviewWorkerBridge implements Disposable {
 
   public supportsOffscreen(): boolean {
     return this.isSupported;
+  }
+
+  private ensureWorker(): void {
+    if (this.worker) return;
+    this.worker = new Worker(new URL('./preview.worker.ts', import.meta.url), {
+      type: 'module',
+    });
+
+    this.worker.onmessage = (e: MessageEvent) => {
+      const data = e.data;
+      if (!data) return;
+      if (data.type === 'ready') {
+        this.isReady = true;
+        if (this.onReadyCallback) {
+          this.onReadyCallback();
+        }
+      } else if (data.type === 'frameUpdate') {
+        if (data.ended) {
+          this.isPlaying = false;
+        }
+        if (this.onFrameUpdateCallback) {
+          this.onFrameUpdateCallback(data.frame, data.ended);
+        }
+      } else if (data.type === 'frameRendered') {
+        if (this.onFrameRenderedCallback) {
+          this.onFrameRenderedCallback(data.frame, data.renderLatencyMs ?? 0);
+        }
+      }
+
+      // Notify external subscribers (e.g. PreviewWorkerCoordinator sidecar tasks)
+      for (const listener of this.workerMessageListeners) {
+        try {
+          listener(e);
+        } catch (err) {
+          console.error('[PreviewWorkerBridge] Message listener error:', err);
+        }
+      }
+    };
   }
 
   public getIsReady(): boolean {
@@ -288,33 +349,9 @@ export class PreviewWorkerBridge implements Disposable {
     try {
       const offscreen = canvas.transferControlToOffscreen();
       CanvasTransferTracker.markTransferred(canvas);
-      this.worker = new Worker(new URL('./preview.worker.ts', import.meta.url), {
-        type: 'module',
-      });
+      this.ensureWorker();
 
-      this.worker.onmessage = (e: MessageEvent) => {
-        const data = e.data;
-        if (!data) return;
-        if (data.type === 'ready') {
-          this.isReady = true;
-          if (this.onReadyCallback) {
-            this.onReadyCallback();
-          }
-        } else if (data.type === 'frameUpdate') {
-          if (data.ended) {
-            this.isPlaying = false;
-          }
-          if (this.onFrameUpdateCallback) {
-            this.onFrameUpdateCallback(data.frame, data.ended);
-          }
-        } else if (data.type === 'frameRendered') {
-          if (this.onFrameRenderedCallback) {
-            this.onFrameRenderedCallback(data.frame, data.renderLatencyMs ?? 0);
-          }
-        }
-      };
-
-      this.worker.postMessage(
+      this.worker!.postMessage(
         {
           type: 'init',
           canvas: offscreen,

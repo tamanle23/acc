@@ -1,4 +1,5 @@
 import type { CanvasSink } from 'mediabunny';
+import { UniversalCanvasProvider } from '@acc/core-isomorphic';
 
 /**
  * SequentialVideoReader:
@@ -34,11 +35,26 @@ export class SequentialVideoReader implements Disposable {
       try {
         this.canvasA = new OffscreenCanvas(this.width, this.height);
         this.canvasB = new OffscreenCanvas(this.width, this.height);
+        // Mark persistent circular ping-pong buffer canvases as shared singletons
+        // so that generic frame-scope disposers never close them.
+        (this.canvasA as any)._isShared = true;
+        (this.canvasB as any)._isShared = true;
         this.ctxA = this.canvasA.getContext('2d') as OffscreenCanvasRenderingContext2D | null;
         this.ctxB = this.canvasB.getContext('2d') as OffscreenCanvasRenderingContext2D | null;
       } catch (err) {
         console.warn('[SequentialVideoReader] Failed to allocate OffscreenCanvases:', err);
       }
+    } else {
+      try {
+        const uA = UniversalCanvasProvider.createCanvas(this.width, this.height);
+        const uB = UniversalCanvasProvider.createCanvas(this.width, this.height);
+        this.canvasA = (uA as any).canvas || uA;
+        this.canvasB = (uB as any).canvas || uB;
+        (this.canvasA as any)._isShared = true;
+        (this.canvasB as any)._isShared = true;
+        this.ctxA = uA.getContext('2d') as any;
+        this.ctxB = uB.getContext('2d') as any;
+      } catch { }
     }
   }
 
@@ -89,6 +105,15 @@ export class SequentialVideoReader implements Disposable {
       this.currentFrame = frame;
       void this.preloadNext(frame + 1, fps);
       return this.getActiveCanvas();
+    }
+
+    // 5. Zero-Blackout Hold-On-Miss Guarantee:
+    // If target frame decode is delayed or dropped, retain and return the active canvas slot
+    // to prevent downstream compositors from painting an opaque black fallback.
+    const heldCanvas = this.getActiveCanvas();
+    if (heldCanvas && this.currentFrame >= 0) {
+      void this.preloadNext(frame + 1, fps);
+      return heldCanvas;
     }
 
     return null;

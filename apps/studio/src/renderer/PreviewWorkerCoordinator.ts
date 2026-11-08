@@ -10,6 +10,7 @@ import {
 
 declare const WorkerGlobalScope: any;
 import { UniversalLogger as Logger } from '@acc/core-isomorphic';
+import { PreviewWorkerBridge } from './workers/PreviewWorkerBridge';
 import type {
   ExecuteModifierPayload,
   WorkerMessage,
@@ -29,6 +30,7 @@ export interface SidecarPreflightOptions {
 
 export class PreviewWorkerCoordinator {
   private static instance: PreviewWorkerCoordinator | null = null;
+  private bridge: PreviewWorkerBridge | null = null;
   private worker: Worker | null = null;
   private inProcessRegistry: ModifierPluginRegistry | null = null;
   private isWarmedUp = false;
@@ -84,23 +86,31 @@ export class PreviewWorkerCoordinator {
 
     if (typeof window !== 'undefined' && typeof document !== 'undefined' && typeof Worker !== 'undefined') {
       try {
-        this.worker = customWorkerUrl
-          ? new Worker(customWorkerUrl, { type: 'module' })
-          : new Worker(
-            new URL('./workers/preview.worker.ts', import.meta.url),
-            { type: 'module' }
-          );
+        if (customWorkerUrl) {
+          this.worker = new Worker(customWorkerUrl, { type: 'module' });
+          this.worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
+            this.handleWorkerMessage(event.data);
+          };
+        } else {
+          // Re-use the unified single preview worker from PreviewWorkerBridge
+          // to eliminate secondary duplicate worker allocation (~500MB RAM saving).
+          this.bridge = PreviewWorkerBridge.getInstance();
+          this.worker = this.bridge.getWorker();
+          this.bridge.addMessageListener((event: MessageEvent) => {
+            if (event.data && typeof event.data === 'object' && 'type' in event.data) {
+              this.handleWorkerMessage(event.data as WorkerResponse);
+            }
+          });
+        }
 
-        this.worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
-          this.handleWorkerMessage(event.data);
-        };
-
-        this.worker.onerror = (err) => {
-          Logger.warn('PreviewWorkerCoordinator', `Sidecar worker encountered an error: ${err.message || err}`);
-          this.isProcessing = false;
-          this.notifyWarmupResolvers(false);
-          this.drainNext();
-        };
+        if (this.worker) {
+          this.worker.onerror = (err) => {
+            Logger.warn('PreviewWorkerCoordinator', `Sidecar worker encountered an error: ${err.message || err}`);
+            this.isProcessing = false;
+            this.notifyWarmupResolvers(false);
+            this.drainNext();
+          };
+        }
 
         this.scheduleWarmup();
         return;
