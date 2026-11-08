@@ -27,10 +27,14 @@ export function DraggablePresetCard(props: {
   onInsert: (preset: StagingPreset) => void;
 }) {
   const draggable = useDraggable({
-    id: `preset-${props.preset.id}`,
-    data: {
-      type: 'preset',
-      preset: props.preset,
+    get id() {
+      return `preset-${props.preset.id}`;
+    },
+    get data() {
+      return {
+        type: 'preset',
+        preset: props.preset,
+      };
     },
   });
 
@@ -161,11 +165,15 @@ export function DraggableAssetCard(props: {
   onInsert?: (asset: StudioAssetRecord) => void;
 }) {
   const draggable = useDraggable({
-    id: `asset-${props.assetId}`,
-    data: {
-      type: 'asset',
-      assetId: props.assetId,
-      asset: props.asset,
+    get id() {
+      return `asset-${props.assetId}`;
+    },
+    get data() {
+      return {
+        type: 'asset',
+        assetId: props.assetId,
+        asset: props.asset,
+      };
     },
   });
 

@@ -15,13 +15,19 @@ export interface DroppableTrackLaneProps {
 
 export function DroppableTrackLane(props: DroppableTrackLaneProps) {
   const droppable = useDroppable({
-    id: () => `track-${props.track.id}`,
-    data: () => ({
-      type: 'track',
-      trackId: props.track.id,
-      trackType: props.track.type || 'video',
-    }),
-    disabled: () => props.isLocked,
+    get id() {
+      return `track-${props.track.id}`;
+    },
+    get data() {
+      return {
+        type: 'track',
+        trackId: props.track.id,
+        trackType: props.track.type || 'video',
+      };
+    },
+    get disabled() {
+      return props.isLocked;
+    },
   });
 
   const isInvalidOver = () => droppable.isDropTarget() && props.isInvalidDrop;

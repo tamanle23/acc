@@ -252,7 +252,9 @@ export function LeftSidebar(props: LeftSidebarProps) {
   });
 
   const presetVirtualizer = createVirtualizer({
-    count: () => filteredPresets().length,
+    get count() {
+      return filteredPresets().length;
+    },
     getScrollElement: () => presetScrollRef,
     estimateSize: (index) => {
       const p = filteredPresets()[index];
@@ -266,7 +268,9 @@ export function LeftSidebar(props: LeftSidebarProps) {
   });
 
   const assetVirtualizer = createVirtualizer({
-    count: () => filteredAssets().length,
+    get count() {
+      return filteredAssets().length;
+    },
     getScrollElement: () => assetScrollRef,
     estimateSize: () => 80,
     overscan: 5,

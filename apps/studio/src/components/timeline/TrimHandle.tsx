@@ -8,12 +8,16 @@ export interface TrimHandleProps {
 
 export function TrimHandle(props: TrimHandleProps) {
   const draggable = useDraggable({
-    id: () => `trim-${props.handle}-${props.seq.id}`,
-    data: () => ({
-      type: 'trim',
-      handle: props.handle,
-      seq: props.seq,
-    }),
+    get id() {
+      return `trim-${props.handle}-${props.seq.id}`;
+    },
+    get data() {
+      return {
+        type: 'trim',
+        handle: props.handle,
+        seq: props.seq,
+      };
+    },
   });
 
   return (

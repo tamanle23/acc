@@ -104,13 +104,19 @@ export function ClipItem(props: ClipItemProps) {
   const widthPx = () => Math.max(16, displayDurationFrames() * props.pixelsPerFrame);
 
   const draggable = useDraggable({
-    id: () => `clip-${props.seq.id}`,
-    data: () => ({
-      type: 'clip',
-      seq: props.seq,
-      trackId: props.track.id,
-    }),
-    disabled: () => props.activeTool === 'razor',
+    get id() {
+      return `clip-${props.seq.id}`;
+    },
+    get data() {
+      return {
+        type: 'clip',
+        seq: props.seq,
+        trackId: props.track.id,
+      };
+    },
+    get disabled() {
+      return props.activeTool === 'razor';
+    },
   });
 
   const cueSnippet = () =>
