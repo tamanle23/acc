@@ -32,9 +32,57 @@ export interface SchemaTreeNode {
 
 export class TaskContractRegistry {
   private contracts: Map<DagNodeType, NodeDataContract> = new Map();
+  private _isPreloaded = false;
 
   constructor() {
     this.registerDefaults();
+  }
+
+  /**
+   * Preloads authoritative contracts from backend SSOT into client in-memory cache.
+   * Enables instant 60 FPS synchronous canvas lookups without duplicate hardcoded schemas.
+   */
+  public preload(records: TaskDefinitionRecord[]): void {
+    if (!records || !Array.isArray(records)) return;
+
+    for (const record of records) {
+      if (!record || !record.name) continue;
+      const inputSchema = (record.inputSchema && typeof record.inputSchema === 'object')
+        ? record.inputSchema
+        : { type: 'object', properties: {} };
+      const outputSchema = (record.outputSchema && typeof record.outputSchema === 'object')
+        ? record.outputSchema
+        : { type: 'object', properties: {} };
+
+      const params = this.convertJsonSchemaToParams(inputSchema);
+      const mockOutput = this.generateMockFromSchema(outputSchema);
+
+      const contract: NodeDataContract = {
+        taskType: record.name as DagNodeType,
+        inputParameters: params,
+        outputSchema,
+        defaultMockOutput: mockOutput,
+      };
+
+      this.contracts.set(record.name as DagNodeType, contract);
+    }
+    this._isPreloaded = true;
+  }
+
+  public hasPreloaded(): boolean {
+    return this._isPreloaded;
+  }
+
+  public isBuiltIn(taskType: string): boolean {
+    const canonicalBuiltIns: string[] = [
+      'START_WORKFLOW', 'END_WORKFLOW', 'HTTP', 'LLM_CHAT_COMPLETE',
+      'KAFKA_PUBLISH', 'JDBC_QUERY', 'REDIS_COMMAND', 'JSON_JQ_TRANSFORM',
+      'INLINE_SCRIPT', 'SET_VARIABLE', 'TERMINATE', 'HUMAN',
+      'SWITCH', 'EXCLUSIVE_JOIN', 'FORK_JOIN', 'FORK_JOIN_DYNAMIC',
+      'JOIN', 'SUB_WORKFLOW', 'DO_WHILE', 'WAIT', 'EVENT',
+      'NOOP', 'DYNAMIC', 'CALL_MCP_TOOL'
+    ];
+    return canonicalBuiltIns.includes(taskType.toUpperCase());
   }
 
   register(contract: NodeDataContract): void {

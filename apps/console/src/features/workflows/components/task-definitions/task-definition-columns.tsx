@@ -18,6 +18,8 @@ import {
   Trash2,
   Clock,
   RotateCw,
+  Eye,
+  GitBranch,
 } from 'lucide-react';
 import { DataTableColumnHeader } from '@/components/data-table';
 import { type TaskDefinitionRecord, resolveTaskCategory } from '@/features/workflows/api/task-definition-api';
@@ -27,6 +29,7 @@ interface CreateTaskDefinitionColumnsProps {
   onViewHistory: (taskName: string) => void;
   onPublishTaskDef: (name: string, version: number) => void;
   onDeleteDraft: (name: string, version: number) => void;
+  onForkDraft?: (taskDef: TaskDefinitionRecord) => void;
 }
 
 export const createTaskDefinitionColumns = ({
@@ -34,6 +37,7 @@ export const createTaskDefinitionColumns = ({
   onViewHistory,
   onPublishTaskDef,
   onDeleteDraft,
+  onForkDraft,
 }: CreateTaskDefinitionColumnsProps): ColumnDef<TaskDefinitionRecord>[] => [
   {
     accessorKey: 'name',
@@ -42,6 +46,7 @@ export const createTaskDefinitionColumns = ({
     ),
     cell: ({ row }) => {
       const item = row.original;
+      const isBuiltIn = Boolean(item.isBuiltIn || item.tenantId === 'SYSTEM' || item.tenantId === 'system');
       const category = resolveTaskCategory(item.name);
       return (
         <div className="flex flex-col min-w-[200px]">
@@ -49,22 +54,31 @@ export const createTaskDefinitionColumns = ({
             <span className="font-semibold text-foreground font-mono text-sm">
               {item.name}
             </span>
-            <Badge
-              variant="outline"
-              className={
-                category === 'COMMERCE'
-                  ? 'text-[9px] px-1 py-0 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
-                  : category === 'AI'
-                  ? 'text-[9px] px-1 py-0 bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20'
-                  : category === 'CONTENT'
-                  ? 'text-[9px] px-1 py-0 bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
-                  : category === 'SYSTEM'
-                  ? 'text-[9px] px-1 py-0 bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
-                  : 'text-[9px] px-1 py-0 bg-muted/60 text-muted-foreground'
-              }
-            >
-              {category}
-            </Badge>
+            {isBuiltIn ? (
+              <Badge
+                variant="outline"
+                className="text-[9px] px-1.5 py-0 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20 font-medium tracking-wide"
+              >
+                BUILT-IN
+              </Badge>
+            ) : (
+              <Badge
+                variant="outline"
+                className={
+                  category === 'COMMERCE'
+                    ? 'text-[9px] px-1 py-0 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                    : category === 'AI'
+                    ? 'text-[9px] px-1 py-0 bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20'
+                    : category === 'CONTENT'
+                    ? 'text-[9px] px-1 py-0 bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                    : category === 'SYSTEM'
+                    ? 'text-[9px] px-1 py-0 bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
+                    : 'text-[9px] px-1 py-0 bg-muted/60 text-muted-foreground'
+                }
+              >
+                {category}
+              </Badge>
+            )}
           </div>
           {item.description && (
             <span className="text-xs text-muted-foreground truncate max-w-[320px] mt-0.5">
@@ -167,6 +181,7 @@ export const createTaskDefinitionColumns = ({
     header: () => <span className="sr-only">Actions</span>,
     cell: ({ row }) => {
       const item = row.original;
+      const isBuiltIn = Boolean(item.isBuiltIn || item.tenantId === 'SYSTEM' || item.tenantId === 'system');
       const isDraft = item.status === 'DRAFT';
 
       return (
@@ -180,19 +195,41 @@ export const createTaskDefinitionColumns = ({
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuLabel className="text-xs font-semibold">
-              {item.name}
+          <DropdownMenuContent align="end" className="w-52">
+            <DropdownMenuLabel className="text-xs font-semibold flex items-center justify-between">
+              <span className="truncate">{item.name}</span>
+              {isBuiltIn && (
+                <span className="text-[10px] font-normal text-muted-foreground uppercase">System</span>
+              )}
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
 
-            <DropdownMenuItem
-              onClick={() => onEditTaskDef(item)}
-              className="gap-2 cursor-pointer text-xs"
-            >
-              <SlidersHorizontal className="h-3.5 w-3.5" />
-              {isDraft ? 'Edit Draft' : 'Fork Next Version'}
-            </DropdownMenuItem>
+            {isBuiltIn ? (
+              <>
+                <DropdownMenuItem
+                  onClick={() => onEditTaskDef(item)}
+                  className="gap-2 cursor-pointer text-xs"
+                >
+                  <Eye className="h-3.5 w-3.5 text-primary" />
+                  Inspect Contract
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => onForkDraft ? onForkDraft(item) : onEditTaskDef(item)}
+                  className="gap-2 cursor-pointer text-xs"
+                >
+                  <GitBranch className="h-3.5 w-3.5 text-indigo-500" />
+                  Fork as Custom Draft
+                </DropdownMenuItem>
+              </>
+            ) : (
+              <DropdownMenuItem
+                onClick={() => onEditTaskDef(item)}
+                className="gap-2 cursor-pointer text-xs"
+              >
+                <SlidersHorizontal className="h-3.5 w-3.5" />
+                {isDraft ? 'Edit Draft' : 'Fork Next Version'}
+              </DropdownMenuItem>
+            )}
 
             <DropdownMenuItem
               onClick={() => onViewHistory(item.name)}
@@ -202,7 +239,7 @@ export const createTaskDefinitionColumns = ({
               Version History
             </DropdownMenuItem>
 
-            {isDraft && (
+            {!isBuiltIn && isDraft && (
               <DropdownMenuItem
                 onClick={() => onPublishTaskDef(item.name, item.version)}
                 className="gap-2 cursor-pointer text-xs text-emerald-600 dark:text-emerald-400 font-medium"
@@ -212,7 +249,7 @@ export const createTaskDefinitionColumns = ({
               </DropdownMenuItem>
             )}
 
-            {isDraft && (
+            {!isBuiltIn && isDraft && (
               <>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem

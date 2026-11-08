@@ -411,10 +411,39 @@ public class TaskDefinitionRegistry {
             if (res.isPresent()) return res;
         }
 
-        return inMemoryFallbacks.values().stream()
+        Optional<TaskDefinitionRecord> fallbackActive = inMemoryFallbacks.values().stream()
             .filter(r -> (r.tenantId().equals(effectiveTenant) || "system".equals(r.tenantId()))
                 && r.name().equals(name) && r.status() == WorkflowVersionStatus.ACTIVE)
             .max(Comparator.comparingInt(TaskDefinitionRecord::version));
+        if (fallbackActive.isPresent()) return fallbackActive;
+
+        // Fallback to built-in system orchestrator contract
+        Optional<com.acc.workflow.core.schema.TaskTypeContract> builtinOpt = com.acc.workflow.core.schema.BuiltInTaskContracts.get(name);
+        if (builtinOpt.isPresent() && (version == null || version == 1)) {
+            com.acc.workflow.core.schema.TaskTypeContract c = builtinOpt.get();
+            return Optional.of(new TaskDefinitionRecord(
+                "system:" + c.taskType().toLowerCase() + ":v1",
+                "SYSTEM",
+                c.taskType(),
+                1,
+                WorkflowVersionStatus.ACTIVE,
+                c.description(),
+                c.taskType().equals("HTTP") ? 3 : 0,
+                c.taskType().equals("HTTP") ? 2 : 0,
+                c.taskType().equals("HTTP") ? 2.0 : 1.0,
+                c.taskType().equals("HTTP") ? 30 : 60,
+                c.inputSchema(),
+                c.outputSchema(),
+                "Canonical system orchestrator task contract",
+                0L,
+                "SYSTEM",
+                0L,
+                0L,
+                "SYSTEM"
+            ));
+        }
+
+        return Optional.empty();
     }
 
     /**
@@ -422,19 +451,46 @@ public class TaskDefinitionRegistry {
      */
     public List<TaskDefinitionRecord> listLatest(String tenantId) {
         String effectiveTenant = (tenantId != null && !tenantId.isBlank()) ? tenantId : "system";
-        if (persistencePort != null) {
-            return persistencePort.listTaskDefinitions(effectiveTenant);
+        Map<String, TaskDefinitionRecord> mergedByName = new LinkedHashMap<>();
+
+        // 1. Prepend all canonical built-in system contracts
+        for (com.acc.workflow.core.schema.TaskTypeContract c : com.acc.workflow.core.schema.BuiltInTaskContracts.getContracts().values()) {
+            mergedByName.put(c.taskType(), new TaskDefinitionRecord(
+                "system:" + c.taskType().toLowerCase() + ":v1",
+                "SYSTEM",
+                c.taskType(),
+                1,
+                WorkflowVersionStatus.ACTIVE,
+                c.description(),
+                c.taskType().equals("HTTP") ? 3 : 0,
+                c.taskType().equals("HTTP") ? 2 : 0,
+                c.taskType().equals("HTTP") ? 2.0 : 1.0,
+                c.taskType().equals("HTTP") ? 30 : 60,
+                c.inputSchema(),
+                c.outputSchema(),
+                "Canonical system orchestrator task contract",
+                0L,
+                "SYSTEM",
+                0L,
+                0L,
+                "SYSTEM"
+            ));
         }
 
-        Map<String, TaskDefinitionRecord> latestByName = new LinkedHashMap<>();
-        for (TaskDefinitionRecord r : inMemoryFallbacks.values()) {
-            if (r.tenantId().equals(effectiveTenant) || "system".equals(r.tenantId())) {
-                latestByName.merge(r.name(), r, (existing, replace) ->
+        // 2. Overlay tenant-persisted or in-memory fallback definitions
+        List<TaskDefinitionRecord> tenantDefs = (persistencePort != null)
+            ? persistencePort.listTaskDefinitions(effectiveTenant)
+            : new ArrayList<>(inMemoryFallbacks.values());
+
+        for (TaskDefinitionRecord r : tenantDefs) {
+            if (r.tenantId().equals(effectiveTenant) || "system".equalsIgnoreCase(r.tenantId())) {
+                mergedByName.merge(r.name(), r, (existing, replace) ->
                     replace.version() > existing.version() ? replace : existing
                 );
             }
         }
-        return new ArrayList<>(latestByName.values());
+
+        return new ArrayList<>(mergedByName.values());
     }
 
     /**

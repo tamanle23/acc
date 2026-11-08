@@ -29,6 +29,8 @@ import {
   Layers,
   Clock,
   RotateCw,
+  Lock,
+  Copy,
 } from 'lucide-react';
 import {
   type TaskDefinitionRecord,
@@ -43,7 +45,7 @@ export interface TaskDefinitionEditorDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialData?: TaskDefinitionRecord | null;
-  mode?: 'create' | 'edit' | 'fork';
+  mode?: 'create' | 'edit' | 'fork' | 'inspect';
   onSaved?: (taskDef: TaskDefinitionRecord) => void;
 }
 
@@ -56,6 +58,23 @@ export const TaskDefinitionEditorDialog: React.FC<TaskDefinitionEditorDialogProp
 }) => {
   const saveDraftMutation = useSaveTaskDefinitionDraft();
   const publishMutation = usePublishTaskDefinition();
+
+  const isBuiltIn = Boolean(
+    initialData && (initialData.isBuiltIn || initialData.tenantId === 'SYSTEM' || initialData.tenantId === 'system')
+  );
+  const [internalMode, setInternalMode] = useState<'create' | 'edit' | 'fork' | 'inspect'>(mode);
+
+  useEffect(() => {
+    if (mode === 'fork') {
+      setInternalMode('fork');
+    } else if (isBuiltIn) {
+      setInternalMode('inspect');
+    } else {
+      setInternalMode(mode);
+    }
+  }, [mode, isBuiltIn, open]);
+
+  const isInspect = internalMode === 'inspect';
 
   const [activeTab, setActiveTab] = useState<'general' | 'input' | 'output' | 'test'>('general');
   const [name, setName] = useState('');
@@ -216,6 +235,12 @@ export const TaskDefinitionEditorDialog: React.FC<TaskDefinitionEditorDialogProp
     }
   };
 
+  const handleForkFromInspect = () => {
+    setInternalMode('fork');
+    setName(`${initialData?.name || 'task'}Custom`);
+    setChangelogNote(`Forked from built-in ${initialData?.name} v1`);
+  };
+
   const isSaving = saveDraftMutation.isPending || publishMutation.isPending;
   const isEditingExisting = Boolean(initialData && mode !== 'create');
 
@@ -234,25 +259,36 @@ export const TaskDefinitionEditorDialog: React.FC<TaskDefinitionEditorDialogProp
               </div>
               <div>
                 <DialogTitle className="text-base font-semibold flex items-center gap-2">
-                  {mode === 'fork'
-                    ? `Fork Task Definition (${initialData?.name})`
-                    : isEditingExisting
-                    ? `Edit Task Definition: ${initialData?.name} (v${initialData?.version})`
-                    : 'Create New Task Definition'}
-                  {initialData && (
+                  {isInspect ? (
+                    <>
+                      <span>Inspect Task Definition: {initialData?.name}</span>
+                      <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 text-xs font-medium">
+                        BUILT-IN (READ-ONLY)
+                      </Badge>
+                    </>
+                  ) : internalMode === 'fork' ? (
+                    `Fork Task Definition (${initialData?.name})`
+                  ) : isEditingExisting ? (
+                    `Edit Task Definition: ${initialData?.name} (v${initialData?.version})`
+                  ) : (
+                    'Create New Task Definition'
+                  )}
+                  {initialData && !isInspect && (
                     <Badge variant="outline" className="font-mono text-xs">
                       v{initialData.version}
                     </Badge>
                   )}
                 </DialogTitle>
                 <DialogDescription className="text-xs text-muted-foreground mt-0.5">
-                  Define typed contract schemas, validation bounds, and worker execution retry policies.
+                  {isInspect
+                    ? 'View canonical parameter schemas and contract specifications for this built-in node.'
+                    : 'Define typed contract schemas, validation bounds, and worker execution retry policies.'}
                 </DialogDescription>
               </div>
             </div>
 
             {/* Template Selector for quick creation */}
-            {mode === 'create' && (
+            {mode === 'create' && !isInspect && (
               <div className="flex items-center gap-2">
                 <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                 <Select onValueChange={handleApplyTemplate}>
@@ -302,6 +338,14 @@ export const TaskDefinitionEditorDialog: React.FC<TaskDefinitionEditorDialogProp
         <div className="flex-1 overflow-y-auto p-5">
           {activeTab === 'general' && (
             <div className="flex flex-col gap-4 max-w-2xl mx-auto">
+              {isInspect && (
+                <div className="flex items-center gap-2.5 p-3 rounded-lg bg-primary/5 border border-primary/20 text-xs text-primary">
+                  <Lock className="w-4 h-4 shrink-0" />
+                  <span>
+                    This is a canonical built-in system task definition. Its parameters and contracts are maintained by the platform engine. You can inspect its schemas, test them in the sandbox, or fork it to customize.
+                  </span>
+                </div>
+              )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="task-name" className="text-xs font-semibold">
@@ -311,7 +355,7 @@ export const TaskDefinitionEditorDialog: React.FC<TaskDefinitionEditorDialogProp
                     id="task-name"
                     placeholder="e.g. validateCustomerOrder"
                     value={name}
-                    disabled={isEditingExisting && mode !== 'fork'}
+                    disabled={isInspect || (isEditingExisting && internalMode !== 'fork')}
                     onChange={(e) => setName(e.target.value.replace(/\s+/g, ''))}
                     className="font-mono text-xs"
                   />
@@ -328,6 +372,7 @@ export const TaskDefinitionEditorDialog: React.FC<TaskDefinitionEditorDialogProp
                     id="task-changelog"
                     placeholder="e.g. Add payment token validation"
                     value={changelogNote}
+                    disabled={isInspect}
                     onChange={(e) => setChangelogNote(e.target.value)}
                     className="text-xs"
                   />
@@ -346,8 +391,9 @@ export const TaskDefinitionEditorDialog: React.FC<TaskDefinitionEditorDialogProp
                   rows={2}
                   placeholder="Describes what this task executes, business rules, and external systems contacted."
                   value={description}
+                  disabled={isInspect}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full rounded-md border border-input bg-background/80 p-2 text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  className="w-full rounded-md border border-input bg-background/80 p-2 text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-70 disabled:cursor-not-allowed"
                 />
               </div>
 
@@ -365,6 +411,7 @@ export const TaskDefinitionEditorDialog: React.FC<TaskDefinitionEditorDialogProp
                       min={1}
                       max={3600}
                       value={timeoutSeconds}
+                      disabled={isInspect}
                       onChange={(e) => setTimeoutSeconds(Number(e.target.value))}
                       className="h-8 text-xs font-mono"
                     />
@@ -377,6 +424,7 @@ export const TaskDefinitionEditorDialog: React.FC<TaskDefinitionEditorDialogProp
                       min={0}
                       max={10}
                       value={retryCount}
+                      disabled={isInspect}
                       onChange={(e) => setRetryCount(Number(e.target.value))}
                       className="h-8 text-xs font-mono"
                     />
@@ -389,6 +437,7 @@ export const TaskDefinitionEditorDialog: React.FC<TaskDefinitionEditorDialogProp
                       min={1}
                       max={300}
                       value={retryDelaySeconds}
+                      disabled={isInspect}
                       onChange={(e) => setRetryDelaySeconds(Number(e.target.value))}
                       className="h-8 text-xs font-mono"
                     />
@@ -402,6 +451,7 @@ export const TaskDefinitionEditorDialog: React.FC<TaskDefinitionEditorDialogProp
                       min={1}
                       max={10}
                       value={backoffRate}
+                      disabled={isInspect}
                       onChange={(e) => setBackoffRate(Number(e.target.value))}
                       className="h-8 text-xs font-mono"
                     />
@@ -416,7 +466,7 @@ export const TaskDefinitionEditorDialog: React.FC<TaskDefinitionEditorDialogProp
               <span className="text-xs text-muted-foreground">
                 Define the JSON Schema structure that workflow orchestrator will validate before dispatching to worker.
               </span>
-              <SchemaPropertyGrid value={inputSchema} onChange={setInputSchema} />
+              <SchemaPropertyGrid value={inputSchema} onChange={setInputSchema} disabled={isInspect} />
             </div>
           )}
 
@@ -425,7 +475,7 @@ export const TaskDefinitionEditorDialog: React.FC<TaskDefinitionEditorDialogProp
               <span className="text-xs text-muted-foreground">
                 Define the JSON Schema structure that task workers must return upon successful task execution.
               </span>
-              <SchemaPropertyGrid value={outputSchema} onChange={setOutputSchema} />
+              <SchemaPropertyGrid value={outputSchema} onChange={setOutputSchema} disabled={isInspect} />
             </div>
           )}
 
@@ -436,42 +486,71 @@ export const TaskDefinitionEditorDialog: React.FC<TaskDefinitionEditorDialogProp
 
         {/* Footer */}
         <DialogFooter className="p-4 border-t border-border/40 bg-muted/10 flex items-center justify-between sm:justify-between">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => onOpenChange(false)}
-            disabled={isSaving}
-            className="text-xs"
-          >
-            Cancel
-          </Button>
+          {isInspect ? (
+            <>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => onOpenChange(false)}
+                className="text-xs"
+              >
+                Close
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleForkFromInspect}
+                className="text-xs gap-1.5 shadow-md shadow-primary/20"
+              >
+                <Copy className="w-3.5 h-3.5" />
+                Fork as Custom Draft
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => onOpenChange(false)}
+                disabled={isSaving}
+                className="text-xs"
+              >
+                Cancel
+              </Button>
 
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={!name.trim() || isSaving}
-              onClick={handleSaveDraft}
-              className="text-xs gap-1.5"
-            >
-              <Save className="w-3.5 h-3.5" />
-              {isSaving ? 'Saving...' : 'Save Draft'}
-            </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={!name.trim() || isSaving}
+                  onClick={handleSaveDraft}
+                  className="text-xs gap-1.5"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  {isSaving ? 'Saving...' : 'Save Draft'}
+                </Button>
 
-            <Button
-              type="button"
-              size="sm"
-              disabled={!name.trim() || isSaving}
-              onClick={handlePublish}
-              className="text-xs gap-1.5 shadow-md shadow-primary/20"
-            >
-              <UploadCloud className="w-3.5 h-3.5" />
-              {isSaving ? 'Publishing...' : 'Publish Version'}
-            </Button>
-          </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={!name.trim() || isSaving}
+                  onClick={handlePublish}
+                  className="text-xs gap-1.5 shadow-md shadow-primary/20"
+                >
+                  <UploadCloud className="w-3.5 h-3.5" />
+                  {isSaving ? 'Publishing...' : 'Publish Version'}
+                </Button>
+              </div>
+            </>
+          )}
         </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
       </DialogContent>
     </Dialog>
   );

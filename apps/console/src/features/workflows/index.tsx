@@ -51,7 +51,7 @@ export const WorkflowsFeature: React.FC = () => {
   // Task Definitions Manager Modal & Drawer states
   const [isTaskEditorOpen, setIsTaskEditorOpen] = useState(false);
   const [editingTaskDef, setEditingTaskDef] = useState<TaskDefinitionRecord | null>(null);
-  const [editorMode, setEditorMode] = useState<'create' | 'edit' | 'fork'>('create');
+  const [editorMode, setEditorMode] = useState<'create' | 'edit' | 'fork' | 'inspect'>('create');
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [historyTaskName, setHistoryTaskName] = useState<string | null>(null);
 
@@ -63,7 +63,13 @@ export const WorkflowsFeature: React.FC = () => {
 
   const handleEditTaskDef = (taskDef: TaskDefinitionRecord) => {
     setEditingTaskDef(taskDef);
-    setEditorMode('edit');
+    setEditorMode(taskDef.isBuiltIn || taskDef.tenantId === 'SYSTEM' ? 'inspect' : 'edit');
+    setIsTaskEditorOpen(true);
+  };
+
+  const handleForkDraft = (taskDef: TaskDefinitionRecord) => {
+    setEditingTaskDef(taskDef);
+    setEditorMode('fork');
     setIsTaskEditorOpen(true);
   };
 
@@ -126,10 +132,10 @@ export const WorkflowsFeature: React.FC = () => {
                     {activeWorkflowKey
                       ? `${t('workflows.studio', 'Studio')}: ${activeWorkflowKey}`
                       : activeTab === 'task-definitions'
-                      ? t('workflows.task_definitions_title', 'Task Definitions Catalog')
-                      : activeTab === 'approvals'
-                      ? t('workflows.approvals_title', 'Workflow Approvals')
-                      : t('workflows.title', 'Workflow Definitions')}
+                        ? t('workflows.task_definitions_title', 'Task Definitions Catalog')
+                        : activeTab === 'approvals'
+                          ? t('workflows.approvals_title', 'Workflow Approvals')
+                          : t('workflows.title', 'Workflow Definitions')}
                   </h1>
                   <Badge
                     variant="outline"
@@ -138,10 +144,10 @@ export const WorkflowsFeature: React.FC = () => {
                     {activeWorkflowKey
                       ? 'Designer Mode'
                       : activeTab === 'task-definitions'
-                      ? 'Task Engine'
-                      : activeTab === 'approvals'
-                      ? 'Governance'
-                      : 'Catalog'}
+                        ? 'Task Engine'
+                        : activeTab === 'approvals'
+                          ? 'Governance'
+                          : 'Catalog'}
                   </Badge>
                 </div>
               </div>
@@ -152,19 +158,19 @@ export const WorkflowsFeature: React.FC = () => {
                     'Design and bind DAG node topologies, parameters, and compensation handlers.'
                   )
                   : activeTab === 'task-definitions'
-                  ? t(
-                    'workflows.task_definitions_desc',
-                    'Enterprise catalog of typed task contracts, schema validation bounds, and worker policies.'
-                  )
-                  : activeTab === 'approvals'
-                  ? t(
-                    'workflows.approvals_desc',
-                    'Review and action pending human workflow transition decisions and policy audits.'
-                  )
-                  : t(
-                    'workflows.catalog_desc',
-                    'Catalog of enterprise distributed workflows. Create, manage, and inspect DAG orchestrations.'
-                  )}
+                    ? t(
+                      'workflows.task_definitions_desc',
+                      'Enterprise catalog of typed task contracts, schema validation bounds, and worker policies.'
+                    )
+                    : activeTab === 'approvals'
+                      ? t(
+                        'workflows.approvals_desc',
+                        'Review and action pending human workflow transition decisions and policy audits.'
+                      )
+                      : t(
+                        'workflows.catalog_desc',
+                        'Catalog of enterprise distributed workflows. Create, manage, and inspect DAG orchestrations.'
+                      )}
               </p>
             </div>
           </div>
@@ -218,7 +224,7 @@ export const WorkflowsFeature: React.FC = () => {
 
         {/* Task Definitions Telemetry KPI Bar */}
         {!activeWorkflowKey && activeTab === 'task-definitions' && (
-          <TaskDefinitionKpiBar taskDefs={taskDefs} />
+          <TaskDefinitionKpiBar definitions={taskDefs} />
         )}
 
         {/* Content Area: Catalog Table, Task Definitions, Approvals Inbox, or Full-bleed Studio Canvas */}
@@ -237,6 +243,7 @@ export const WorkflowsFeature: React.FC = () => {
               isLoading={isTaskDefsLoading}
               onCreateNew={handleCreateNewTaskDef}
               onEditTaskDef={handleEditTaskDef}
+              onForkDraft={handleForkDraft}
               onViewHistory={handleViewHistory}
               onPublishTaskDef={handlePublishTaskDef}
               onDeleteDraft={handleDeleteDraft}

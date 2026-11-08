@@ -1205,6 +1205,7 @@ export interface TaskDefinitionRecordIR {
   createdAtMs: number;
   updatedAtMs: number;
   createdBy?: string;
+  isBuiltIn?: boolean;
 }
 
 export const DEFAULT_TASK_DEFINITIONS: TaskDefinitionRecordIR[] = [
@@ -1489,9 +1490,16 @@ export class WorkflowTaskDefinitionsSandboxRepository {
   public listLatest(tenantId?: string): TaskDefinitionRecordIR[] {
     const map = this.getTenantMap(tenantId);
     const latestByName = new Map<string, TaskDefinitionRecordIR>();
+
+    // 1. Built-in platform system contracts
+    for (const b of getBuiltinTaskDefinitions()) {
+      latestByName.set(b.name, b);
+    }
+
+    // 2. Custom/Tenant task definitions (can override or supplement)
     for (const record of map.values()) {
       const existing = latestByName.get(record.name);
-      if (!existing || record.version > existing.version) {
+      if (!existing || record.version >= existing.version) {
         latestByName.set(record.name, record);
       }
     }
@@ -1500,22 +1508,33 @@ export class WorkflowTaskDefinitionsSandboxRepository {
 
   public listVersions(name: string, tenantId?: string): TaskDefinitionRecordIR[] {
     const map = this.getTenantMap(tenantId);
-    return Array.from(map.values())
+    const versions = Array.from(map.values())
       .filter((r) => r.name === name)
       .sort((a, b) => a.version - b.version);
+    if (versions.length === 0) {
+      const builtin = getBuiltinTaskDefinitions().find((b) => b.name === name);
+      if (builtin) return [builtin];
+    }
+    return versions;
   }
 
   public resolve(name: string, version?: number, tenantId?: string): TaskDefinitionRecordIR | undefined {
     const map = this.getTenantMap(tenantId);
     if (version !== undefined && version > 0) {
-      return map.get(`${name}:v${version}`);
+      const found = map.get(`${name}:v${version}`);
+      if (found) return found;
+      if (version === 1) {
+        return getBuiltinTaskDefinitions().find((b) => b.name === name);
+      }
+      return undefined;
     }
     const all = this.listVersions(name, tenantId);
     const active = all.filter((r) => r.status === 'ACTIVE');
     if (active.length > 0) {
       return active[active.length - 1];
     }
-    return all.length > 0 ? all[all.length - 1] : undefined;
+    if (all.length > 0) return all[all.length - 1];
+    return getBuiltinTaskDefinitions().find((b) => b.name === name);
   }
 
   public createOrForkDraft(data: Partial<TaskDefinitionRecordIR>, tenantId?: string): TaskDefinitionRecordIR {
@@ -1579,6 +1598,8 @@ export class WorkflowTaskDefinitionsSandboxRepository {
   }
 
   public deleteDraftVersion(name: string, version: number, tenantId?: string): boolean {
+    const builtin = getBuiltinTaskDefinitions().find((b) => b.name === name);
+    if (builtin && version === 1) return false;
     const tid = tenantId || this.getActiveTenantId();
     const map = this.getTenantMap(tid);
     const target = map.get(`${name}:v${version}`);
@@ -1873,6 +1894,30 @@ export const SANDBOX_TASK_CONTRACTS: TaskTypeContractIR[] = [
     ],
   },
 ];
+
+export function getBuiltinTaskDefinitions(): TaskDefinitionRecordIR[] {
+  return SANDBOX_TASK_CONTRACTS.map((c) => ({
+    taskDefId: `system:${c.taskType.toLowerCase()}:v1`,
+    tenantId: 'SYSTEM',
+    name: c.taskType,
+    version: 1,
+    status: 'ACTIVE' as const,
+    description: c.description,
+    retryCount: c.taskType === 'HTTP' ? 3 : 0,
+    retryDelaySeconds: c.taskType === 'HTTP' ? 2 : 0,
+    backoffRate: c.taskType === 'HTTP' ? 2.0 : 1.0,
+    timeoutSeconds: c.taskType === 'HTTP' ? 30 : 60,
+    inputSchema: c.inputSchema,
+    outputSchema: c.outputSchema,
+    changelogNote: 'Canonical built-in platform contract',
+    isBuiltIn: true,
+    publishedAtMs: 0,
+    publishedBy: 'SYSTEM',
+    createdAtMs: 0,
+    updatedAtMs: 0,
+    createdBy: 'SYSTEM',
+  }));
+}
 
 export const workflowSandboxHandler: SandboxRouteHandler = {
   id: 'workflow-sandbox-handler',

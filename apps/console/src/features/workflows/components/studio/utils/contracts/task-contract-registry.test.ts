@@ -203,4 +203,90 @@ describe('TaskContractRegistry', () => {
       expect(params.some((p) => p.key === 'sku' && p.required)).toBe(true);
     });
   });
+
+  describe('Preloading and Single Source of Truth (SSOT)', () => {
+    it('preloads authoritative task definition records into memory', () => {
+      const registry = new TaskContractRegistry();
+      expect(registry.hasPreloaded()).toBe(false);
+
+      registry.preload([
+        {
+          taskDefId: 'td-system-http',
+          tenantId: 'SYSTEM',
+          name: 'HTTP',
+          version: 1,
+          status: 'ACTIVE',
+          description: 'Platform HTTP dispatcher',
+          isBuiltIn: true,
+          inputSchema: {
+            type: 'object',
+            properties: {
+              url: { type: 'string', description: 'Destination endpoint' },
+              method: { type: 'string', enum: ['GET', 'POST', 'PUT', 'DELETE'] },
+            },
+            required: ['url'],
+          },
+          outputSchema: {
+            type: 'object',
+            properties: {
+              statusCode: { type: 'number' },
+              responseBody: { type: 'object' },
+            },
+          },
+        },
+        {
+          taskDefId: 'td-custom-fraud',
+          tenantId: 'tenant-123',
+          name: 'evaluateFraudRisk',
+          version: 2,
+          status: 'ACTIVE',
+          description: 'Evaluates transaction fraud scoring',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              userId: { type: 'string' },
+              amount: { type: 'number' },
+            },
+            required: ['userId', 'amount'],
+          },
+          outputSchema: {
+            type: 'object',
+            properties: {
+              riskScore: { type: 'number' },
+              action: { type: 'string' },
+            },
+          },
+        },
+      ]);
+
+      expect(registry.hasPreloaded()).toBe(true);
+
+      // Verify built-in lookup
+      const httpContract = registry.getContract('HTTP');
+      expect(httpContract.taskType).toBe('HTTP');
+      expect(httpContract.inputParameters.some((p) => p.key === 'url' && p.required)).toBe(true);
+
+      // Verify custom task lookup
+      const customContract = registry.getContract('evaluateFraudRisk' as any);
+      expect(customContract.taskType).toBe('evaluateFraudRisk');
+      expect(customContract.inputParameters.some((p) => p.key === 'userId')).toBe(true);
+      expect(customContract.outputSchema.properties).toBeDefined();
+    });
+
+    it('identifies built-in tasks accurately', () => {
+      const registry = new TaskContractRegistry();
+      expect(registry.isBuiltIn('HTTP')).toBe(true);
+      expect(registry.isBuiltIn('http')).toBe(true);
+      expect(registry.isBuiltIn('LLM_CHAT_COMPLETE')).toBe(true);
+      expect(registry.isBuiltIn('CALL_MCP_TOOL')).toBe(true);
+      expect(registry.isBuiltIn('DYNAMIC')).toBe(true);
+      expect(registry.isBuiltIn('KAFKA_PUBLISH')).toBe(true);
+      expect(registry.isBuiltIn('START_WORKFLOW')).toBe(true);
+      expect(registry.isBuiltIn('END_WORKFLOW')).toBe(true);
+
+      // Custom tasks are not built-in
+      expect(registry.isBuiltIn('customPaymentWorker')).toBe(false);
+      expect(registry.isBuiltIn('evaluateFraudRisk')).toBe(false);
+    });
+  });
 });

@@ -3,6 +3,7 @@ import { useMutation, useQuery, QueryClientContext, QueryClient } from '@tanstac
 import { springApiClient } from '@/features/spring-auth/api-client';
 import { useSandboxStore } from '@/core/sandbox/store/sandbox-store';
 import { useMetadataUiStore } from '@/features/metadata/store/use-metadata-ui-store';
+import { taskContractRegistry } from '../components/studio/utils/contracts/task-contract-registry';
 import { toast } from 'sonner';
 
 const fallbackQueryClient = new QueryClient({
@@ -30,6 +31,7 @@ export interface TaskDefinitionRecord {
   createdAtMs: number;
   updatedAtMs: number;
   createdBy?: string;
+  isBuiltIn?: boolean;
 }
 
 export interface SaveTaskDefinitionInput {
@@ -65,6 +67,7 @@ export const useTaskDefinitions = () => {
             : Array.isArray(res.data?.body)
               ? res.data.body
               : res.data?.data || [];
+          taskContractRegistry.preload(list);
           return list;
         }
         return [];
@@ -100,6 +103,7 @@ export const useTaskDefinitionVersions = (taskName?: string) => {
             : Array.isArray(res.data?.body)
               ? res.data.body
               : res.data?.data || [];
+          taskContractRegistry.preload(list);
           return list;
         }
         return [];
@@ -218,6 +222,13 @@ export const useDeleteTaskDefinitionDraft = () => {
 // 7. Deterministic Category Resolver for Tasks
 export const resolveTaskCategory = (taskName?: string): 'COMMERCE' | 'AI' | 'CONTENT' | 'SYSTEM' | 'CUSTOM' => {
   if (!taskName) return 'CUSTOM';
+  if (taskContractRegistry.isBuiltIn(taskName)) {
+    const upper = taskName.toUpperCase();
+    if (upper === 'LLM_CHAT_COMPLETE' || upper === 'CALL_MCP_TOOL' || upper === 'DYNAMIC') {
+      return 'AI';
+    }
+    return 'SYSTEM';
+  }
   const lower = taskName.toLowerCase();
   if (lower.includes('order') || lower.includes('payment') || lower.includes('courier') || lower.includes('inventory')) {
     return 'COMMERCE';

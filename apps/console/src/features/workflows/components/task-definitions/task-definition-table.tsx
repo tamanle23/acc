@@ -28,6 +28,7 @@ export interface TaskDefinitionTableProps {
   onViewHistory: (taskName: string) => void;
   onPublishTaskDef: (name: string, version: number) => void;
   onDeleteDraft: (name: string, version: number) => void;
+  onForkDraft?: (taskDef: TaskDefinitionRecord) => void;
   onCreateNew: () => void;
 }
 
@@ -38,6 +39,7 @@ export const TaskDefinitionTable: React.FC<TaskDefinitionTableProps> = ({
   onViewHistory,
   onPublishTaskDef,
   onDeleteDraft,
+  onForkDraft,
   onCreateNew,
 }) => {
   const [sorting, setSorting] = useState<SortingState>([{ id: 'name', desc: false }]);
@@ -53,8 +55,9 @@ export const TaskDefinitionTable: React.FC<TaskDefinitionTableProps> = ({
         onViewHistory,
         onPublishTaskDef,
         onDeleteDraft,
+        onForkDraft,
       }),
-    [onEditTaskDef, onViewHistory, onPublishTaskDef, onDeleteDraft]
+    [onEditTaskDef, onViewHistory, onPublishTaskDef, onDeleteDraft, onForkDraft]
   );
 
   // eslint-disable-next-line react-hooks/incompatible-library

@@ -132,4 +132,42 @@ describe('TaskDefinitionTable Component', () => {
     expect(screen.getByText('No task definitions found')).toBeDefined();
     expect(screen.getByRole('button', { name: /define your first task contract/i })).toBeDefined();
   });
+
+  it('renders built-in task definitions with BUILT-IN badge and inspect actions', () => {
+    const builtInTaskDefs: TaskDefinitionRecord[] = [
+      {
+        taskDefId: 'td-system-http',
+        tenantId: 'SYSTEM',
+        name: 'HTTP',
+        version: 1,
+        status: 'ACTIVE',
+        description: 'Built-in HTTP task node',
+        isBuiltIn: true,
+        inputSchema: { type: 'object', properties: { url: { type: 'string' } } },
+        outputSchema: { type: 'object', properties: { statusCode: { type: 'number' } } },
+        createdAtMs: 1700000000000,
+        updatedAtMs: 1700000000000,
+      },
+    ];
+
+    const onEditTaskDef = vi.fn();
+    const onForkDraft = vi.fn();
+
+    render(
+      <TaskDefinitionTable
+        data={builtInTaskDefs}
+        isLoading={false}
+        onEditTaskDef={onEditTaskDef}
+        onForkDraft={onForkDraft}
+        onViewHistory={vi.fn()}
+        onPublishTaskDef={vi.fn()}
+        onDeleteDraft={vi.fn()}
+        onCreateNew={vi.fn()}
+      />
+    );
+
+    // Verify task name and BUILT-IN badge are rendered
+    expect(screen.getByText('HTTP')).toBeDefined();
+    expect(screen.getByText('BUILT-IN')).toBeDefined();
+  });
 });
