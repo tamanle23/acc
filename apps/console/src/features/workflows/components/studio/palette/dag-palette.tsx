@@ -36,6 +36,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useTaskDefinitions } from '@/features/workflows/api/task-definition-api';
+import { taskContractRegistry } from '../utils/contracts/task-contract-registry';
 
 export interface PaletteItem {
   type: DagNodeType;
