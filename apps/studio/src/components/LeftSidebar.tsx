@@ -11,7 +11,6 @@ import {
   Film,
   UploadCloud,
 } from 'lucide-solid';
-import { createVirtualizer } from '@tanstack/solid-virtual';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
@@ -75,8 +74,6 @@ export function LeftSidebar(props: LeftSidebarProps) {
   const [selectedAssetType, setSelectedAssetType] = createSignal<'all' | 'video' | 'audio' | 'image'>('all');
   let fileInputRef!: HTMLInputElement;
   const [isVaultDragOver, setIsVaultDragOver] = createSignal(false);
-  const [presetScrollRef, setPresetScrollRef] = createSignal<HTMLDivElement | null>(null);
-  const [assetScrollRef, setAssetScrollRef] = createSignal<HTMLDivElement | null>(null);
 
   const handleFilesIngest = (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -235,7 +232,7 @@ export function LeftSidebar(props: LeftSidebarProps) {
   });
 
   const assetList = createMemo(() =>
-    Object.entries(irState.doc?.assets || {}).map(([id, asset]) => ({ id, ...asset }))
+    Object.entries(irState().doc?.assets || {}).map(([id, asset]) => ({ id, ...asset }))
   );
 
   const filteredAssets = createMemo(() => {
@@ -249,31 +246,6 @@ export function LeftSidebar(props: LeftSidebarProps) {
         (a.name && a.name.toLowerCase().includes(q));
       return matchesType && matchesQuery;
     });
-  });
-
-  const presetVirtualizer = createVirtualizer({
-    get count() {
-      return filteredPresets().length;
-    },
-    getScrollElement: () => presetScrollRef(),
-    estimateSize: (index) => {
-      const p = filteredPresets()[index];
-      if (!p) return 140;
-      if (p.thumbnailUrl) return 210;
-      if (p.category === 'shape' || p.category === 'text') return 185;
-      if (p.category === 'audio' || p.category === 'sfx') return 155;
-      return 140;
-    },
-    overscan: 5,
-  });
-
-  const assetVirtualizer = createVirtualizer({
-    get count() {
-      return filteredAssets().length;
-    },
-    getScrollElement: () => assetScrollRef(),
-    estimateSize: () => 80,
-    overscan: 5,
   });
 
   const headerInfo = () => {
@@ -444,7 +416,7 @@ export function LeftSidebar(props: LeftSidebarProps) {
                   </div>
                 </div>
 
-                <div ref={setAssetScrollRef} class="flex-1 p-3 overflow-y-auto">
+                <div class="flex-1 p-3 overflow-y-auto min-h-0">
                   <Show
                     when={filteredAssets().length > 0}
                     fallback={
@@ -453,42 +425,15 @@ export function LeftSidebar(props: LeftSidebarProps) {
                       </p>
                     }
                   >
-                    <div
-                      style={{
-                        height: `${assetVirtualizer.getTotalSize()}px`,
-                        width: '100%',
-                        position: 'relative',
-                      }}
-                    >
-                      <For each={assetVirtualizer.getVirtualItems()}>
-                        {(virtualItem) => {
-                          const asset = () => filteredAssets()[virtualItem.index];
-                          return (
-                            <Show when={asset()}>
-                              <div
-                                data-index={virtualItem.index}
-                                ref={(el) => {
-                                  el.dataset.index = String(virtualItem.index);
-                                  assetVirtualizer.measureElement(el);
-                                }}
-                                style={{
-                                  position: 'absolute',
-                                  top: 0,
-                                  left: 0,
-                                  width: '100%',
-                                  transform: `translateY(${virtualItem.start}px)`,
-                                  'padding-bottom': '8px',
-                                }}
-                              >
-                                <DraggableAssetCard
-                                  assetId={asset()!.id}
-                                  asset={asset()!}
-                                  onInsert={handleInsertAsset}
-                                />
-                              </div>
-                            </Show>
-                          );
-                        }}
+                    <div class="flex flex-col gap-2">
+                      <For each={filteredAssets()}>
+                        {(asset) => (
+                          <DraggableAssetCard
+                            assetId={asset.id}
+                            asset={asset}
+                            onInsert={handleInsertAsset}
+                          />
+                        )}
                       </For>
                     </div>
                   </Show>
@@ -553,7 +498,7 @@ export function LeftSidebar(props: LeftSidebarProps) {
                 </Show>
               </div>
 
-              <div ref={setPresetScrollRef} class="flex-1 p-3 overflow-y-auto">
+              <div class="flex-1 p-3 overflow-y-auto min-h-0">
                 <Show
                   when={filteredPresets().length > 0}
                   fallback={
@@ -562,38 +507,11 @@ export function LeftSidebar(props: LeftSidebarProps) {
                     </p>
                   }
                 >
-                  <div
-                    style={{
-                      height: `${presetVirtualizer.getTotalSize()}px`,
-                      width: '100%',
-                      position: 'relative',
-                    }}
-                  >
-                    <For each={presetVirtualizer.getVirtualItems()}>
-                      {(virtualItem) => {
-                        const preset = () => filteredPresets()[virtualItem.index];
-                        return (
-                          <Show when={preset()}>
-                            <div
-                              data-index={virtualItem.index}
-                              ref={(el) => {
-                                el.dataset.index = String(virtualItem.index);
-                                presetVirtualizer.measureElement(el);
-                              }}
-                              style={{
-                                position: 'absolute',
-                                top: 0,
-                                left: 0,
-                                width: '100%',
-                                transform: `translateY(${virtualItem.start}px)`,
-                                'padding-bottom': '10px',
-                              }}
-                            >
-                              <DraggablePresetCard preset={preset()!} onInsert={handleInsert} />
-                            </div>
-                          </Show>
-                        );
-                      }}
+                  <div class="flex flex-col gap-2.5">
+                    <For each={filteredPresets()}>
+                      {(preset) => (
+                        <DraggablePresetCard preset={preset} onInsert={handleInsert} />
+                      )}
                     </For>
                   </div>
                 </Show>
