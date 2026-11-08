@@ -55,7 +55,12 @@ public class WorkflowDefinitionRegistry {
         if (persistencePort != null) {
             List<WorkflowDefinitionRecord> list = persistencePort.listDefinitionVersions(tenantId, workflowKey);
             if (!list.isEmpty()) {
-                return Optional.of(list.get(list.size() - 1).definition());
+                WorkflowDefinition latest = list.get(list.size() - 1).definition();
+                if (latest != null) {
+                    tenantDefinitions.computeIfAbsent(tenantId, t -> new ConcurrentHashMap<>())
+                        .put(workflowKey, latest);
+                    return Optional.of(latest);
+                }
             }
         }
         // Fallback to "system" default catalog
@@ -87,7 +92,20 @@ public class WorkflowDefinitionRegistry {
     }
 
     public Map<String, WorkflowDefinition> list(String tenantId) {
-        return tenantDefinitions.getOrDefault(tenantId, Map.of());
+        Map<String, WorkflowDefinition> memMap = tenantDefinitions.computeIfAbsent(tenantId, t -> new ConcurrentHashMap<>());
+        if (persistencePort != null) {
+            List<WorkflowDefinitionRecord> records = persistencePort.listTenantDefinitionVersions(tenantId);
+            for (WorkflowDefinitionRecord record : records) {
+                if (record.definition() != null) {
+                    memMap.merge(
+                        record.workflowKey(),
+                        record.definition(),
+                        (existing, candidate) -> candidate.version() >= existing.version() ? candidate : existing
+                    );
+                }
+            }
+        }
+        return memMap;
     }
 
     public Map<String, Map<String, WorkflowDefinition>> tenantDefinitions() {

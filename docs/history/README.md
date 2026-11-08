@@ -122,3 +122,4 @@
 | 456 | [Backend Sandbox Sample Workflow Seeder & End-to-End Flow Verification](./456_backend_sandbox_sample_workflow_seeder.md) | Completed |
 | 457 | [Predefined Task Node Schemas & Contract Inspector](./457_predefined_task_node_schemas_and_contract_inspector.md) | Completed |
 | 458 | [Studio Migration from React 19 to SolidJS 1.9](./458_studio_react_to_solid_migration.md) | Completed |
+| 459 | [Rehydrate Workflow Definition Catalog from Persistence & Tenant Query Scoping](./459_rehydrate_workflow_definitions_catalog.md) | Completed |

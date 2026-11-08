@@ -119,6 +119,14 @@ public interface PersistencePort {
 
     List<com.acc.workflow.core.model.WorkflowDefinitionRecord> listDefinitionVersions(String tenantId, String workflowKey);
 
+    /**
+     * Lists every persisted definition version for a tenant (all workflow keys), ordered by key then version.
+     * Used to rehydrate the definition catalog after a restart. Defaults to empty for adapters without durable storage.
+     */
+    default List<com.acc.workflow.core.model.WorkflowDefinitionRecord> listTenantDefinitionVersions(String tenantId) {
+        return List.of();
+    }
+
     void updateDefinitionStatus(String tenantId, String workflowKey, int version, com.acc.workflow.core.model.WorkflowVersionStatus status, Long publishedAtMs, String publishedBy);
 
     // In-flight Execution Hot Migration

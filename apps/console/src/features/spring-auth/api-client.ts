@@ -237,7 +237,8 @@ springApiClient.interceptors.response.use(
   },
   async (error) => {
     // If Axios error has response.data with backend envelope error message, enrich error.message
-    if (axios.isAxiosError(error) && error.response?.data) {
+    // Only override if error.code is not a client-side preflight gate error
+    if (error?.code !== 'ERR_CLIENT_AUTH_PREFLIGHT' && axios.isAxiosError(error) && error.response?.data) {
       const backendMsg = extractEnvelopeErrorMessage(error.response.data);
       if (backendMsg) {
         error.message = backendMsg;

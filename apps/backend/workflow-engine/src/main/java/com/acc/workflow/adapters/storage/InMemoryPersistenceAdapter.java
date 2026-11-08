@@ -453,6 +453,20 @@ public final class InMemoryPersistenceAdapter implements PersistencePort {
     }
 
     @Override
+    public List<com.acc.workflow.core.model.WorkflowDefinitionRecord> listTenantDefinitionVersions(String tenantId) {
+        String prefix = (tenantId != null ? tenantId : "system") + ":";
+        List<com.acc.workflow.core.model.WorkflowDefinitionRecord> list = new ArrayList<>();
+        for (Map.Entry<String, com.acc.workflow.core.model.WorkflowDefinitionRecord> entry : definitions.entrySet()) {
+            if (entry.getKey().startsWith(prefix)) {
+                list.add(entry.getValue());
+            }
+        }
+        list.sort(Comparator.comparing(com.acc.workflow.core.model.WorkflowDefinitionRecord::workflowKey)
+            .thenComparingInt(com.acc.workflow.core.model.WorkflowDefinitionRecord::version));
+        return list;
+    }
+
+    @Override
     public void updateDefinitionStatus(
         String tenantId,
         String workflowKey,

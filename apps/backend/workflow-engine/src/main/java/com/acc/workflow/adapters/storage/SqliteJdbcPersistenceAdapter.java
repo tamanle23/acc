@@ -708,6 +708,23 @@ public final class SqliteJdbcPersistenceAdapter implements PersistencePort {
     }
 
     @Override
+    public List<com.acc.workflow.core.model.WorkflowDefinitionRecord> listTenantDefinitionVersions(String tenantId) {
+        String sql = "SELECT * FROM workflow_definitions WHERE tenant_id = ? ORDER BY workflow_key ASC, version ASC";
+        List<com.acc.workflow.core.model.WorkflowDefinitionRecord> list = new ArrayList<>();
+        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, tenantId != null ? tenantId : "system");
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapDefinitionRecord(rs));
+                }
+            }
+            return Collections.unmodifiableList(list);
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to list tenant workflow definitions in SQLite", e);
+        }
+    }
+
+    @Override
     public void updateDefinitionStatus(String tenantId, String workflowKey, int version, com.acc.workflow.core.model.WorkflowVersionStatus status, Long publishedAtMs, String publishedBy) {
         String sql = "UPDATE workflow_definitions SET status = ?, published_at_ms = ?, published_by = ?, updated_at_ms = ? WHERE tenant_id = ? AND workflow_key = ? AND version = ?";
         try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {

@@ -1,6 +1,7 @@
 package com.acc.sandbox.seed;
 
 import com.acc.sandbox.config.SandboxProperties;
+import com.acc.workflow.adapters.storage.InMemoryPersistenceAdapter;
 import com.acc.workflow.application.WorkflowDefinitionRegistry;
 import com.acc.workflow.core.model.TaskDefinition;
 import com.acc.workflow.core.model.TaskType;
@@ -132,5 +133,35 @@ class SandboxWorkflowSeederTest {
         assertThat(endTask.inputSchema()).isNotEmpty();
         assertThat(endTask.outputSchema()).isNotEmpty();
         assertThat(endTask.inputParameters()).containsKeys("fulfillmentStatus", "orderId", "trackingNumber");
+    }
+
+    @Test
+    @DisplayName("Should rehydrate registry.list(tenantId) from persistence after JVM restart")
+    void testRegistryListRehydrationAfterRestart() {
+        SandboxProperties properties = new SandboxProperties();
+        properties.setEnabled(true);
+        properties.setMode(SandboxProperties.SandboxMode.DEV);
+
+        InMemoryPersistenceAdapter sharedPersistence = new InMemoryPersistenceAdapter();
+
+        // Boot 1: Initial seeding writes to persistence
+        WorkflowDefinitionRegistry firstBootRegistry = new WorkflowDefinitionRegistry(sharedPersistence);
+        @SuppressWarnings("unchecked")
+        ObjectProvider<WorkflowDefinitionRegistry> firstProvider = mock(ObjectProvider.class);
+        when(firstProvider.getIfAvailable()).thenReturn(firstBootRegistry);
+
+        new SandboxWorkflowSeeder(properties, firstProvider).seedSampleWorkflowsIfMissing();
+        assertThat(firstBootRegistry.list("tenant-acme")).hasSize(2);
+
+        // Boot 2: Fresh JVM in-memory registry backed by existing durable storage
+        WorkflowDefinitionRegistry restartedRegistry = new WorkflowDefinitionRegistry(sharedPersistence);
+        @SuppressWarnings("unchecked")
+        ObjectProvider<WorkflowDefinitionRegistry> secondProvider = mock(ObjectProvider.class);
+        when(secondProvider.getIfAvailable()).thenReturn(restartedRegistry);
+
+        // Even before or after seeder runs, list("tenant-acme") must return both persisted definitions
+        new SandboxWorkflowSeeder(properties, secondProvider).seedSampleWorkflowsIfMissing();
+        Map<String, WorkflowDefinition> catalog = restartedRegistry.list("tenant-acme");
+        assertThat(catalog).containsKeys("order-fulfillment-pipeline", "order-fulfillment-v1");
     }
 }
