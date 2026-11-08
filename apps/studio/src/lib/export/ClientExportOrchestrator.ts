@@ -1,5 +1,5 @@
 import { MediabunnyClientSink, MediabunnyClientStrategy } from '@acc/core-web';
-import { MediaEngineRegistry } from '@acc/core-isomorphic';
+import { MediaEngineRegistry, MediaEngineType } from '@acc/core-isomorphic';
 import { IRMasterRenderer, withTargetCanvasSize } from '@acc/ir';
 import type { IRState } from '../ir/irState';
 import { ExportWorkerBridge } from '../../renderer/workers/ExportWorkerBridge';
@@ -68,7 +68,7 @@ export function downloadExportedMp4(
   const blob =
     exportBuffer instanceof Blob
       ? exportBuffer
-      : new Blob([exportBuffer instanceof Uint8Array ? exportBuffer : new Uint8Array(exportBuffer)], {
+      : new Blob([exportBuffer instanceof Uint8Array ? (exportBuffer as unknown as BlobPart) : new Uint8Array(exportBuffer)], {
         type: 'video/mp4',
       });
   const url = URL.createObjectURL(blob);
@@ -148,7 +148,7 @@ export class ClientExportOrchestrator {
       } catch {}
     }
 
-    const sink: ClientExportSinkLike = sinkFactory ? sinkFactory() : new MediabunnyClientSink();
+    const sink: ClientExportSinkLike = sinkFactory ? sinkFactory() : (new MediabunnyClientSink() as unknown as ClientExportSinkLike);
     await (sink as any).initialize({
       width,
       height,
@@ -164,7 +164,7 @@ export class ClientExportOrchestrator {
       throw new Error('[ClientExportOrchestrator] Timeline is not initialized');
     }
 
-    if (!MediaEngineRegistry.has('mediabunny-client')) {
+    if (!MediaEngineRegistry.has(MediaEngineType.MediabunnyClient)) {
       MediaEngineRegistry.register(new MediabunnyClientStrategy());
     }
 
@@ -174,7 +174,7 @@ export class ClientExportOrchestrator {
       42,
       undefined,
       undefined,
-      MediaEngineRegistry.get('mediabunny-client')
+      MediaEngineRegistry.get(MediaEngineType.MediabunnyClient)
     );
 
     const renderResult = await masterRenderer.render({

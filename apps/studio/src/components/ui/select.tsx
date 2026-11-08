@@ -84,7 +84,6 @@ function Select(props: SelectProps) {
       <PopoverPrimitive.Root
         open={isOpen()}
         onOpenChange={handleOpenChange}
-        disabled={props.disabled}
         sameWidth
       >
         {props.children}

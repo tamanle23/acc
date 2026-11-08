@@ -18,14 +18,7 @@ import {
 import { Input } from '../../ui/input';
 import { Badge } from '../../ui/badge';
 import { formatOpfsBytes, type OpfsTreeNode } from '@acc/core-web';
-import { type OpfsFilterType, type OpfsSortField, type OpfsSortDirection } from './types';
-
-/**
- * Helper to determine whether an OPFS node is a companion metadata file (*.meta.json)
- */
-export function isMetadataFile(node: OpfsTreeNode): boolean {
-  return Boolean(node.isMetadata || /\.meta\.json$/i.test(node.name));
-}
+import { type OpfsFilterType, type OpfsSortField, type OpfsSortDirection, isMetadataFile } from './types';
 
 interface OpfsTreeProps {
   rootNode: OpfsTreeNode | null;

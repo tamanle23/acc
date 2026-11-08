@@ -105,8 +105,8 @@ function DialogFooter(props: ComponentProps<"div"> & {
     >
       {local.children}
       {local.showCloseButton && (
-        <DialogPrimitive.CloseButton asChild>
-          <Button variant="outline">Close</Button>
+        <DialogPrimitive.CloseButton as={Button} variant="outline">
+          Close
         </DialogPrimitive.CloseButton>
       )}
     </div>

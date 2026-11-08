@@ -205,7 +205,7 @@ export function useGizmoTransform(options: UseGizmoTransformOptions) {
           ? 'move'
           : handleType === 'rotate'
             ? 'rotate'
-            : 'scale';
+            : 'resize';
     overlay.setActiveInteraction(handleType, mode === 'anchor' ? 'move' : mode);
   };
 

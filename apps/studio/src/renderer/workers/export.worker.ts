@@ -5,14 +5,14 @@ if (typeof self !== 'undefined' && typeof (self as any).window === 'undefined') 
 
 import { bootstrapCoreWeb, MediabunnyClientStrategy, MediabunnyClientSink } from '@acc/core-web';
 import { registerCoreModifierPlugins, IRMasterRenderer } from '@acc/ir';
-import { MediaEngineRegistry } from '@acc/core-isomorphic';
+import { MediaEngineRegistry, MediaEngineType } from '@acc/core-isomorphic';
 
 // Bootstrap client runtime (UniversalCanvasProvider WebCanvasAdapter, ContentCacheRegistry OPFS/IndexedDB, MediaEngineRegistry)
 bootstrapCoreWeb();
 registerCoreModifierPlugins();
 
 // Ensure MediabunnyClientStrategy is registered in worker context
-if (!MediaEngineRegistry.has('mediabunny-client')) {
+if (!MediaEngineRegistry.has(MediaEngineType.MediabunnyClient)) {
   MediaEngineRegistry.register(new MediabunnyClientStrategy());
 }
 
@@ -79,23 +79,22 @@ self.onmessage = async (event: MessageEvent<ExportWorkerInMessage>) => {
         width,
         height,
         fps,
-        format: 'mp4',
         codec,
         videoBitrate,
         enableAudio: true,
         writableStream,
-      });
+      } as any);
 
       const masterRenderer = new IRMasterRenderer(
         timeline,
         42,
         undefined,
         undefined,
-        MediaEngineRegistry.get('mediabunny-client' as any)
+        MediaEngineRegistry.get(MediaEngineType.MediabunnyClient)
       );
 
       const renderResult = await masterRenderer.render({
-        engine: 'mediabunny-client' as any,
+        engine: MediaEngineType.MediabunnyClient,
         sink,
         signal: activeAbortController.signal,
         yieldInterval: 4,
@@ -121,7 +120,7 @@ self.onmessage = async (event: MessageEvent<ExportWorkerInMessage>) => {
 
       // Transfer sinkBuffer to main thread if available
       if (sinkBuffer && sinkBuffer instanceof ArrayBuffer) {
-        self.postMessage(
+        (self as unknown as Worker).postMessage(
           {
             type: 'EXPORT_COMPLETE',
             exportId,

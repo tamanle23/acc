@@ -103,9 +103,9 @@ export class SequentialVideoReader implements Disposable {
     try {
       const wrapped = await this.canvasSink.getCanvas(sec);
       if (wrapped) {
-        const raw = typeof wrapped.getRawCanvas === 'function'
-          ? wrapped.getRawCanvas()
-          : wrapped.canvas || wrapped;
+        const raw = typeof (wrapped as any).getRawCanvas === 'function'
+          ? (wrapped as any).getRawCanvas()
+          : (wrapped as any).canvas || wrapped;
 
         if (raw) {
           const w = raw.width || this.width || 1920;

@@ -43,6 +43,11 @@ export interface ToolbarProps {
 export type TimelineToolbarProps = ToolbarProps;
 
 export function Toolbar(props: ToolbarProps) {
+  const currentSpeed = () =>
+    typeof props.shuttle.speed === 'function'
+      ? (props.shuttle.speed as () => number)()
+      : Number(props.shuttle.speed || 0);
+
   return (
     <div class="h-11 border-b border-glass-border px-3 sm:px-6 flex items-center justify-between bg-glass-surface/60 backdrop-blur-md gap-2 overflow-hidden select-none shrink-0">
       {/* 1. Left: Editing Tools & Transport Shuttling */}
@@ -104,14 +109,14 @@ export function Toolbar(props: ToolbarProps) {
         <Separator orientation="vertical" class="h-4 mx-0.5" />
 
         {/* J-K-L Shuttle & Transport Controls */}
-        <Tooltip content={`Shuttle Rewind (J): ${props.shuttle.speed < 0 ? Math.abs(props.shuttle.speed) + 'x' : '1x'}`}>
+        <Tooltip content={`Shuttle Rewind (J): ${currentSpeed() < 0 ? Math.abs(currentSpeed()) + 'x' : '1x'}`}>
           <Button
             variant="ghost"
             size="icon"
             aria-label="Shuttle Rewind (J)"
             onClick={props.shuttle.shuttleReverse}
             class={`h-7 w-7 transition-colors ${
-              props.shuttle.speed < 0
+              currentSpeed() < 0
                 ? 'text-amber-400 bg-amber-500/15'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
@@ -139,14 +144,14 @@ export function Toolbar(props: ToolbarProps) {
           </Button>
         </Tooltip>
 
-        <Tooltip content={`Shuttle Forward (L): ${props.shuttle.speed > 0 ? props.shuttle.speed + 'x' : '1x'}`}>
+        <Tooltip content={`Shuttle Forward (L): ${currentSpeed() > 0 ? currentSpeed() + 'x' : '1x'}`}>
           <Button
             variant="ghost"
             size="icon"
             aria-label="Shuttle Forward (L)"
             onClick={props.shuttle.shuttleForward}
             class={`h-7 w-7 transition-colors ${
-              props.shuttle.speed > 0
+              currentSpeed() > 0
                 ? 'text-emerald-400 bg-emerald-500/15'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
@@ -248,12 +253,12 @@ export function Toolbar(props: ToolbarProps) {
         <MasterAudioMeter isPlaying={props.isPlaying} currentFrame={props.currentFrame} />
 
         <div class="flex items-center gap-1 sm:gap-1.5">
-          <Show when={props.shuttle.speed !== 0}>
+          <Show when={currentSpeed() !== 0}>
             <Badge
               variant="outline"
               class="font-mono text-[10px] sm:text-[11px] text-amber-400 border-amber-500/30 bg-amber-500/10 font-semibold shadow-2xs"
             >
-              {props.shuttle.speed}x
+              {currentSpeed()}x
             </Badge>
           </Show>
           <Badge

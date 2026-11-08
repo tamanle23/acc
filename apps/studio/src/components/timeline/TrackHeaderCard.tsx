@@ -30,7 +30,7 @@ export interface TrackHeaderCardProps {
 
 export function TrackHeaderCard(props: TrackHeaderCardProps) {
   const isAudioTrack = () => props.track.type === 'audio';
-  const isTextOrOverlay = () => props.track.type === 'timed_text' || props.track.type === 'overlay';
+  const isTextOrOverlay = () => props.track.type === 'timed_text';
   const isVideoTrack = () => props.track.type === 'video';
 
   const showVisibilityControl = () => isVideoTrack() || isTextOrOverlay();

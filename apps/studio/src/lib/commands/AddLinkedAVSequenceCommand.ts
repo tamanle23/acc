@@ -135,20 +135,20 @@ export class AddLinkedAVSequenceCommand implements ICommand {
     if (!Array.isArray(seq.modifiers)) {
       seq.modifiers = [];
     }
-    const existingLink = seq.modifiers.find((m) => m.type === 'editorial/av_link');
+    const existingLink = seq.modifiers.find((m) => (m.type as string) === 'editorial/av_link');
     if (existingLink) {
       if (!existingLink.params) existingLink.params = {};
-      existingLink.params.linkedSequenceId = linkedSeqId;
-      existingLink.params.linkedTrackId = linkedTrackId;
+      (existingLink.params as any).linkedSequenceId = linkedSeqId;
+      (existingLink.params as any).linkedTrackId = linkedTrackId;
     } else {
       seq.modifiers.push({
-        type: 'editorial/av_link',
-        target: seq.id,
+        type: 'editorial/av_link' as any,
+        target: seq.id as any,
         params: {
           linkedSequenceId: linkedSeqId,
           linkedTrackId: linkedTrackId,
         },
-      });
+      } as any);
     }
   }
 
@@ -194,5 +194,9 @@ export class AddLinkedAVSequenceCommand implements ICommand {
     }
 
     return copy;
+  }
+
+  public tryMerge(_next: ICommand): boolean {
+    return false;
   }
 }

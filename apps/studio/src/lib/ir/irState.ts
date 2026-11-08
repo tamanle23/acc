@@ -8,6 +8,7 @@ import {
   type SemanticTrackRole,
   type CanAddTrackResult,
   type TrackQuotaStatus,
+  type SequenceType,
   RelationalDAGCompiler,
   IntervalTreeIndex,
   VideoIRSchemaValidator,

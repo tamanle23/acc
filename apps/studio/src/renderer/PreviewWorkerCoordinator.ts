@@ -5,7 +5,10 @@ import {
   type ResolvedTimeline,
   type ResolvedSequence,
   type ResolvedTrack,
+  type ModifierNode,
 } from '@acc/ir';
+
+declare const WorkerGlobalScope: any;
 import { UniversalLogger as Logger } from '@acc/core-isomorphic';
 import type {
   ExecuteModifierPayload,
@@ -384,7 +387,7 @@ export class PreviewWorkerCoordinator {
                 targetType: 'track',
                 targetId: track.id,
                 targetEntity: track,
-                modifier: { type: mod.type, params: mod.params || {} },
+                modifier: { type: mod.type, params: mod.params || {} } as ModifierNode,
                 fps,
                 canvas,
               },
@@ -430,10 +433,10 @@ export class PreviewWorkerCoordinator {
                 modifier: {
                   type: mod.type,
                   params: {
-                    ...mod.params,
-                    imagePath: mod.params?.imagePath || effectiveImagePath,
+                    ...(mod.params as Record<string, unknown>),
+                    imagePath: (mod.params as Record<string, unknown>)?.imagePath || effectiveImagePath,
                   },
-                },
+                } as ModifierNode,
                 assets,
                 fps,
                 canvas,

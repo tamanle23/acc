@@ -26,7 +26,7 @@ export interface ModifierCardHeaderProps {
  */
 export function ModifierCardHeader(props: ModifierCardHeaderProps) {
   const [copied, setCopied] = createSignal(false);
-  const isEnabled = () => props.modifier.params?.enabled !== false;
+  const isEnabled = () => (props.modifier.params as any)?.enabled !== false;
 
   const handleCopyParams = (e: MouseEvent) => {
     e.stopPropagation();

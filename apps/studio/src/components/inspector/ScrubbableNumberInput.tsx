@@ -199,7 +199,7 @@ export function ScrubbableNumberInput(props: ScrubbableNumberInputProps) {
     <div class={`flex items-center gap-1.5 select-none ${props.class || props.className || ''}`}>
       <Show when={props.label}>
         <span
-          onDoubleClick={() => {
+          onDblClick={() => {
             if (!props.disabled && props.defaultValue !== undefined) {
               props.onChange(props.defaultValue);
             }
@@ -217,7 +217,7 @@ export function ScrubbableNumberInput(props: ScrubbableNumberInputProps) {
 
       <div
         onMouseDown={!isEditing() ? handleMouseDown : undefined}
-        onDoubleClick={handleDoubleClick}
+        onDblClick={handleDoubleClick}
         class={`relative flex items-center h-6 rounded border border-glass-border bg-glass-surface/50 px-1.5 transition-all ${
           props.disabled
             ? 'opacity-40 cursor-not-allowed'

@@ -109,9 +109,6 @@ export function useWorkspaceDnd(options: UseWorkspaceDndOptions) {
             start: currentFrame,
             duration: durationFrames,
           },
-          startFrame: currentFrame,
-          timelineStartFrame: currentFrame,
-          durationFrames,
           assetId,
           modifiers: [
             {
@@ -196,21 +193,19 @@ export function useWorkspaceDnd(options: UseWorkspaceDndOptions) {
               start: dropFrame,
               duration: durationFrames,
             },
-            startFrame: dropFrame,
-            timelineStartFrame: dropFrame,
-            durationFrames,
             assetId,
             modifiers: [
               {
                 id: `mod_link_${vSeqId}`,
-                type: 'editorial/av_link',
+                type: 'editorial/av_link' as any,
+                target: ['video', 'audio'],
                 params: {
                   linkedSequenceId: aSeqId,
                   linkedTrackId: audioTrackId,
                   enabled: true,
                   syncTrim: true,
                 },
-              },
+              } as any,
             ],
           };
 
@@ -222,21 +217,19 @@ export function useWorkspaceDnd(options: UseWorkspaceDndOptions) {
               start: dropFrame,
               duration: durationFrames,
             },
-            startFrame: dropFrame,
-            timelineStartFrame: dropFrame,
-            durationFrames,
             assetId,
             modifiers: [
               {
                 id: `mod_link_${aSeqId}`,
-                type: 'editorial/av_link',
+                type: 'editorial/av_link' as any,
+                target: ['video', 'audio'],
                 params: {
                   linkedSequenceId: vSeqId,
                   linkedTrackId: targetTrackId,
                   enabled: true,
                   syncTrim: true,
                 },
-              },
+              } as any,
             ],
           };
 
@@ -257,9 +250,6 @@ export function useWorkspaceDnd(options: UseWorkspaceDndOptions) {
               start: dropFrame,
               duration: durationFrames,
             },
-            startFrame: dropFrame,
-            timelineStartFrame: dropFrame,
-            durationFrames,
             assetId,
             modifiers: [],
           };

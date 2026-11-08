@@ -320,18 +320,6 @@ export const astroTelemetryDemoIR: VideoIRDocument = {
               text: 'GEODESIC PHOTON DEFLECTION THROUGH EXTREME SPACETIME CURVATURE',
             },
           ],
-          timedTextCues: [
-            {
-              startOffsetMs: 0,
-              endOffsetMs: 2000,
-              text: 'KERR BLACK HOLE: ASYMMETRIC DOPPLER ACCRETION & EINSTEIN RING',
-            },
-            {
-              startOffsetMs: 2000,
-              endOffsetMs: 4000,
-              text: 'GEODESIC PHOTON DEFLECTION THROUGH EXTREME SPACETIME CURVATURE',
-            },
-          ],
         },
         {
           id: 'seq-astro-caption-p2',
@@ -353,18 +341,6 @@ export const astroTelemetryDemoIR: VideoIRDocument = {
               text: 'SYNCHRONIZED EQUIDISTANT ISOLINES DERIVED FROM NOISE POTENTIALS',
             },
           ],
-          timedTextCues: [
-            {
-              startOffsetMs: 0,
-              endOffsetMs: 2000,
-              text: 'MULTI-OCTAVE CURL TURBULENCE TOPOGRAPHIC CONTOUR EXTRACTION',
-            },
-            {
-              startOffsetMs: 2000,
-              endOffsetMs: 4000,
-              text: 'SYNCHRONIZED EQUIDISTANT ISOLINES DERIVED FROM NOISE POTENTIALS',
-            },
-          ],
         },
         {
           id: 'seq-astro-caption-p3',
@@ -375,18 +351,6 @@ export const astroTelemetryDemoIR: VideoIRDocument = {
             duration: 120,
           },
           cues: [
-            {
-              startOffsetMs: 0,
-              endOffsetMs: 2000,
-              text: 'HYPERBOLIC TESSELLATION WITHIN POINCARÉ CONFORMAL DISK',
-            },
-            {
-              startOffsetMs: 2000,
-              endOffsetMs: 4000,
-              text: 'MÖBIUS ISOMETRIES PRESERVING NON-EUCLIDEAN CONFORMAL ANGLES',
-            },
-          ],
-          timedTextCues: [
             {
               startOffsetMs: 0,
               endOffsetMs: 2000,

@@ -170,9 +170,6 @@ export function LeftSidebar(props: LeftSidebarProps) {
         start: 0,
         duration: durationFrames,
       },
-      startFrame: 0,
-      timelineStartFrame: 0,
-      durationFrames,
       assetId,
       modifiers: [],
     };
@@ -232,7 +229,7 @@ export function LeftSidebar(props: LeftSidebarProps) {
   });
 
   const assetList = createMemo(() =>
-    Object.entries(irState().doc?.assets || {}).map(([id, asset]) => ({ id, ...asset }))
+    Object.entries(irState().doc?.assets || {}).map(([id, asset]) => ({ id, ...asset } as StudioAssetRecord & { id: string }))
   );
 
   const filteredAssets = createMemo(() => {

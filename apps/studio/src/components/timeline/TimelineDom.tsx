@@ -79,8 +79,8 @@ export function TimelineDom(props: TimelineDomProps) {
       // Detect paired A/V linked sequence
       let pairedSeqId: string | null = null;
       const avLink = seq.modifiers?.find((m: ModifierNode) => m.type === 'editorial/av_link');
-      if (avLink && avLink.params?.enabled !== false && avLink.params?.linkedSequenceId) {
-        pairedSeqId = avLink.params.linkedSequenceId as string;
+      if (avLink && (avLink.params as any)?.enabled !== false && (avLink.params as any)?.linkedSequenceId) {
+        pairedSeqId = (avLink.params as any).linkedSequenceId as string;
       }
 
       const initialStart = getSequenceStartFrame(seq);
@@ -161,7 +161,7 @@ export function TimelineDom(props: TimelineDomProps) {
             durationFrames: curState.initialDurationFrames,
             pixelsPerFrame: props.pixelsPerFrame,
             playheadFrame: props.currentFrame,
-            tracks: props.tracks,
+            tracks: props.tracks as any,
             excludeSeqIds: [
               curState.seqId,
               ...(curState.pairedSeqId ? [curState.pairedSeqId] : []),
@@ -336,7 +336,7 @@ export function TimelineDom(props: TimelineDomProps) {
     if (track.type === 'audio') return 'bg-emerald-950/85 border-emerald-500/50 text-emerald-200 shadow-emerald-950/30';
     if (track.id.includes('v2') || track.id.includes('depth') || track.id.includes('vfx'))
       return 'bg-amber-950/85 border-amber-500/50 text-amber-200 shadow-amber-950/30';
-    if (track.type === 'overlay' || track.type === 'timed_text' || track.id.includes('text') || track.id.includes('sub'))
+    if (track.type === 'timed_text' || track.id.includes('text') || track.id.includes('sub'))
       return 'bg-violet-950/85 border-violet-500/50 text-violet-200 shadow-violet-950/30';
     if (track.type === 'video') return 'bg-indigo-950/85 border-indigo-500/50 text-indigo-200 shadow-indigo-950/30';
     return 'bg-muted/85 border-glass-border text-foreground shadow-sm';
@@ -362,7 +362,7 @@ export function TimelineDom(props: TimelineDomProps) {
   const quotas = createMemo(() => IRStateManager.getInstance().getTrackQuotas());
 
   const groupedSections = createMemo(() => {
-    const grouped = VideoIRAuthoringEngine.groupTracksByType(props.tracks);
+    const grouped = VideoIRAuthoringEngine.groupTracksByType(props.tracks as any);
     const sections: {
       id: string;
       title: string;
@@ -453,7 +453,7 @@ export function TimelineDom(props: TimelineDomProps) {
                   const isVisible = () => track.visible !== false;
                   const canMoveUp = () => idxInGroup() > 0;
                   const canMoveDown = () => idxInGroup() < section.tracks.length - 1;
-                  const role = () => VideoIRAuthoringEngine.classifyTrackRole(track, track.groupOrder ?? idxInGroup());
+                  const role = () => VideoIRAuthoringEngine.classifyTrackRole(track as any, track.groupOrder ?? idxInGroup());
                   const quotaStatus = () => quotas()[role()];
 
                   // Horizontal sequence virtualization (Preserve dragged clip & paired A/V clip)

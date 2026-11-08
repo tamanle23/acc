@@ -59,4 +59,8 @@ export class DeleteSequenceCommand implements ICommand {
 
     return copy;
   }
+
+  public tryMerge(_next: ICommand): boolean {
+    return false;
+  }
 }

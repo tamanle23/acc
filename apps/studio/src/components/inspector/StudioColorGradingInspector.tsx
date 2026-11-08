@@ -16,7 +16,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../ui/select';
-import type { ColorGradingParams, ColorWheelValue } from '@acc/ir';
+import type { ColorGradingParams } from '@acc/ir';
+
+export interface StudioColorWheelValue {
+  r: number;
+  g: number;
+  b: number;
+  y?: number;
+}
 
 export interface StudioColorGradingInspectorProps {
   params: Record<string, unknown>;
@@ -31,7 +38,7 @@ interface ColorWheelProps {
   label: string;
   sublabel: string;
   value?: unknown;
-  onChange: (val: ColorWheelValue) => void;
+  onChange: (val: StudioColorWheelValue) => void;
   disabled?: boolean;
 }
 

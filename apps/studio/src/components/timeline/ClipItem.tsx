@@ -70,7 +70,6 @@ export function ClipItem(props: ClipItemProps) {
 
   const isAudio = () => props.seq.type === 'audio';
   const isTextOrOverlay = () =>
-    props.track.type === 'overlay' ||
     props.track.type === 'timed_text' ||
     props.seq.type === 'text' ||
     Boolean(props.seq.cues && props.seq.cues.length > 0);
@@ -134,13 +133,13 @@ export function ClipItem(props: ClipItemProps) {
     const found = props.seq.modifiers.find(
       (m: ModifierNode) => m.type.startsWith('transition/') || m.type.startsWith('editorial/transition')
     );
-    if (!found || found.params?.enabled === false) return null;
+    if (!found || (found.params as any)?.enabled === false) return null;
     return found;
   };
 
   const avLink = () => props.seq.modifiers?.find((m: ModifierNode) => m.type === 'editorial/av_link');
-  const isLinked = () => (avLink() ? avLink()!.params?.enabled !== false : false);
-  const linkedSeqId = () => avLink()?.params?.linkedSequenceId as string | undefined;
+  const isLinked = () => (avLink() ? (avLink()!.params as any)?.enabled !== false : false);
+  const linkedSeqId = () => (avLink()?.params as any)?.linkedSequenceId as string | undefined;
 
   return (
     <ClipHoverHUD seq={props.seq} track={props.track} fps={props.fps ?? 30} disabled={anyDragActive()}>

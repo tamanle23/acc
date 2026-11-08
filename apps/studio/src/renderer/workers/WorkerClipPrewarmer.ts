@@ -44,7 +44,7 @@ export class WorkerClipPrewarmer {
     this.memoryManager.pruneOutsideWindow(currentFrame, fps, this.timeline);
 
     for (const track of this.timeline.tracks.values()) {
-      if (track.type !== 'video' && track.type !== 'image' && track.type !== 'overlay') {
+      if (track.type !== 'video' && (track.type as string) !== 'image' && (track.type as string) !== 'overlay') {
         continue;
       }
 

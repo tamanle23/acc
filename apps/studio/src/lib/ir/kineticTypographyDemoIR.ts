@@ -143,7 +143,7 @@ export const kineticTypographyDemoIR: VideoIRDocument = {
           },
           modifiers: [
             {
-              type: 'time_space/glitch_datastream',
+              type: 'time_space/glitch_data_stream',
               target: ['video', 'overlay'],
               params: {
                 targetX: 0.0,
@@ -299,7 +299,7 @@ export const kineticTypographyDemoIR: VideoIRDocument = {
       modifiers: [
         {
           type: 'timed_text/style',
-          target: 'timed_text',
+          target: 'text',
           params: {
             fontSize: 22,
             fontFamily: 'Inter, monospace',
@@ -318,7 +318,13 @@ export const kineticTypographyDemoIR: VideoIRDocument = {
             start: 10,
             duration: 90,
           },
-          text: 'INITIALIZING NON-EUCLIDEAN TOPOLOGY ENGINE...',
+          cues: [
+            {
+              startOffsetMs: 0,
+              endOffsetMs: 3000,
+              text: 'INITIALIZING NON-EUCLIDEAN TOPOLOGY ENGINE...',
+            },
+          ],
         },
         {
           id: 'seq-sub-2',
@@ -328,7 +334,13 @@ export const kineticTypographyDemoIR: VideoIRDocument = {
             start: 130,
             duration: 90,
           },
-          text: '50-NODE DIRECTED GRAPH COUPLING COMPLETE.',
+          cues: [
+            {
+              startOffsetMs: 0,
+              endOffsetMs: 3000,
+              text: '50-NODE DIRECTED GRAPH COUPLING COMPLETE.',
+            },
+          ],
         },
         {
           id: 'seq-sub-3',
@@ -338,7 +350,13 @@ export const kineticTypographyDemoIR: VideoIRDocument = {
             start: 250,
             duration: 90,
           },
-          text: 'BROADCASTING ENCRYPTED TELEMETRY TO ALL ORBITAL RELAYS.',
+          cues: [
+            {
+              startOffsetMs: 0,
+              endOffsetMs: 3000,
+              text: 'BROADCASTING ENCRYPTED TELEMETRY TO ALL ORBITAL RELAYS.',
+            },
+          ],
         },
       ],
     },

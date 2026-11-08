@@ -20,15 +20,15 @@ export interface UseShuttleEngineOptions {
 }
 
 export interface UseShuttleEngineReturn {
-  speed: ShuttleSpeed | (() => ShuttleSpeed);
-  isPlaying: boolean | (() => boolean);
+  speed: ShuttleSpeed;
+  isPlaying: boolean;
   shuttleForward: () => void;
   shuttleReverse: () => void;
   shuttleStop: () => void;
   togglePlay: () => void;
   stepFrame: (delta: number) => void;
   setSpeed: (speed: ShuttleSpeed) => void;
-  isAudioMuted: boolean | (() => boolean);
+  isAudioMuted: boolean;
 }
 
 function resolveVal<T>(val: T | (() => T)): T {

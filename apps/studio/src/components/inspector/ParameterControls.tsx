@@ -32,7 +32,7 @@ export function ParameterSlider(props: ParameterSliderProps) {
     <div class="space-y-1">
       <div class="flex justify-between items-center text-[11px]">
         <span
-          onDoubleClick={() => props.onChange(props.defaultValue)}
+          onDblClick={() => props.onChange(props.defaultValue)}
           class="text-muted-foreground select-none cursor-pointer hover:text-accent-theme transition-colors"
           title="Double-click to reset"
         >

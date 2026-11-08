@@ -19,7 +19,7 @@ export function ViewportCanvasLayer(props: ViewportCanvasLayerProps) {
           props.isPanToolActive || props.isSpacePressed ? 'cursor-grab active:cursor-grabbing' : 'cursor-crosshair'
         }`}
         style={{
-          backgroundColor: '#000000',
+          'background-color': '#000000',
         }}
       />
 

@@ -126,7 +126,7 @@ export class AudioAssetCache {
           // Asynchronously persist to ContentCacheRegistry (OPFS) for future fast streaming
           try {
             const contentCache = ContentCacheRegistry.namespace(CacheNamespace.Audio);
-            const rawBlob = await assetBlob.blob();
+            const rawBlob = typeof assetBlob.blob === 'function' ? await assetBlob.blob() : new Blob([arrayBuffer]);
             contentCache.set(src, rawBlob).catch(() => {});
           } catch {}
         }

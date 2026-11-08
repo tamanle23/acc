@@ -54,7 +54,6 @@ export function ClipInsightCard(props: ClipInsightCardProps) {
   // Determine media classification
   const isAudio = () => props.track?.type === 'audio' || props.seq.type === 'audio';
   const isText = () =>
-    props.track?.type === 'text' ||
     props.track?.type === 'timed_text' ||
     props.seq.type === 'text' ||
     Boolean(props.seq.cues?.length);
@@ -206,7 +205,7 @@ export function ClipInsightCard(props: ClipInsightCardProps) {
             <video
               ref={videoRef}
               src={assetSrc()}
-              playsInline
+              {...{ playsinline: true }}
               muted
               loop
               preload="metadata"

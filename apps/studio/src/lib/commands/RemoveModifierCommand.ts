@@ -72,9 +72,9 @@ export class RemoveModifierCommand implements ICommand {
     if (this.sequenceId === 'timeline' || this.sequenceId === copy.meta.contentId) {
       if (!copy.modifiers) copy.modifiers = [];
       if (this.removedIndex >= 0 && this.removedIndex <= copy.modifiers.length) {
-        copy.modifiers.splice(this.removedIndex, 0, this.removedModifier);
+        copy.modifiers.splice(this.removedIndex, 0, this.removedModifier as any);
       } else {
-        copy.modifiers.push(this.removedModifier);
+        copy.modifiers.push(this.removedModifier as any);
       }
       return copy;
     }
@@ -84,9 +84,9 @@ export class RemoveModifierCommand implements ICommand {
       if (track.id === this.sequenceId) {
         if (!track.modifiers) track.modifiers = [];
         if (this.removedIndex >= 0 && this.removedIndex <= track.modifiers.length) {
-          track.modifiers.splice(this.removedIndex, 0, this.removedModifier);
+          track.modifiers.splice(this.removedIndex, 0, this.removedModifier as any);
         } else {
-          track.modifiers.push(this.removedModifier);
+          track.modifiers.push(this.removedModifier as any);
         }
         return copy;
       }
@@ -95,9 +95,9 @@ export class RemoveModifierCommand implements ICommand {
         if (seq.id === this.sequenceId) {
           if (!seq.modifiers) seq.modifiers = [];
           if (this.removedIndex >= 0 && this.removedIndex <= seq.modifiers.length) {
-            seq.modifiers.splice(this.removedIndex, 0, this.removedModifier);
+            seq.modifiers.splice(this.removedIndex, 0, this.removedModifier as any);
           } else {
-            seq.modifiers.push(this.removedModifier);
+            seq.modifiers.push(this.removedModifier as any);
           }
           return copy;
         }
@@ -105,5 +105,9 @@ export class RemoveModifierCommand implements ICommand {
     }
 
     return copy;
+  }
+
+  public tryMerge(_next: ICommand): boolean {
+    return false;
   }
 }

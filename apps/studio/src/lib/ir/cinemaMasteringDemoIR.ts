@@ -47,7 +47,7 @@ export const cinemaMasteringDemoIR: VideoIRDocument = {
     // Timeline-level Master Post-Processing Optics
     {
       type: 'timeline/photometric_bloom',
-      target: 'timeline',
+      target: 'video',
       params: {
         threshold: 0.72,
         intensity: 0.85,
@@ -57,7 +57,7 @@ export const cinemaMasteringDemoIR: VideoIRDocument = {
     },
     {
       type: 'timeline/anamorphic_glare',
-      target: 'timeline',
+      target: 'video',
       params: {
         intensity: 0.6,
         streakLength: 0.75,
@@ -304,7 +304,7 @@ export const cinemaMasteringDemoIR: VideoIRDocument = {
       modifiers: [
         {
           type: 'timed_text/style',
-          target: 'timed_text',
+          target: 'text',
           params: {
             fontSize: 24,
             fontFamily: 'Georgia, serif',
@@ -323,7 +323,13 @@ export const cinemaMasteringDemoIR: VideoIRDocument = {
             start: 35,
             duration: 110,
           },
-          text: 'In the quiet dawn, the world awakens with untold promise.',
+          cues: [
+            {
+              startOffsetMs: 0,
+              endOffsetMs: 3666,
+              text: 'In the quiet dawn, the world awakens with untold promise.',
+            },
+          ],
         },
         {
           id: 'seq-sub-cinema-2',
@@ -333,7 +339,13 @@ export const cinemaMasteringDemoIR: VideoIRDocument = {
             start: 205,
             duration: 130,
           },
-          text: 'Across the endless waters, memory echoes into tomorrow.',
+          cues: [
+            {
+              startOffsetMs: 0,
+              endOffsetMs: 4333,
+              text: 'Across the endless waters, memory echoes into tomorrow.',
+            },
+          ],
         },
       ],
     },

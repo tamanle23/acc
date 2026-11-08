@@ -35,7 +35,9 @@ export function NumberControlStrategy(props: ControlStrategyProps) {
     <div class={`space-y-1.5 ${props.disabled ? 'pointer-events-none opacity-60' : ''}`}>
       <div class="flex justify-between items-center text-[11px]">
         <span
-          onDoubleClick={() => !props.disabled && props.onChange(defaultVal())}
+          onDblClick={() => {
+            if (!props.disabled) props.onChange(defaultVal());
+          }}
           class={`text-muted-foreground hover:text-accent-theme select-none truncate ${
             props.disabled ? 'cursor-not-allowed' : 'cursor-pointer'
           } transition-colors`}

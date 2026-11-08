@@ -257,16 +257,16 @@ export function TrackInspector(props: TrackInspectorProps) {
 
               <Accordion
                 multiple
-                defaultValue={track().modifiers!.map((m: ModifierNode, i: number) => m.id || `${m.type}_${i}`)}
+                defaultValue={track().modifiers!.map((m: ModifierNode, i: number) => (m as any).id || `${m.type}_${i}`)}
                 class="border-glass-border space-y-2"
               >
                 <For each={track().modifiers}>
                   {(mod, idx) => {
-                    const modKey = () => mod.id || `${mod.type}_${idx()}`;
+                    const modKey = () => (mod as any).id || `${mod.type}_${idx()}`;
                     const catalogEntry = () => MODIFIER_PRESENTATION_CATALOG[mod.type];
                     const Icon = () => catalogEntry()?.icon || Sparkles;
                     const title = () => catalogEntry()?.name || mod.type.split('/').pop() || mod.type;
-                    const isEnabled = () => mod.params?.enabled !== false;
+                    const isEnabled = () => (mod.params as any)?.enabled !== false;
 
                     const TriggerIcon = Icon();
 
@@ -307,7 +307,7 @@ export function TrackInspector(props: TrackInspectorProps) {
                                 checked={isEnabled()}
                                 onChange={(checked: boolean) =>
                                   IRStateManager.getInstance().updateModifier(track().id, mod.type, {
-                                    ...(mod.params || {}),
+                                    ...((mod.params as any) || {}),
                                     enabled: checked,
                                   })
                                 }
@@ -326,7 +326,7 @@ export function TrackInspector(props: TrackInspectorProps) {
                         <AccordionContent class="p-3 space-y-3">
                           <DynamicModifierInspector
                             modifierType={mod.type}
-                            params={mod.params || {}}
+                            params={(mod.params as Record<string, unknown>) || {}}
                             disabled={!isEnabled()}
                             onChange={(nextParams) =>
                               IRStateManager.getInstance().updateModifier(track().id, mod.type, nextParams)

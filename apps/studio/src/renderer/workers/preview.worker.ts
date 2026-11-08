@@ -313,8 +313,7 @@ function playbackLoop(now: number) {
   const deltaMs = now - lastRafTime;
   lastRafTime = now;
 
-  const clockState = workerClock.tick(deltaMs / 1000);
-  currentFrame = clockState.currentFrame;
+  currentFrame = workerClock.tick(deltaMs / 1000);
 
   if (currentFrame >= currentTotalFrames) {
     currentFrame = currentTotalFrames;

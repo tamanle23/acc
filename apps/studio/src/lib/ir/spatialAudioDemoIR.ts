@@ -312,7 +312,7 @@ export const spatialAudioDemoIR: VideoIRDocument = {
       modifiers: [
         {
           type: 'timed_text/style',
-          target: 'timed_text',
+          target: 'text',
           params: {
             fontSize: 22,
             fontFamily: 'monospace',
@@ -331,7 +331,13 @@ export const spatialAudioDemoIR: VideoIRDocument = {
             start: 10,
             duration: 120,
           },
-          text: 'STEREO DSP: SUB-BASS LOWPASS 180Hz (-0.35 PAN) ACTIVE',
+          cues: [
+            {
+              startOffsetMs: 0,
+              endOffsetMs: 4000,
+              text: 'STEREO DSP: SUB-BASS LOWPASS 180Hz (-0.35 PAN) ACTIVE',
+            },
+          ],
         },
         {
           id: 'seq-sub-dsp-2',
@@ -341,7 +347,13 @@ export const spatialAudioDemoIR: VideoIRDocument = {
             start: 180,
             duration: 150,
           },
-          text: 'DYNAMIC DUCKING: REVERB BUS DUCKED BY -12dB DURING LEAD SYNTH',
+          cues: [
+            {
+              startOffsetMs: 0,
+              endOffsetMs: 5000,
+              text: 'DYNAMIC DUCKING: REVERB BUS DUCKED BY -12dB DURING LEAD SYNTH',
+            },
+          ],
         },
       ],
     },

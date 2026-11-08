@@ -1,5 +1,9 @@
 import { createMemo, createEffect, Show } from 'solid-js';
-import type { StudioSequence } from '../../lib/ir/studioTypes';
+import {
+  getSequenceStartFrame,
+  getSequenceDurationFrames,
+  type StudioSequence,
+} from '../../lib/ir/studioTypes';
 import { getCachedPeaks } from './WaveSurferWaveform';
 
 export interface TrackWaveformVirtualCanvasProps {
@@ -32,8 +36,9 @@ export function TrackWaveformVirtualCanvas(props: TrackWaveformVirtualCanvasProp
     const fEnd = Math.ceil((props.scrollLeft + props.viewportWidth) / props.pixelsPerFrame);
 
     return props.sequences.filter((seq) => {
-      const seqStart = seq.startFrame;
-      const seqEnd = seqStart + seq.durationFrames;
+      const seqStart = getSequenceStartFrame(seq);
+      const seqDur = getSequenceDurationFrames(seq, 90);
+      const seqEnd = seqStart + seqDur;
       return seqEnd >= fStart && seqStart <= fEnd;
     });
   });
@@ -80,8 +85,10 @@ export function TrackWaveformVirtualCanvas(props: TrackWaveformVirtualCanvasProp
     const barSpacing = Math.max(2, Math.floor(2 * dpr));
 
     for (const seq of seqs) {
-      const clipStartPx = seq.startFrame * ppf;
-      const clipWidthPx = seq.durationFrames * ppf;
+      const seqStart = getSequenceStartFrame(seq);
+      const seqDur = getSequenceDurationFrames(seq, 90);
+      const clipStartPx = seqStart * ppf;
+      const clipWidthPx = seqDur * ppf;
       const screenStartPx = clipStartPx - sLeft;
       const screenEndPx = screenStartPx + clipWidthPx;
 
@@ -92,7 +99,7 @@ export function TrackWaveformVirtualCanvas(props: TrackWaveformVirtualCanvasProp
 
       const numBars = Math.max(10, Math.floor(clipWidthPx / barSpacing));
       const assetKey = seq.assetId || seq.id;
-      const peaks = getCachedPeaks(assetKey, seq.durationFrames, numBars);
+      const peaks = getCachedPeaks(assetKey, seqDur, numBars);
 
       if (!peaks || peaks.length === 0) continue;
 

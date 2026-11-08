@@ -92,7 +92,7 @@ export function SequenceInspector(props: SequenceInspectorProps) {
     const q = (props.searchQuery || '').trim();
     const curOpen = openSections();
     (props.selectedSeq?.modifiers || []).forEach((m, idx) => {
-      const key = m.id || `${m.type}_${idx}`;
+      const key = (m as any).id || `${m.type}_${idx}`;
       const secId = getSectionIdForModifierType(m.type);
       if (q !== '') {
         set.add(key);
@@ -105,7 +105,7 @@ export function SequenceInspector(props: SequenceInspectorProps) {
 
   const handleAccordionValueChange = (nextOpenKeys: string[]) => {
     const currentModifiers = (props.selectedSeq?.modifiers || []).map((m, idx) => ({
-      key: m.id || `${m.type}_${idx}`,
+      key: (m as any).id || `${m.type}_${idx}`,
       type: m.type,
       secId: getSectionIdForModifierType(m.type),
     }));
@@ -718,9 +718,9 @@ export function SequenceInspector(props: SequenceInspectorProps) {
             {/* A/V Link Status & Controls */}
             {(() => {
               const avLink = () => modifiers().find((m: ModifierNode) => m.type === 'editorial/av_link');
-              const isLinked = () => avLink()?.params?.enabled !== false;
-              const partnerId = () => avLink()?.params?.linkedSequenceId as string | undefined;
-              const partnerTrack = () => avLink()?.params?.linkedTrackId as string | undefined;
+              const isLinked = () => (avLink()?.params as any)?.enabled !== false;
+              const partnerId = () => (avLink()?.params as any)?.linkedSequenceId as string | undefined;
+              const partnerTrack = () => (avLink()?.params as any)?.linkedTrackId as string | undefined;
 
               return (
                 <Show when={avLink()}>
@@ -737,7 +737,7 @@ export function SequenceInspector(props: SequenceInspectorProps) {
                         onClick={() => {
                           const newEnabled = !isLinked();
                           updateModifierParams('editorial/av_link', {
-                            ...avLink()!.params,
+                            ...(avLink()!.params as any),
                             enabled: newEnabled,
                           });
                           const pId = partnerId();
@@ -872,12 +872,12 @@ export function SequenceInspector(props: SequenceInspectorProps) {
           >
             <For each={filteredModifiers()}>
               {(mod, idx) => {
-                const modKey = () => mod.id || `${mod.type}_${idx()}`;
+                const modKey = () => (mod as any).id || `${mod.type}_${idx()}`;
                 const sectionId = () => getSectionIdForModifierType(mod.type);
                 const catalogEntry = () => MODIFIER_PRESENTATION_CATALOG[mod.type];
                 const Icon = () => catalogEntry()?.icon || Sparkles;
                 const title = () => catalogEntry()?.name || mod.type.split('/').pop() || mod.type;
-                const isEnabled = () => mod.params?.enabled !== false && !props.isBypassAll;
+                const isEnabled = () => (mod.params as any)?.enabled !== false && !props.isBypassAll;
 
                 const TriggerIcon = Icon();
 
@@ -893,7 +893,7 @@ export function SequenceInspector(props: SequenceInspectorProps) {
                             modifier={mod}
                             index={idx()}
                             totalModifiers={modifiers().length}
-                            catalogEntry={catalogEntry()}
+                            catalogEntry={catalogEntry() as any}
                             isLocked={isLocked()}
                             onMoveUp={() =>
                               IRStateManager.getInstance().reorderModifier(selectedSeqId(), mod.type, 'up')
@@ -917,7 +917,7 @@ export function SequenceInspector(props: SequenceInspectorProps) {
                             onChange={(checked: boolean) =>
                               !isLocked() &&
                               updateModifierParams(mod.type, {
-                                ...(mod.params || {}),
+                                ...((mod.params as any) || {}),
                                 enabled: checked,
                               })
                             }
@@ -936,7 +936,7 @@ export function SequenceInspector(props: SequenceInspectorProps) {
                     <AccordionContent class="p-3 space-y-3">
                       <Show when={sectionId() === 'transitions'}>
                         {(() => {
-                          const transDur = () => mod.params?.durationFrames ?? 15;
+                          const transDur = () => (mod.params as any)?.durationFrames ?? 15;
                           const seqDur = () => props.selectedSeq?.durationFrames ?? 90;
                           const hasInsufficientHead = () => (transDur() as number) > seqDur();
                           return (
@@ -953,7 +953,7 @@ export function SequenceInspector(props: SequenceInspectorProps) {
                       </Show>
                       <DynamicModifierInspector
                         modifierType={mod.type}
-                        params={mod.params || {}}
+                        params={(mod.params as any) || {}}
                         disabled={isLocked() || !isEnabled() || props.isBypassAll}
                         onChange={(nextParams) => !isLocked() && updateModifierParams(mod.type, nextParams)}
                       />

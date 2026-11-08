@@ -25,20 +25,22 @@ export function LightGizmoOverlay(props: LightGizmoOverlayProps) {
   const relightMod = () => {
     const seq = selectedSeq();
     const mod = seq?.modifiers?.find(
-      (m: ModifierNode) => m.type === 'vfx/depth_relighting' || m.type === 'vfx/depth3d_relighting'
+      (m: ModifierNode) => m.type === 'vfx/depth_relighting' || (m.type as string) === 'vfx/depth3d_relighting'
     );
-    if (!mod || mod.params?.enabled === false) return null;
+    if (!mod || (mod.params as any)?.enabled === false) return null;
     return mod;
   };
 
   const lightX = () => {
     const mod = relightMod();
-    return typeof mod?.params?.lightX === 'number' ? mod.params.lightX : 0.0;
+    const params = mod?.params as Record<string, unknown> | undefined;
+    return typeof params?.lightX === 'number' ? (params.lightX as number) : 0.0;
   };
 
   const lightY = () => {
     const mod = relightMod();
-    return typeof mod?.params?.lightY === 'number' ? mod.params.lightY : 0.0;
+    const params = mod?.params as Record<string, unknown> | undefined;
+    return typeof params?.lightY === 'number' ? (params.lightY as number) : 0.0;
   };
 
   const [dragOffset, setDragOffset] = createSignal<{ x: number; y: number } | null>(null);

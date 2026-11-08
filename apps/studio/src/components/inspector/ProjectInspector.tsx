@@ -198,12 +198,12 @@ export function ProjectInspector(props: ProjectInspectorProps) {
 
           <Accordion
             multiple
-            defaultValue={props.irState.doc.modifiers?.map((m: ModifierNode, i: number) => m.id || `${m.type}_${i}`)}
+            defaultValue={props.irState.doc.modifiers?.map((m: ModifierNode, i: number) => (m as any).id || `${m.type}_${i}`)}
             class="border-glass-border space-y-2"
           >
             <For each={props.irState.doc.modifiers}>
               {(mod, idx) => {
-                const modKey = () => mod.id || `${mod.type}_${idx()}`;
+                const modKey = () => (mod as any).id || `${mod.type}_${idx()}`;
                 const catalogEntry = () => MODIFIER_PRESENTATION_CATALOG[mod.type];
                 const Icon = () => catalogEntry()?.icon || Sparkles;
                 const title = () => catalogEntry()?.name || mod.type.split('/').pop() || mod.type;

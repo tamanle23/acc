@@ -14,11 +14,11 @@ function RadioGroup(props: ComponentProps<typeof RadioGroupPrimitive.Root> & { c
 }
 
 function RadioGroupItem(props: ComponentProps<typeof RadioGroupPrimitive.Item> & { class?: string; className?: string; value: string; [key: string]: any }) {
-  const [local, rest] = splitProps(props, ["class", "className"]);
+  const [local, rest] = splitProps(props, ["class", "className", "value"]);
 
   return (
     <RadioGroupPrimitive.Item
-      value={props.value}
+      value={local.value}
       data-slot="radio-group-item"
       class={cn(
         "group/radio-group-item peer relative flex aspect-square size-4 shrink-0 rounded-full border border-transparent bg-input/90 outline-none focus-visible:ring-3 focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50 data-[checked]:bg-primary data-[checked]:text-primary-foreground",

@@ -66,7 +66,7 @@ export class UpdateProjectMetaCommand implements ICommand {
       // Dynamic Re-centering: if aspect ratio changes, adjust visual clip offsets
       if (oldW !== newW || oldH !== newH) {
         for (const track of copy.tracks) {
-          if (track.type === 'video' || track.type === 'overlay') {
+          if (track.type === 'video' || (track.type as string) === 'overlay') {
             for (const seq of track.sequences) {
               const transMod = seq.modifiers?.find((m) => m.type === 'transform');
               if (transMod && transMod.params) {

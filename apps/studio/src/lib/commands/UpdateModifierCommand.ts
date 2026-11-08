@@ -41,8 +41,8 @@ export class UpdateModifierCommand implements ICommand {
           this.previousParamsSnapshot = JSON.parse(JSON.stringify(existingMod.params));
           this.wasPreviouslyExisting = true;
         }
-        if (!existingMod.id) {
-          existingMod.id = `${this.modifierType}_${copy.modifiers.indexOf(existingMod)}`;
+        if (!(existingMod as any).id) {
+          (existingMod as any).id = `${this.modifierType}_${copy.modifiers.indexOf(existingMod)}`;
         }
         if (this.target && !existingMod.target) {
           existingMod.target = this.target;
@@ -55,10 +55,10 @@ export class UpdateModifierCommand implements ICommand {
         }
         copy.modifiers.push({
           id: `mod_${this.modifierType.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`,
-          type: this.modifierType,
+          type: this.modifierType as any,
           target: this.target || 'video',
           params: { ...this.params },
-        });
+        } as any);
       }
       return copy;
     }
@@ -74,8 +74,8 @@ export class UpdateModifierCommand implements ICommand {
             this.previousParamsSnapshot = JSON.parse(JSON.stringify(existingMod.params));
             this.wasPreviouslyExisting = true;
           }
-          if (!existingMod.id) {
-            existingMod.id = `${this.modifierType}_${track.modifiers.indexOf(existingMod)}`;
+          if (!(existingMod as any).id) {
+            (existingMod as any).id = `${this.modifierType}_${track.modifiers.indexOf(existingMod)}`;
           }
           if (this.target && !existingMod.target) {
             existingMod.target = this.target;
@@ -88,10 +88,10 @@ export class UpdateModifierCommand implements ICommand {
           }
           track.modifiers.push({
             id: `mod_${this.modifierType.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`,
-            type: this.modifierType,
+            type: this.modifierType as any,
             target: this.target || (track.type === 'timed_text' ? 'text' : 'video'),
             params: { ...this.params },
-          });
+          } as any);
         }
         return copy;
       }
@@ -106,8 +106,8 @@ export class UpdateModifierCommand implements ICommand {
               this.previousParamsSnapshot = JSON.parse(JSON.stringify(existingMod.params));
               this.wasPreviouslyExisting = true;
             }
-            if (!existingMod.id) {
-              existingMod.id = `${this.modifierType}_${seq.modifiers.indexOf(existingMod)}`;
+            if (!(existingMod as any).id) {
+              (existingMod as any).id = `${this.modifierType}_${seq.modifiers.indexOf(existingMod)}`;
             }
             if (this.target && !existingMod.target) {
               existingMod.target = this.target;
@@ -120,10 +120,10 @@ export class UpdateModifierCommand implements ICommand {
             }
             seq.modifiers.push({
               id: `mod_${this.modifierType.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`,
-              type: this.modifierType,
+              type: this.modifierType as any,
               target: this.target || (seq.type ? seq.type : 'video'),
               params: { ...this.params },
-            });
+            } as any);
           }
           return copy;
         }

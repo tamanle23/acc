@@ -35,15 +35,17 @@ export class WorkerRenderStrategy implements IPreviewRenderStrategy {
     if (!this.timeline) {
       // Create minimal timeline fallback if not set yet
       this.timeline = {
-        meta: { durationFrames: this.totalFrames, fps: this.fps },
+        meta: { durationFrames: this.totalFrames, fps: this.fps } as any,
         tracks: new Map(),
         sequences: new Map(),
-      };
+        totalFrames: this.totalFrames,
+        durationSeconds: this.fps > 0 ? this.totalFrames / this.fps : 0,
+      } as ResolvedTimeline;
     }
 
     return this.bridge.init(
       canvas,
-      this.timeline,
+      this.timeline as ResolvedTimeline,
       this.width,
       this.height,
       this.fps,

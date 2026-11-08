@@ -204,7 +204,13 @@ export function Preview(props: PreviewProps) {
   const handleCommitText = () => {
     const cue = editingCue();
     if (cue) {
-      const allSeqs = irState.timeline?.tracks?.flatMap((t: any) => t.sequences || []) || [];
+      const rawTracks = irState.timeline?.tracks;
+      const tracks = rawTracks instanceof Map
+        ? Array.from(rawTracks.values())
+        : Array.isArray(rawTracks)
+          ? rawTracks
+          : [];
+      const allSeqs = tracks.flatMap((t: any) => t.sequences || []);
       const seq = allSeqs.find((s: any) => s.id === cue.sequenceId);
       const textMod = seq?.modifiers?.find((m: any) => m.type === 'text/draw' || m.type === 'text/overlay');
       if (textMod) {
@@ -486,9 +492,9 @@ export function Preview(props: PreviewProps) {
               currentFrame={currentFrame()}
               totalFrames={totalFrames()}
               trackCount={
-                irState.timeline?.tracks?.length ||
-                (irState.timeline?.tracks instanceof Map ? irState.timeline.tracks.size : 0) ||
-                0
+                irState.timeline?.tracks instanceof Map
+                  ? irState.timeline.tracks.size
+                  : ((irState.timeline?.tracks as unknown as any[])?.length ?? 0)
               }
               activeSequenceCount={activeSequences().length}
               selectedSeqId={selectedSeqId()}

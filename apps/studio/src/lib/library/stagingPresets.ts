@@ -29,7 +29,11 @@ export interface StagingPreset {
   | 'Radio'
   | 'Video'
   | 'Film'
-  | 'Play';
+  | 'Play'
+  | 'Monitor'
+  | 'Layers'
+  | 'Crop'
+  | 'Camera';
   targetTrackId: string;
   targetTrackType: 'timed_text' | 'video' | 'audio';
   targetTrackName: string;
@@ -655,7 +659,7 @@ export function getDynamicStagingPresets(): StagingPreset[] {
         time: { start: opts.startFrame, duration: opts.durationFrames || 90 },
         modifiers: [
           {
-            type: plugin.type,
+            type: plugin.type as any,
             target: (category === 'audio' ? 'audio' : 'overlay') as SequenceType,
             params: { ...(plugin.schema?.resetDefaults || {}) },
           },

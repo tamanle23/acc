@@ -674,7 +674,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
     name: 'Time-Space Motion Graphic (Legacy)',
     category: 'time_space',
     icon: Sparkles,
-    supportedTrackTypes: ['video', 'overlay', 'image'],
+    supportedTrackTypes: ['video'],
     defaultParams: {
       templateId: 'callout_leader',
       boundary: 'loop',
@@ -690,7 +690,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
     name: 'Tracking Callout Leader',
     category: 'time_space',
     icon: Sparkles,
-    supportedTrackTypes: ['video', 'overlay', 'image'],
+    supportedTrackTypes: ['video'],
     defaultParams: {
       text: 'TARGET ACQUIRED',
       targetX: 0.0,
@@ -709,7 +709,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
     name: 'Multi-Target Leader Callout',
     category: 'time_space',
     icon: Sparkles,
-    supportedTrackTypes: ['video', 'overlay', 'image'],
+    supportedTrackTypes: ['video'],
     defaultParams: {
       text: 'MULTI-POINT TELEMETRY',
       targetX: 0.0,
@@ -726,7 +726,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
     name: 'HUD Tactical Reticle',
     category: 'time_space',
     icon: Sparkles,
-    supportedTrackTypes: ['video', 'overlay', 'image'],
+    supportedTrackTypes: ['video'],
     defaultParams: {
       text: 'LOCK // 00:44',
       targetX: 0.0,
@@ -743,7 +743,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
     name: 'Kinetic Pop-In Title',
     category: 'time_space',
     icon: Type,
-    supportedTrackTypes: ['video', 'overlay', 'image', 'timed_text'],
+    supportedTrackTypes: ['video', 'timed_text'],
     defaultParams: {
       text: 'QUANTUM HORIZON',
       targetX: 0.0,
@@ -760,7 +760,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
     name: 'Cyber Tech Lower-Third',
     category: 'time_space',
     icon: Film,
-    supportedTrackTypes: ['video', 'overlay', 'image'],
+    supportedTrackTypes: ['video'],
     defaultParams: {
       text: 'COMMANDER SARAH CONNER',
       subtitle: 'SPECIAL OPERATIONS // DIVISION 9',
@@ -778,7 +778,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
     name: 'Cinematic Countdown Timer',
     category: 'time_space',
     icon: Clock,
-    supportedTrackTypes: ['video', 'overlay', 'image'],
+    supportedTrackTypes: ['video'],
     defaultParams: {
       targetX: 0.0,
       targetY: 0.0,
@@ -794,7 +794,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
     name: 'Proximity Network Plexus',
     category: 'time_space',
     icon: Layers,
-    supportedTrackTypes: ['video', 'overlay', 'image'],
+    supportedTrackTypes: ['video'],
     defaultParams: {
       density: 32,
       theme: 'cyberpunk',
@@ -809,7 +809,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
     name: 'Radial Audio Waveform Ring',
     category: 'time_space',
     icon: Music,
-    supportedTrackTypes: ['video', 'overlay', 'image', 'audio'],
+    supportedTrackTypes: ['video', 'audio'],
     defaultParams: {
       targetX: 0.0,
       targetY: 0.0,
@@ -826,7 +826,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
     name: 'Dynamic Audio Equalizer Spectrum',
     category: 'time_space',
     icon: Volume2,
-    supportedTrackTypes: ['video', 'overlay', 'image', 'audio'],
+    supportedTrackTypes: ['video', 'audio'],
     defaultParams: {
       targetX: 0.0,
       targetY: 0.5,
@@ -842,7 +842,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
     name: 'Parametric Superformula Geometry',
     category: 'time_space',
     icon: Sparkles,
-    supportedTrackTypes: ['video', 'overlay', 'image'],
+    supportedTrackTypes: ['video'],
     defaultParams: {
       targetX: 0.0,
       targetY: 0.0,
@@ -859,7 +859,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
     name: 'Energy Shield Hex Lattice',
     category: 'time_space',
     icon: Monitor,
-    supportedTrackTypes: ['video', 'overlay', 'image'],
+    supportedTrackTypes: ['video'],
     defaultParams: {
       targetX: 0.0,
       targetY: 0.0,
@@ -875,7 +875,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
     name: 'Glitch Data Stream Matrix',
     category: 'time_space',
     icon: Move,
-    supportedTrackTypes: ['video', 'overlay', 'image'],
+    supportedTrackTypes: ['video'],
     defaultParams: {
       density: 32,
       theme: 'cyberpunk',
@@ -889,7 +889,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
     name: 'Quantum Cymatics (Chladni Plate)',
     category: 'time_space',
     icon: Sparkles,
-    supportedTrackTypes: ['video', 'overlay', 'image'],
+    supportedTrackTypes: ['video'],
     defaultParams: {
       targetX: 0.0,
       targetY: 0.0,
@@ -906,7 +906,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
     name: 'Chaotic Strange Attractor (Clifford/De Jong)',
     category: 'time_space',
     icon: Sparkles,
-    supportedTrackTypes: ['video', 'overlay', 'image'],
+    supportedTrackTypes: ['video'],
     defaultParams: {
       targetX: 0.0,
       targetY: 0.0,
@@ -923,7 +923,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
     name: 'Relativistic Singularity & Einstein Ring',
     category: 'time_space',
     icon: Sparkles,
-    supportedTrackTypes: ['video', 'overlay', 'image'],
+    supportedTrackTypes: ['video'],
     defaultParams: {
       targetX: 0.0,
       targetY: 0.0,
@@ -940,7 +940,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
     name: 'Topographic Isolines & Turbulence Contour',
     category: 'time_space',
     icon: Layers,
-    supportedTrackTypes: ['video', 'overlay', 'image'],
+    supportedTrackTypes: ['video'],
     defaultParams: {
       targetX: 0.0,
       targetY: 0.0,
@@ -957,7 +957,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
     name: 'Hyperbolic Poincaré Disk Möbius Tessellation',
     category: 'time_space',
     icon: Sparkles,
-    supportedTrackTypes: ['video', 'overlay', 'image'],
+    supportedTrackTypes: ['video'],
     defaultParams: {
       targetX: 0.0,
       targetY: 0.0,
@@ -974,7 +974,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
     name: 'Kinetic Harmonograph Epicyclic Pendulum',
     category: 'time_space',
     icon: Move,
-    supportedTrackTypes: ['video', 'overlay', 'image'],
+    supportedTrackTypes: ['video'],
     defaultParams: {
       targetX: 0.0,
       targetY: 0.0,
@@ -991,7 +991,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
     name: 'Optical Vector Motion Blur',
     category: 'motion',
     icon: Move,
-    supportedTrackTypes: ['video', 'image'],
+    supportedTrackTypes: ['video'],
     defaultParams: {
       shutterAngle: 180,
       samples: 8,
@@ -1001,7 +1001,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
     name: 'Solid & Gradient Backdrop Generator',
     category: 'vfx',
     icon: Layers,
-    supportedTrackTypes: ['video', 'overlay', 'image'],
+    supportedTrackTypes: ['video'],
     defaultParams: {
       colorA: '#0b0f19',
       colorB: '#1e293b',
@@ -1014,7 +1014,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
     name: 'Photometric Bloom Master VFX',
     category: 'vfx',
     icon: Sparkles,
-    supportedTrackTypes: ['video', 'overlay', 'image'],
+    supportedTrackTypes: ['video'],
     defaultParams: {
       luminanceThreshold: 0.8,
       intensity: 1.0,
@@ -1025,7 +1025,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
     name: 'Anamorphic Lens Glare Flare',
     category: 'vfx',
     icon: Sparkles,
-    supportedTrackTypes: ['video', 'overlay', 'image'],
+    supportedTrackTypes: ['video'],
     defaultParams: {
       threshold: 0.85,
       streakLengthPx: 120,

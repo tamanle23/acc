@@ -302,10 +302,10 @@ export function TypographyPresetThumbnail(props: { preset: StagingPreset }) {
   const textMod = () =>
     seq().modifiers?.find(
       (m) =>
-        m.type === 'text/draw' ||
-        m.type === 'text/overlay' ||
+        (m.type as string) === 'text/draw' ||
+        (m.type as string) === 'text/overlay' ||
         m.type === 'timed_text/style' ||
-        m.type === 'text/style'
+        (m.type as string) === 'text/style'
     );
   const params = () => ((textMod()?.params || {}) as TextStyleModifierParams & { text?: string });
 

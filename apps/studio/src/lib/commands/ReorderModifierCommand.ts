@@ -71,4 +71,8 @@ export class ReorderModifierCommand implements ICommand {
     const inverseCmd = new ReorderModifierCommand(this.sequenceId, this.modifierType, inverseDirection);
     return inverseCmd.execute(doc);
   }
+
+  public tryMerge(_next: ICommand): boolean {
+    return false;
+  }
 }
