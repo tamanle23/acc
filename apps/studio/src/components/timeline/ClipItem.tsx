@@ -164,6 +164,7 @@ export function ClipItem(props: ClipItemProps) {
         style={{
           left: `${leftPx()}px`,
           width: `${widthPx()}px`,
+          'touch-action': 'none',
         }}
         class={`absolute top-1 bottom-1 rounded-sm border px-1.5 flex items-center justify-between select-none group overflow-hidden ${
           isBeingDragged() ? 'transition-none' : 'transition-all'

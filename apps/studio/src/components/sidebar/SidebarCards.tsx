@@ -43,6 +43,7 @@ export function DraggablePresetCard(props: {
       ref={(el) => {
         if (el) draggable.ref(el);
       }}
+      style={{ 'touch-action': 'none' }}
       class={`p-3 rounded-xl glass-card transition-all duration-200 select-none cursor-grab active:cursor-grabbing group hover:-translate-y-0.5 hover:border-accent-theme/40 hover:shadow-accent-glow/15 ${
         draggable.isDragging()
           ? 'opacity-40 border-accent-theme scale-[0.98]'
@@ -195,6 +196,7 @@ export function DraggableAssetCard(props: {
       ref={(el) => {
         if (el) draggable.ref(el);
       }}
+      style={{ 'touch-action': 'none' }}
       class={`p-2.5 rounded-lg glass-card transition-all select-none cursor-grab active:cursor-grabbing group ${
         draggable.isDragging()
           ? 'opacity-40 border-accent-theme scale-[0.98]'

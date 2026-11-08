@@ -24,6 +24,7 @@ export function TrimHandle(props: TrimHandleProps) {
     <div
       ref={draggable.ref}
       onClick={(e: MouseEvent) => e.stopPropagation()}
+      style={{ 'touch-action': 'none' }}
       class={`w-2 h-full ${
         props.handle === 'start' ? '-ml-2 rounded-l-xs' : '-mr-2 rounded-r-xs'
       } cursor-col-resize hover:bg-white/50 active:bg-accent-theme/60 flex items-center justify-center transition-colors z-30`}

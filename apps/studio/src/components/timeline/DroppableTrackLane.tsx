@@ -36,10 +36,6 @@ export function DroppableTrackLane(props: DroppableTrackLaneProps) {
   return (
     <div
       ref={droppable.ref}
-      style={{
-        'content-visibility': 'auto',
-        'contain-intrinsic-size': '1000px 40px',
-      }}
       class={`flex-1 h-full rounded-md border relative overflow-hidden transition-colors ${
         props.isLocked
           ? 'opacity-60 pointer-events-none bg-muted/40 border-[var(--glass-border)]'

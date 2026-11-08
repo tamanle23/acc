@@ -138,10 +138,14 @@ export function useWorkspaceDnd(options: UseWorkspaceDndOptions) {
       return;
     }
 
-    // Direct Track Dropping
+    // Direct Track Dropping (either dropped on the track lane or onto a clip within the track)
     const targetData = target?.data as { type?: string; trackId?: string } | undefined;
-    if (targetId.startsWith('track-') || targetData?.type === 'track') {
-      const targetTrackId = targetData?.trackId || targetId.replace(/^track-/, '');
+    const isTrackTarget = targetId.startsWith('track-') || targetData?.type === 'track';
+    const isClipTarget = targetId.startsWith('clip-') || targetData?.type === 'clip';
+
+    if (isTrackTarget || isClipTarget) {
+      const targetTrackId = targetData?.trackId || (isTrackTarget ? targetId.replace(/^track-/, '') : '');
+      if (!targetTrackId) return;
       let dropFrame = currentFrame;
       const pixelsPerFrame = Math.max(0.2, 1.5 * timelineZoomScale);
 

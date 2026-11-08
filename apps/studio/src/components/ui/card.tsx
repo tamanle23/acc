@@ -8,10 +8,11 @@ export interface CardProps extends ComponentProps<"div"> {
 }
 
 function Card(props: CardProps) {
-  const [local, rest] = splitProps(props, ["class", "className", "size"]);
+  const [local, rest] = splitProps(props, ["class", "className", "size", "ref"]);
 
   return (
     <div
+      ref={local.ref}
       data-slot="card"
       data-size={local.size ?? "default"}
       class={cn(
