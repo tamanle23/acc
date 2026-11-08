@@ -32,6 +32,11 @@ We eliminated duplicated client-side JSON Schema definitions by establishing the
   - Supports `mode === 'inspect'` with `BUILT-IN (READ-ONLY)` badge and locked configuration inputs.
   - Retains interactive access to **Input Schema**, **Output Schema**, and the **Schema Test Sandbox**.
   - Footer provides "Close" and "Fork as Custom Draft" (switches directly to editable draft mode).
+- **Grouped Catalog View & Scope Switching (`task-definition-table.tsx`)**:
+  - Segregates tasks into **Custom Task Definitions** (tenant-specific workers/contracts) and **Built-in System Tasks** (canonical platform contracts).
+  - Scope Switcher Tabs: `All Tasks` (total count), `Custom Definitions` (custom count), `Built-in System` (built-in count).
+  - When in `All Tasks` view, built-in system tasks are rendered in a distinct, collapsible Liquid Glass section with a collapse toggle so users can focus on their custom tasks without being overwhelmed by 24 system nodes.
+  - Shared search and faceted status filters apply across both partitioned tables simultaneously.
 - **Workspace Master View (`workflows/index.tsx`)**:
   - Connects `handleForkDraft` and auto-switches to `inspect` mode when editing built-in definitions.
 
@@ -42,7 +47,7 @@ We eliminated duplicated client-side JSON Schema definitions by establishing the
 | Test Suite | File / Scope | Tests Passed | Status |
 | :--- | :--- | :--- | :--- |
 | **Task Contract Registry** | `task-contract-registry.test.ts` | 11 / 11 passed | ✅ 100% Green |
-| **Task Definition UI Table** | `task-definition-table.test.tsx` | 4 / 4 passed | ✅ 100% Green |
+| **Task Definition UI Table** | `task-definition-table.test.tsx` | 5 / 5 passed | ✅ 100% Green |
 | **Task Definition Editor** | `task-definition-editor.test.tsx` | 6 / 6 passed | ✅ 100% Green |
 | **DAG Studio Palette** | `dag-palette.test.tsx` | 3 / 3 passed | ✅ 100% Green |
 | **Sandbox Platform Engine** | `@acc/sandbox` (12 suites) | 109 / 109 passed | ✅ 100% Green |

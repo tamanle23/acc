@@ -170,4 +170,63 @@ describe('TaskDefinitionTable Component', () => {
     expect(screen.getByText('HTTP')).toBeDefined();
     expect(screen.getByText('BUILT-IN')).toBeDefined();
   });
+
+  it('groups custom and built-in task definitions into distinct sections and supports scope switching', () => {
+    const mixedTaskDefs: TaskDefinitionRecord[] = [
+      ...mockTaskDefs,
+      {
+        taskDefId: 'td-system-http',
+        tenantId: 'SYSTEM',
+        name: 'HTTP',
+        version: 1,
+        status: 'ACTIVE',
+        description: 'Built-in HTTP dispatcher',
+        isBuiltIn: true,
+        inputSchema: { type: 'object' },
+        outputSchema: { type: 'object' },
+        createdAtMs: 1700000000000,
+        updatedAtMs: 1700000000000,
+      },
+    ];
+
+    render(
+      <TaskDefinitionTable
+        data={mixedTaskDefs}
+        isLoading={false}
+        onEditTaskDef={vi.fn()}
+        onViewHistory={vi.fn()}
+        onPublishTaskDef={vi.fn()}
+        onDeleteDraft={vi.fn()}
+        onCreateNew={vi.fn()}
+      />
+    );
+
+    // 1. Verify Scope Tabs exist
+    expect(screen.getByTestId('scope-tab-all')).toBeDefined();
+    expect(screen.getByTestId('scope-tab-custom')).toBeDefined();
+    expect(screen.getByTestId('scope-tab-builtin')).toBeDefined();
+
+    // 2. In "All" mode (default), both section headers exist
+    expect(screen.getByText('Custom Task Definitions')).toBeDefined();
+    expect(screen.getByText('Built-in System Tasks')).toBeDefined();
+    expect(screen.getByText('validateCustomerOrder')).toBeDefined();
+    expect(screen.getByText('HTTP')).toBeDefined();
+
+    // 3. Switch to "Custom Definitions" tab
+    fireEvent.click(screen.getByTestId('scope-tab-custom'));
+    expect(screen.getByText('validateCustomerOrder')).toBeDefined();
+    expect(screen.queryByText('Built-in System Tasks')).toBeNull();
+
+    // 4. Switch to "Built-in System" tab
+    fireEvent.click(screen.getByTestId('scope-tab-builtin'));
+    expect(screen.getByText('HTTP')).toBeDefined();
+    expect(screen.queryByText('Custom Task Definitions')).toBeNull();
+
+    // 5. Switch back to "All Tasks" and toggle collapse
+    fireEvent.click(screen.getByTestId('scope-tab-all'));
+    expect(screen.getByText('Built-in System Tasks')).toBeDefined();
+    const collapseBtn = screen.getByRole('button', { name: /collapse/i });
+    fireEvent.click(collapseBtn);
+    expect(screen.getByRole('button', { name: /show built-in/i })).toBeDefined();
+  });
 });
