@@ -61,7 +61,8 @@ export function NumberControlStrategy(props: ControlStrategyProps) {
         max={max()}
         step={step()}
         disabled={props.disabled}
-        value={[numericVal()]}
+        defaultValue={defaultVal()}
+        value={numericVal()}
         onChange={(v: number[]) => {
           if (props.disabled) return;
           props.onChange(v[0]);

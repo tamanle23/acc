@@ -55,7 +55,8 @@ export function ParameterSlider(props: ParameterSliderProps) {
         min={props.min}
         max={props.max}
         step={props.step}
-        value={[props.value]}
+        defaultValue={props.defaultValue}
+        value={props.value}
         onChange={(val: number[]) => props.onChange(val[0])}
         onDblClick={() => props.onChange(props.defaultValue)}
       />
