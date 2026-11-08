@@ -144,6 +144,10 @@ export interface KafkaTaskParams {
 export interface DagNodeData {
   taskReferenceName: string;
   taskType: DagNodeType;
+  taskDefName?: string;
+  taskDefVersion?: number;
+  latestTaskDefVersion?: number;
+  onUpgradeTaskDef?: (taskRef: string) => void;
   label?: string;
   description?: string;
   domain?: string;
@@ -625,6 +629,28 @@ export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagN
             >
               END
             </span>
+          )}
+          {data.taskDefVersion && (
+            <span
+              className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-slate-500/15 text-slate-700 dark:text-slate-300 border border-slate-500/20"
+              data-testid={`dag-node-version-badge-${data.taskReferenceName}`}
+            >
+              v{data.taskDefVersion}
+            </span>
+          )}
+          {data.latestTaskDefVersion && data.taskDefVersion && data.latestTaskDefVersion > data.taskDefVersion && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                data.onUpgradeTaskDef?.(data.taskReferenceName);
+              }}
+              title={`Newer version v${data.latestTaskDefVersion} available. Click to review schema diff & upgrade.`}
+              className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition-colors animate-pulse cursor-pointer"
+              data-testid={`dag-node-upgrade-badge-${data.taskReferenceName}`}
+            >
+              ⬆ v{data.latestTaskDefVersion}
+            </button>
           )}
         </div>
         {getStatusBadge()}

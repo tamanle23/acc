@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+
+  <changeSet id="workflow-task-definitions-schema-021" author="architect">
+    <comment>Provision workflow_task_definitions table and add task_def_name and task_def_version columns to task_executions</comment>
+
+    <sql splitStatements="true">
+      -- 1. Standalone Versioned Task Definitions Ledger
+      CREATE TABLE IF NOT EXISTS workflow_task_definitions (
+        task_def_id VARCHAR(128) PRIMARY KEY,
+        tenant_id VARCHAR(64) NOT NULL DEFAULT 'system',
+        name VARCHAR(128) NOT NULL,
+        version INT NOT NULL,
+        status VARCHAR(32) NOT NULL DEFAULT 'DRAFT',
+        description TEXT,
+        retry_count INT NOT NULL DEFAULT 3,
+        retry_delay_seconds INT NOT NULL DEFAULT 2,
+        backoff_rate DOUBLE PRECISION NOT NULL DEFAULT 2.0,
+        timeout_seconds INT NOT NULL DEFAULT 30,
+        input_schema JSONB,
+        output_schema JSONB,
+        changelog_note TEXT,
+        published_at_ms BIGINT,
+        published_by VARCHAR(128),
+        created_at_ms BIGINT NOT NULL,
+        updated_at_ms BIGINT NOT NULL,
+        created_by VARCHAR(128) DEFAULT 'SYSTEM',
+        CONSTRAINT uq_workflow_task_def_version UNIQUE (tenant_id, name, version)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_workflow_task_defs_lookup 
+        ON workflow_task_definitions(tenant_id, name, version DESC);
+
+      -- 2. Add nullable linkage columns to task_executions for exact contract traceability
+      ALTER TABLE task_executions ADD COLUMN IF NOT EXISTS task_def_name VARCHAR(128);
+      ALTER TABLE task_executions ADD COLUMN IF NOT EXISTS task_def_version INT;
+    </sql>
+
+    <rollback>
+      <sql dbms="postgresql" splitStatements="true">
+        DROP TABLE IF EXISTS workflow_task_definitions CASCADE;
+        ALTER TABLE task_executions DROP COLUMN IF EXISTS task_def_name;
+        ALTER TABLE task_executions DROP COLUMN IF EXISTS task_def_version;
+      </sql>
+    </rollback>
+  </changeSet>
+</databaseChangeLog>

@@ -34,12 +34,13 @@ import { type DagNodeType, type DagNodeData } from '../canvas/dag-node';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { useTaskDefinitions } from '@/features/workflows/api/task-definition-api';
 
 export interface PaletteItem {
   type: DagNodeType;
   label: string;
   description: string;
-  category: 'control' | 'data' | 'connectors' | 'human' | 'ai';
+  category: 'control' | 'data' | 'connectors' | 'human' | 'ai' | 'catalog';
   icon: React.ReactNode;
   defaultData: Partial<DagNodeData>;
   isCompound?: boolean;
@@ -54,7 +55,7 @@ export interface DagPaletteProps {
   onInsertNode?: (type: DagNodeType, defaultData?: Partial<DagNodeData>) => void;
 }
 
-export const CATEGORIES: { id: PaletteItem['category']; label: string }[] = [
+export const CATEGORIES: { id: 'control' | 'data' | 'connectors' | 'human' | 'ai'; label: string }[] = [
   { id: 'control', label: 'Control Flow' },
   { id: 'data', label: 'Data & Transformation' },
   { id: 'connectors', label: 'Connectors & I/O' },
@@ -410,8 +411,11 @@ export function DagPalette({
     }
   };
 
+  const { data: taskDefs } = useTaskDefinitions();
+
   const [searchQuery, setSearchQuery] = useState('');
   const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({
+    catalog: true,
     control: true,
     data: true,
     connectors: true,
@@ -425,6 +429,7 @@ export function DagPalette({
 
   const handleExpandAll = () => {
     setOpenCategories({
+      catalog: true,
       control: true,
       data: true,
       connectors: true,
@@ -435,6 +440,7 @@ export function DagPalette({
 
   const handleCollapseAll = () => {
     setOpenCategories({
+      catalog: false,
       control: false,
       data: false,
       connectors: false,
@@ -443,16 +449,42 @@ export function DagPalette({
     });
   };
 
+  const catalogItems: PaletteItem[] = useMemo(() => {
+    if (!taskDefs || taskDefs.length === 0) return [];
+    return taskDefs.map((td) => ({
+      type: 'SIMPLE' as DagNodeType,
+      label: td.name,
+      description: td.description || `Catalog task ${td.name} (v${td.version})`,
+      category: 'catalog' as const,
+      icon: <Play className="w-3.5 h-3.5 text-teal-500" />,
+      defaultData: {
+        taskType: 'SIMPLE',
+        taskDefName: td.name,
+        taskDefVersion: td.version,
+        latestTaskDefVersion: td.version,
+        label: td.name,
+        inputSchema: td.inputSchema,
+        outputSchema: td.outputSchema,
+        timeoutSeconds: td.timeoutSeconds,
+        retryCount: td.retryCount,
+        retryDelaySeconds: td.retryDelaySeconds,
+        backoffRate: td.backoffRate,
+      },
+    }));
+  }, [taskDefs]);
+
+  const allItems = useMemo(() => [...catalogItems, ...PALETTE_ITEMS], [catalogItems]);
+
   const filteredItems = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return PALETTE_ITEMS;
-    return PALETTE_ITEMS.filter(
+    if (!q) return allItems;
+    return allItems.filter(
       (item) =>
         item.label.toLowerCase().includes(q) ||
         item.description.toLowerCase().includes(q) ||
         item.type.toLowerCase().includes(q)
     );
-  }, [searchQuery]);
+  }, [searchQuery, allItems]);
 
   const onDragStart = (event: React.DragEvent, item: PaletteItem) => {
     event.dataTransfer.setData('application/dag-node-type', item.type);
@@ -566,7 +598,7 @@ export function DagPalette({
 
       {/* Accordion Categories */}
       <div className="flex flex-col gap-2 overflow-y-auto pr-1 flex-1">
-        {CATEGORIES.map((cat) => {
+        {(catalogItems.length > 0 ? [{ id: 'catalog' as const, label: 'Task Definitions Catalog' }, ...CATEGORIES] : CATEGORIES).map((cat) => {
           const catItems = filteredItems.filter((item) => item.category === cat.id);
           if (catItems.length === 0) return null;
           const isOpen = searchQuery.trim().length > 0 || openCategories[cat.id];
@@ -593,7 +625,7 @@ export function DagPalette({
                 <div className="flex flex-col gap-1 mt-1 pl-1">
                   {catItems.map((item) => (
                     <div
-                      key={item.type}
+                      key={item.defaultData?.taskDefName ? `catalog-${item.defaultData.taskDefName}` : item.type}
                       draggable
                       onDragStart={(e) => onDragStart(e, item)}
                       onClick={() => onInsertNode?.(item.type, item.defaultData)}

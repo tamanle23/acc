@@ -40,4 +40,14 @@ public record TaskWorkerDescriptor(
         inputSchema = inputSchema != null ? Collections.unmodifiableMap(inputSchema) : Collections.emptyMap();
         outputSchema = outputSchema != null ? Collections.unmodifiableMap(outputSchema) : Collections.emptyMap();
     }
+
+    public TaskWorkerDescriptor(
+        String taskName,
+        String domain,
+        String description,
+        int maxConcurrency,
+        long timeoutSeconds
+    ) {
+        this(taskName, domain, description, maxConcurrency, timeoutSeconds, Collections.emptyMap(), Collections.emptyMap());
+    }
 }

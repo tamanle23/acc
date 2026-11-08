@@ -1186,6 +1186,409 @@ export const workflowSandboxRepo = new WorkflowSandboxRepository();
 // Backward compatibility alias for tasks
 export const tasksSandboxRepo = workflowExecutionsSandboxRepo;
 
+export interface TaskDefinitionRecordIR {
+  taskDefId: string;
+  tenantId: string;
+  name: string;
+  version: number;
+  status: 'DRAFT' | 'ACTIVE' | 'DEPRECATED' | 'ARCHIVED';
+  description?: string;
+  retryCount?: number;
+  retryDelaySeconds?: number;
+  backoffRate?: number;
+  timeoutSeconds?: number;
+  inputSchema?: Record<string, unknown>;
+  outputSchema?: Record<string, unknown>;
+  changelogNote?: string;
+  publishedAtMs?: number;
+  publishedBy?: string;
+  createdAtMs: number;
+  updatedAtMs: number;
+  createdBy?: string;
+}
+
+export const DEFAULT_TASK_DEFINITIONS: TaskDefinitionRecordIR[] = [
+  {
+    taskDefId: 'system:validateOrder:v1',
+    tenantId: 'system',
+    name: 'validateOrder',
+    version: 1,
+    status: 'ACTIVE',
+    description: 'Executes KYC, sanctions screening, and velocity fraud heuristics on incoming order.',
+    retryCount: 3,
+    retryDelaySeconds: 2,
+    backoffRate: 2.0,
+    timeoutSeconds: 30,
+    inputSchema: {
+      type: 'object',
+      required: ['orderId'],
+      properties: {
+        orderId: { type: 'string' },
+        orderValue: { type: 'number' },
+        customerTier: { type: 'string' },
+      },
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        valid: { type: 'boolean' },
+        riskScore: { type: 'number' },
+        checkedAt: { type: 'string' },
+      },
+    },
+    changelogNote: 'Initial canonical validateOrder specification',
+    publishedAtMs: Date.now() - 86400000,
+    publishedBy: 'SYSTEM',
+    createdAtMs: Date.now() - 86400000,
+    updatedAtMs: Date.now() - 86400000,
+    createdBy: 'SYSTEM',
+  },
+  {
+    taskDefId: 'system:checkInventory:v1',
+    tenantId: 'system',
+    name: 'checkInventory',
+    version: 1,
+    status: 'ACTIVE',
+    description: 'Verifies stock levels in warehouse and reserves allocation lease.',
+    retryCount: 3,
+    retryDelaySeconds: 2,
+    backoffRate: 2.0,
+    timeoutSeconds: 30,
+    inputSchema: {
+      type: 'object',
+      required: ['sku', 'quantity'],
+      properties: {
+        sku: { type: 'string' },
+        quantity: { type: 'number' },
+        warehouseZone: { type: 'string' },
+      },
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        inStock: { type: 'boolean' },
+        warehouseId: { type: 'string' },
+        reservationCode: { type: 'string' },
+      },
+    },
+    changelogNote: 'Initial canonical checkInventory specification',
+    publishedAtMs: Date.now() - 86400000,
+    publishedBy: 'SYSTEM',
+    createdAtMs: Date.now() - 86400000,
+    updatedAtMs: Date.now() - 86400000,
+    createdBy: 'SYSTEM',
+  },
+  {
+    taskDefId: 'system:chargePayment:v1',
+    tenantId: 'system',
+    name: 'chargePayment',
+    version: 1,
+    status: 'ACTIVE',
+    description: 'Captures authorized funds across primary payment gateway with idempotency key.',
+    retryCount: 3,
+    retryDelaySeconds: 2,
+    backoffRate: 2.0,
+    timeoutSeconds: 30,
+    inputSchema: {
+      type: 'object',
+      required: ['orderId', 'amount'],
+      properties: {
+        orderId: { type: 'string' },
+        amount: { type: 'number' },
+        currency: { type: 'string' },
+      },
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        charged: { type: 'boolean' },
+        transactionId: { type: 'string' },
+        settledAt: { type: 'string' },
+      },
+    },
+    changelogNote: 'Initial canonical chargePayment specification',
+    publishedAtMs: Date.now() - 86400000,
+    publishedBy: 'SYSTEM',
+    createdAtMs: Date.now() - 86400000,
+    updatedAtMs: Date.now() - 86400000,
+    createdBy: 'SYSTEM',
+  },
+  {
+    taskDefId: 'system:expressCourier:v1',
+    tenantId: 'system',
+    name: 'expressCourier',
+    version: 1,
+    status: 'ACTIVE',
+    description: 'Books priority overnight air freight label and tracking number.',
+    retryCount: 3,
+    retryDelaySeconds: 2,
+    backoffRate: 2.0,
+    timeoutSeconds: 30,
+    inputSchema: {
+      type: 'object',
+      required: ['orderId'],
+      properties: {
+        orderId: { type: 'string' },
+        destinationZone: { type: 'string' },
+      },
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        carrier: { type: 'string' },
+        trackingNumber: { type: 'string' },
+        estimatedDeliveryHours: { type: 'number' },
+      },
+    },
+    changelogNote: 'Initial canonical expressCourier specification',
+    publishedAtMs: Date.now() - 86400000,
+    publishedBy: 'SYSTEM',
+    createdAtMs: Date.now() - 86400000,
+    updatedAtMs: Date.now() - 86400000,
+    createdBy: 'SYSTEM',
+  },
+  {
+    taskDefId: 'system:groundPostal:v1',
+    tenantId: 'system',
+    name: 'groundPostal',
+    version: 1,
+    status: 'ACTIVE',
+    description: 'Books economical ground parcel fulfillment route.',
+    retryCount: 3,
+    retryDelaySeconds: 2,
+    backoffRate: 2.0,
+    timeoutSeconds: 30,
+    inputSchema: {
+      type: 'object',
+      required: ['orderId'],
+      properties: {
+        orderId: { type: 'string' },
+        postalCode: { type: 'string' },
+      },
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        carrier: { type: 'string' },
+        trackingNumber: { type: 'string' },
+        estimatedDeliveryDays: { type: 'number' },
+      },
+    },
+    changelogNote: 'Initial canonical groundPostal specification',
+    publishedAtMs: Date.now() - 86400000,
+    publishedBy: 'SYSTEM',
+    createdAtMs: Date.now() - 86400000,
+    updatedAtMs: Date.now() - 86400000,
+    createdBy: 'SYSTEM',
+  },
+  {
+    taskDefId: 'system:cancelCourierBooking:v1',
+    tenantId: 'system',
+    name: 'cancelCourierBooking',
+    version: 1,
+    status: 'ACTIVE',
+    description: 'Revokes active carrier label and releases reserved manifest capacity.',
+    retryCount: 3,
+    retryDelaySeconds: 2,
+    backoffRate: 2.0,
+    timeoutSeconds: 30,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        orderId: { type: 'string' },
+        trackingNumber: { type: 'string' },
+      },
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        cancelled: { type: 'boolean' },
+        refundReference: { type: 'string' },
+      },
+    },
+    changelogNote: 'Initial canonical cancelCourierBooking specification',
+    publishedAtMs: Date.now() - 86400000,
+    publishedBy: 'SYSTEM',
+    createdAtMs: Date.now() - 86400000,
+    updatedAtMs: Date.now() - 86400000,
+    createdBy: 'SYSTEM',
+  },
+  {
+    taskDefId: 'system:publishCmsArticle:v1',
+    tenantId: 'system',
+    name: 'publishCmsArticle',
+    version: 1,
+    status: 'ACTIVE',
+    description: 'Promotes reviewed content revision to live CDN edge cache.',
+    retryCount: 3,
+    retryDelaySeconds: 2,
+    backoffRate: 2.0,
+    timeoutSeconds: 30,
+    inputSchema: {
+      type: 'object',
+      required: ['articleId'],
+      properties: {
+        articleId: { type: 'string' },
+        slug: { type: 'string' },
+        channel: { type: 'string' },
+      },
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        published: { type: 'boolean' },
+        cdnUrl: { type: 'string' },
+        publishedAt: { type: 'string' },
+      },
+    },
+    changelogNote: 'Initial canonical publishCmsArticle specification',
+    publishedAtMs: Date.now() - 86400000,
+    publishedBy: 'SYSTEM',
+    createdAtMs: Date.now() - 86400000,
+    updatedAtMs: Date.now() - 86400000,
+    createdBy: 'SYSTEM',
+  },
+];
+
+export class WorkflowTaskDefinitionsSandboxRepository {
+  private tenantTaskDefs: Map<string, Map<string, TaskDefinitionRecordIR>> = new Map();
+
+  constructor() {
+    this.reset();
+    sandboxResetRegistry.register(() => this.reset());
+  }
+
+  private getActiveTenantId(): string {
+    return defaultSandboxStore.getState().activeTenantId || 'tenant-acme';
+  }
+
+  private getTenantMap(tenantId?: string): Map<string, TaskDefinitionRecordIR> {
+    const tid = tenantId || this.getActiveTenantId();
+    if (!this.tenantTaskDefs.has(tid)) {
+      const map = new Map<string, TaskDefinitionRecordIR>();
+      DEFAULT_TASK_DEFINITIONS.forEach((def) => {
+        map.set(`${def.name}:v${def.version}`, { ...JSON.parse(JSON.stringify(def)), tenantId: tid });
+      });
+      this.tenantTaskDefs.set(tid, map);
+    }
+    return this.tenantTaskDefs.get(tid)!;
+  }
+
+  public reset(): void {
+    this.tenantTaskDefs.clear();
+    const seedTenants = ['SYSTEM', 'tenant-acme', 'tenant-us-east-1', 'tenant-eu-central-1', 'tenant-us-west-2'];
+    seedTenants.forEach((tid) => {
+      const map = new Map<string, TaskDefinitionRecordIR>();
+      DEFAULT_TASK_DEFINITIONS.forEach((def) => {
+        map.set(`${def.name}:v${def.version}`, { ...JSON.parse(JSON.stringify(def)), tenantId: tid });
+      });
+      this.tenantTaskDefs.set(tid, map);
+    });
+  }
+
+  public listLatest(tenantId?: string): TaskDefinitionRecordIR[] {
+    const map = this.getTenantMap(tenantId);
+    const latestByName = new Map<string, TaskDefinitionRecordIR>();
+    for (const record of map.values()) {
+      const existing = latestByName.get(record.name);
+      if (!existing || record.version > existing.version) {
+        latestByName.set(record.name, record);
+      }
+    }
+    return Array.from(latestByName.values());
+  }
+
+  public listVersions(name: string, tenantId?: string): TaskDefinitionRecordIR[] {
+    const map = this.getTenantMap(tenantId);
+    return Array.from(map.values())
+      .filter((r) => r.name === name)
+      .sort((a, b) => a.version - b.version);
+  }
+
+  public resolve(name: string, version?: number, tenantId?: string): TaskDefinitionRecordIR | undefined {
+    const map = this.getTenantMap(tenantId);
+    if (version !== undefined && version > 0) {
+      return map.get(`${name}:v${version}`);
+    }
+    const all = this.listVersions(name, tenantId);
+    const active = all.filter((r) => r.status === 'ACTIVE');
+    if (active.length > 0) {
+      return active[active.length - 1];
+    }
+    return all.length > 0 ? all[all.length - 1] : undefined;
+  }
+
+  public createOrForkDraft(data: Partial<TaskDefinitionRecordIR>, tenantId?: string): TaskDefinitionRecordIR {
+    const tid = tenantId || this.getActiveTenantId();
+    const map = this.getTenantMap(tid);
+    const name = data.name || 'customTask';
+    const existing = this.listVersions(name, tid);
+    let nextVersion = 1;
+    if (existing.length > 0) {
+      const maxVer = Math.max(...existing.map((e) => e.version));
+      const latest = existing.find((e) => e.version === maxVer);
+      if (latest && latest.status === 'DRAFT') {
+        nextVersion = maxVer;
+      } else {
+        nextVersion = maxVer + 1;
+      }
+    }
+    const now = Date.now();
+    const record: TaskDefinitionRecordIR = {
+      taskDefId: `${tid}:${name}:v${nextVersion}`,
+      tenantId: tid,
+      name,
+      version: nextVersion,
+      status: 'DRAFT',
+      description: data.description || '',
+      retryCount: data.retryCount ?? 3,
+      retryDelaySeconds: data.retryDelaySeconds ?? 2,
+      backoffRate: data.backoffRate ?? 2.0,
+      timeoutSeconds: data.timeoutSeconds ?? 30,
+      inputSchema: data.inputSchema || { type: 'object', properties: {} },
+      outputSchema: data.outputSchema || { type: 'object', properties: {} },
+      changelogNote: data.changelogNote || 'Draft revision created in sandbox',
+      createdAtMs: now,
+      updatedAtMs: now,
+      createdBy: 'SANDBOX_USER',
+    };
+    map.set(`${name}:v${nextVersion}`, record);
+    return record;
+  }
+
+  public publishVersion(name: string, version: number, tenantId?: string): TaskDefinitionRecordIR | undefined {
+    const tid = tenantId || this.getActiveTenantId();
+    const map = this.getTenantMap(tid);
+    const target = map.get(`${name}:v${version}`);
+    if (!target) return undefined;
+    const now = Date.now();
+
+    // Deprecate other active versions
+    for (const rec of map.values()) {
+      if (rec.name === name && rec.version !== version && rec.status === 'ACTIVE') {
+        rec.status = 'DEPRECATED';
+        rec.updatedAtMs = now;
+      }
+    }
+
+    target.status = 'ACTIVE';
+    target.publishedAtMs = now;
+    target.publishedBy = 'SANDBOX_USER';
+    target.updatedAtMs = now;
+    return target;
+  }
+
+  public deleteDraftVersion(name: string, version: number, tenantId?: string): boolean {
+    const tid = tenantId || this.getActiveTenantId();
+    const map = this.getTenantMap(tid);
+    const target = map.get(`${name}:v${version}`);
+    if (!target || target.status !== 'DRAFT') return false;
+    return map.delete(`${name}:v${version}`);
+  }
+}
+
+export const workflowTaskDefinitionsSandboxRepo = new WorkflowTaskDefinitionsSandboxRepository();
+
 export interface TaskTypeContractIR {
   taskType: string;
   category: 'BOUNDARY' | 'SYSTEM' | 'WORKER';
@@ -1489,9 +1892,29 @@ export const workflowSandboxHandler: SandboxRouteHandler = {
     // -1. Task Contracts Catalog: /tasks/contracts
     if (cleanPath === '/tasks/contracts' || cleanPath === '/tasks/contracts/') {
       if (method === 'GET') {
+        const dynamicDefs = workflowTaskDefinitionsSandboxRepo.listLatest(tenantId);
+        const dynamicContracts: TaskTypeContractIR[] = dynamicDefs.map((def) => ({
+          taskType: def.name,
+          category: 'WORKER',
+          description: def.description || `Task definition ${def.name}`,
+          inputSchema: def.inputSchema || {},
+          outputSchema: def.outputSchema || {},
+          parameterDescriptors: Object.entries((def.inputSchema?.properties as Record<string, any>) || {}).map(([key, val]) => ({
+            key,
+            label: key,
+            type: val.type || 'string',
+            required: ((def.inputSchema?.required as string[]) || []).includes(key),
+          })),
+        }));
+        const combined = [...SANDBOX_TASK_CONTRACTS];
+        for (const dc of dynamicContracts) {
+          if (!combined.some((c) => c.taskType.toLowerCase() === dc.taskType.toLowerCase())) {
+            combined.push(dc);
+          }
+        }
         return {
           status: 200,
-          data: SANDBOX_TASK_CONTRACTS,
+          data: combined,
         };
       }
     }
@@ -1502,7 +1925,92 @@ export const workflowSandboxHandler: SandboxRouteHandler = {
       if (found) {
         return { status: 200, data: found };
       }
+      const dynFound = workflowTaskDefinitionsSandboxRepo.resolve(taskContractMatch[1], undefined, tenantId);
+      if (dynFound) {
+        return {
+          status: 200,
+          data: {
+            taskType: dynFound.name,
+            category: 'WORKER',
+            description: dynFound.description || `Task definition ${dynFound.name}`,
+            inputSchema: dynFound.inputSchema || {},
+            outputSchema: dynFound.outputSchema || {},
+            parameterDescriptors: Object.entries((dynFound.inputSchema?.properties as Record<string, any>) || {}).map(([key, val]) => ({
+              key,
+              label: key,
+              type: val.type || 'string',
+              required: ((dynFound.inputSchema?.required as string[]) || []).includes(key),
+            })),
+          },
+        };
+      }
       return { status: 404, data: { error: `Task contract ${type} not found` } };
+    }
+
+    // 0.2 Workflow Task Definitions Catalog: /workflow/task-definitions
+    if (cleanPath === '/workflow/task-definitions' || cleanPath === '/workflow/task-definitions/') {
+      if (method === 'GET') {
+        return {
+          status: 200,
+          data: workflowTaskDefinitionsSandboxRepo.listLatest(tenantId),
+        };
+      }
+      if (method === 'POST') {
+        const body = (req.data || {}) as Partial<TaskDefinitionRecordIR>;
+        if (!body.name) {
+          return { status: 400, data: { error: 'Task definition name is required' } };
+        }
+        const created = workflowTaskDefinitionsSandboxRepo.createOrForkDraft(body, tenantId);
+        return { status: 201, data: created };
+      }
+    }
+
+    // 0.3 Task Definition Version Operations: /workflow/task-definitions/{name}/versions/{version}/publish
+    const taskDefPublishMatch = cleanPath.match(/^\/workflow\/task-definitions\/([^/]+)\/versions\/(\d+)\/publish$/);
+    if (taskDefPublishMatch && method === 'POST') {
+      const name = taskDefPublishMatch[1];
+      const version = parseInt(taskDefPublishMatch[2], 10);
+      const published = workflowTaskDefinitionsSandboxRepo.publishVersion(name, version, tenantId);
+      if (published) {
+        return { status: 200, data: published };
+      }
+      return { status: 404, data: { error: `Task definition ${name} v${version} not found` } };
+    }
+
+    // 0.4 Task Definition Versions List: /workflow/task-definitions/{name}/versions
+    const taskDefVersionsMatch = cleanPath.match(/^\/workflow\/task-definitions\/([^/]+)\/versions$/);
+    if (taskDefVersionsMatch && method === 'GET') {
+      const name = taskDefVersionsMatch[1];
+      return {
+        status: 200,
+        data: workflowTaskDefinitionsSandboxRepo.listVersions(name, tenantId),
+      };
+    }
+
+    // 0.5 Single Version Operations: /workflow/task-definitions/{name}/versions/{version}
+    const taskDefSingleVersionMatch = cleanPath.match(/^\/workflow\/task-definitions\/([^/]+)\/versions\/(\d+)$/);
+    if (taskDefSingleVersionMatch) {
+      const name = taskDefSingleVersionMatch[1];
+      const version = parseInt(taskDefSingleVersionMatch[2], 10);
+      if (method === 'GET') {
+        const found = workflowTaskDefinitionsSandboxRepo.resolve(name, version, tenantId);
+        if (found) return { status: 200, data: found };
+        return { status: 404, data: { error: `Task definition ${name} v${version} not found` } };
+      }
+      if (method === 'DELETE') {
+        const deleted = workflowTaskDefinitionsSandboxRepo.deleteDraftVersion(name, version, tenantId);
+        if (deleted) return { status: 204, data: null };
+        return { status: 400, data: { error: `Cannot delete non-draft or non-existent task definition ${name} v${version}` } };
+      }
+    }
+
+    // 0.6 Single Task Definition (Latest Active): /workflow/task-definitions/{name}
+    const taskDefNameMatch = cleanPath.match(/^\/workflow\/task-definitions\/([^/]+)$/);
+    if (taskDefNameMatch && method === 'GET') {
+      const name = taskDefNameMatch[1];
+      const found = workflowTaskDefinitionsSandboxRepo.resolve(name, undefined, tenantId);
+      if (found) return { status: 200, data: found };
+      return { status: 404, data: { error: `Task definition ${name} not found` } };
     }
 
     // 0. Workflow Definitions Catalog: /workflow/definitions

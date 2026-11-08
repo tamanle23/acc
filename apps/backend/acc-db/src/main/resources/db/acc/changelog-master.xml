@@ -32,5 +32,6 @@
   <include file="db/acc/changelog-000.000.00018.xml"/>
   <include file="db/acc/changelog-000.000.00019.xml"/>
   <include file="db/acc/changelog-000.000.00020.xml"/>
+  <include file="db/acc/changelog-000.000.00021.xml"/>
 
 </databaseChangeLog>

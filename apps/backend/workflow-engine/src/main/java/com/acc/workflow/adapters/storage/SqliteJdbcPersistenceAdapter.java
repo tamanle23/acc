@@ -24,6 +24,7 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -742,6 +743,150 @@ public final class SqliteJdbcPersistenceAdapter implements PersistencePort {
     }
 
     @Override
+    public void saveTaskDefinition(com.acc.workflow.core.model.TaskDefinitionRecord record) {
+        String sql = """
+            INSERT INTO workflow_task_definitions
+            (task_def_id, tenant_id, name, version, status, description, retry_count, retry_delay_seconds, backoff_rate, timeout_seconds, input_schema, output_schema, changelog_note, published_at_ms, published_by, created_at_ms, updated_at_ms, created_by)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT (tenant_id, name, version)
+            DO UPDATE SET status = excluded.status, description = excluded.description, retry_count = excluded.retry_count,
+                          retry_delay_seconds = excluded.retry_delay_seconds, backoff_rate = excluded.backoff_rate,
+                          timeout_seconds = excluded.timeout_seconds, input_schema = excluded.input_schema,
+                          output_schema = excluded.output_schema, changelog_note = excluded.changelog_note,
+                          published_at_ms = excluded.published_at_ms, published_by = excluded.published_by,
+                          updated_at_ms = excluded.updated_at_ms
+            """;
+        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, record.taskDefId());
+            ps.setString(2, record.tenantId());
+            ps.setString(3, record.name());
+            ps.setInt(4, record.version());
+            ps.setString(5, record.status().name());
+            ps.setString(6, record.description());
+            ps.setInt(7, record.retryCount());
+            ps.setInt(8, record.retryDelaySeconds());
+            ps.setDouble(9, record.backoffRate());
+            ps.setInt(10, record.timeoutSeconds());
+            ps.setString(11, toJson(record.inputSchema()));
+            ps.setString(12, toJson(record.outputSchema()));
+            ps.setString(13, record.changelogNote());
+            if (record.publishedAtMs() != null) ps.setLong(14, record.publishedAtMs()); else ps.setNull(14, Types.BIGINT);
+            ps.setString(15, record.publishedBy());
+            ps.setLong(16, record.createdAtMs());
+            ps.setLong(17, record.updatedAtMs());
+            ps.setString(18, record.createdBy());
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to save task definition in SQLite", e);
+        }
+    }
+
+    @Override
+    public Optional<com.acc.workflow.core.model.TaskDefinitionRecord> getTaskDefinition(String tenantId, String name, int version) {
+        String sql = "SELECT * FROM workflow_task_definitions WHERE (tenant_id = ? OR tenant_id = 'system') AND name = ? AND version = ? ORDER BY CASE WHEN tenant_id = ? THEN 0 ELSE 1 END LIMIT 1";
+        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            String tid = tenantId != null ? tenantId : "system";
+            ps.setString(1, tid);
+            ps.setString(2, name);
+            ps.setInt(3, version);
+            ps.setString(4, tid);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapTaskDefinitionRecord(rs));
+                }
+            }
+            return Optional.empty();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to get task definition in SQLite", e);
+        }
+    }
+
+    @Override
+    public Optional<com.acc.workflow.core.model.TaskDefinitionRecord> getLatestActiveTaskDefinition(String tenantId, String name) {
+        String sql = "SELECT * FROM workflow_task_definitions WHERE (tenant_id = ? OR tenant_id = 'system') AND name = ? AND status = 'ACTIVE' ORDER BY CASE WHEN tenant_id = ? THEN 0 ELSE 1 END, version DESC LIMIT 1";
+        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            String tid = tenantId != null ? tenantId : "system";
+            ps.setString(1, tid);
+            ps.setString(2, name);
+            ps.setString(3, tid);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapTaskDefinitionRecord(rs));
+                }
+            }
+            return Optional.empty();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to get latest active task definition in SQLite", e);
+        }
+    }
+
+    @Override
+    public List<com.acc.workflow.core.model.TaskDefinitionRecord> listTaskDefinitions(String tenantId) {
+        String sql = "SELECT * FROM workflow_task_definitions WHERE (tenant_id = ? OR tenant_id = 'system') ORDER BY name ASC, version DESC";
+        Map<String, com.acc.workflow.core.model.TaskDefinitionRecord> latestByName = new LinkedHashMap<>();
+        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, tenantId != null ? tenantId : "system");
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    com.acc.workflow.core.model.TaskDefinitionRecord rec = mapTaskDefinitionRecord(rs);
+                    latestByName.putIfAbsent(rec.name(), rec);
+                }
+            }
+            return new ArrayList<>(latestByName.values());
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to list task definitions in SQLite", e);
+        }
+    }
+
+    @Override
+    public List<com.acc.workflow.core.model.TaskDefinitionRecord> listTaskDefinitionVersions(String tenantId, String name) {
+        String sql = "SELECT * FROM workflow_task_definitions WHERE (tenant_id = ? OR tenant_id = 'system') AND name = ? ORDER BY version ASC";
+        List<com.acc.workflow.core.model.TaskDefinitionRecord> list = new ArrayList<>();
+        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, tenantId != null ? tenantId : "system");
+            ps.setString(2, name);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapTaskDefinitionRecord(rs));
+                }
+            }
+            return Collections.unmodifiableList(list);
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to list task definition versions in SQLite", e);
+        }
+    }
+
+    @Override
+    public void updateTaskDefinitionStatus(String tenantId, String name, int version, com.acc.workflow.core.model.WorkflowVersionStatus status, Long publishedAtMs, String publishedBy) {
+        String sql = "UPDATE workflow_task_definitions SET status = ?, published_at_ms = ?, published_by = ?, updated_at_ms = ? WHERE tenant_id = ? AND name = ? AND version = ?";
+        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, status.name());
+            if (publishedAtMs != null) ps.setLong(2, publishedAtMs); else ps.setNull(2, Types.BIGINT);
+            ps.setString(3, publishedBy);
+            ps.setLong(4, System.currentTimeMillis());
+            ps.setString(5, tenantId != null ? tenantId : "system");
+            ps.setString(6, name);
+            ps.setInt(7, version);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to update task definition status in SQLite", e);
+        }
+    }
+
+    @Override
+    public boolean deleteTaskDefinition(String tenantId, String name, int version) {
+        String sql = "DELETE FROM workflow_task_definitions WHERE tenant_id = ? AND name = ? AND version = ?";
+        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, tenantId != null ? tenantId : "system");
+            ps.setString(2, name);
+            ps.setInt(3, version);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to delete task definition in SQLite", e);
+        }
+    }
+
+    @Override
     public void updateWorkflowDefinitionSnapshot(String workflowId, int newVersion, WorkflowDefinition newDefinitionSnapshot, long nowEpochMs) {
         String sql = "UPDATE workflow_executions SET version = ?, definition_snapshot = ?, updated_at_ms = ? WHERE workflow_id = ?";
         try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -842,6 +987,31 @@ public final class SqliteJdbcPersistenceAdapter implements PersistencePort {
             rs.getString("prev_hash"),
             rs.getString("current_hash"),
             rs.getLong("created_at_ms")
+        );
+    }
+
+    private com.acc.workflow.core.model.TaskDefinitionRecord mapTaskDefinitionRecord(ResultSet rs) throws SQLException {
+        long pubAt = rs.getLong("published_at_ms");
+        Long publishedAtMs = rs.wasNull() ? null : pubAt;
+        return new com.acc.workflow.core.model.TaskDefinitionRecord(
+            rs.getString("task_def_id"),
+            rs.getString("tenant_id"),
+            rs.getString("name"),
+            rs.getInt("version"),
+            com.acc.workflow.core.model.WorkflowVersionStatus.valueOf(rs.getString("status")),
+            rs.getString("description"),
+            rs.getInt("retry_count"),
+            rs.getInt("retry_delay_seconds"),
+            rs.getDouble("backoff_rate"),
+            rs.getInt("timeout_seconds"),
+            fromJson(rs.getString("input_schema")),
+            fromJson(rs.getString("output_schema")),
+            rs.getString("changelog_note"),
+            publishedAtMs,
+            rs.getString("published_by"),
+            rs.getLong("created_at_ms"),
+            rs.getLong("updated_at_ms"),
+            rs.getString("created_by")
         );
     }
 

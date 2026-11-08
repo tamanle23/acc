@@ -58,6 +58,8 @@ import {
 
 import { cn } from '@/lib/utils';
 import { Clock, Radio } from 'lucide-react';
+import { useTaskDefinitions } from '@/features/workflows/api/task-definition-api';
+import { TaskVersionDiffModal } from './modals/task-version-diff-modal';
 import {
   useWorkflowExecutionStream,
   type WorkflowStreamEvent,
@@ -209,6 +211,32 @@ function DagStudioCanvas({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isVariableWatchOpen, setIsVariableWatchOpen] = useState(false);
   const [breakpoints, setBreakpoints] = useState<string[]>([]);
+  const { data: taskDefs } = useTaskDefinitions();
+  const [upgradeNode, setUpgradeNode] = useState<DagNodeData | null>(null);
+
+  const handleConfirmUpgrade = useCallback((
+    taskRef: string,
+    targetVersion: number,
+    newSchemas: { inputSchema?: Record<string, unknown>; outputSchema?: Record<string, unknown> }
+  ) => {
+    setNodes((prev) =>
+      prev.map((node) => {
+        if (node.data.taskReferenceName === taskRef) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              taskDefVersion: targetVersion,
+              latestTaskDefVersion: targetVersion,
+              inputSchema: newSchemas.inputSchema || node.data.inputSchema,
+              outputSchema: newSchemas.outputSchema || node.data.outputSchema,
+            },
+          };
+        }
+        return node;
+      })
+    );
+  }, [setNodes]);
 
   // Effective execution ID (either passed via prop or started by live simulation)
   const effectiveExecutionId = executionId || activeSimulationExecutionId;
@@ -566,11 +594,17 @@ function DagStudioCanvas({
           )
           : degOut === 0;
 
+      const taskDef = taskDefs?.find((td) => td.name === (n.data.taskDefName || n.data.taskReferenceName));
+      const latestVersion = taskDef?.version;
+
       return {
         ...n,
         data: {
           ...n.data,
           viewDensity,
+          taskDefVersion: n.data.taskDefVersion ?? (taskDef ? taskDef.version : undefined),
+          latestTaskDefVersion: latestVersion,
+          onUpgradeTaskDef: () => setUpgradeNode(n.data),
           isStartNode: isStart,
           isEndNode: isEnd,
           hasBreakpoint: isExecutionMode ? breakpoints.includes(n.data.taskReferenceName) : false,
@@ -582,7 +616,7 @@ function DagStudioCanvas({
         },
       };
     });
-  }, [nodes, edges, breakpoints, handleToggleBreakpoint, handleInspectTask, isExecutionMode, isReadOnly, handleAddNodeBranch, handleRemoveNodeBranch, viewDensity]);
+  }, [nodes, edges, breakpoints, handleToggleBreakpoint, handleInspectTask, isExecutionMode, isReadOnly, handleAddNodeBranch, handleRemoveNodeBranch, viewDensity, taskDefs]);
 
   // Decorate edges with EdgeExecutionFlowState semantics.
   // DagConditionEdge reads data.executionFlowState and owns all execution-time styling —
@@ -1103,6 +1137,16 @@ function DagStudioCanvas({
         onClose={() => setIsSearchOpen(false)}
         nodes={nodes}
         onFocusNode={handleFocusNode}
+      />
+
+      {/* 15. Task Definition Version Diff & Upgrade Modal */}
+      <TaskVersionDiffModal
+        open={Boolean(upgradeNode)}
+        onOpenChange={(open) => !open && setUpgradeNode(null)}
+        nodeData={upgradeNode}
+        currentRecord={taskDefs?.find((td) => td.name === (upgradeNode?.taskDefName || upgradeNode?.taskReferenceName) && td.version === upgradeNode?.taskDefVersion)}
+        targetRecord={taskDefs?.find((td) => td.name === (upgradeNode?.taskDefName || upgradeNode?.taskReferenceName) && td.version === upgradeNode?.latestTaskDefVersion)}
+        onConfirmUpgrade={handleConfirmUpgrade}
       />
     </div>
   );

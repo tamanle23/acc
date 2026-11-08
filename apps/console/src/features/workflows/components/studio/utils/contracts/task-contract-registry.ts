@@ -1,5 +1,8 @@
 import { type DagNodeType, type DagNodeData } from '../../canvas/dag-node';
 import { type TaskWorkerDescriptor } from '@/features/workers/api/worker-fleet-api';
+import { type TaskDefinitionRecord } from '@/features/workflows/api/task-definition-api';
+
+export type TaskContractDescriptor = TaskWorkerDescriptor | TaskDefinitionRecord;
 
 export interface ParameterSchema {
   key: string;
@@ -38,7 +41,7 @@ export class TaskContractRegistry {
     this.contracts.set(contract.taskType, contract);
   }
 
-  getContract(type: DagNodeType, workerDescriptor?: TaskWorkerDescriptor): NodeDataContract {
+  getContract(type: DagNodeType, workerDescriptor?: TaskContractDescriptor): NodeDataContract {
     const base = this.contracts.get(type) || this.createFallbackContract(type);
     if (type === 'SIMPLE' && workerDescriptor) {
       return {
@@ -58,13 +61,13 @@ export class TaskContractRegistry {
   /**
    * Resolves input schema using the 4-tier hierarchy:
    * 1. Explicit override on node (declaredInputSchema or inputSchema)
-   * 2. Worker fleet catalog descriptor (workerDescriptor.inputSchema)
+   * 2. Worker fleet catalog descriptor or task definition (workerDescriptor.inputSchema)
    * 3. Static built-in contract default (converted from inputParameters to Draft 7)
    * 4. Permissive empty object schema fallback
    */
   resolveInputSchema(
     nodeData: DagNodeData,
-    workerDescriptor?: TaskWorkerDescriptor
+    workerDescriptor?: TaskContractDescriptor
   ): Record<string, unknown> {
     const explicit = nodeData.declaredInputSchema || nodeData.inputSchema;
     if (explicit && Object.keys(explicit).length > 0) {
@@ -85,7 +88,7 @@ export class TaskContractRegistry {
    */
   getInputParameters(
     nodeData: DagNodeData,
-    workerDescriptor?: TaskWorkerDescriptor
+    workerDescriptor?: TaskContractDescriptor
   ): ParameterSchema[] {
     const explicit = nodeData.declaredInputSchema || nodeData.inputSchema;
     if (explicit && Object.keys(explicit).length > 0) {

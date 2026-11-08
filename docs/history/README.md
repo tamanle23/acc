@@ -124,3 +124,4 @@
 | 458 | [Studio Migration from React 19 to SolidJS 1.9](./458_studio_react_to_solid_migration.md) | Completed |
 | 459 | [Rehydrate Workflow Definition Catalog from Persistence & Tenant Query Scoping](./459_rehydrate_workflow_definitions_catalog.md) | Completed |
 | 460 | [Comprehensive Studio Bug Resolution & Zero-Error Audit](./460_comprehensive_studio_bug_resolution_and_zero_error_audit.md) | Completed |
+| 461 | [Decouple Task Definitions from Workers & Versioned Catalog](./461_decouple_task_definitions_from_workers_and_versioned_catalog.md) | Completed |

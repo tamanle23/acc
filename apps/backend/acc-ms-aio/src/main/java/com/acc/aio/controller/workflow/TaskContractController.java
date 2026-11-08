@@ -1,5 +1,8 @@
 package com.acc.aio.controller.workflow;
 
+import com.acc.fw.tenancy.TenantContextHolder;
+import com.acc.workflow.application.TaskDefinitionRegistry;
+import com.acc.workflow.core.model.TaskDefinitionRecord;
 import com.acc.workflow.core.schema.BuiltInTaskContracts;
 import com.acc.workflow.core.schema.TaskTypeContract;
 import com.acc.workflow.worker.TaskWorkerDescriptor;
@@ -15,10 +18,24 @@ import java.util.*;
 @RequestMapping("/api/v1/tasks")
 public class TaskContractController {
 
+    private final TaskDefinitionRegistry taskDefinitionRegistry;
     private final WorkerRegistry workerRegistry;
 
-    public TaskContractController(WorkerRegistry workerRegistry) {
+    public TaskContractController(TaskDefinitionRegistry taskDefinitionRegistry, WorkerRegistry workerRegistry) {
+        this.taskDefinitionRegistry = taskDefinitionRegistry;
         this.workerRegistry = workerRegistry;
+    }
+
+    public TaskContractController(WorkerRegistry workerRegistry) {
+        this(new TaskDefinitionRegistry(), workerRegistry);
+    }
+
+    private String resolveTenantId() {
+        try {
+            return TenantContextHolder.getRequiredTenantId();
+        } catch (Exception e) {
+            return "system";
+        }
     }
 
     @GetMapping("/contracts")
@@ -30,19 +47,38 @@ public class TaskContractController {
             unified.put(contract.taskType(), contract);
         }
 
-        // 2. Overlay or register dynamic worker fleet capabilities
-        if (workerRegistry != null) {
-            for (TaskWorkerDescriptor worker : workerRegistry.getTaskCatalog()) {
-                List<Map<String, Object>> params = extractParamDescriptors(worker.inputSchema());
-                TaskTypeContract workerContract = new TaskTypeContract(
-                    worker.taskName(),
+        // 2. Load standalone versioned task definitions from TaskDefinitionRegistry
+        if (taskDefinitionRegistry != null) {
+            String tenantId = resolveTenantId();
+            for (TaskDefinitionRecord taskDef : taskDefinitionRegistry.listLatest(tenantId)) {
+                List<Map<String, Object>> params = extractParamDescriptors(taskDef.inputSchema());
+                TaskTypeContract contract = new TaskTypeContract(
+                    taskDef.name(),
                     "WORKER",
-                    worker.description() != null ? worker.description() : "Domain worker task (" + worker.domain() + ")",
-                    worker.inputSchema() != null ? worker.inputSchema() : Map.of(),
-                    worker.outputSchema() != null ? worker.outputSchema() : Map.of(),
+                    taskDef.description() != null ? taskDef.description() : "Task definition " + taskDef.name(),
+                    taskDef.inputSchema() != null ? taskDef.inputSchema() : Map.of(),
+                    taskDef.outputSchema() != null ? taskDef.outputSchema() : Map.of(),
                     params
                 );
-                unified.put(worker.taskName(), workerContract);
+                unified.put(taskDef.name(), contract);
+            }
+        }
+
+        // 3. Fallback overlay for any legacy worker-registered descriptors
+        if (workerRegistry != null) {
+            for (TaskWorkerDescriptor worker : workerRegistry.getTaskCatalog()) {
+                if (!unified.containsKey(worker.taskName())) {
+                    List<Map<String, Object>> params = extractParamDescriptors(worker.inputSchema());
+                    TaskTypeContract workerContract = new TaskTypeContract(
+                        worker.taskName(),
+                        "WORKER",
+                        worker.description() != null ? worker.description() : "Domain worker task (" + worker.domain() + ")",
+                        worker.inputSchema() != null ? worker.inputSchema() : Map.of(),
+                        worker.outputSchema() != null ? worker.outputSchema() : Map.of(),
+                        params
+                    );
+                    unified.put(worker.taskName(), workerContract);
+                }
             }
         }
 
@@ -51,6 +87,25 @@ public class TaskContractController {
 
     @GetMapping("/contracts/{taskType}")
     public ResponseEntity<TaskTypeContract> getContract(@PathVariable String taskType) {
+        // 1. Check TaskDefinitionRegistry
+        if (taskDefinitionRegistry != null) {
+            String tenantId = resolveTenantId();
+            Optional<TaskDefinitionRecord> taskDefOpt = taskDefinitionRegistry.resolve(tenantId, taskType, null);
+            if (taskDefOpt.isPresent()) {
+                TaskDefinitionRecord taskDef = taskDefOpt.get();
+                List<Map<String, Object>> params = extractParamDescriptors(taskDef.inputSchema());
+                return ResponseEntity.ok(new TaskTypeContract(
+                    taskDef.name(),
+                    "WORKER",
+                    taskDef.description() != null ? taskDef.description() : "Task definition " + taskDef.name(),
+                    taskDef.inputSchema() != null ? taskDef.inputSchema() : Map.of(),
+                    taskDef.outputSchema() != null ? taskDef.outputSchema() : Map.of(),
+                    params
+                ));
+            }
+        }
+
+        // 2. Check legacy worker registry
         if (workerRegistry != null) {
             for (TaskWorkerDescriptor worker : workerRegistry.getTaskCatalog()) {
                 if (worker.taskName().equalsIgnoreCase(taskType)) {
