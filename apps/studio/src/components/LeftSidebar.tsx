@@ -467,7 +467,10 @@ export function LeftSidebar(props: LeftSidebarProps) {
                             <Show when={asset()}>
                               <div
                                 data-index={virtualItem.index}
-                                ref={assetVirtualizer.measureElement}
+                                ref={(el) => {
+                                  el.dataset.index = String(virtualItem.index);
+                                  assetVirtualizer.measureElement(el);
+                                }}
                                 style={{
                                   position: 'absolute',
                                   top: 0,
@@ -573,7 +576,10 @@ export function LeftSidebar(props: LeftSidebarProps) {
                           <Show when={preset()}>
                             <div
                               data-index={virtualItem.index}
-                              ref={presetVirtualizer.measureElement}
+                              ref={(el) => {
+                                el.dataset.index = String(virtualItem.index);
+                                presetVirtualizer.measureElement(el);
+                              }}
                               style={{
                                 position: 'absolute',
                                 top: 0,
