@@ -48,7 +48,7 @@ public final class PostgresJdbcPersistenceAdapter implements PersistencePort {
 
     private void initializeSchemaIfMissing() {
         try (Connection conn = getConnection(); Statement stmt = conn.createStatement()) {
-            try (ResultSet rs = stmt.executeQuery("SELECT 1 FROM information_schema.tables WHERE table_name = 'task_queue'")) {
+            try (ResultSet rs = stmt.executeQuery("SELECT 1 FROM information_schema.tables WHERE table_name = 'workflow_task_definitions'")) {
                 if (!rs.next()) {
                     InputStream is = getClass().getResourceAsStream("/db/schema-postgres.sql");
                     if (is != null) {

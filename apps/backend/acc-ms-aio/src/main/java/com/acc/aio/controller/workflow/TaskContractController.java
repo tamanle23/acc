@@ -21,8 +21,12 @@ public class TaskContractController {
     private final TaskDefinitionRegistry taskDefinitionRegistry;
     private final WorkerRegistry workerRegistry;
 
-    public TaskContractController(TaskDefinitionRegistry taskDefinitionRegistry, WorkerRegistry workerRegistry) {
-        this.taskDefinitionRegistry = taskDefinitionRegistry;
+    @org.springframework.beans.factory.annotation.Autowired
+    public TaskContractController(
+        @org.springframework.beans.factory.annotation.Autowired(required = false) TaskDefinitionRegistry taskDefinitionRegistry,
+        WorkerRegistry workerRegistry
+    ) {
+        this.taskDefinitionRegistry = taskDefinitionRegistry != null ? taskDefinitionRegistry : new TaskDefinitionRegistry();
         this.workerRegistry = workerRegistry;
     }
 

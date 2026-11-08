@@ -35,20 +35,21 @@ public class SimpleTaskWorkerRegistrar {
     private final TaskDefinitionRegistry taskDefinitionRegistry;
     private WorkerHost workerHost;
 
+    @org.springframework.beans.factory.annotation.Autowired
     public SimpleTaskWorkerRegistrar(
         WorkerRegistry workerRegistry,
         PersistencePort persistencePort,
         WorkflowEngineService engineService,
         WorkflowDefinitionRegistry definitionRegistry,
         ExecutionStreamBroadcaster broadcaster,
-        TaskDefinitionRegistry taskDefinitionRegistry
+        @org.springframework.beans.factory.annotation.Autowired(required = false) TaskDefinitionRegistry taskDefinitionRegistry
     ) {
         this.workerRegistry = workerRegistry;
         this.persistencePort = persistencePort;
         this.engineService = engineService;
         this.definitionRegistry = definitionRegistry;
         this.broadcaster = broadcaster;
-        this.taskDefinitionRegistry = taskDefinitionRegistry;
+        this.taskDefinitionRegistry = taskDefinitionRegistry != null ? taskDefinitionRegistry : new TaskDefinitionRegistry(persistencePort);
     }
 
     public SimpleTaskWorkerRegistrar(

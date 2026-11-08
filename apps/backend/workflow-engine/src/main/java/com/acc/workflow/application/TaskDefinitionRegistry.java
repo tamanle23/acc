@@ -261,8 +261,12 @@ public class TaskDefinitionRegistry {
         for (TaskDefinitionRecord record : builtIns) {
             inMemoryFallbacks.put("system:" + record.name() + ":v" + record.version(), record);
             if (persistencePort != null) {
-                if (persistencePort.getTaskDefinition("system", record.name(), record.version()).isEmpty()) {
-                    persistencePort.saveTaskDefinition(record);
+                try {
+                    if (persistencePort.getTaskDefinition("system", record.name(), record.version()).isEmpty()) {
+                        persistencePort.saveTaskDefinition(record);
+                    }
+                } catch (Exception ignored) {
+                    // Fallback to in-memory registration if database tables are still provisioning
                 }
             }
         }
