@@ -7,6 +7,15 @@ import { UniversalCanvasProvider } from '@acc/core-isomorphic';
  * Pre-allocates exactly two OffscreenCanvas instances (Slot A and Slot B)
  * and continuously extracts video frames without creating any intermediate
  * VideoFrame or ImageBitmap allocations per tick.
+ *
+ * Guarantees:
+ * 1. Double-Buffering Invariant: The active slot remains pristine and immutable while
+ *    new frames are decoded exclusively into the inactive slot. Swapping occurs ONLY
+ *    upon verified decode success.
+ * 2. Serialized CanvasSink Access: Enforces a strict promise mutex queue so that concurrent
+ *    decoder seeks never collide on Mediabunny's underlying WebCodecs stream.
+ * 3. Zero-Blackout Hold-On-Miss: On latency or missed frames, retains and returns the active
+ *    slot untouched rather than returning null or wiping buffers.
  */
 export class SequentialVideoReader implements Disposable {
   private canvasA: OffscreenCanvas | null = null;
@@ -22,6 +31,9 @@ export class SequentialVideoReader implements Disposable {
   private width: number;
   private height: number;
   private canvasSink: CanvasSink | null;
+
+  // Single-flight promise queue to serialize all WebCodecs CanvasSink requests
+  private decodeQueue: Promise<any> = Promise.resolve();
 
   constructor(canvasSink: CanvasSink | null, width: number, height: number) {
     this.canvasSink = canvasSink;
@@ -62,12 +74,22 @@ export class SequentialVideoReader implements Disposable {
     return this.activeSlot === 'A' ? this.canvasA : this.canvasB;
   }
 
-  private getInactiveSlot(): 'A' | 'B' {
+  public getInactiveSlot(): 'A' | 'B' {
     return this.activeSlot === 'A' ? 'B' : 'A';
   }
 
-  private swap(): void {
+  public swap(): void {
     this.activeSlot = this.getInactiveSlot();
+  }
+
+  /**
+   * Serializes calls to the underlying WebCodecs CanvasSink to prevent
+   * internal iterator collision ('Iterator returned nothing') errors.
+   */
+  private enqueueDecode<T>(fn: () => Promise<T>): Promise<T> {
+    const next = this.decodeQueue.then(fn, fn);
+    this.decodeQueue = next.then(() => {}, () => {});
+    return next;
   }
 
   /**
@@ -99,9 +121,11 @@ export class SequentialVideoReader implements Disposable {
       return this.getActiveCanvas();
     }
 
-    // 4. Otherwise (seek/startup/miss), decode directly into active slot
-    const painted = await this.paintSlot(this.activeSlot, frame, fps);
+    // 4. Otherwise (seek/startup/miss), decode into INACTIVE slot to protect the active buffer!
+    const inactive = this.getInactiveSlot();
+    const painted = await this.paintSlot(inactive, frame, fps);
     if (painted) {
+      this.swap();
       this.currentFrame = frame;
       void this.preloadNext(frame + 1, fps);
       return this.getActiveCanvas();
@@ -109,7 +133,7 @@ export class SequentialVideoReader implements Disposable {
 
     // 5. Zero-Blackout Hold-On-Miss Guarantee:
     // If target frame decode is delayed or dropped, retain and return the active canvas slot
-    // to prevent downstream compositors from painting an opaque black fallback.
+    // without having mutated it, preventing downstream compositors from painting black.
     const heldCanvas = this.getActiveCanvas();
     if (heldCanvas && this.currentFrame >= 0) {
       void this.preloadNext(frame + 1, fps);
@@ -126,7 +150,7 @@ export class SequentialVideoReader implements Disposable {
 
     const sec = Math.max(0, frame / (fps || 30));
     try {
-      const wrapped = await this.canvasSink.getCanvas(sec);
+      const wrapped = await this.enqueueDecode(() => this.canvasSink!.getCanvas(sec));
       if (wrapped) {
         const raw = typeof (wrapped as any).getRawCanvas === 'function'
           ? (wrapped as any).getRawCanvas()
@@ -141,13 +165,13 @@ export class SequentialVideoReader implements Disposable {
             this.width = w;
             this.height = h;
           }
-          targetCtx.clearRect(0, 0, w, h);
+          // Atomic draw: Direct image draw overwrites target slot completely without clearing to blank
           targetCtx.drawImage(raw, 0, 0, w, h);
           return true;
         }
       }
     } catch (err) {
-      console.warn('[SequentialVideoReader] paintSlot error:', err);
+      console.warn('[SequentialVideoReader] paintSlot error at frame', frame, err);
     }
     return false;
   }
@@ -177,6 +201,7 @@ export class SequentialVideoReader implements Disposable {
     this.preloadingFrame = -1;
     this.isPreloading = false;
     this.preloadPromise = null;
+    this.decodeQueue = Promise.resolve();
   }
 
   public dispose(): void {

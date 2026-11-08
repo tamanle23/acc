@@ -11,7 +11,6 @@ import {
 } from '@acc/ir';
 import { IRPreviewEngine } from '../IRPreviewEngine';
 import {
-  DeterministicTimelineClock,
   UniversalCanvasProvider,
   ContentCacheRegistry,
   CacheNamespace,
@@ -123,11 +122,6 @@ let pendingRender: {
 
 // Playback state
 let isPlaying = false;
-let shuttleSpeed = 0;
-let rafId: number | null = null;
-let lastRafTime = 0;
-let lastUiSyncTime = 0;
-let workerClock: DeterministicTimelineClock | null = null;
 let currentClearColor = '#000000';
 
 // Double-buffering: Private offscreen back-buffer eliminates front-canvas black flashes
@@ -267,8 +261,21 @@ async function renderCurrentFrame(
 
     // ATOMIC FRONT-BUFFER FLIP:
     // Blit completed frame from private back-buffer to transferred onscreen canvas in a single draw call.
-    // The onscreen canvas is NEVER wiped to black during async frame or modifier processing.
-    ctx.drawImage(backCanvas!, 0, 0);
+    // If an active playing video clip was on the timeline but missed its texture (decode latency),
+    // retain the existing front-buffer to guarantee zero black frame flashes.
+    let hasMissingActiveTexture = false;
+    if (activePlaying && activeAssetIds.size > 0) {
+      for (const assetId of activeAssetIds) {
+        if (!textureCache.has(assetId) || !textureCache.get(assetId)) {
+          hasMissingActiveTexture = true;
+          break;
+        }
+      }
+    }
+
+    if (!hasMissingActiveTexture) {
+      ctx.drawImage(backCanvas!, 0, 0);
+    }
   } catch (err) {
     console.error('[preview.worker] Render error at frame', frame, err);
   } finally {
@@ -318,52 +325,7 @@ async function renderCurrentFrame(
   }
 }
 
-function playbackLoop(now: number) {
-  if (!isPlaying || shuttleSpeed === 0 || !workerClock) return;
 
-  const deltaMs = now - lastRafTime;
-  lastRafTime = now;
-
-  currentFrame = workerClock.tick(deltaMs / 1000);
-
-  if (currentFrame >= currentTotalFrames) {
-    currentFrame = currentTotalFrames;
-    stopPlayback();
-    self.postMessage({ type: 'frameUpdate', frame: currentFrame, ended: true });
-    return;
-  } else if (currentFrame <= 0) {
-    currentFrame = 0;
-    stopPlayback();
-    self.postMessage({ type: 'frameUpdate', frame: currentFrame, ended: true });
-    return;
-  }
-
-  // Active playback renders at 0.5x Dynamic LOD for maximum smoothness
-  void renderCurrentFrame(currentFrame, 0.5, false, currentClearColor, undefined, true);
-
-  // Throttle React UI state synchronization to 15 Hz (~66ms) to eliminate React lag
-  if (now - lastUiSyncTime >= 66) {
-    lastUiSyncTime = now;
-    self.postMessage({ type: 'frameUpdate', frame: currentFrame });
-  }
-
-  rafId = requestAnimationFrame(playbackLoop);
-}
-
-function stopPlayback() {
-  isPlaying = false;
-  shuttleSpeed = 0;
-  if (workerClock) {
-    workerClock.pause();
-  }
-  if (rafId !== null) {
-    cancelAnimationFrame(rafId);
-    rafId = null;
-  }
-  // Parked hero frame: Render crystal-clear 1.0x full LOD
-  texturesDirty = true;
-  void renderCurrentFrame(currentFrame, 1.0, false, currentClearColor);
-}
 
 function syncAssetSources(assets: Record<string, { src?: string; type?: string }>) {
   const activeIds = new Set(Object.keys(assets));
@@ -474,7 +436,9 @@ self.onmessage = async (e: MessageEvent) => {
 
       self.postMessage({ type: 'ready' });
       texturesDirty = true;
-      renderCurrentFrame(currentFrame, 1.0, false);
+      if (!isPlaying) {
+        renderCurrentFrame(currentFrame, 1.0, false);
+      }
       break;
     }
 
@@ -501,7 +465,9 @@ self.onmessage = async (e: MessageEvent) => {
         syncAssetSources(data.assets);
       }
       texturesDirty = true;
-      renderCurrentFrame(currentFrame, 1.0, false);
+      if (!isPlaying) {
+        renderCurrentFrame(currentFrame, 1.0, false);
+      }
       break;
     }
 
@@ -513,15 +479,19 @@ self.onmessage = async (e: MessageEvent) => {
     }
 
     case 'resize': {
-      if (data.width) currentWidth = data.width;
-      if (data.height) currentHeight = data.height;
-      if (canvas) {
-        canvas.width = currentWidth;
-        canvas.height = currentHeight;
+      const newWidth = data.width || currentWidth;
+      const newHeight = data.height || currentHeight;
+      if (newWidth !== currentWidth || newHeight !== currentHeight) {
+        currentWidth = newWidth;
+        currentHeight = newHeight;
+        if (canvas && (canvas.width !== currentWidth || canvas.height !== currentHeight)) {
+          canvas.width = currentWidth;
+          canvas.height = currentHeight;
+        }
+        ensureBackBuffer(currentWidth, currentHeight);
+        texturesDirty = true;
+        renderCurrentFrame(currentFrame, 1.0, false);
       }
-      ensureBackBuffer(currentWidth, currentHeight);
-      texturesDirty = true;
-      renderCurrentFrame(currentFrame, 1.0, false);
       break;
     }
 
@@ -543,31 +513,6 @@ self.onmessage = async (e: MessageEvent) => {
         data.debugMode,
         isPlay
       );
-      break;
-    }
-
-    case 'startPlayback': {
-      shuttleSpeed = data.speed ?? 1;
-      currentFrame = data.startFrame ?? currentFrame;
-      currentFps = data.fps ?? currentFps;
-      currentTotalFrames = data.totalFrames ?? currentTotalFrames;
-      isPlaying = true;
-      lastRafTime = performance.now();
-      lastUiSyncTime = performance.now();
-
-      workerClock = new DeterministicTimelineClock({
-        fps: currentFps,
-        totalFrames: currentTotalFrames,
-        mode: 'monotonic_worker',
-      });
-      workerClock.play(currentFrame, shuttleSpeed);
-
-      rafId = requestAnimationFrame(playbackLoop);
-      break;
-    }
-
-    case 'stopPlayback': {
-      stopPlayback();
       break;
     }
 

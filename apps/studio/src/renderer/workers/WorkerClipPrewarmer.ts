@@ -55,8 +55,8 @@ export class WorkerClipPrewarmer {
         }
 
         // Discover upcoming clips in the lookahead window [currentFrame, windowEnd]
-        // Prewarm frame 0 so transition between clips does not stall.
-        if (seq.startFrame >= currentFrame && seq.startFrame <= windowEnd) {
+        // Prewarm frame 0 only when parked or scrubbing to prevent WebCodecs hardware decode collisions during playback.
+        if (!isPlaying && seq.startFrame >= currentFrame && seq.startFrame <= windowEnd) {
           if (!this.warmedSequences.has(seq.id)) {
             this.warmedSequences.add(seq.id);
             this.prewarmSequence(seq, fps);

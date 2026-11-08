@@ -1,4 +1,4 @@
-import { createSignal, createEffect, onCleanup } from 'solid-js';
+import { createSignal, createEffect, onCleanup, untrack } from 'solid-js';
 import { withTargetCanvasSize, type AssetDefinition, type ResolvedSequence, type ResolvedTimeline } from '@acc/ir';
 import {
   createPreviewRenderStrategy,
@@ -84,15 +84,18 @@ export function useViewportRenderStrategy(options: UseViewportRenderStrategyOpti
     const lastPreflightTimeline = (useViewportRenderStrategy as any)._lastPreflight;
     if (lastPreflightTimeline !== targetTimeline) {
       (useViewportRenderStrategy as any)._lastPreflight = targetTimeline;
+      const initialFrame = untrack(() => options.currentFrame);
       PreviewWorkerCoordinator.getInstance().preflightTimeline(targetTimeline, {
-        prioritizedFrame: options.currentFrame,
+        prioritizedFrame: initialFrame,
       });
     }
   });
 
   const unsubWarmed = PreviewWorkerCoordinator.getInstance().onModifierWarmed(() => {
     setAssetTick((t) => t + 1);
-    strategy?.renderFrame(options.currentFrame);
+    if (!options.isPlaying) {
+      strategy?.renderFrame(untrack(() => options.currentFrame));
+    }
   });
   onCleanup(unsubWarmed);
 
