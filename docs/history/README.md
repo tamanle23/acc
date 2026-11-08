@@ -133,3 +133,4 @@
 | 467 | [Studio Memory Minimization & Multi-FPS Smooth Playback](./467_studio_memory_minimization_and_multi_fps_playback.md) | Completed |
 | 468 | [Fix Studio RightSidebar Property Modifications and Sequence Preview Popup Positioning](./468_fix_studio_right_sidebar_properties_and_sequence_preview_popup.md) | Completed |
 | 469 | [End-to-End Task Contract Design & Runtime Integrity](./469_task_contract_studio_engine_integrity.md) | Completed |
+| 470 | [Fix Studio RightSidebar Sliders Not Moving](./470_fix_studio_right_sidebar_sliders_not_moving.md) | Completed |
