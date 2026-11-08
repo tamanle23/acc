@@ -1,5 +1,5 @@
 import { splitProps, createMemo, type ComponentProps } from "solid-js";
-import { Slider as SliderPrimitive } from "@kobalte/core/slider";
+import * as SliderPrimitive from "@kobalte/core/slider";
 import { cn } from "cn";
 
 export interface SliderProps {

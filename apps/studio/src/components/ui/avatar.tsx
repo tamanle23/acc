@@ -1,5 +1,5 @@
 import { splitProps, type ComponentProps } from "solid-js";
-import { Image as ImagePrimitive } from "@kobalte/core/image";
+import * as ImagePrimitive from "@kobalte/core/image";
 import { cn } from "cn";
 
 function Avatar(props: ComponentProps<typeof ImagePrimitive.Root> & { class?: string; className?: string; size?: "default" | "sm" | "lg"; [key: string]: any }) {

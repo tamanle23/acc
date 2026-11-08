@@ -1,5 +1,5 @@
 import { splitProps, type ComponentProps, type JSX } from "solid-js";
-import { Select as SelectPrimitive } from "@kobalte/core/select";
+import * as SelectPrimitive from "@kobalte/core/select";
 import { ChevronDown, Check, ChevronUp } from "lucide-solid";
 import { cn } from "cn";
 

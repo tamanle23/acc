@@ -1,5 +1,5 @@
 import { splitProps, type ComponentProps } from "solid-js";
-import { Collapsible as CollapsiblePrimitive } from "@kobalte/core/collapsible";
+import * as CollapsiblePrimitive from "@kobalte/core/collapsible";
 import { cn } from "cn";
 
 function Collapsible(props: ComponentProps<typeof CollapsiblePrimitive.Root> & { [key: string]: any }) {

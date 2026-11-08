@@ -1,5 +1,5 @@
 import { splitProps, type ComponentProps, type JSX } from "solid-js";
-import { ContextMenu as ContextMenuPrimitive } from "@kobalte/core/context-menu";
+import * as ContextMenuPrimitive from "@kobalte/core/context-menu";
 import { Check, ChevronRight } from "lucide-solid";
 import { cn } from "cn";
 

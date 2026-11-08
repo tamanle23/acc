@@ -1,5 +1,5 @@
 import { splitProps, type ComponentProps, type JSX } from "solid-js";
-import { Dialog as DialogPrimitive } from "@kobalte/core/dialog";
+import * as DialogPrimitive from "@kobalte/core/dialog";
 import { cn } from "cn";
 import { Button } from "./button";
 import { X } from "lucide-solid";

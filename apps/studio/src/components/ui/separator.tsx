@@ -1,6 +1,6 @@
 import { splitProps } from "solid-js";
 import { cn } from "cn";
-import { Separator as SeparatorPrimitive } from "@kobalte/core/separator";
+import * as SeparatorPrimitive from "@kobalte/core/separator";
 
 export interface SeparatorProps {
   class?: string;

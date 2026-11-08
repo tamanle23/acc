@@ -1,5 +1,5 @@
 import { splitProps, type ComponentProps } from "solid-js";
-import { Switch as SwitchPrimitive } from "@kobalte/core/switch";
+import * as SwitchPrimitive from "@kobalte/core/switch";
 import { cn } from "cn";
 
 export interface SwitchProps {

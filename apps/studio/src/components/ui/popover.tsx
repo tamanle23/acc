@@ -1,5 +1,5 @@
 import { splitProps, type ComponentProps, type JSX } from "solid-js";
-import { Popover as PopoverPrimitive } from "@kobalte/core/popover";
+import * as PopoverPrimitive from "@kobalte/core/popover";
 import { cn } from "cn";
 
 function Popover(props: ComponentProps<typeof PopoverPrimitive.Root> & { [key: string]: any }) {

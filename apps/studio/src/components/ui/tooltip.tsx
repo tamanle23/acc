@@ -1,5 +1,5 @@
 import { splitProps, type ComponentProps, type JSX, type ParentProps } from "solid-js";
-import { Tooltip as TooltipPrimitive } from "@kobalte/core/tooltip";
+import * as TooltipPrimitive from "@kobalte/core/tooltip";
 import { cn } from "cn";
 
 function TooltipProvider(props: ParentProps) {

@@ -1,5 +1,5 @@
 import { splitProps, type ComponentProps, type JSX } from "solid-js";
-import { HoverCard as HoverCardPrimitive } from "@kobalte/core/hover-card";
+import * as HoverCardPrimitive from "@kobalte/core/hover-card";
 import { cn } from "cn";
 
 function HoverCard(props: ComponentProps<typeof HoverCardPrimitive.Root> & { [key: string]: any }) {

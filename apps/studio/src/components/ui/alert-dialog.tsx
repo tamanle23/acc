@@ -1,5 +1,5 @@
 import { splitProps, type ComponentProps, type JSX } from "solid-js";
-import { AlertDialog as AlertDialogPrimitive } from "@kobalte/core/alert-dialog";
+import * as AlertDialogPrimitive from "@kobalte/core/alert-dialog";
 import { cn } from "cn";
 import { Button } from "./button";
 

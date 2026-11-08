@@ -1,5 +1,5 @@
 import { splitProps, type ComponentProps } from "solid-js";
-import { RadioGroup as RadioGroupPrimitive } from "@kobalte/core/radio-group";
+import * as RadioGroupPrimitive from "@kobalte/core/radio-group";
 import { cn } from "cn";
 
 function RadioGroup(props: ComponentProps<typeof RadioGroupPrimitive.Root> & { class?: string; className?: string; [key: string]: any }) {

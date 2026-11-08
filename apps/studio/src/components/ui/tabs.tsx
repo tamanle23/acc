@@ -1,6 +1,6 @@
 import { splitProps, type ComponentProps } from "solid-js";
 import { cva, type VariantProps } from "class-variance-authority";
-import { Tabs as TabsPrimitive } from "@kobalte/core/tabs";
+import * as TabsPrimitive from "@kobalte/core/tabs";
 import { cn } from "cn";
 
 function Tabs(props: ComponentProps<typeof TabsPrimitive.Root> & { class?: string; className?: string; [key: string]: any }) {

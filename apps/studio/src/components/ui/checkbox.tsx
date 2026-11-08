@@ -1,5 +1,5 @@
 import { splitProps, type ComponentProps } from "solid-js";
-import { Checkbox as CheckboxPrimitive } from "@kobalte/core/checkbox";
+import * as CheckboxPrimitive from "@kobalte/core/checkbox";
 import { Check } from "lucide-solid";
 import { cn } from "cn";
 

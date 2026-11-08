@@ -1,5 +1,5 @@
 import { splitProps, type ComponentProps, type JSX } from "solid-js";
-import { Accordion as AccordionPrimitive } from "@kobalte/core/accordion";
+import * as AccordionPrimitive from "@kobalte/core/accordion";
 import { ChevronDown, ChevronUp } from "lucide-solid";
 import { cn } from "cn";
 

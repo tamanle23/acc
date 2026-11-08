@@ -1,5 +1,5 @@
 import { splitProps, type ComponentProps, type JSX } from "solid-js";
-import { DropdownMenu as DropdownMenuPrimitive } from "@kobalte/core/dropdown-menu";
+import * as DropdownMenuPrimitive from "@kobalte/core/dropdown-menu";
 import { Check, ChevronRight } from "lucide-solid";
 import { cn } from "cn";
 
