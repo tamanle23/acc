@@ -247,13 +247,13 @@ export function RightSidebar() {
       {/* 3. Main Inspector Content Routing */}
       <div class="flex-1 p-3 overflow-y-auto min-h-0">
         <Switch>
-          <Match when={currentMode() === 'track' && resolved().effectiveTrack}>
+          <Match when={currentMode() === 'track' && Boolean(resolved().effectiveTrack)}>
             <TrackInspector selectedTrack={resolved().effectiveTrack!} irState={irState()} />
           </Match>
           <Match when={currentMode() === 'timeline' || !resolved().selectedSeq}>
             <ProjectInspector irState={irState()} />
           </Match>
-          <Match when={resolved().selectedSeq}>
+          <Match when={currentMode() === 'sequence' && Boolean(resolved().selectedSeq)}>
             <SequenceInspector
               selectedSeq={resolved().selectedSeq!}
               selectedTrack={resolved().effectiveTrack}

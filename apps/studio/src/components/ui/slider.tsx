@@ -91,18 +91,40 @@ function Slider(props: SliderProps) {
     return Math.round(clamped * factor) / factor;
   };
 
-  const getValueFromPointer = (clientX: number, clientY: number): number => {
-    if (!trackRef) return currentValue();
+  interface TrackGeometry {
+    start: number;
+    length: number;
+    isVertical: boolean;
+  }
+
+  const getTrackGeometry = (): TrackGeometry | null => {
+    if (!trackRef) return null;
     const rect = trackRef.getBoundingClientRect();
-    if (rect.width <= 0 && rect.height <= 0) return currentValue();
-
     const isVertical = local.orientation === "vertical";
-    const ratio = isVertical
-      ? Math.max(0, Math.min(1, 1 - (clientY - rect.top) / (rect.height || 1)))
-      : Math.max(0, Math.min(1, (clientX - rect.left) / (rect.width || 1)));
+    const length = isVertical ? rect.height : rect.width;
+    const start = isVertical ? rect.top : rect.left;
+    if (length <= 0) return null;
+    return { start, length, isVertical };
+  };
 
+  const computeValueFromRatio = (ratio: number): number => {
     const rawVal = min() + ratio * (max() - min());
     return clampAndStep(rawVal);
+  };
+
+  const getValueFromPointer = (
+    clientX: number,
+    clientY: number,
+    fallbackGeo?: TrackGeometry | null
+  ): number => {
+    const geo = getTrackGeometry() || fallbackGeo;
+    if (!geo || geo.length <= 0) return currentValue();
+
+    const ratio = geo.isVertical
+      ? Math.max(0, Math.min(1, 1 - (clientY - geo.start) / geo.length))
+      : Math.max(0, Math.min(1, (clientX - geo.start) / geo.length));
+
+    return computeValueFromRatio(ratio);
   };
 
   let activeCleanups: (() => void) | null = null;
@@ -112,25 +134,27 @@ function Slider(props: SliderProps) {
     e.preventDefault();
     e.stopPropagation();
 
+    // Cache track geometry at pointerdown to guarantee continuous dragging
+    const capturedGeo = getTrackGeometry();
+
     setIsDragging(true);
     const target = e.currentTarget as HTMLElement;
     try {
       target.setPointerCapture(e.pointerId);
     } catch {}
 
-    const initialVal = getValueFromPointer(e.clientX, e.clientY);
+    const initialVal = getValueFromPointer(e.clientX, e.clientY, capturedGeo);
     setDragValue(initialVal);
     notifyChange(initialVal);
 
     const onPointerMove = (moveEv: PointerEvent) => {
-      if (moveEv.pointerId !== e.pointerId) return;
-      const nextVal = getValueFromPointer(moveEv.clientX, moveEv.clientY);
+      if (moveEv.pointerId !== e.pointerId && moveEv.buttons === 0) return;
+      const nextVal = getValueFromPointer(moveEv.clientX, moveEv.clientY, capturedGeo);
       setDragValue(nextVal);
       notifyChange(nextVal);
     };
 
     const onPointerUp = (upEv: PointerEvent) => {
-      if (upEv.pointerId !== e.pointerId) return;
       try {
         target.releasePointerCapture(e.pointerId);
       } catch {}

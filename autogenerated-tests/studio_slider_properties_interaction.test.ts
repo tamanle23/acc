@@ -19,10 +19,20 @@ describe('Studio Slider Property Interaction & Precision Movement Suite', () => 
     expect(code).toContain('isDragging');
     expect(code).toContain('dragValue');
     expect(code).toContain('clampAndStep');
+    expect(code).toContain('getTrackGeometry');
+    expect(code).toContain('capturedGeo');
     expect(code).toContain('role="slider"');
     expect(code).toContain('aria-valuemin');
     expect(code).toContain('aria-valuemax');
     expect(code).toContain('aria-valuenow');
+  });
+
+  it('RightSidebar should retain SequenceInspector mounted across reactive state updates via boolean Match', () => {
+    const sidebarPath = join(process.cwd(), 'apps/studio/src/components/RightSidebar.tsx');
+    const code = readFileSync(sidebarPath, 'utf-8');
+
+    expect(code).toContain("<Match when={currentMode() === 'sequence' && Boolean(resolved().selectedSeq)}>");
+    expect(code).not.toContain('<Match when={resolved().selectedSeq}>');
   });
 
   it('PrimitiveControlStrategies NumberControlStrategy should supply defaultValue, value, and onChange to Slider', () => {
