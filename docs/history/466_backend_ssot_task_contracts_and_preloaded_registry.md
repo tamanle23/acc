@@ -22,17 +22,17 @@ In the Visual DAG Studio and Workflow Task Definitions Catalog:
   - `task-contract-registry.ts`: Added `preload(records: TaskDefinitionRecord[])`, `hasPreloaded()`, and `isBuiltIn(taskType: string)`. Removed duplicate static schema definitions.
   - `task-definition-api.ts`: Updated `TaskDefinitionRecord` type with `isBuiltIn?: boolean`, hooked `taskContractRegistry.preload(list)` in `useTaskDefinitions()`, and classified built-ins under `AI` or `SYSTEM` categories.
 - **Catalog UI & Inspect Mode (`apps/console`)**:
-  - `task-definition-columns.tsx`: Renders `BUILT-IN` glass badge; offers "Inspect Contract" and "Fork as Custom Draft" actions; disables deletion and publishing for built-in nodes.
+  - `task-definition-columns.tsx`: Renders `BUILT-IN` glass badge; offers "Inspect Contract" for both custom and built-in task definitions, "Fork as Custom Draft", "Edit Draft", "Fork Next Version", and lifecycle actions.
   - `task-definition-table.tsx`: Groups task definitions into **Custom Task Definitions** and **Built-in System Tasks** sections. Adds scope tabs (`All Tasks`, `Custom Definitions`, `Built-in System`) with item counts, a collapsible toggle for built-in contracts, and shared filter synchronization.
-  - `task-definition-editor-dialog.tsx`: Added `mode === 'inspect'` with lock banner alert, read-only disabled inputs and schema grids, live test sandbox access, and "Fork as Custom Draft" footer button.
-  - `workflows/index.tsx`: Wired `handleForkDraft` and auto-switches to `inspect` mode when opening built-in definitions.
+  - `task-definition-editor-dialog.tsx`: Added universal `mode === 'inspect'` with context-aware read-only badges, lock banner alerts, disabled inputs and schema grids, live test sandbox access, and custom draft fork/edit buttons.
+  - `workflows/index.tsx`: Wired `handleInspectTaskDef`, `handleForkDraft`, and clean scope routing.
 - **Automated Tests**:
   - `task-contract-registry.test.ts`: Added preloading verification, $O(1)$ lookup tests, and `isBuiltIn` classification tests.
-  - `task-definition-table.test.tsx`: Added tests verifying built-in tasks render `BUILT-IN` badge, inspect actions, grouped sections, and scope switcher navigation.
+  - `task-definition-table.test.tsx`: Added tests verifying built-in tasks render `BUILT-IN` badge, inspect actions for custom and built-in tasks, grouped sections, and scope switcher navigation.
 
 ## Verification
 - `pnpm --filter @acc/console test -- task-contract-registry`: 11 passed.
-- `pnpm --filter @acc/console test -- task-definition`: 11 passed across 2 suites.
+- `pnpm --filter @acc/console test -- task-definition`: 12 passed across 2 suites.
 - `pnpm --filter @acc/console test -- dag-palette`: 3 passed.
 - `pnpm --filter @acc/sandbox test`: 109 tests across 12 suites passed.
 - `pnpm --filter @acc/console exec tsc --noEmit`: 0 errors.

@@ -68,6 +68,12 @@ export const WorkflowsFeature: React.FC = () => {
     setIsTaskEditorOpen(true);
   };
 
+  const handleInspectTaskDef = (taskDef: TaskDefinitionRecord) => {
+    setEditingTaskDef(taskDef);
+    setEditorMode('inspect');
+    setIsTaskEditorOpen(true);
+  };
+
   const handleForkDraft = (taskDef: TaskDefinitionRecord) => {
     setEditingTaskDef(taskDef);
     setEditorMode('fork');
@@ -244,6 +250,7 @@ export const WorkflowsFeature: React.FC = () => {
               isLoading={isTaskDefsLoading}
               onCreateNew={handleCreateNewTaskDef}
               onEditTaskDef={handleEditTaskDef}
+              onInspectTaskDef={handleInspectTaskDef}
               onForkDraft={handleForkDraft}
               onViewHistory={handleViewHistory}
               onPublishTaskDef={handlePublishTaskDef}

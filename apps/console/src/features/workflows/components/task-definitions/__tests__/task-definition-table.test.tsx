@@ -229,4 +229,35 @@ describe('TaskDefinitionTable Component', () => {
     fireEvent.click(collapseBtn);
     expect(screen.getByRole('button', { name: /show built-in/i })).toBeDefined();
   });
+
+  it('triggers onInspectTaskDef when Inspect Contract is selected for custom task definitions', () => {
+    const onInspect = vi.fn();
+    const onEdit = vi.fn();
+
+    render(
+      <TaskDefinitionTable
+        data={mockTaskDefs}
+        isLoading={false}
+        onEditTaskDef={onEdit}
+        onInspectTaskDef={onInspect}
+        onViewHistory={vi.fn()}
+        onPublishTaskDef={vi.fn()}
+        onDeleteDraft={vi.fn()}
+        onCreateNew={vi.fn()}
+      />
+    );
+
+    // Open action menu for custom task
+    const actionBtn = screen.getByTestId('task-def-actions-validateCustomerOrder');
+    fireEvent.pointerDown(actionBtn, { pointerType: 'mouse' });
+    fireEvent.click(actionBtn);
+
+    // Click "Inspect Contract"
+    const inspectItem = screen.getByRole('menuitem', { name: /inspect contract/i });
+    expect(inspectItem).toBeDefined();
+    fireEvent.click(inspectItem);
+
+    expect(onInspect).toHaveBeenCalledTimes(1);
+    expect(onInspect).toHaveBeenCalledWith(mockTaskDefs[0]);
+  });
 });

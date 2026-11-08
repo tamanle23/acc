@@ -27,6 +27,7 @@ import { taskContractRegistry } from '../studio/utils/contracts/task-contract-re
 
 interface CreateTaskDefinitionColumnsProps {
   onEditTaskDef: (taskDef: TaskDefinitionRecord) => void;
+  onInspectTaskDef?: (taskDef: TaskDefinitionRecord) => void;
   onViewHistory: (taskName: string) => void;
   onPublishTaskDef: (name: string, version: number) => void;
   onDeleteDraft: (name: string, version: number) => void;
@@ -35,6 +36,7 @@ interface CreateTaskDefinitionColumnsProps {
 
 export const createTaskDefinitionColumns = ({
   onEditTaskDef,
+  onInspectTaskDef,
   onViewHistory,
   onPublishTaskDef,
   onDeleteDraft,
@@ -205,23 +207,23 @@ export const createTaskDefinitionColumns = ({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
 
+            {/* Inspect Contract is ALWAYS available for BOTH Built-in and Custom tasks! */}
+            <DropdownMenuItem
+              onClick={() => onInspectTaskDef ? onInspectTaskDef(item) : onEditTaskDef(item)}
+              className="gap-2 cursor-pointer text-xs"
+            >
+              <Eye className="h-3.5 w-3.5 text-primary" />
+              Inspect Contract
+            </DropdownMenuItem>
+
             {isBuiltIn ? (
-              <>
-                <DropdownMenuItem
-                  onClick={() => onEditTaskDef(item)}
-                  className="gap-2 cursor-pointer text-xs"
-                >
-                  <Eye className="h-3.5 w-3.5 text-primary" />
-                  Inspect Contract
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => onForkDraft ? onForkDraft(item) : onEditTaskDef(item)}
-                  className="gap-2 cursor-pointer text-xs"
-                >
-                  <GitBranch className="h-3.5 w-3.5 text-indigo-500" />
-                  Fork as Custom Draft
-                </DropdownMenuItem>
-              </>
+              <DropdownMenuItem
+                onClick={() => onForkDraft ? onForkDraft(item) : onEditTaskDef(item)}
+                className="gap-2 cursor-pointer text-xs"
+              >
+                <GitBranch className="h-3.5 w-3.5 text-indigo-500" />
+                Fork as Custom Draft
+              </DropdownMenuItem>
             ) : (
               <DropdownMenuItem
                 onClick={() => onEditTaskDef(item)}

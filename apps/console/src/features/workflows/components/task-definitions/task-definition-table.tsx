@@ -41,6 +41,7 @@ export interface TaskDefinitionTableProps {
   data: TaskDefinitionRecord[];
   isLoading: boolean;
   onEditTaskDef: (taskDef: TaskDefinitionRecord) => void;
+  onInspectTaskDef?: (taskDef: TaskDefinitionRecord) => void;
   onViewHistory: (taskName: string) => void;
   onPublishTaskDef: (name: string, version: number) => void;
   onDeleteDraft: (name: string, version: number) => void;
@@ -52,6 +53,7 @@ export const TaskDefinitionTable: React.FC<TaskDefinitionTableProps> = ({
   data,
   isLoading,
   onEditTaskDef,
+  onInspectTaskDef,
   onViewHistory,
   onPublishTaskDef,
   onDeleteDraft,
@@ -91,12 +93,13 @@ export const TaskDefinitionTable: React.FC<TaskDefinitionTableProps> = ({
     () =>
       createTaskDefinitionColumns({
         onEditTaskDef,
+        onInspectTaskDef,
         onViewHistory,
         onPublishTaskDef,
         onDeleteDraft,
         onForkDraft,
       }),
-    [onEditTaskDef, onViewHistory, onPublishTaskDef, onDeleteDraft, onForkDraft]
+    [onEditTaskDef, onInspectTaskDef, onViewHistory, onPublishTaskDef, onDeleteDraft, onForkDraft]
   );
 
   // Master combined table used to power the shared search and faceted filter toolbar

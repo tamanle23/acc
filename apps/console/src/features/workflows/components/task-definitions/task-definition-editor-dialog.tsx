@@ -37,6 +37,7 @@ import {
   useSaveTaskDefinitionDraft,
   usePublishTaskDefinition,
 } from '@/features/workflows/api/task-definition-api';
+import { taskContractRegistry } from '../studio/utils/contracts/task-contract-registry';
 import { SCHEMA_TEMPLATES, type SchemaPresetTemplate } from './schema-templates';
 import { SchemaPropertyGrid } from './schema-property-grid';
 import { SchemaTestSandbox } from './schema-test-sandbox';
@@ -60,14 +61,14 @@ export const TaskDefinitionEditorDialog: React.FC<TaskDefinitionEditorDialogProp
   const publishMutation = usePublishTaskDefinition();
 
   const isBuiltIn = Boolean(
-    initialData && (initialData.isBuiltIn || initialData.tenantId === 'SYSTEM' || initialData.tenantId === 'system')
+    initialData && taskContractRegistry.isBuiltIn(initialData.name)
   );
   const [internalMode, setInternalMode] = useState<'create' | 'edit' | 'fork' | 'inspect'>(mode);
 
   useEffect(() => {
     if (mode === 'fork') {
       setInternalMode('fork');
-    } else if (isBuiltIn) {
+    } else if (mode === 'inspect' || isBuiltIn) {
       setInternalMode('inspect');
     } else {
       setInternalMode(mode);
@@ -237,8 +238,13 @@ export const TaskDefinitionEditorDialog: React.FC<TaskDefinitionEditorDialogProp
 
   const handleForkFromInspect = () => {
     setInternalMode('fork');
-    setName(`${initialData?.name || 'task'}Custom`);
-    setChangelogNote(`Forked from built-in ${initialData?.name} v1`);
+    if (isBuiltIn) {
+      setName(`${initialData?.name || 'task'}Custom`);
+      setChangelogNote(`Forked from built-in ${initialData?.name} v1`);
+    } else {
+      setName(initialData?.name || 'task');
+      setChangelogNote(`Forked from v${initialData?.version || 1}`);
+    }
   };
 
   const isSaving = saveDraftMutation.isPending || publishMutation.isPending;
@@ -262,9 +268,20 @@ export const TaskDefinitionEditorDialog: React.FC<TaskDefinitionEditorDialogProp
                   {isInspect ? (
                     <>
                       <span>Inspect Task Definition: {initialData?.name}</span>
-                      <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 text-xs font-medium">
-                        BUILT-IN (READ-ONLY)
-                      </Badge>
+                      {isBuiltIn ? (
+                        <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 text-xs font-medium">
+                          BUILT-IN (READ-ONLY)
+                        </Badge>
+                      ) : (
+                        <>
+                          <Badge variant="outline" className="font-mono text-xs">
+                            v{initialData?.version}
+                          </Badge>
+                          <Badge variant="secondary" className="text-xs font-medium">
+                            {initialData?.status} (READ-ONLY)
+                          </Badge>
+                        </>
+                      )}
                     </>
                   ) : internalMode === 'fork' ? (
                     `Fork Task Definition (${initialData?.name})`
@@ -281,7 +298,9 @@ export const TaskDefinitionEditorDialog: React.FC<TaskDefinitionEditorDialogProp
                 </DialogTitle>
                 <DialogDescription className="text-xs text-muted-foreground mt-0.5">
                   {isInspect
-                    ? 'View canonical parameter schemas and contract specifications for this built-in node.'
+                    ? isBuiltIn
+                      ? 'View canonical parameter schemas and contract specifications for this built-in node.'
+                      : `Inspect parameter schemas, policies, and test payload validation for ${initialData?.name} v${initialData?.version}.`
                     : 'Define typed contract schemas, validation bounds, and worker execution retry policies.'}
                 </DialogDescription>
               </div>
@@ -342,7 +361,9 @@ export const TaskDefinitionEditorDialog: React.FC<TaskDefinitionEditorDialogProp
                 <div className="flex items-center gap-2.5 p-3 rounded-lg bg-primary/5 border border-primary/20 text-xs text-primary">
                   <Lock className="w-4 h-4 shrink-0" />
                   <span>
-                    This is a canonical built-in system task definition. Its parameters and contracts are maintained by the platform engine. You can inspect its schemas, test them in the sandbox, or fork it to customize.
+                    {isBuiltIn
+                      ? 'This is a canonical built-in system task definition. Its parameters and contracts are maintained by the platform engine. You can inspect its schemas, test them in the sandbox, or fork it to customize.'
+                      : `You are inspecting custom task definition ${initialData?.name} v${initialData?.version} (${initialData?.status}) in read-only mode. You can inspect schemas, test payloads in the sandbox, or fork/edit it.`}
                   </span>
                 </div>
               )}
@@ -497,15 +518,29 @@ export const TaskDefinitionEditorDialog: React.FC<TaskDefinitionEditorDialogProp
               >
                 Close
               </Button>
-              <Button
-                type="button"
-                size="sm"
-                onClick={handleForkFromInspect}
-                className="text-xs gap-1.5 shadow-md shadow-primary/20"
-              >
-                <Copy className="w-3.5 h-3.5" />
-                Fork as Custom Draft
-              </Button>
+              <div className="flex items-center gap-2">
+                {!isBuiltIn && initialData?.status === 'DRAFT' && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setInternalMode('edit')}
+                    className="text-xs gap-1.5"
+                  >
+                    <SlidersHorizontal className="w-3.5 h-3.5" />
+                    Edit Draft
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleForkFromInspect}
+                  className="text-xs gap-1.5 shadow-md shadow-primary/20"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  {isBuiltIn ? 'Fork as Custom Draft' : 'Fork Next Version'}
+                </Button>
+              </div>
             </>
           ) : (
             <>

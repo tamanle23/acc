@@ -27,11 +27,12 @@ We eliminated duplicated client-side JSON Schema definitions by establishing the
 ### C. Task Definitions Catalog Read-Only & Forking UI
 - **Table Columns (`task-definition-columns.tsx`)**:
   - Renders distinctive `BUILT-IN` glass badge for system tasks.
-  - Provides "Inspect Contract" and "Fork as Custom Draft" actions for built-in tasks; suppresses/disables draft deletion.
+  - "Inspect Contract" is universally available for **both Custom Task Definitions and Built-in System Tasks**, allowing instant read-only schema inspection and sandbox testing without forcing an edit or fork state.
+  - Custom tasks also expose "Edit Draft" (if DRAFT) or "Fork Next Version" (if ACTIVE), "Version History", and draft publishing/deletion.
 - **Inspect Mode in Dialog (`task-definition-editor-dialog.tsx`)**:
-  - Supports `mode === 'inspect'` with `BUILT-IN (READ-ONLY)` badge and locked configuration inputs.
-  - Retains interactive access to **Input Schema**, **Output Schema**, and the **Schema Test Sandbox**.
-  - Footer provides "Close" and "Fork as Custom Draft" (switches directly to editable draft mode).
+  - Supports `mode === 'inspect'` for both built-in system nodes (with `BUILT-IN (READ-ONLY)` badge) and custom task definitions (with `v{version}` and `{status} (READ-ONLY)` badges).
+  - Retains full interactive access to **Input Schema**, **Output Schema**, and the **Schema Test Sandbox**.
+  - Footer dynamically provides "Close", "Edit Draft" (for custom drafts), and "Fork Next Version" / "Fork as Custom Draft".
 - **Grouped Catalog View & Scope Switching (`task-definition-table.tsx`)**:
   - Segregates tasks into **Custom Task Definitions** (tenant-specific workers/contracts) and **Built-in System Tasks** (canonical platform contracts).
   - Scope Switcher Tabs: `All Tasks` (total count), `Custom Definitions` (custom count), `Built-in System` (built-in count).
@@ -47,7 +48,7 @@ We eliminated duplicated client-side JSON Schema definitions by establishing the
 | Test Suite | File / Scope | Tests Passed | Status |
 | :--- | :--- | :--- | :--- |
 | **Task Contract Registry** | `task-contract-registry.test.ts` | 11 / 11 passed | ✅ 100% Green |
-| **Task Definition UI Table** | `task-definition-table.test.tsx` | 5 / 5 passed | ✅ 100% Green |
+| **Task Definition UI Table** | `task-definition-table.test.tsx` | 6 / 6 passed | ✅ 100% Green |
 | **Task Definition Editor** | `task-definition-editor.test.tsx` | 6 / 6 passed | ✅ 100% Green |
 | **DAG Studio Palette** | `dag-palette.test.tsx` | 3 / 3 passed | ✅ 100% Green |
 | **Sandbox Platform Engine** | `@acc/sandbox` (12 suites) | 109 / 109 passed | ✅ 100% Green |
