@@ -50,6 +50,74 @@ export interface WorkflowTaskIR {
   kafkaParams?: KafkaTaskParams;
 }
 
+export const DEFAULT_DRAFT7_SCHEMA: Record<string, unknown> = {
+  $schema: 'http://json-schema.org/draft-07/schema#',
+  type: 'object',
+  properties: {},
+  required: [],
+  additionalProperties: false,
+};
+
+/**
+ * Infers a Draft 7 JSON Schema from a sample object payload.
+ * Useful for 1-click generation from sample parameters or task mappings.
+ */
+export function inferDraft7Schema(sample: Record<string, unknown>): Record<string, unknown> {
+  const properties: Record<string, unknown> = {};
+  const required: string[] = [];
+
+  const inferValueSchema = (val: unknown): Record<string, unknown> => {
+    if (val === null || val === undefined) {
+      return { type: 'string' };
+    }
+    if (typeof val === 'string') {
+      return { type: 'string' };
+    }
+    if (typeof val === 'number') {
+      return Number.isInteger(val) ? { type: 'integer' } : { type: 'number' };
+    }
+    if (typeof val === 'boolean') {
+      return { type: 'boolean' };
+    }
+    if (Array.isArray(val)) {
+      if (val.length === 0) {
+        return { type: 'array', items: { type: 'string' } };
+      }
+      return { type: 'array', items: inferValueSchema(val[0]) };
+    }
+    if (typeof val === 'object') {
+      const childProps: Record<string, unknown> = {};
+      const childReq: string[] = [];
+      for (const [k, v] of Object.entries(val as Record<string, unknown>)) {
+        childProps[k] = inferValueSchema(v);
+        childReq.push(k);
+      }
+      return {
+        type: 'object',
+        properties: childProps,
+        required: childReq,
+        additionalProperties: false,
+      };
+    }
+    return { type: 'string' };
+  };
+
+  if (sample && typeof sample === 'object') {
+    for (const [k, v] of Object.entries(sample)) {
+      properties[k] = inferValueSchema(v);
+      required.push(k);
+    }
+  }
+
+  return {
+    $schema: 'http://json-schema.org/draft-07/schema#',
+    type: 'object',
+    properties,
+    required,
+    additionalProperties: false,
+  };
+}
+
 export interface WorkflowIR {
   $schema?: string;
   workflowKey: string;
@@ -57,6 +125,8 @@ export interface WorkflowIR {
   name: string;
   description?: string;
   timeoutSeconds?: number;
+  inputSchema?: Record<string, unknown>;
+  outputSchema?: Record<string, unknown>;
   tasks: WorkflowTaskIR[];
   layoutMetadata?: Record<string, { x: number; y: number }>;
 }
@@ -562,6 +632,12 @@ export function exportToWorkflowIR(
     data: e.data,
   }));
 
+  const startNode = nodes.find((n) => n.data.isStartNode || n.data.taskType === 'START_WORKFLOW');
+  const endNode = nodes.find((n) => n.data.isEndNode || n.data.taskType === 'END_WORKFLOW');
+
+  const inputSchema = (startNode?.data.declaredOutputSchema as Record<string, unknown>) || DEFAULT_DRAFT7_SCHEMA;
+  const outputSchema = (endNode?.data.declaredOutputSchema as Record<string, unknown>) || DEFAULT_DRAFT7_SCHEMA;
+
   return {
     $schema: 'http://json-schema.org/draft-07/schema#',
     workflowKey: meta?.workflowKey || 'order-fulfillment-dag',
@@ -569,6 +645,8 @@ export function exportToWorkflowIR(
     name: meta?.name || 'Order Fulfillment Orchestration',
     description: meta?.description || 'Visual DAG authoring workflow definition',
     timeoutSeconds: 3600,
+    inputSchema,
+    outputSchema,
     tasks,
     layoutMetadata,
   };
@@ -667,7 +745,11 @@ export function importFromWorkflowIR(
         backoffRate: task.backoffRate ?? 2.0,
         inputParameters: task.inputParameters,
         outputParameters: task.outputParameters,
-        declaredOutputSchema: task.outputSchema,
+        declaredOutputSchema: isStartNode
+          ? task.outputSchema || ir.inputSchema || DEFAULT_DRAFT7_SCHEMA
+          : isEndNode
+            ? task.outputSchema || ir.outputSchema || DEFAULT_DRAFT7_SCHEMA
+            : task.outputSchema,
         mockOutputPayload: task.mockOutputPayload,
         compensateHandlerRef: task.compensateHandlerRef,
         decisionCases: task.decisionCases,

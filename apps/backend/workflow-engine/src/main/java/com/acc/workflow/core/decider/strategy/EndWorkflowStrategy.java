@@ -61,6 +61,30 @@ public final class EndWorkflowStrategy implements NodeEvaluatorStrategy {
             resolvedOutput.putAll(resolved);
         }
 
+        // 3. Strict Exit Gate: Validate resolved output against outputSchema if defined
+        if (taskDef.outputSchema() != null && !taskDef.outputSchema().isEmpty()) {
+            com.acc.workflow.core.schema.WorkflowSchemaValidator validator = new com.acc.workflow.core.schema.WorkflowSchemaValidator();
+            List<com.acc.workflow.core.schema.WorkflowSchemaValidator.ValidationError> validationErrors = validator.validate(resolvedOutput, taskDef.outputSchema());
+            if (!validationErrors.isEmpty()) {
+                String errorMsg = "Workflow output violates outputSchema: " + validationErrors.get(0).message();
+                List<EngineCommand> failCmds = List.of(
+                    new EngineCommand.UpdateTaskStatus(
+                        snapshot.workflowId() + "_" + refName,
+                        refName,
+                        TaskStatus.FAILED,
+                        resolvedOutput,
+                        errorMsg
+                    ),
+                    new EngineCommand.TransitionWorkflow(
+                        WorkflowStatus.FAILED,
+                        resolvedOutput,
+                        errorMsg
+                    )
+                );
+                return NodeEvaluationResult.failed(failCmds, errorMsg);
+            }
+        }
+
         List<EngineCommand> commands = new ArrayList<>();
         commands.add(new EngineCommand.UpdateTaskStatus(
             snapshot.workflowId() + "_" + refName,

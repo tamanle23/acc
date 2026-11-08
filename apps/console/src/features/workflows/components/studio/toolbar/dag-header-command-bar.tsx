@@ -29,6 +29,7 @@ import {
   EyeOff,
   Check,
   Search,
+  Braces,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -71,6 +72,7 @@ export interface DagHeaderCommandBarProps {
   onValidateDag: () => void;
   validationErrorsCount: number;
   onDryRun: () => void;
+  onOpenContracts?: () => void;
   onSimulate?: () => void;
   onExportJson: () => void;
   onOpenImportDialog: () => void;
@@ -126,6 +128,7 @@ export const DagHeaderCommandBar: React.FC<DagHeaderCommandBarProps> = ({
   onValidateDag,
   validationErrorsCount,
   onDryRun,
+  onOpenContracts,
   onSimulate,
   onExportJson,
   onOpenImportDialog,
@@ -664,6 +667,21 @@ export const DagHeaderCommandBar: React.FC<DagHeaderCommandBarProps> = ({
               <Sparkles className="w-3 h-3 text-amber-500" />
               <span className="hidden lg:inline">Dry Run</span>
             </Button>
+
+            {onOpenContracts && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 px-2 text-xs gap-1 text-purple-600 dark:text-purple-400 border-purple-500/30 hover:bg-purple-500/10"
+                onClick={onOpenContracts}
+                title="View trigger ingestion & exit output schema contracts"
+                aria-label="Workflow Contracts"
+                data-testid="dag-contracts-btn"
+              >
+                <Braces className="w-3 h-3 text-purple-500" />
+                <span className="hidden lg:inline">I/O Contracts</span>
+              </Button>
+            )}
 
             {onSimulate && (
               <AuthorizedButton

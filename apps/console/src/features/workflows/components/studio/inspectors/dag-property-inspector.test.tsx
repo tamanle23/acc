@@ -111,7 +111,7 @@ describe('DagPropertyInspector Drawer', () => {
 
     expect(screen.getByText('Workflow Start')).toBeDefined();
     expect(screen.getByText('Pure Conventional Start Node')).toBeDefined();
-    expect(screen.getByText('Workflow Input Parameters & Default Schema')).toBeDefined();
+    expect(screen.getByText('Trigger Input Schema (Draft 7)')).toBeDefined();
     // Worker and Policy tabs should not exist on pure start node
     expect(screen.queryByText('Bind to Registered SIMPLE Worker')).toBeNull();
     expect(screen.queryByText('Policies')).toBeNull();
@@ -192,5 +192,93 @@ describe('DagPropertyInspector Drawer', () => {
     expect(resultBox).toBeDefined();
     expect(resultBox.textContent).toContain('COMPLETED');
     expect(resultBox.textContent).toContain('msg-9921');
+  });
+
+  it('infers Draft 7 input schema on Start Node when clicking infer button', () => {
+    const handleUpdate = vi.fn();
+    const startNodeData: DagNodeData = {
+      taskReferenceName: 'workflow_start',
+      taskType: 'START_WORKFLOW',
+      label: 'Workflow Start',
+      isStartNode: true,
+      inputParameters: {
+        orderId: 'ORD-101',
+        amount: 250,
+      },
+    };
+
+    renderWithClient(
+      <DagPropertyInspector
+        nodeId="start-node"
+        nodeData={startNodeData}
+        open={true}
+        onOpenChange={vi.fn()}
+        onUpdateNodeData={handleUpdate}
+        availableTaskRefs={['workflow_start']}
+      />
+    );
+
+    const inferBtn = screen.getByTestId('start-infer-schema-btn');
+    expect(inferBtn).toBeDefined();
+    fireEvent.click(inferBtn);
+
+    expect(handleUpdate).toHaveBeenCalledWith(
+      'start-node',
+      expect.objectContaining({
+        declaredOutputSchema: expect.objectContaining({
+          type: 'object',
+          properties: expect.objectContaining({
+            orderId: { type: 'string' },
+            amount: { type: 'integer' },
+          }),
+          required: ['orderId', 'amount'],
+          additionalProperties: false,
+        }),
+      })
+    );
+  });
+
+  it('infers Draft 7 output schema on End Node when clicking infer button', () => {
+    const handleUpdate = vi.fn();
+    const endNodeData: DagNodeData = {
+      taskReferenceName: 'workflow_end',
+      taskType: 'END_WORKFLOW',
+      label: 'Workflow End',
+      isEndNode: true,
+      inputParameters: {
+        status: '${task.output.status}',
+        total: 100,
+      },
+    };
+
+    renderWithClient(
+      <DagPropertyInspector
+        nodeId="end-node"
+        nodeData={endNodeData}
+        open={true}
+        onOpenChange={vi.fn()}
+        onUpdateNodeData={handleUpdate}
+        availableTaskRefs={['task', 'workflow_end']}
+      />
+    );
+
+    const inferBtn = screen.getByTestId('end-infer-schema-btn');
+    expect(inferBtn).toBeDefined();
+    fireEvent.click(inferBtn);
+
+    expect(handleUpdate).toHaveBeenCalledWith(
+      'end-node',
+      expect.objectContaining({
+        declaredOutputSchema: expect.objectContaining({
+          type: 'object',
+          properties: expect.objectContaining({
+            status: { type: 'string' },
+            total: { type: 'integer' },
+          }),
+          required: ['status', 'total'],
+          additionalProperties: false,
+        }),
+      })
+    );
   });
 });

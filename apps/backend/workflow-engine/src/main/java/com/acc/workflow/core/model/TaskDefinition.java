@@ -18,6 +18,7 @@ public record TaskDefinition(
     Integer retryDelaySeconds,
     Double backoffRate,
     Map<String, Object> inputParameters,
+    Map<String, Object> outputSchema,
     String compensateHandlerRef,
     Map<String, List<TaskDefinition>> decisionCases,
     List<TaskDefinition> defaultCase,
@@ -26,6 +27,31 @@ public record TaskDefinition(
     String loopCondition,
     List<TaskDefinition> loopOver
 ) {
+    public TaskDefinition(
+        String taskReferenceName,
+        TaskType taskType,
+        String domain,
+        Integer timeoutSeconds,
+        Integer retryCount,
+        Integer retryDelaySeconds,
+        Double backoffRate,
+        Map<String, Object> inputParameters,
+        String compensateHandlerRef,
+        Map<String, List<TaskDefinition>> decisionCases,
+        List<TaskDefinition> defaultCase,
+        List<List<TaskDefinition>> forkTasks,
+        List<String> joinOn,
+        String loopCondition,
+        List<TaskDefinition> loopOver
+    ) {
+        this(
+            taskReferenceName, taskType, domain, timeoutSeconds, retryCount,
+            retryDelaySeconds, backoffRate, inputParameters, Collections.emptyMap(),
+            compensateHandlerRef, decisionCases, defaultCase, forkTasks, joinOn,
+            loopCondition, loopOver
+        );
+    }
+
     public TaskDefinition {
         if (taskReferenceName == null || taskReferenceName.isBlank()) {
             throw new IllegalArgumentException("taskReferenceName is required");
@@ -49,6 +75,7 @@ public record TaskDefinition(
             backoffRate = 2.0;
         }
         inputParameters = inputParameters != null ? Collections.unmodifiableMap(inputParameters) : Collections.emptyMap();
+        outputSchema = outputSchema != null ? Collections.unmodifiableMap(outputSchema) : Collections.emptyMap();
         decisionCases = decisionCases != null ? Collections.unmodifiableMap(decisionCases) : Collections.emptyMap();
         defaultCase = defaultCase != null ? Collections.unmodifiableList(defaultCase) : Collections.emptyList();
         forkTasks = forkTasks != null ? Collections.unmodifiableList(forkTasks) : Collections.emptyList();
@@ -69,6 +96,7 @@ public record TaskDefinition(
         private int retryDelaySeconds = 2;
         private double backoffRate = 2.0;
         private Map<String, Object> inputParameters = Collections.emptyMap();
+        private Map<String, Object> outputSchema = Collections.emptyMap();
         private String compensateHandlerRef;
         private Map<String, List<TaskDefinition>> decisionCases = Collections.emptyMap();
         private List<TaskDefinition> defaultCase = Collections.emptyList();
@@ -116,6 +144,11 @@ public record TaskDefinition(
             return this;
         }
 
+        public Builder outputSchema(Map<String, Object> outputSchema) {
+            this.outputSchema = outputSchema != null ? outputSchema : Collections.emptyMap();
+            return this;
+        }
+
         public Builder compensateHandlerRef(String compensateHandlerRef) {
             this.compensateHandlerRef = compensateHandlerRef;
             return this;
@@ -154,7 +187,7 @@ public record TaskDefinition(
         public TaskDefinition build() {
             return new TaskDefinition(
                 taskReferenceName, taskType, domain, timeoutSeconds, retryCount,
-                retryDelaySeconds, backoffRate, inputParameters, compensateHandlerRef,
+                retryDelaySeconds, backoffRate, inputParameters, outputSchema, compensateHandlerRef,
                 decisionCases, defaultCase, forkTasks, joinOn, loopCondition, loopOver
             );
         }

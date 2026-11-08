@@ -194,6 +194,12 @@ describe('Pre-Flight DAG Semantic Linter', () => {
           taskType: 'START_WORKFLOW',
           isStartNode: true,
           inputParameters: { orderId: 'ORD-123' },
+          declaredOutputSchema: {
+            type: 'object',
+            properties: {
+              orderId: { type: 'string' },
+            },
+          },
         },
       },
       {
@@ -231,5 +237,98 @@ describe('Pre-Flight DAG Semantic Linter', () => {
     const issues = lintDagSemantics(nodes, edges);
     const errors = issues.filter((i) => i.severity === 'error');
     expect(errors).toHaveLength(0);
+  });
+
+  it('detects missing workflow input and output schemas', () => {
+    const nodes: Node<DagNodeData>[] = [
+      {
+        id: 'start-node',
+        type: 'dagNode',
+        position: { x: 0, y: 0 },
+        data: {
+          taskReferenceName: 'start',
+          taskType: 'START_WORKFLOW',
+          isStartNode: true,
+          // null/invalid declaredOutputSchema
+          declaredOutputSchema: null as any,
+          inputParameters: {},
+        },
+      },
+      {
+        id: 'end-node',
+        type: 'dagNode',
+        position: { x: 300, y: 0 },
+        data: {
+          taskReferenceName: 'end',
+          taskType: 'END_WORKFLOW',
+          isEndNode: true,
+          declaredOutputSchema: null as any,
+          inputParameters: {},
+        },
+      },
+    ];
+
+    const edges: Edge[] = [
+      { id: 'e1', source: 'start-node', target: 'end-node' },
+    ];
+
+    const issues = lintDagSemantics(nodes, edges);
+    const inputSchemaIssue = issues.find((i) => i.ruleId === 'MISSING_WORKFLOW_INPUT_SCHEMA');
+    const outputSchemaIssue = issues.find((i) => i.ruleId === 'MISSING_WORKFLOW_OUTPUT_SCHEMA');
+
+    expect(inputSchemaIssue).toBeDefined();
+    expect(inputSchemaIssue?.severity).toBe('error');
+    expect(outputSchemaIssue).toBeDefined();
+    expect(outputSchemaIssue?.severity).toBe('error');
+  });
+
+  it('detects unsatisfied required fields in workflow exit outputSchema', () => {
+    const nodes: Node<DagNodeData>[] = [
+      {
+        id: 'start-node',
+        type: 'dagNode',
+        position: { x: 0, y: 0 },
+        data: {
+          taskReferenceName: 'start',
+          taskType: 'START_WORKFLOW',
+          isStartNode: true,
+          inputParameters: { orderId: 'ORD-1' },
+        },
+      },
+      {
+        id: 'end-node',
+        type: 'dagNode',
+        position: { x: 300, y: 0 },
+        data: {
+          taskReferenceName: 'end',
+          taskType: 'END_WORKFLOW',
+          isEndNode: true,
+          declaredOutputSchema: {
+            type: 'object',
+            required: ['orderId', 'finalStatus'],
+            properties: {
+              orderId: { type: 'string' },
+              finalStatus: { type: 'string' },
+            },
+          },
+          // Missing 'finalStatus' in inputParameters
+          inputParameters: {
+            orderId: '${workflow.input.orderId}',
+          },
+        },
+      },
+    ];
+
+    const edges: Edge[] = [
+      { id: 'e1', source: 'start-node', target: 'end-node' },
+    ];
+
+    const issues = lintDagSemantics(nodes, edges);
+    const unsatisfied = issues.find((i) => i.ruleId === 'UNSATISFIED_WORKFLOW_OUTPUT');
+
+    expect(unsatisfied).toBeDefined();
+    expect(unsatisfied?.severity).toBe('error');
+    expect(unsatisfied?.paramKey).toBe('finalStatus');
+    expect(unsatisfied?.message).toContain("Terminal exit outputSchema requires 'finalStatus'");
   });
 });

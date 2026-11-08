@@ -222,19 +222,9 @@ export class TaskContractRegistry {
       inputParameters: [],
       outputSchema: {
         type: 'object',
-        properties: {
-          orderId: { type: 'string', example: 'ORD-9821' },
-          customerId: { type: 'string', example: 'CUST-402' },
-          amount: { type: 'number', example: 149.99 },
-          dryRun: { type: 'boolean', example: false },
-        },
+        properties: {},
       },
-      defaultMockOutput: {
-        orderId: 'ORD-9821',
-        customerId: 'CUST-402',
-        amount: 149.99,
-        dryRun: false,
-      },
+      defaultMockOutput: {},
     });
 
     this.register({

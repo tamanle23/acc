@@ -118,3 +118,4 @@
 | 452 | [Fix Profile Form Values Reset to Default on Save](./452_fix_profile_form_reset_to_default_on_save.md) | Completed |
 | 453 | [Unified Backend Envelope Error Extraction and Non-Success Rejection](./453_unified_backend_envelope_error_handling.md) | Completed |
 | 454 | [Decouple Sandbox Components from Production Screens](./454_decouple_sandbox_from_production_screens.md) | Completed |
+| 455 | [Mandatory Workflow Input/Output Schemas and Unaware Task Context Passing](./455_mandatory_workflow_io_schemas_and_context_passing.md) | Completed |

@@ -11,6 +11,9 @@ export type DiagnosticRuleId =
   | 'TEMPORAL_ORDER_VIOLATION'
   | 'CONDITIONAL_BRANCH_NULLABILITY'
   | 'MISSING_REQUIRED_INPUT'
+  | 'MISSING_WORKFLOW_INPUT_SCHEMA'
+  | 'MISSING_WORKFLOW_OUTPUT_SCHEMA'
+  | 'UNSATISFIED_WORKFLOW_OUTPUT'
   | 'CYCLIC_DEPENDENCY';
 
 export interface DagDiagnosticIssue {
@@ -123,7 +126,63 @@ export function lintDagSemantics(
   const startNode = nodes.find(
     (n) => n.data.isStartNode || n.data.taskType === 'START_WORKFLOW'
   );
-  const startInputKeys = new Set(Object.keys(startNode?.data?.inputParameters || {}));
+  const endNode = nodes.find(
+    (n) => n.data.isEndNode || n.data.taskType === 'END_WORKFLOW'
+  );
+
+  // 1. Workflow Input Contract Audit
+  const startSchema = startNode?.data?.declaredOutputSchema as Record<string, unknown> | undefined;
+  const startSchemaProps = (startSchema?.properties as Record<string, unknown>) || {};
+  const startInputKeys = new Set([
+    ...Object.keys(startNode?.data?.inputParameters || {}),
+    ...Object.keys(startSchemaProps),
+  ]);
+
+  if (startNode) {
+    if (!startSchema || typeof startSchema !== 'object' || startSchema.type !== 'object') {
+      issues.push({
+        id: `missing-wf-input-schema-${startNode.id}`,
+        ruleId: 'MISSING_WORKFLOW_INPUT_SCHEMA',
+        severity: 'error',
+        nodeId: startNode.id,
+        taskReferenceName: startNode.data.taskReferenceName || 'workflow_start',
+        message: 'Workflow is missing a defined inputSchema. Every workflow must declare its trigger input contract.',
+        suggestion: 'Define properties in Start Node input contract or infer from sample payload.',
+      });
+    }
+  }
+
+  // 2. Workflow Output Contract Audit
+  if (endNode) {
+    const endSchema = endNode?.data?.declaredOutputSchema as Record<string, unknown> | undefined;
+    if (!endSchema || typeof endSchema !== 'object' || endSchema.type !== 'object') {
+      issues.push({
+        id: `missing-wf-output-schema-${endNode.id}`,
+        ruleId: 'MISSING_WORKFLOW_OUTPUT_SCHEMA',
+        severity: 'error',
+        nodeId: endNode.id,
+        taskReferenceName: endNode.data.taskReferenceName || 'workflow_end',
+        message: 'Workflow is missing a defined outputSchema. Every workflow must declare its terminal exit contract.',
+        suggestion: 'Define properties in End Node output contract or infer from terminal mappings.',
+      });
+    } else if (Array.isArray(endSchema.required) && endSchema.required.length > 0) {
+      const endInputs = endNode.data.inputParameters || {};
+      for (const reqKey of endSchema.required) {
+        if (typeof reqKey === 'string' && (endInputs[reqKey] === undefined || endInputs[reqKey] === '')) {
+          issues.push({
+            id: `unsatisfied-wf-output-${endNode.id}-${reqKey}`,
+            ruleId: 'UNSATISFIED_WORKFLOW_OUTPUT',
+            severity: 'error',
+            nodeId: endNode.id,
+            taskReferenceName: endNode.data.taskReferenceName || 'workflow_end',
+            paramKey: reqKey,
+            message: `Terminal exit outputSchema requires '${reqKey}', but it is not mapped in End Node parameters.`,
+            suggestion: `Map '${reqKey}' to an upstream output expression (e.g. \${task.output.${reqKey}}).`,
+          });
+        }
+      }
+    }
+  }
 
   // Analyze each node
   for (const node of nodes) {

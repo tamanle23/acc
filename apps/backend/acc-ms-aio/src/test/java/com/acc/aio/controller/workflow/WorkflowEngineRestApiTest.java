@@ -62,10 +62,24 @@ class WorkflowEngineRestApiTest {
     @Test
     @DisplayName("Phase 33: End-to-end definition registration, execution lifecycle, worker polling, and heartbeat reporting")
     void testEndToEndWorkflowRestEngine() {
-        // 1. Register a valid acyclic WorkflowDefinition
+        // 1. Register a valid acyclic WorkflowDefinition with predefined inputSchema and outputSchema
         WorkflowDefinition definition = WorkflowDefinition.builder("order-pipeline-test")
             .name("Order Pipeline")
             .version(1)
+            .inputSchema(Map.of(
+                "type", "object",
+                "required", List.of("orderId", "amount"),
+                "properties", Map.of(
+                    "orderId", Map.of("type", "string"),
+                    "amount", Map.of("type", "number")
+                ),
+                "additionalProperties", false
+            ))
+            .outputSchema(Map.of(
+                "type", "object",
+                "properties", Map.of("status", Map.of("type", "string")),
+                "additionalProperties", false
+            ))
             .tasks(List.of(
                 TaskDefinition.builder("step1-validate").domain("order").build(),
                 TaskDefinition.builder("step2-charge").domain("payment").build()
@@ -199,5 +213,56 @@ class WorkflowEngineRestApiTest {
         assertThat(getDefResp.getStatusCode()).isEqualTo(HttpStatus.OK);
         WorkflowDefinition fetchedDef = (WorkflowDefinition) getDefResp.getBody();
         assertThat(fetchedDef.tasks()).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("Triggering workflow execution with invalid input payload is strictly rejected with HTTP 400")
+    void testWorkflowTriggerSchemaValidationRejection() {
+        WorkflowDefinition schemaDef = WorkflowDefinition.builder("strict-schema-pipeline")
+            .name("Strict Schema Pipeline")
+            .version(1)
+            .inputSchema(Map.of(
+                "type", "object",
+                "required", List.of("customerId", "amount"),
+                "properties", Map.of(
+                    "customerId", Map.of("type", "string"),
+                    "amount", Map.of("type", "number")
+                ),
+                "additionalProperties", false
+            ))
+            .tasks(List.of(
+                TaskDefinition.builder("step1").domain("default").build()
+            ))
+            .build();
+
+        definitionController.registerDefinition(schemaDef);
+
+        // Case 1: Missing required field "amount"
+        var missingAmountReq = new WorkflowExecutionController.StartWorkflowRequest(
+            "strict-schema-pipeline",
+            Map.of("customerId", "CUST-100")
+        );
+        ResponseEntity<?> resp1 = executionController.startExecution(missingAmountReq, WORKSPACE_ID);
+        assertThat(resp1.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(resp1.getBody()).isInstanceOf(Map.class);
+        Map<?, ?> body1 = (Map<?, ?>) resp1.getBody();
+        assertThat(body1.get("status")).isEqualTo("FAIL");
+        assertThat(body1.get("error")).isEqualTo("WORKFLOW_INPUT_VALIDATION_FAILED");
+
+        // Case 2: Type mismatch (customerId passed as number instead of string)
+        var typeMismatchReq = new WorkflowExecutionController.StartWorkflowRequest(
+            "strict-schema-pipeline",
+            Map.of("customerId", 12345, "amount", 50.0)
+        );
+        ResponseEntity<?> resp2 = executionController.startExecution(typeMismatchReq, WORKSPACE_ID);
+        assertThat(resp2.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+
+        // Case 3: Undeclared property with additionalProperties: false
+        var additionalPropReq = new WorkflowExecutionController.StartWorkflowRequest(
+            "strict-schema-pipeline",
+            Map.of("customerId", "CUST-100", "amount", 50.0, "unexpectedField", "malicious")
+        );
+        ResponseEntity<?> resp3 = executionController.startExecution(additionalPropReq, WORKSPACE_ID);
+        assertThat(resp3.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 }

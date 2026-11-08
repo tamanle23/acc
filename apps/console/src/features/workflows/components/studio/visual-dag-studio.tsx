@@ -201,6 +201,7 @@ function DagStudioCanvas({
   const [irDialogMode, setIrDialogMode] = useState<'export' | 'import'>('export');
   const [irDialogContent, setIrDialogContent] = useState('');
   const [isDryRunOpen, setIsDryRunOpen] = useState(false);
+  const [isContractsModalOpen, setIsContractsModalOpen] = useState(false);
   const [isSimulationModalOpen, setIsSimulationModalOpen] = useState(false);
   const [activeSimulationExecutionId, setActiveSimulationExecutionId] = useState<string | null>(null);
   const [selectedEdgeData, setSelectedEdgeData] = useState<EdgeConditionModalData | null>(null);
@@ -728,6 +729,7 @@ function DagStudioCanvas({
         onValidateDag={handleValidateDag}
         validationErrorsCount={validationErrors.length}
         onDryRun={() => setIsDryRunOpen(true)}
+        onOpenContracts={() => setIsContractsModalOpen(true)}
         onSimulate={() => setIsSimulationModalOpen(true)}
         onExportJson={handleExportJson}
         onOpenImportDialog={handleOpenImportDialog}
@@ -1032,6 +1034,26 @@ function DagStudioCanvas({
         onApplyImportedJson={handleApplyImportedJson}
         isDryRunOpen={isDryRunOpen}
         onDryRunOpenChange={setIsDryRunOpen}
+        isContractsModalOpen={isContractsModalOpen}
+        onContractsModalOpenChange={setIsContractsModalOpen}
+        onOpenStartNode={() => {
+          const startNode = nodes.find(
+            (n) => n.data?.isStartNode || n.data?.taskType === 'START_WORKFLOW'
+          );
+          if (startNode) {
+            setSelectedNodeId(startNode.id);
+            setIsInspectorOpen(true);
+          }
+        }}
+        onOpenEndNode={() => {
+          const endNode = nodes.find(
+            (n) => n.data?.isEndNode || n.data?.taskType === 'END_WORKFLOW'
+          );
+          if (endNode) {
+            setSelectedNodeId(endNode.id);
+            setIsInspectorOpen(true);
+          }
+        }}
         workflowIR={exportToWorkflowIR(nodes, edges)}
         onSimulationSuccess={handleSimulationSuccess}
         isSimulationModalOpen={isSimulationModalOpen}

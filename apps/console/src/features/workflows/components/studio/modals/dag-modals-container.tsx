@@ -4,6 +4,7 @@ import { WorkflowIrDialog } from './workflow-ir-dialog';
 import { WorkflowDryRunModal } from './workflow-dry-run-modal';
 import { WorkflowSimulationModal } from './workflow-simulation-modal';
 import { WorkflowVariableWatchDrawer } from './workflow-variable-watch-drawer';
+import { WorkflowContractsModal } from './workflow-contracts-modal';
 import { HotMigrationModal } from '@/features/workflows/components/migration/hot-migration-modal';
 import type { WorkflowIR } from '../utils/workflow-ir-converter';
 
@@ -49,6 +50,11 @@ export interface DagModalsContainerProps {
   // Hot Migration Modal
   isHotMigrationOpen: boolean;
   onCloseHotMigration: () => void;
+  // Contracts Modal
+  isContractsModalOpen?: boolean;
+  onContractsModalOpenChange?: (open: boolean) => void;
+  onOpenStartNode?: () => void;
+  onOpenEndNode?: () => void;
 }
 
 export const DagModalsContainer: React.FC<DagModalsContainerProps> = ({
@@ -87,6 +93,10 @@ export const DagModalsContainer: React.FC<DagModalsContainerProps> = ({
   isStepping,
   isHotMigrationOpen,
   onCloseHotMigration,
+  isContractsModalOpen,
+  onContractsModalOpenChange,
+  onOpenStartNode,
+  onOpenEndNode,
 }) => {
   return (
     <>
@@ -146,6 +156,16 @@ export const DagModalsContainer: React.FC<DagModalsContainerProps> = ({
           executionId={executionId}
           currentVersion={1}
           onMigrationSuccess={onCloseHotMigration}
+        />
+      )}
+
+      {isContractsModalOpen !== undefined && onContractsModalOpenChange && (
+        <WorkflowContractsModal
+          open={isContractsModalOpen}
+          onOpenChange={onContractsModalOpenChange}
+          workflowIR={workflowIR}
+          onOpenStartNode={onOpenStartNode}
+          onOpenEndNode={onOpenEndNode}
         />
       )}
     </>
