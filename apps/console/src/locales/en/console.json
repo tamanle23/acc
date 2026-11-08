@@ -163,7 +163,11 @@
   },
   "workflows": {
     "title": "Workflow Definitions",
-    "description": "Design, simulate, and observe distributed DAG workflows with single-column lease queues and virtual-thread workers."
+    "description": "Design, simulate, and observe distributed DAG workflows with single-column lease queues and virtual-thread workers.",
+    "task_definitions_title": "Task Definitions Catalog",
+    "task_definitions_desc": "Enterprise catalog of typed task contracts, schema validation bounds, and worker policies.",
+    "approvals_title": "Workflow Approvals",
+    "approvals_desc": "Review and action pending human workflow transition decisions and policy audits."
   },
   "rbacStudio": {
     "title": "RBAC Matrix & Global Users",

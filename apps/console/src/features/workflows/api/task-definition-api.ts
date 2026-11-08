@@ -120,7 +120,7 @@ export const useSaveTaskDefinitionDraft = () => {
 
   return useMutation({
     mutationFn: async (input: SaveTaskDefinitionInput): Promise<TaskDefinitionRecord> => {
-      const res = await springApiClient.post('/v1/workflow/task-definitions/draft', input);
+      const res = await springApiClient.post('/v1/workflow/task-definitions', input);
       if (res.status === 200 || res.status === 201) {
         return res.data?.body || res.data;
       }
@@ -190,4 +190,46 @@ export const useUpgradeNodeTaskDef = () => {
       toast.error(`Failed to upgrade task definition: ${err.message || err}`);
     },
   }, clientToUse);
+};
+
+// 6. Delete DRAFT Task Definition
+export const useDeleteTaskDefinitionDraft = () => {
+  const queryContext = useContext(QueryClientContext);
+  const clientToUse = queryContext || fallbackQueryClient;
+
+  return useMutation({
+    mutationFn: async ({ name, version }: { name: string; version: number }): Promise<boolean> => {
+      const res = await springApiClient.delete(`/v1/workflow/task-definitions/${name}/versions/${version}`);
+      if (res.status === 200 || res.status === 204) {
+        return true;
+      }
+      throw new Error(`Failed to delete draft: HTTP ${res.status}`);
+    },
+    onSuccess: (_, { name, version }) => {
+      clientToUse.invalidateQueries({ queryKey: ['workflows', 'task-definitions'] });
+      toast.success(`Deleted draft for ${name} v${version}`);
+    },
+    onError: (err: any) => {
+      toast.error(`Failed to delete draft: ${err.message || err}`);
+    },
+  }, clientToUse);
+};
+
+// 7. Deterministic Category Resolver for Tasks
+export const resolveTaskCategory = (taskName?: string): 'COMMERCE' | 'AI' | 'CONTENT' | 'SYSTEM' | 'CUSTOM' => {
+  if (!taskName) return 'CUSTOM';
+  const lower = taskName.toLowerCase();
+  if (lower.includes('order') || lower.includes('payment') || lower.includes('courier') || lower.includes('inventory')) {
+    return 'COMMERCE';
+  }
+  if (lower.includes('ai') || lower.includes('prompt') || lower.includes('llm') || lower.includes('model') || lower.includes('embed')) {
+    return 'AI';
+  }
+  if (lower.includes('cms') || lower.includes('article') || lower.includes('media') || lower.includes('publish')) {
+    return 'CONTENT';
+  }
+  if (lower.includes('system') || lower.includes('validate') || lower.includes('sync')) {
+    return 'SYSTEM';
+  }
+  return 'CUSTOM';
 };

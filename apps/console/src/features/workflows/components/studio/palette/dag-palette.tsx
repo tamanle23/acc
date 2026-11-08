@@ -28,6 +28,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Search,
+  Plus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { type DagNodeType, type DagNodeData } from '../canvas/dag-node';
@@ -53,6 +54,7 @@ export interface DagPaletteProps {
   isCollapsed?: boolean;
   onCollapsedChange?: (collapsed: boolean) => void;
   onInsertNode?: (type: DagNodeType, defaultData?: Partial<DagNodeData>) => void;
+  onCreateNewTaskDef?: () => void;
 }
 
 export const CATEGORIES: { id: 'control' | 'data' | 'connectors' | 'human' | 'ai'; label: string }[] = [
@@ -400,6 +402,7 @@ export function DagPalette({
   isCollapsed: controlledCollapsed,
   onCollapsedChange,
   onInsertNode,
+  onCreateNewTaskDef,
 }: DagPaletteProps = {}) {
   const [internalCollapsed, setInternalCollapsed] = useState(defaultCollapsed);
   const isCollapsed = controlledCollapsed !== undefined ? controlledCollapsed : internalCollapsed;
@@ -598,9 +601,9 @@ export function DagPalette({
 
       {/* Accordion Categories */}
       <div className="flex flex-col gap-2 overflow-y-auto pr-1 flex-1">
-        {(catalogItems.length > 0 ? [{ id: 'catalog' as const, label: 'Task Definitions Catalog' }, ...CATEGORIES] : CATEGORIES).map((cat) => {
+        {[{ id: 'catalog' as const, label: 'Task Definitions Catalog' }, ...CATEGORIES].map((cat) => {
           const catItems = filteredItems.filter((item) => item.category === cat.id);
-          if (catItems.length === 0) return null;
+          if (catItems.length === 0 && cat.id !== 'catalog') return null;
           const isOpen = searchQuery.trim().length > 0 || openCategories[cat.id];
 
           return (
@@ -618,12 +621,49 @@ export function DagPalette({
                   )}
                   <span>{cat.label}</span>
                 </div>
-                <span className="text-[10px] text-muted-foreground/60">{catItems.length}</span>
+                <div className="flex items-center gap-1">
+                  {cat.id === 'catalog' && onCreateNewTaskDef && (
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onCreateNewTaskDef();
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.stopPropagation();
+                          onCreateNewTaskDef();
+                        }
+                      }}
+                      className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium text-primary hover:bg-primary/10 transition-colors cursor-pointer"
+                      title="Create New Task Definition"
+                    >
+                      <Plus className="w-2.5 h-2.5" />
+                      New
+                    </span>
+                  )}
+                  <span className="text-[10px] text-muted-foreground/60">{catItems.length}</span>
+                </div>
               </button>
 
               {isOpen && (
                 <div className="flex flex-col gap-1 mt-1 pl-1">
-                  {catItems.map((item) => (
+                  {cat.id === 'catalog' && catItems.length === 0 ? (
+                    <div className="p-2 text-center text-[10px] text-muted-foreground border border-dashed rounded-lg bg-muted/10">
+                      No task definitions found.
+                      {onCreateNewTaskDef && (
+                        <button
+                          type="button"
+                          onClick={onCreateNewTaskDef}
+                          className="text-primary hover:underline block mt-0.5 mx-auto font-medium"
+                        >
+                          + Create Definition
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    catItems.map((item) => (
                     <div
                       key={item.defaultData?.taskDefName ? `catalog-${item.defaultData.taskDefName}` : item.type}
                       draggable
@@ -649,7 +689,7 @@ export function DagPalette({
                         <span className="text-[10px] text-muted-foreground truncate">{item.description}</span>
                       </div>
                     </div>
-                  ))}
+                  )))}
                 </div>
               )}
             </div>

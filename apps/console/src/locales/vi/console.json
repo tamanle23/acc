@@ -163,7 +163,11 @@
   },
   "workflows": {
     "title": "Đặc tả quy trình",
-    "description": "Thiết kế, mô phỏng và quan sát luồng quy trình đồ thị DAG phân tán với hàng đợi lease đơn cột và worker Virtual Threads."
+    "description": "Thiết kế, mô phỏng và quan sát luồng quy trình đồ thị DAG phân tán với hàng đợi lease đơn cột và worker Virtual Threads.",
+    "task_definitions_title": "Danh mục Định nghĩa Tác vụ",
+    "task_definitions_desc": "Danh mục hợp đồng tác vụ có định kiểu, ràng buộc kiểm tra schema và chính sách worker.",
+    "approvals_title": "Phê duyệt Quy trình",
+    "approvals_desc": "Xem xét và xử lý các quyết định chuyển tiếp quy trình của con người và kiểm toán chính sách."
   },
   "rbacStudio": {
     "title": "Ma trận RBAC & Người dùng Toàn cục",

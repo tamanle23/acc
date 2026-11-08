@@ -1948,7 +1948,11 @@ export const workflowSandboxHandler: SandboxRouteHandler = {
     }
 
     // 0.2 Workflow Task Definitions Catalog: /workflow/task-definitions
-    if (cleanPath === '/workflow/task-definitions' || cleanPath === '/workflow/task-definitions/') {
+    if (
+      cleanPath === '/workflow/task-definitions' ||
+      cleanPath === '/workflow/task-definitions/' ||
+      cleanPath === '/workflow/task-definitions/draft'
+    ) {
       if (method === 'GET') {
         return {
           status: 200,

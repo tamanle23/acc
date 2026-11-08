@@ -164,10 +164,12 @@ src/routes/
 
 ### 3.11 Workflow Definitions Catalog & Studio (`/workflows`)
 - **Route:** `src/routes/_authenticated/workflows/index.tsx`
-- **Component Stack:** `WorkflowsFeature`, `WorkflowCatalogKpiBar`, `WorkflowCatalogTable`, `WorkflowCreateDialog`, `FleetMigrationModal`, `ApprovalsInbox`, `VisualDagStudio`.
-- **Layout:** Responsive container with Liquid Glass header bar, 4-metric catalog telemetry strip (Active Workflows, DAG Topology Nodes, Fleet Domains, Draft/Disabled), and dual-view switcher (`Definitions Catalog` vs `Approvals Inbox`). Clicking "Design" seamlessly activates full-bleed `VisualDagStudio` in `mode="designer"`.
+- **Component Stack:** `WorkflowsFeature`, `WorkflowCatalogKpiBar`, `WorkflowCatalogTable`, `WorkflowCreateDialog`, `FleetMigrationModal`, `ApprovalsInbox`, `VisualDagStudio`, `TaskDefinitionKpiBar`, `TaskDefinitionTable`, `TaskDefinitionEditorDialog`, `TaskVersionHistoryDrawer`, `SchemaPropertyGrid`, `SchemaTestSandbox`.
+- **Layout:** Responsive container with Liquid Glass header bar, 4-metric catalog telemetry strip (Active Workflows, DAG Topology Nodes, Fleet Domains, Draft/Disabled), and tri-view switcher (`Definitions Catalog` vs `Task Definitions` vs `Approvals Inbox`). Clicking "Design" seamlessly activates full-bleed `VisualDagStudio` in `mode="designer"`.
+- **Task Definitions Manager:** Dedicated tab featuring operational KPI cards (Total Definitions, Active in Prod, Drafts & Evolutions, Schema Complexity), TanStack data table with status facets (`ACTIVE`, `DRAFT`, `DEPRECATED`), dual-mode visual property grid/raw JSON Schema editor, client-side validation test bench, and append-only version history drawer with side-by-side schema diffing.
+- **Studio Palette Integration:** In-canvas `+ New Definition` quick trigger inside `VisualDagStudio` palette accordion header to author and register contracts on the fly without context switching.
 - **Glass Spec:** `bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-white/40 dark:border-white/10 shadow-lg shadow-black/5` with specular inset borders.
-- **State & Stores:** Backed by `useWorkflowDefinitions`, `useSaveWorkflowDefinition`, and `useWorkflowExecutionStream`. Offline execution backed by `workflowSandboxHandler`.
+- **State & Stores:** Backed by `useWorkflowDefinitions`, `useSaveWorkflowDefinition`, `useTaskDefinitions`, `useTaskDefinitionVersions`, `useSaveTaskDefinitionDraft`, `usePublishTaskDefinition`, and `useWorkflowExecutionStream`. Offline execution backed by `workflowSandboxHandler`.
 - **Navigation Continuity:** Includes "View Executions" action linking to `/workflow-executions?search={workflowKey}`.
 
 ### 3.12 Workflow Execution & Telemetry Monitor (`/workflow-executions`)

@@ -60,6 +60,7 @@ import { cn } from '@/lib/utils';
 import { Clock, Radio } from 'lucide-react';
 import { useTaskDefinitions } from '@/features/workflows/api/task-definition-api';
 import { TaskVersionDiffModal } from './modals/task-version-diff-modal';
+import { TaskDefinitionEditorDialog } from '../task-definitions/task-definition-editor-dialog';
 import {
   useWorkflowExecutionStream,
   type WorkflowStreamEvent,
@@ -213,6 +214,7 @@ function DagStudioCanvas({
   const [breakpoints, setBreakpoints] = useState<string[]>([]);
   const { data: taskDefs } = useTaskDefinitions();
   const [upgradeNode, setUpgradeNode] = useState<DagNodeData | null>(null);
+  const [isNewTaskDefOpen, setIsNewTaskDefOpen] = useState(false);
 
   const handleConfirmUpgrade = useCallback((
     taskRef: string,
@@ -862,6 +864,7 @@ function DagStudioCanvas({
             <DagPalette
               defaultCollapsed={containerWidth < 900}
               onInsertNode={isReadOnly ? undefined : handleInsertNode}
+              onCreateNewTaskDef={isReadOnly ? undefined : () => setIsNewTaskDefOpen(true)}
               style={{
                 maxHeight: `${computedMaxHeight}px`,
               }}
@@ -1147,6 +1150,13 @@ function DagStudioCanvas({
         currentRecord={taskDefs?.find((td) => td.name === (upgradeNode?.taskDefName || upgradeNode?.taskReferenceName) && td.version === upgradeNode?.taskDefVersion)}
         targetRecord={taskDefs?.find((td) => td.name === (upgradeNode?.taskDefName || upgradeNode?.taskReferenceName) && td.version === upgradeNode?.latestTaskDefVersion)}
         onConfirmUpgrade={handleConfirmUpgrade}
+      />
+
+      {/* 16. In-Canvas Task Definition Creator Dialog */}
+      <TaskDefinitionEditorDialog
+        open={isNewTaskDefOpen}
+        onOpenChange={setIsNewTaskDefOpen}
+        mode="create"
       />
     </div>
   );
