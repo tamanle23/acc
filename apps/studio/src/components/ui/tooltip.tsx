@@ -1,4 +1,4 @@
-import { splitProps, type ComponentProps, type JSX, type ParentProps } from "solid-js";
+import { splitProps, Show, type ComponentProps, type JSX, type ParentProps } from "solid-js";
 import * as TooltipPrimitive from "@kobalte/core/tooltip";
 import { cn } from "cn";
 
@@ -6,8 +6,18 @@ function TooltipProvider(props: ParentProps) {
   return <>{props.children}</>;
 }
 
-function Tooltip(props: ComponentProps<typeof TooltipPrimitive.Root> & { [key: string]: any }) {
-  return <TooltipPrimitive.Root data-slot="tooltip" openDelay={props.delayDuration ?? 0} {...props} />;
+function Tooltip(props: ComponentProps<typeof TooltipPrimitive.Root> & { content?: JSX.Element; delayDuration?: number; [key: string]: any }) {
+  const [local, rest] = splitProps(props, ["content", "delayDuration", "children"]);
+  return (
+    <TooltipPrimitive.Root data-slot="tooltip" openDelay={local.delayDuration ?? 0} {...rest}>
+      <Show when={local.content !== undefined} fallback={local.children}>
+        <TooltipTrigger as="div" class="inline-flex items-center">
+          {local.children}
+        </TooltipTrigger>
+        <TooltipContent>{local.content}</TooltipContent>
+      </Show>
+    </TooltipPrimitive.Root>
+  );
 }
 
 function TooltipTrigger(props: ComponentProps<typeof TooltipPrimitive.Trigger> & { class?: string; className?: string; [key: string]: any }) {
