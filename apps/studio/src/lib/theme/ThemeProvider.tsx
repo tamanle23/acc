@@ -10,9 +10,6 @@ import {
   STUDIO_THEME_PRESETS,
   getThemePreset,
   type StudioThemePreset,
-} from './themePresets';
-
-export {
   type ThemeMode,
   type GlassStyle,
   type BlurIntensity,
@@ -23,6 +20,30 @@ export {
   THEME_STORAGE_KEY,
   applyThemeToDocument,
 } from './themePresets';
+
+export {
+  type ThemeMode,
+  type GlassStyle,
+  type BlurIntensity,
+  type AccentColor,
+  type ThemePreferences,
+  type StudioThemePreset,
+  DEFAULT_THEME_PREFERENCES,
+  DEFAULT_PREFERENCES,
+  THEME_STORAGE_KEY,
+  applyThemeToDocument,
+};
+
+export interface ThemeContextValue {
+  preferences: ThemePreferences;
+  activePreset: StudioThemePreset;
+  setTheme: (updates: Partial<ThemePreferences>) => void;
+  selectPreset: (presetId: string) => void;
+  toggleMode: () => void;
+  resetTheme: () => void;
+  isSettingsOpen: boolean;
+  setIsSettingsOpen: (open: boolean) => void;
+}
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 

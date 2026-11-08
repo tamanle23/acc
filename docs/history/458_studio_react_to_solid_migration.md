@@ -36,7 +36,7 @@ In `@acc/studio`, 60fps NLE video editing, real-time playhead needle scrubbing, 
 ### 2. Reactive Store & Core Libs
 - `apps/studio/src/lib/ir/useStudioStore.ts`: Built Solid signal-backed reactive bridge over `IRStateManager` and `PlayheadController`.
 - `apps/studio/src/lib/shuttle/useShuttleEngine.ts`: Fine-grained Solid reactivity for shuttle physics.
-- `apps/studio/src/lib/theme/ThemeProvider.tsx` & `themePresets.ts`: Decoupled DOM token mutations from JSX for headless test compatibility.
+- `apps/studio/src/lib/theme/ThemeProvider.tsx` & `themePresets.ts`: Decoupled DOM token mutations from JSX for headless test compatibility; explicitly bound in-scope imports and `ThemeContextValue` interface for reliable runtime hydration.
 - `apps/studio/src/lib/dnd/useWorkspaceDnd.ts`: Implemented `@dnd-kit/solid` drag-and-drop primitives.
 - `apps/studio/src/lib/commands/SplitSequenceCommand.ts`: Ensured relational DAG integrity with `{ after: id }`.
 
