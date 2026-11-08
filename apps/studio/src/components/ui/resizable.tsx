@@ -1,6 +1,28 @@
-import { splitProps, type ValidComponent, type JSX } from "solid-js";
+import { splitProps, type JSX } from "solid-js";
 import Resizable from "@corvu/resizable";
 import { cn } from "cn";
+
+function normalizeCorvuSize(size: number | string | undefined): number | `${number}px` | undefined {
+  if (size === undefined || size === null) return undefined;
+  if (typeof size === "number") {
+    return size > 1 ? size / 100 : size;
+  }
+  if (typeof size === "string") {
+    const trimmed = size.trim();
+    if (trimmed.endsWith("%")) {
+      const parsed = parseFloat(trimmed);
+      return Number.isNaN(parsed) ? undefined : parsed / 100;
+    }
+    if (trimmed.endsWith("px")) {
+      return trimmed as `${number}px`;
+    }
+    const parsed = parseFloat(trimmed);
+    if (!Number.isNaN(parsed)) {
+      return parsed > 1 ? parsed / 100 : parsed;
+    }
+  }
+  return undefined;
+}
 
 export interface ResizablePanelGroupProps {
   class?: string;
@@ -32,10 +54,11 @@ function ResizablePanelGroup(props: ResizablePanelGroupProps) {
 export interface ResizablePanelProps {
   class?: string;
   className?: string;
-  defaultSize?: number | `${number}%` | `${number}px`;
-  initialSize?: number | `${number}%` | `${number}px`;
-  minSize?: number | `${number}%` | `${number}px`;
-  maxSize?: number | `${number}%` | `${number}px`;
+  defaultSize?: number | `${number}%` | `${number}px` | string;
+  initialSize?: number | `${number}%` | `${number}px` | string;
+  minSize?: number | `${number}%` | `${number}px` | string;
+  maxSize?: number | `${number}%` | `${number}px` | string;
+  collapsedSize?: number | `${number}%` | `${number}px` | string;
   collapsible?: boolean;
   children?: JSX.Element;
   [key: string]: any;
@@ -49,16 +72,21 @@ function ResizablePanel(props: ResizablePanelProps) {
     "initialSize",
     "minSize",
     "maxSize",
+    "collapsedSize",
     "children",
   ]);
 
-  const initialSize = () => local.initialSize ?? local.defaultSize;
+  const initialSize = () => normalizeCorvuSize(local.initialSize ?? local.defaultSize);
+  const minSize = () => normalizeCorvuSize(local.minSize);
+  const maxSize = () => normalizeCorvuSize(local.maxSize);
+  const collapsedSize = () => normalizeCorvuSize(local.collapsedSize);
 
   return (
     <Resizable.Panel
       initialSize={initialSize()}
-      minSize={local.minSize}
-      maxSize={local.maxSize}
+      minSize={minSize()}
+      maxSize={maxSize()}
+      collapsedSize={collapsedSize()}
       class={cn("overflow-hidden", local.class || local.className)}
       {...rest}
     >
@@ -80,7 +108,7 @@ function ResizableHandle(props: ResizableHandleProps) {
   return (
     <Resizable.Handle
       class={cn(
-        "relative flex w-1.5 items-center justify-center bg-border/60 hover:bg-accent-theme/60 transition-colors focus-visible:outline-none data-[orientation=horizontal]:h-1.5 data-[orientation=horizontal]:w-full select-none cursor-col-resize data-[orientation=horizontal]:cursor-row-resize",
+        "relative flex w-1.5 items-center justify-center bg-border/60 hover:bg-accent-theme/60 transition-colors focus-visible:outline-none data-[orientation=vertical]:h-1.5 data-[orientation=vertical]:w-full select-none cursor-col-resize data-[orientation=vertical]:cursor-row-resize",
         local.class || local.className
       )}
       {...rest}
@@ -92,4 +120,4 @@ function ResizableHandle(props: ResizableHandleProps) {
   );
 }
 
-export { ResizableHandle, ResizablePanel, ResizablePanelGroup };
+export { ResizableHandle, ResizablePanel, ResizablePanelGroup, normalizeCorvuSize };
