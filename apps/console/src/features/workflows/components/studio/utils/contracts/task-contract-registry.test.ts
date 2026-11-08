@@ -133,4 +133,74 @@ describe('TaskContractRegistry', () => {
       expect(userNode!.children?.find((t) => t.key === 'email')?.path).toBe('data.user.email');
     });
   });
+
+  describe('4-Tier Input Schema Resolution Hierarchy', () => {
+    it('resolves built-in HTTP input schema with required url and method', () => {
+      const nodeData: DagNodeData = {
+        taskReferenceName: 'httpCall',
+        taskType: 'HTTP',
+      };
+
+      const resolved = taskContractRegistry.resolveInputSchema(nodeData);
+      expect(resolved.type).toBe('object');
+      expect((resolved as any).required).toContain('url');
+      expect((resolved as any).required).toContain('method');
+      expect((resolved.properties as any).url.type).toBe('string');
+      expect((resolved.properties as any).method.type).toBe('string');
+
+      const params = taskContractRegistry.getInputParameters(nodeData);
+      expect(params.some((p) => p.key === 'url' && p.required)).toBe(true);
+      expect(params.some((p) => p.key === 'method' && p.required)).toBe(true);
+    });
+
+    it('resolves custom declaredInputSchema override over defaults', () => {
+      const nodeData: DagNodeData = {
+        taskReferenceName: 'customStep',
+        taskType: 'HTTP',
+        declaredInputSchema: {
+          type: 'object',
+          required: ['apiKey'],
+          properties: {
+            apiKey: { type: 'string', title: 'API Key' },
+          },
+        },
+      };
+
+      const resolved = taskContractRegistry.resolveInputSchema(nodeData);
+      expect((resolved as any).required).toContain('apiKey');
+      expect((resolved.properties as any).url).toBeUndefined();
+
+      const params = taskContractRegistry.getInputParameters(nodeData);
+      expect(params).toHaveLength(1);
+      expect(params[0].key).toBe('apiKey');
+    });
+
+    it('resolves worker fleet catalog inputSchema for SIMPLE node', () => {
+      const nodeData: DagNodeData = {
+        taskReferenceName: 'inventoryCheck',
+        taskType: 'SIMPLE',
+      };
+      const workerDescriptor: TaskWorkerDescriptor = {
+        taskName: 'inventoryWorker',
+        domain: 'default',
+        description: 'Checks inventory',
+        inputSchema: {
+          type: 'object',
+          required: ['orderId', 'sku'],
+          properties: {
+            orderId: { type: 'string' },
+            sku: { type: 'string' },
+          },
+        },
+      };
+
+      const resolved = taskContractRegistry.resolveInputSchema(nodeData, workerDescriptor);
+      expect((resolved as any).required).toContain('orderId');
+      expect((resolved as any).required).toContain('sku');
+
+      const params = taskContractRegistry.getInputParameters(nodeData, workerDescriptor);
+      expect(params.some((p) => p.key === 'orderId' && p.required)).toBe(true);
+      expect(params.some((p) => p.key === 'sku' && p.required)).toBe(true);
+    });
+  });
 });

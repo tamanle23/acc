@@ -110,9 +110,27 @@ class SandboxWorkflowSeederTest {
         // Verify task sequence
         TaskDefinition startTask = def.tasks().get(0);
         assertThat(startTask.taskReferenceName()).isEqualTo("workflow_start");
+        assertThat(startTask.outputSchema()).isNotEmpty();
+
+        TaskDefinition validateTask = def.tasks().get(1);
+        assertThat(validateTask.taskReferenceName()).isEqualTo("validateOrder");
+        assertThat(validateTask.inputSchema()).isNotEmpty();
+        assertThat(validateTask.outputSchema()).isNotEmpty();
+
+        TaskDefinition checkTask = def.tasks().get(2);
+        assertThat(checkTask.taskReferenceName()).isEqualTo("checkInventory");
+        assertThat(checkTask.inputSchema()).isNotEmpty();
+        assertThat(checkTask.outputSchema()).isNotEmpty();
+
+        TaskDefinition chargeTask = def.tasks().get(3);
+        assertThat(chargeTask.taskReferenceName()).isEqualTo("chargePayment");
+        assertThat(chargeTask.inputSchema()).isNotEmpty();
+        assertThat(chargeTask.outputSchema()).isNotEmpty();
 
         TaskDefinition endTask = def.tasks().get(5);
         assertThat(endTask.taskReferenceName()).isEqualTo("workflow_end");
+        assertThat(endTask.inputSchema()).isNotEmpty();
+        assertThat(endTask.outputSchema()).isNotEmpty();
         assertThat(endTask.inputParameters()).containsKeys("fulfillmentStatus", "orderId", "trackingNumber");
     }
 }

@@ -27,6 +27,7 @@ export interface WorkflowTaskIR {
   retryDelaySeconds?: number;
   backoffRate?: number;
   inputParameters?: Record<string, unknown>;
+  inputSchema?: Record<string, unknown>;
   outputParameters?: Record<string, unknown>;
   outputSchema?: Record<string, unknown>;
   mockOutputPayload?: Record<string, unknown>;
@@ -506,8 +507,13 @@ export function exportToWorkflowIR(
       retryDelaySeconds: node.data.retryDelaySeconds ?? 2,
       backoffRate: node.data.backoffRate ?? 2.0,
       inputParameters: node.data.inputParameters || {},
+      ...(node.data.inputSchema || node.data.declaredInputSchema
+        ? { inputSchema: node.data.inputSchema || node.data.declaredInputSchema }
+        : {}),
       ...(node.data.outputParameters ? { outputParameters: node.data.outputParameters } : {}),
-      ...(node.data.declaredOutputSchema ? { outputSchema: node.data.declaredOutputSchema } : {}),
+      ...(node.data.declaredOutputSchema || node.data.outputSchema
+        ? { outputSchema: node.data.declaredOutputSchema || node.data.outputSchema }
+        : {}),
       ...(node.data.mockOutputPayload ? { mockOutputPayload: node.data.mockOutputPayload } : {}),
     };
 
@@ -744,7 +750,12 @@ export function importFromWorkflowIR(
         retryDelaySeconds: task.retryDelaySeconds ?? 2,
         backoffRate: task.backoffRate ?? 2.0,
         inputParameters: task.inputParameters,
+        inputSchema: task.inputSchema,
+        declaredInputSchema: isEndNode
+          ? task.inputSchema || ir.outputSchema || DEFAULT_DRAFT7_SCHEMA
+          : task.inputSchema,
         outputParameters: task.outputParameters,
+        outputSchema: task.outputSchema,
         declaredOutputSchema: isStartNode
           ? task.outputSchema || ir.inputSchema || DEFAULT_DRAFT7_SCHEMA
           : isEndNode

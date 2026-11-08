@@ -108,6 +108,7 @@ public class SandboxWorkflowSeeder implements ApplicationListener<ApplicationRea
         List<TaskDefinition> tasks = List.of(
             TaskDefinition.builder("workflow_start")
                 .taskType(TaskType.START_WORKFLOW)
+                .outputSchema(inputSchema)
                 .build(),
 
             TaskDefinition.builder("validateOrder")
@@ -115,6 +116,20 @@ public class SandboxWorkflowSeeder implements ApplicationListener<ApplicationRea
                 .domain("default")
                 .inputParameters(Map.of(
                     "orderId", "${workflow.input.orderId}"
+                ))
+                .inputSchema(Map.of(
+                    "type", "object",
+                    "required", List.of("orderId"),
+                    "properties", Map.of(
+                        "orderId", Map.of("type", "string", "description", "Target order identifier")
+                    )
+                ))
+                .outputSchema(Map.of(
+                    "type", "object",
+                    "properties", Map.of(
+                        "valid", Map.of("type", "boolean"),
+                        "riskScore", Map.of("type", "integer")
+                    )
                 ))
                 .build(),
 
@@ -126,6 +141,23 @@ public class SandboxWorkflowSeeder implements ApplicationListener<ApplicationRea
                     "sku", "${workflow.input.sku}",
                     "quantity", "${workflow.input.quantity}"
                 ))
+                .inputSchema(Map.of(
+                    "type", "object",
+                    "required", List.of("orderId", "sku", "quantity"),
+                    "properties", Map.of(
+                        "orderId", Map.of("type", "string", "description", "Target order identifier"),
+                        "sku", Map.of("type", "string", "description", "Stock Keeping Unit code"),
+                        "quantity", Map.of("type", "integer", "description", "Requested item count")
+                    )
+                ))
+                .outputSchema(Map.of(
+                    "type", "object",
+                    "properties", Map.of(
+                        "inStock", Map.of("type", "boolean"),
+                        "warehouseId", Map.of("type", "string"),
+                        "reservationCode", Map.of("type", "string")
+                    )
+                ))
                 .compensateHandlerRef("cancelInventoryReservation")
                 .build(),
 
@@ -136,6 +168,21 @@ public class SandboxWorkflowSeeder implements ApplicationListener<ApplicationRea
                     "orderId", "${workflow.input.orderId}",
                     "amount", "${workflow.input.amount}"
                 ))
+                .inputSchema(Map.of(
+                    "type", "object",
+                    "required", List.of("orderId", "amount"),
+                    "properties", Map.of(
+                        "orderId", Map.of("type", "string", "description", "Target order identifier"),
+                        "amount", Map.of("type", "number", "description", "Total settlement amount")
+                    )
+                ))
+                .outputSchema(Map.of(
+                    "type", "object",
+                    "properties", Map.of(
+                        "charged", Map.of("type", "boolean"),
+                        "transactionId", Map.of("type", "string")
+                    )
+                ))
                 .build(),
 
             TaskDefinition.builder("expressCourier")
@@ -143,6 +190,20 @@ public class SandboxWorkflowSeeder implements ApplicationListener<ApplicationRea
                 .domain("default")
                 .inputParameters(Map.of(
                     "orderId", "${workflow.input.orderId}"
+                ))
+                .inputSchema(Map.of(
+                    "type", "object",
+                    "required", List.of("orderId"),
+                    "properties", Map.of(
+                        "orderId", Map.of("type", "string", "description", "Target order identifier")
+                    )
+                ))
+                .outputSchema(Map.of(
+                    "type", "object",
+                    "properties", Map.of(
+                        "carrier", Map.of("type", "string"),
+                        "trackingNumber", Map.of("type", "string")
+                    )
                 ))
                 .compensateHandlerRef("cancelCourierBooking")
                 .build(),
@@ -156,6 +217,7 @@ public class SandboxWorkflowSeeder implements ApplicationListener<ApplicationRea
                     "transactionId", "${chargePayment.output.transactionId}",
                     "trackingNumber", "${expressCourier.output.trackingNumber}"
                 ))
+                .inputSchema(outputSchema)
                 .outputSchema(outputSchema)
                 .build()
         );
@@ -218,6 +280,15 @@ public class SandboxWorkflowSeeder implements ApplicationListener<ApplicationRea
             .taskType(TaskType.SIMPLE)
             .domain("default")
             .inputParameters(Map.of("orderId", "${workflow.input.orderId}"))
+            .inputSchema(Map.of(
+                "type", "object",
+                "required", List.of("orderId"),
+                "properties", Map.of("orderId", Map.of("type", "string"))
+            ))
+            .outputSchema(Map.of(
+                "type", "object",
+                "properties", Map.of("carrier", Map.of("type", "string"), "trackingNumber", Map.of("type", "string"))
+            ))
             .compensateHandlerRef("cancelCourierBooking")
             .build();
 
@@ -225,11 +296,21 @@ public class SandboxWorkflowSeeder implements ApplicationListener<ApplicationRea
             .taskType(TaskType.SIMPLE)
             .domain("default")
             .inputParameters(Map.of("orderId", "${workflow.input.orderId}"))
+            .inputSchema(Map.of(
+                "type", "object",
+                "required", List.of("orderId"),
+                "properties", Map.of("orderId", Map.of("type", "string"))
+            ))
+            .outputSchema(Map.of(
+                "type", "object",
+                "properties", Map.of("carrier", Map.of("type", "string"), "trackingNumber", Map.of("type", "string"))
+            ))
             .build();
 
         List<TaskDefinition> tasks = List.of(
             TaskDefinition.builder("workflow_start")
                 .taskType(TaskType.START_WORKFLOW)
+                .outputSchema(inputSchema)
                 .build(),
 
             TaskDefinition.builder("checkInventory")
@@ -240,6 +321,22 @@ public class SandboxWorkflowSeeder implements ApplicationListener<ApplicationRea
                     "sku", "${workflow.input.sku}",
                     "quantity", "${workflow.input.quantity}"
                 ))
+                .inputSchema(Map.of(
+                    "type", "object",
+                    "required", List.of("orderId", "sku", "quantity"),
+                    "properties", Map.of(
+                        "orderId", Map.of("type", "string"),
+                        "sku", Map.of("type", "string"),
+                        "quantity", Map.of("type", "integer")
+                    )
+                ))
+                .outputSchema(Map.of(
+                    "type", "object",
+                    "properties", Map.of(
+                        "inStock", Map.of("type", "boolean"),
+                        "warehouseId", Map.of("type", "string")
+                    )
+                ))
                 .compensateHandlerRef("cancelInventoryReservation")
                 .build(),
 
@@ -247,6 +344,15 @@ public class SandboxWorkflowSeeder implements ApplicationListener<ApplicationRea
                 .taskType(TaskType.SWITCH)
                 .inputParameters(Map.of(
                     "caseExpression", "${workflow.input.speed}"
+                ))
+                .inputSchema(Map.of(
+                    "type", "object",
+                    "required", List.of("caseExpression"),
+                    "properties", Map.of("caseExpression", Map.of("type", "string"))
+                ))
+                .outputSchema(Map.of(
+                    "type", "object",
+                    "properties", Map.of("selectedCase", Map.of("type", "string"))
                 ))
                 .decisionCases(Map.of(
                     "EXPRESS", List.of(expressBranchTask),
@@ -264,6 +370,7 @@ public class SandboxWorkflowSeeder implements ApplicationListener<ApplicationRea
                     "carrier", "${expressCourier.output.carrier}",
                     "trackingNumber", "${expressCourier.output.trackingNumber}"
                 ))
+                .inputSchema(outputSchema)
                 .outputSchema(outputSchema)
                 .build()
         );

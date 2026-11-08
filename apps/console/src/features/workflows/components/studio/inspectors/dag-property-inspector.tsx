@@ -1342,36 +1342,92 @@ export function DagPropertyInspector({
                     </Button>
                   </div>
 
-                  {/* Worker Schema Requirement Checklist */}
+                  {/* Predefined Input Contract Requirements Checklist */}
                   {(() => {
-                    const inputSchemaObj = matchedWorkerDescriptor?.inputSchema as
+                    const expectedParams = taskContractRegistry.getInputParameters(formData, matchedWorkerDescriptor);
+                    const resolvedInputSchema = taskContractRegistry.resolveInputSchema(formData, matchedWorkerDescriptor) as
                       | { required?: string[]; properties?: Record<string, { type?: string; description?: string }> }
                       | undefined;
-                    const reqInputs = Array.isArray(inputSchemaObj?.required) ? inputSchemaObj.required : [];
-                    if (reqInputs.length === 0) return null;
+                    const reqInputs = Array.isArray(resolvedInputSchema?.required)
+                      ? resolvedInputSchema.required
+                      : expectedParams.filter((p) => p.required).map((p) => p.key);
 
                     const currentInputs = formData.inputParameters || {};
                     const missing = reqInputs.filter(
                       (k) => currentInputs[k] === undefined || currentInputs[k] === ''
                     );
 
+                    const contractSource = formData.declaredInputSchema || formData.inputSchema
+                      ? 'Custom Override'
+                      : matchedWorkerDescriptor?.inputSchema
+                        ? 'Worker Fleet'
+                        : 'Built-in Contract';
+
                     return (
                       <div className="p-2.5 rounded-lg border border-border/50 bg-muted/20 space-y-2">
                         <div className="flex items-center justify-between">
                           <Label className="text-xs font-semibold flex items-center gap-1.5 text-primary">
                             <ShieldAlert className="w-3.5 h-3.5 text-primary" />
-                            Worker Contract Requirements
+                            Predefined Input Contract
                           </Label>
-                          {missing.length === 0 ? (
-                            <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-[9px]">
-                              All Required Bound
+                          <div className="flex items-center gap-1.5">
+                            <Badge variant="outline" className="text-[9px] font-mono uppercase">
+                              {contractSource}
                             </Badge>
-                          ) : (
-                            <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 text-[9px]">
-                              {missing.length} Unbound
-                            </Badge>
-                          )}
+                            {reqInputs.length === 0 ? (
+                              <Badge className="bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20 text-[9px]">
+                                Flexible Input
+                              </Badge>
+                            ) : missing.length === 0 ? (
+                              <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-[9px]">
+                                All Required Bound
+                              </Badge>
+                            ) : (
+                              <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 text-[9px]">
+                                {missing.length} Unbound
+                              </Badge>
+                            )}
+                          </div>
                         </div>
+
+                        {/* List of Expected Contract Parameters with type badges */}
+                        {expectedParams.length > 0 && (
+                          <div className="space-y-1 pt-1 border-t border-border/30">
+                            <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+                              Expected Node Parameters:
+                            </span>
+                            <div className="flex flex-wrap gap-1">
+                              {expectedParams.map((param) => {
+                                const isBound = currentInputs[param.key] !== undefined && currentInputs[param.key] !== '';
+                                return (
+                                  <Badge
+                                    key={param.key}
+                                    variant="secondary"
+                                    className={cn(
+                                      'text-[10px] font-mono flex items-center gap-1 cursor-pointer transition-colors',
+                                      isBound
+                                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                                        : param.required
+                                          ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+                                          : 'bg-muted text-muted-foreground'
+                                    )}
+                                    title={param.description || (param.required ? 'Required parameter' : 'Optional parameter')}
+                                    onClick={() => {
+                                      if (!isBound) {
+                                        setParamKey(param.key);
+                                        setParamValue(`\${workflow.input.${param.key}}`);
+                                      }
+                                    }}
+                                  >
+                                    <span>{param.key}</span>
+                                    <span className="opacity-60 text-[9px]">[{param.type}]</span>
+                                    {param.required && <span className="text-amber-500 font-bold">*</span>}
+                                  </Badge>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
 
                         {missing.length > 0 && (
                           <div className="flex items-center justify-between gap-2 pt-1 border-t border-border/30 text-xs">
@@ -1455,7 +1511,7 @@ export function DagPropertyInspector({
                           handleFieldChange('inputParameters', nextVal);
                         }
                       }}
-                      jsonSchema={matchedWorkerDescriptor?.inputSchema}
+                      jsonSchema={taskContractRegistry.resolveInputSchema(formData, matchedWorkerDescriptor)}
                       defaultMode="tree"
                       height="200px"
                     />
@@ -1466,6 +1522,33 @@ export function DagPropertyInspector({
               {/* Sub-tab 2: Outputs & Schema */}
               {dataSubTab === 'outputs' && (
                 <div className="space-y-3">
+                  {/* Input Contract Schema */}
+                  <div className="p-2.5 rounded-lg border border-border/50 bg-muted/20 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-semibold flex items-center gap-1 text-primary">
+                        <FileCode className="w-3.5 h-3.5" />
+                        Predefined Input Contract Schema
+                      </Label>
+                      <Badge variant="outline" className="text-[9px] font-mono uppercase">
+                        {formData.declaredInputSchema || formData.inputSchema ? 'Custom Override' : matchedWorkerDescriptor?.inputSchema ? 'Worker Fleet' : 'Built-in Contract'}
+                      </Badge>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      Contract fields required by this node before execution.
+                    </p>
+
+                    <div className="p-2 rounded bg-background/60 border border-border/40 font-mono text-[10px] max-h-36 overflow-y-auto">
+                      <pre className="text-foreground/90 whitespace-pre-wrap">
+                        {JSON.stringify(
+                          taskContractRegistry.resolveInputSchema(formData, matchedWorkerDescriptor),
+                          null,
+                          2
+                        )}
+                      </pre>
+                    </div>
+                  </div>
+
+                  {/* Output Contract Schema */}
                   <div className="p-2.5 rounded-lg border border-border/50 bg-muted/20 space-y-1.5">
                     <div className="flex items-center justify-between">
                       <Label className="text-xs font-semibold flex items-center gap-1 text-primary">

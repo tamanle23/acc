@@ -152,12 +152,32 @@ const DEFAULT_DEFINITIONS: WorkflowDefinitionIR[] = [
       {
         taskReferenceName: 'workflow_start',
         taskType: 'START_WORKFLOW',
+        outputSchema: {
+          $schema: 'http://json-schema.org/draft-07/schema#',
+          type: 'object',
+          properties: {
+            orderId: { type: 'string' },
+            sku: { type: 'string' },
+            quantity: { type: 'integer' },
+            amount: { type: 'number' },
+            customerEmail: { type: 'string' },
+          },
+        },
       },
       {
         taskReferenceName: 'validateOrder',
         taskType: 'SIMPLE',
         domain: 'default',
         inputParameters: { orderId: '${workflow.input.orderId}' },
+        inputSchema: {
+          type: 'object',
+          required: ['orderId'],
+          properties: { orderId: { type: 'string', description: 'Target order identifier' } },
+        },
+        outputSchema: {
+          type: 'object',
+          properties: { valid: { type: 'boolean' }, riskScore: { type: 'integer' } },
+        },
       },
       {
         taskReferenceName: 'checkInventory',
@@ -167,6 +187,23 @@ const DEFAULT_DEFINITIONS: WorkflowDefinitionIR[] = [
           orderId: '${workflow.input.orderId}',
           sku: '${workflow.input.sku}',
           quantity: '${workflow.input.quantity}',
+        },
+        inputSchema: {
+          type: 'object',
+          required: ['orderId', 'sku', 'quantity'],
+          properties: {
+            orderId: { type: 'string' },
+            sku: { type: 'string' },
+            quantity: { type: 'integer' },
+          },
+        },
+        outputSchema: {
+          type: 'object',
+          properties: {
+            inStock: { type: 'boolean' },
+            warehouseId: { type: 'string' },
+            reservationCode: { type: 'string' },
+          },
         },
         compensateHandlerRef: 'cancelInventoryReservation',
       },
@@ -178,12 +215,39 @@ const DEFAULT_DEFINITIONS: WorkflowDefinitionIR[] = [
           orderId: '${workflow.input.orderId}',
           amount: '${workflow.input.amount}',
         },
+        inputSchema: {
+          type: 'object',
+          required: ['orderId', 'amount'],
+          properties: {
+            orderId: { type: 'string' },
+            amount: { type: 'number' },
+          },
+        },
+        outputSchema: {
+          type: 'object',
+          properties: {
+            charged: { type: 'boolean' },
+            transactionId: { type: 'string' },
+          },
+        },
       },
       {
         taskReferenceName: 'expressCourier',
         taskType: 'SIMPLE',
         domain: 'default',
         inputParameters: { orderId: '${workflow.input.orderId}' },
+        inputSchema: {
+          type: 'object',
+          required: ['orderId'],
+          properties: { orderId: { type: 'string' } },
+        },
+        outputSchema: {
+          type: 'object',
+          properties: {
+            carrier: { type: 'string' },
+            trackingNumber: { type: 'string' },
+          },
+        },
         compensateHandlerRef: 'cancelCourierBooking',
       },
       {
@@ -195,6 +259,19 @@ const DEFAULT_DEFINITIONS: WorkflowDefinitionIR[] = [
           reservationCode: '${checkInventory.output.reservationCode}',
           transactionId: '${chargePayment.output.transactionId}',
           trackingNumber: '${expressCourier.output.trackingNumber}',
+        },
+        outputSchema: {
+          $schema: 'http://json-schema.org/draft-07/schema#',
+          type: 'object',
+          required: ['fulfillmentStatus', 'orderId', 'reservationCode', 'transactionId', 'trackingNumber'],
+          properties: {
+            fulfillmentStatus: { type: 'string' },
+            orderId: { type: 'string' },
+            reservationCode: { type: 'string' },
+            transactionId: { type: 'string' },
+            trackingNumber: { type: 'string' },
+          },
+          additionalProperties: false,
         },
       },
     ],
@@ -244,6 +321,17 @@ const DEFAULT_DEFINITIONS: WorkflowDefinitionIR[] = [
       {
         taskReferenceName: 'workflow_start',
         taskType: 'START_WORKFLOW',
+        outputSchema: {
+          $schema: 'http://json-schema.org/draft-07/schema#',
+          type: 'object',
+          properties: {
+            orderId: { type: 'string' },
+            sku: { type: 'string' },
+            quantity: { type: 'integer' },
+            speed: { type: 'string' },
+            postalCode: { type: 'string' },
+          },
+        },
       },
       {
         taskReferenceName: 'checkInventory',
@@ -254,11 +342,29 @@ const DEFAULT_DEFINITIONS: WorkflowDefinitionIR[] = [
         retryDelaySeconds: 2,
         backoffRate: 2.0,
         inputParameters: { orderId: '${workflow.input.orderId}' },
+        inputSchema: {
+          type: 'object',
+          required: ['orderId'],
+          properties: { orderId: { type: 'string' } },
+        },
+        outputSchema: {
+          type: 'object',
+          properties: { inStock: { type: 'boolean' }, warehouseId: { type: 'string' } },
+        },
       },
       {
         taskReferenceName: 'routeShipping',
         taskType: 'SWITCH',
         condition: '${workflow.input.speed}',
+        inputSchema: {
+          type: 'object',
+          required: ['condition'],
+          properties: { condition: { type: 'string' } },
+        },
+        outputSchema: {
+          type: 'object',
+          properties: { selectedCase: { type: 'string' } },
+        },
         decisionCases: {
           EXPRESS: ['expressCourier'],
           STANDARD: ['groundPostal'],
@@ -272,6 +378,15 @@ const DEFAULT_DEFINITIONS: WorkflowDefinitionIR[] = [
         timeoutSeconds: 30,
         retryCount: 3,
         inputParameters: { trackingNumber: '${checkInventory.output.trackingNumber}' },
+        inputSchema: {
+          type: 'object',
+          required: ['trackingNumber'],
+          properties: { trackingNumber: { type: 'string' } },
+        },
+        outputSchema: {
+          type: 'object',
+          properties: { carrier: { type: 'string' }, trackingNumber: { type: 'string' } },
+        },
         compensateHandlerRef: 'cancelCourierBooking',
       },
       {
@@ -281,6 +396,15 @@ const DEFAULT_DEFINITIONS: WorkflowDefinitionIR[] = [
         timeoutSeconds: 30,
         retryCount: 2,
         inputParameters: { postalCode: '${workflow.input.postalCode}' },
+        inputSchema: {
+          type: 'object',
+          required: ['postalCode'],
+          properties: { postalCode: { type: 'string' } },
+        },
+        outputSchema: {
+          type: 'object',
+          properties: { carrier: { type: 'string' }, trackingNumber: { type: 'string' } },
+        },
       },
       {
         taskReferenceName: 'workflow_end',
@@ -291,6 +415,19 @@ const DEFAULT_DEFINITIONS: WorkflowDefinitionIR[] = [
           warehouseId: '${checkInventory.output.warehouseId}',
           carrier: '${expressCourier.output.carrier}',
           trackingNumber: '${expressCourier.output.trackingNumber}',
+        },
+        outputSchema: {
+          $schema: 'http://json-schema.org/draft-07/schema#',
+          type: 'object',
+          required: ['fulfillmentStatus', 'orderId', 'warehouseId'],
+          properties: {
+            fulfillmentStatus: { type: 'string' },
+            orderId: { type: 'string' },
+            warehouseId: { type: 'string' },
+            carrier: { type: 'string' },
+            trackingNumber: { type: 'string' },
+          },
+          additionalProperties: false,
         },
       },
     ],
@@ -1049,6 +1186,291 @@ export const workflowSandboxRepo = new WorkflowSandboxRepository();
 // Backward compatibility alias for tasks
 export const tasksSandboxRepo = workflowExecutionsSandboxRepo;
 
+export interface TaskTypeContractIR {
+  taskType: string;
+  category: 'BOUNDARY' | 'SYSTEM' | 'WORKER';
+  description: string;
+  inputSchema: Record<string, unknown>;
+  outputSchema: Record<string, unknown>;
+  parameterDescriptors: Array<Record<string, unknown>>;
+}
+
+export const SANDBOX_TASK_CONTRACTS: TaskTypeContractIR[] = [
+  {
+    taskType: 'START_WORKFLOW',
+    category: 'BOUNDARY',
+    description: 'Canonical workflow entry boundary. Emits workflow trigger inputs as downstream context.',
+    inputSchema: { type: 'object', properties: {} },
+    outputSchema: { type: 'object', properties: {}, description: 'Mirrors workflow trigger payload' },
+    parameterDescriptors: [],
+  },
+  {
+    taskType: 'END_WORKFLOW',
+    category: 'BOUNDARY',
+    description: 'Canonical workflow exit boundary. Evaluates terminal output mappings and enforces workflow outputSchema.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        status: { type: 'string', description: 'Terminal workflow status', default: 'COMPLETED' },
+        payload: { type: 'object', description: 'Explicit mapped terminal output payload' },
+      },
+    },
+    outputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    parameterDescriptors: [
+      { key: 'status', label: 'Workflow Status', type: 'string', required: true, defaultValue: 'COMPLETED' },
+      { key: 'payload', label: 'Result Payload', type: 'object', required: false },
+    ],
+  },
+  {
+    taskType: 'HTTP',
+    category: 'SYSTEM',
+    description: 'Executes synchronous REST HTTP/HTTPS requests with configurable methods, headers, and timeouts.',
+    inputSchema: {
+      type: 'object',
+      required: ['url', 'method'],
+      properties: {
+        url: { type: 'string', description: 'Destination HTTP/HTTPS URL endpoint' },
+        method: { type: 'string', enum: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD'], default: 'GET' },
+        headers: { type: 'object', description: 'Optional HTTP request headers' },
+        body: { type: 'object', description: 'Optional HTTP request payload' },
+        timeoutMs: { type: 'integer', default: 5000 },
+      },
+    },
+    outputSchema: {
+      type: 'object',
+      required: ['statusCode'],
+      properties: {
+        statusCode: { type: 'integer', description: 'HTTP response status code' },
+        body: { type: 'object', description: 'Decoded JSON response payload' },
+        headers: { type: 'object', description: 'Response headers map' },
+        durationMs: { type: 'integer', description: 'Execution roundtrip time in ms' },
+      },
+    },
+    parameterDescriptors: [
+      { key: 'url', label: 'Endpoint URL', type: 'string', required: true, exampleValue: 'https://api.example.com/v1/resource' },
+      { key: 'method', label: 'HTTP Method', type: 'string', required: true, defaultValue: 'GET' },
+      { key: 'headers', label: 'Request Headers', type: 'object', required: false },
+      { key: 'body', label: 'Request Body', type: 'object', required: false },
+      { key: 'timeoutMs', label: 'Timeout (ms)', type: 'number', required: false, defaultValue: 5000 },
+    ],
+  },
+  {
+    taskType: 'LLM_CHAT_COMPLETE',
+    category: 'SYSTEM',
+    description: 'Invokes large language model inference (Gemini, Claude, GPT) with deterministic temperature and token accounting.',
+    inputSchema: {
+      type: 'object',
+      required: ['prompt'],
+      properties: {
+        prompt: { type: 'string', description: 'Primary user message or prompt text' },
+        model: { type: 'string', default: 'gemini-1.5-pro' },
+        temperature: { type: 'number', default: 0.7 },
+        systemPrompt: { type: 'string' },
+      },
+    },
+    outputSchema: {
+      type: 'object',
+      required: ['responseText'],
+      properties: {
+        responseText: { type: 'string', description: 'Generated assistant response text' },
+        tokenUsage: { type: 'object' },
+      },
+    },
+    parameterDescriptors: [
+      { key: 'prompt', label: 'Prompt Text', type: 'string', required: true },
+      { key: 'model', label: 'Model Name', type: 'string', required: false, defaultValue: 'gemini-1.5-pro' },
+      { key: 'temperature', label: 'Temperature', type: 'number', required: false, defaultValue: 0.7 },
+      { key: 'systemPrompt', label: 'System Prompt', type: 'string', required: false },
+    ],
+  },
+  {
+    taskType: 'JSON_JQ_TRANSFORM',
+    category: 'SYSTEM',
+    description: 'Applies in-memory JQ expressions for deterministic JSON filtering, plucking, and structural projection.',
+    inputSchema: {
+      type: 'object',
+      required: ['queryExpression'],
+      properties: {
+        queryExpression: { type: 'string' },
+        input: { type: 'object' },
+      },
+    },
+    outputSchema: {
+      type: 'object',
+      required: ['result'],
+      properties: { result: { description: 'Transformed output projection' } },
+    },
+    parameterDescriptors: [
+      { key: 'queryExpression', label: 'JQ Query Expression', type: 'string', required: true },
+      { key: 'input', label: 'Target Input Object', type: 'object', required: false },
+    ],
+  },
+  {
+    taskType: 'SWITCH',
+    category: 'SYSTEM',
+    description: 'Evaluates conditional branch expressions and routes execution to matching decision branches.',
+    inputSchema: {
+      type: 'object',
+      required: ['evaluatorType', 'expression'],
+      properties: {
+        evaluatorType: { type: 'string', enum: ['value-param', 'javascript', 'spel'], default: 'value-param' },
+        expression: { type: 'string' },
+        value: { description: 'Direct value parameter' },
+      },
+    },
+    outputSchema: {
+      type: 'object',
+      required: ['selectedCase'],
+      properties: { selectedCase: { type: 'string' } },
+    },
+    parameterDescriptors: [
+      { key: 'evaluatorType', label: 'Evaluator Type', type: 'string', required: true, defaultValue: 'value-param' },
+      { key: 'expression', label: 'Decision Expression', type: 'string', required: true },
+      { key: 'value', label: 'Evaluation Value', type: 'string', required: false },
+    ],
+  },
+  {
+    taskType: 'WAIT',
+    category: 'SYSTEM',
+    description: 'Pauses execution for a specified duration or until a target timestamp is reached.',
+    inputSchema: {
+      type: 'object',
+      properties: { duration: { type: 'string' }, until: { type: 'string' } },
+    },
+    outputSchema: {
+      type: 'object',
+      properties: { waitedMs: { type: 'integer' } },
+    },
+    parameterDescriptors: [
+      { key: 'duration', label: 'Duration', type: 'string', required: false },
+      { key: 'until', label: 'Wait Until (ISO)', type: 'string', required: false },
+    ],
+  },
+  {
+    taskType: 'SUB_WORKFLOW',
+    category: 'SYSTEM',
+    description: 'Spawns and monitors an isolated child workflow execution.',
+    inputSchema: {
+      type: 'object',
+      required: ['subWorkflowKey'],
+      properties: {
+        subWorkflowKey: { type: 'string' },
+        subWorkflowVersion: { type: 'integer', default: 1 },
+        workflowInput: { type: 'object' },
+      },
+    },
+    outputSchema: {
+      type: 'object',
+      properties: { subWorkflowId: { type: 'string' }, subWorkflowOutput: { type: 'object' } },
+    },
+    parameterDescriptors: [
+      { key: 'subWorkflowKey', label: 'Sub-Workflow Key', type: 'string', required: true },
+      { key: 'subWorkflowVersion', label: 'Version', type: 'number', required: false, defaultValue: 1 },
+      { key: 'workflowInput', label: 'Child Input Payload', type: 'object', required: false },
+    ],
+  },
+  {
+    taskType: 'SIMPLE',
+    category: 'WORKER',
+    description: 'Domain worker task executed asynchronously by worker fleet pollers.',
+    inputSchema: { type: 'object', properties: {}, additionalProperties: true },
+    outputSchema: { type: 'object', properties: { result: { type: 'object' } }, additionalProperties: true },
+    parameterDescriptors: [],
+  },
+  {
+    taskType: 'validateOrder',
+    category: 'WORKER',
+    description: 'Evaluates fraud risk, customer KYC status, and credit limits.',
+    inputSchema: {
+      type: 'object',
+      required: ['orderId'],
+      properties: { orderId: { type: 'string', description: 'Target order identifier' } },
+    },
+    outputSchema: {
+      type: 'object',
+      properties: { valid: { type: 'boolean' }, riskScore: { type: 'integer' } },
+    },
+    parameterDescriptors: [
+      { key: 'orderId', label: 'Order ID', type: 'string', required: true },
+    ],
+  },
+  {
+    taskType: 'checkInventory',
+    category: 'WORKER',
+    description: 'Verifies SKU availability and allocates warehouse reservation slot.',
+    inputSchema: {
+      type: 'object',
+      required: ['orderId', 'sku', 'quantity'],
+      properties: {
+        orderId: { type: 'string' },
+        sku: { type: 'string' },
+        quantity: { type: 'integer' },
+      },
+    },
+    outputSchema: {
+      type: 'object',
+      properties: { inStock: { type: 'boolean' }, warehouseId: { type: 'string' }, reservationCode: { type: 'string' } },
+    },
+    parameterDescriptors: [
+      { key: 'orderId', label: 'Order ID', type: 'string', required: true },
+      { key: 'sku', label: 'SKU Code', type: 'string', required: true },
+      { key: 'quantity', label: 'Quantity', type: 'number', required: true },
+    ],
+  },
+  {
+    taskType: 'chargePayment',
+    category: 'WORKER',
+    description: 'Processes credit card or gateway payment capture with idempotency.',
+    inputSchema: {
+      type: 'object',
+      required: ['orderId', 'amount'],
+      properties: { orderId: { type: 'string' }, amount: { type: 'number' } },
+    },
+    outputSchema: {
+      type: 'object',
+      properties: { charged: { type: 'boolean' }, transactionId: { type: 'string' } },
+    },
+    parameterDescriptors: [
+      { key: 'orderId', label: 'Order ID', type: 'string', required: true },
+      { key: 'amount', label: 'Amount', type: 'number', required: true },
+    ],
+  },
+  {
+    taskType: 'expressCourier',
+    category: 'WORKER',
+    description: 'Books priority overnight air freight label and tracking number.',
+    inputSchema: {
+      type: 'object',
+      required: ['orderId'],
+      properties: { orderId: { type: 'string' } },
+    },
+    outputSchema: {
+      type: 'object',
+      properties: { carrier: { type: 'string' }, trackingNumber: { type: 'string' } },
+    },
+    parameterDescriptors: [
+      { key: 'orderId', label: 'Order ID', type: 'string', required: true },
+    ],
+  },
+  {
+    taskType: 'groundPostal',
+    category: 'WORKER',
+    description: 'Books economical ground parcel fulfillment route.',
+    inputSchema: {
+      type: 'object',
+      required: ['orderId'],
+      properties: { orderId: { type: 'string' } },
+    },
+    outputSchema: {
+      type: 'object',
+      properties: { carrier: { type: 'string' }, trackingNumber: { type: 'string' } },
+    },
+    parameterDescriptors: [
+      { key: 'orderId', label: 'Order ID', type: 'string', required: true },
+    ],
+  },
+];
+
 export const workflowSandboxHandler: SandboxRouteHandler = {
   id: 'workflow-sandbox-handler',
   name: 'Workflow Orchestration Sandbox Simulator',
@@ -1056,13 +1478,32 @@ export const workflowSandboxHandler: SandboxRouteHandler = {
   priority: 95,
   matcher: (ctx) => {
     const cleanPath = ctx.pathname.replace(/^\/(api\/v1|api\/api|api|v1)/, '');
-    return cleanPath.startsWith('/workflow') || cleanPath.startsWith('/workflow-executions');
+    return cleanPath.startsWith('/workflow') || cleanPath.startsWith('/workflow-executions') || cleanPath.startsWith('/tasks');
   },
   handler: (req: SandboxRequest, context): SandboxResponse => {
     const method = req.method.toUpperCase();
     const { pathname } = context;
     const cleanPath = pathname.replace(/^\/(api\/v1|api\/api|api|v1)/, '');
     const tenantId = (req.headers?.['x-tenant-id'] as string) || defaultSandboxStore.getState().activeTenantId || 'tenant-acme';
+
+    // -1. Task Contracts Catalog: /tasks/contracts
+    if (cleanPath === '/tasks/contracts' || cleanPath === '/tasks/contracts/') {
+      if (method === 'GET') {
+        return {
+          status: 200,
+          data: SANDBOX_TASK_CONTRACTS,
+        };
+      }
+    }
+    const taskContractMatch = cleanPath.match(/^\/tasks\/contracts\/([^/]+)$/);
+    if (taskContractMatch) {
+      const type = taskContractMatch[1].toUpperCase();
+      const found = SANDBOX_TASK_CONTRACTS.find((c) => c.taskType.toUpperCase() === type);
+      if (found) {
+        return { status: 200, data: found };
+      }
+      return { status: 404, data: { error: `Task contract ${type} not found` } };
+    }
 
     // 0. Workflow Definitions Catalog: /workflow/definitions
     if (cleanPath === '/workflow/definitions' || cleanPath === '/workflow/definitions/') {

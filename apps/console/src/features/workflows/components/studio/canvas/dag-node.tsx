@@ -149,7 +149,10 @@ export interface DagNodeData {
   domain?: string;
   executionState?: ExecutionState;
   inputParameters?: Record<string, unknown>;
+  inputSchema?: Record<string, unknown>;
+  declaredInputSchema?: Record<string, unknown>;
   outputParameters?: Record<string, unknown>;
+  outputSchema?: Record<string, unknown>;
   declaredOutputSchema?: Record<string, unknown>;
   mockOutputPayload?: Record<string, unknown>;
   retryCount?: number;

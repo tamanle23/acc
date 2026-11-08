@@ -198,9 +198,9 @@ export function lintDagSemantics(
     const workerDescriptor = workerCatalog?.find(
       (w) => w.taskType === node.data.taskType || w.workerType === node.data.taskType
     );
-    const contract = taskContractRegistry.getContract(node.data.taskType, workerDescriptor);
+    const expectedParams = taskContractRegistry.getInputParameters(node.data, workerDescriptor);
 
-    for (const reqParam of contract.inputParameters) {
+    for (const reqParam of expectedParams) {
       if (reqParam.required) {
         const hasValInInputs =
           node.data.inputParameters &&

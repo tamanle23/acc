@@ -56,6 +56,76 @@ export class TaskContractRegistry {
   }
 
   /**
+   * Resolves input schema using the 4-tier hierarchy:
+   * 1. Explicit override on node (declaredInputSchema or inputSchema)
+   * 2. Worker fleet catalog descriptor (workerDescriptor.inputSchema)
+   * 3. Static built-in contract default (converted from inputParameters to Draft 7)
+   * 4. Permissive empty object schema fallback
+   */
+  resolveInputSchema(
+    nodeData: DagNodeData,
+    workerDescriptor?: TaskWorkerDescriptor
+  ): Record<string, unknown> {
+    const explicit = nodeData.declaredInputSchema || nodeData.inputSchema;
+    if (explicit && Object.keys(explicit).length > 0) {
+      return explicit;
+    }
+    if (nodeData.taskType === 'SIMPLE' && workerDescriptor?.inputSchema) {
+      return workerDescriptor.inputSchema;
+    }
+    const contract = this.getContract(nodeData.taskType, workerDescriptor);
+    if (contract.inputParameters && contract.inputParameters.length > 0) {
+      return this.convertParamsToJsonSchema(contract.inputParameters);
+    }
+    return { type: 'object', properties: {} };
+  }
+
+  /**
+   * Returns parameter schemas expected by this node from the resolved input contract.
+   */
+  getInputParameters(
+    nodeData: DagNodeData,
+    workerDescriptor?: TaskWorkerDescriptor
+  ): ParameterSchema[] {
+    const explicit = nodeData.declaredInputSchema || nodeData.inputSchema;
+    if (explicit && Object.keys(explicit).length > 0) {
+      return this.convertJsonSchemaToParams(explicit);
+    }
+    if (nodeData.taskType === 'SIMPLE' && workerDescriptor?.inputSchema) {
+      return this.convertJsonSchemaToParams(workerDescriptor.inputSchema);
+    }
+    const contract = this.getContract(nodeData.taskType, workerDescriptor);
+    return contract.inputParameters || [];
+  }
+
+  /**
+   * Converts ParameterSchema array into standard Draft 7 JSON Schema.
+   */
+  convertParamsToJsonSchema(params: ParameterSchema[]): Record<string, unknown> {
+    const properties: Record<string, unknown> = {};
+    const required: string[] = [];
+
+    for (const p of params) {
+      properties[p.key] = {
+        type: p.type === 'object' ? 'object' : p.type === 'array' ? 'array' : p.type,
+        title: p.label,
+        description: p.description,
+        ...(p.defaultValue !== undefined ? { default: p.defaultValue } : {}),
+        ...(p.exampleValue !== undefined ? { example: p.exampleValue } : {}),
+      };
+      if (p.required) {
+        required.push(p.key);
+      }
+    }
+
+    return {
+      type: 'object',
+      ...(required.length > 0 ? { required } : {}),
+      properties,
+    };
+  }
+
+  /**
    * Resolves output schema using the 4-tier hierarchy:
    * 1. Explicit override on node (declaredOutputSchema)
    * 2. Inferred from node mockOutputPayload
@@ -170,7 +240,7 @@ export class TaskContractRegistry {
     };
   }
 
-  private convertJsonSchemaToParams(jsonSchema: Record<string, unknown>): ParameterSchema[] {
+  public convertJsonSchemaToParams(jsonSchema: Record<string, unknown>): ParameterSchema[] {
     const props = (jsonSchema.properties as Record<string, any>) || {};
     const required = Array.isArray(jsonSchema.required) ? (jsonSchema.required as string[]) : [];
 

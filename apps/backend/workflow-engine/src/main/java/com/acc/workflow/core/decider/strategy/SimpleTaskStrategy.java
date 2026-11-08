@@ -30,6 +30,30 @@ public final class SimpleTaskStrategy implements NodeEvaluatorStrategy {
             long responseTimeoutMs = (long) taskDef.timeoutSeconds() * 1000L;
             Map<String, Object> resolvedInput = resolver.resolve(taskDef.inputParameters(), snapshot);
 
+            // Pre-dispatch input schema validation gate
+            if (taskDef.inputSchema() != null && !taskDef.inputSchema().isEmpty()) {
+                com.acc.workflow.core.schema.WorkflowSchemaValidator validator = new com.acc.workflow.core.schema.WorkflowSchemaValidator();
+                List<com.acc.workflow.core.schema.WorkflowSchemaValidator.ValidationError> errors = validator.validate(resolvedInput, taskDef.inputSchema());
+                if (!errors.isEmpty()) {
+                    String errorMsg = "Task '" + refName + "' input violates inputSchema: " + errors.get(0).message();
+                    List<EngineCommand> failCmds = List.of(
+                        new EngineCommand.UpdateTaskStatus(
+                            taskId,
+                            refName,
+                            TaskStatus.FAILED,
+                            resolvedInput,
+                            errorMsg
+                        ),
+                        new EngineCommand.TransitionWorkflow(
+                            WorkflowStatus.FAILED,
+                            snapshot.outputPayload(),
+                            errorMsg
+                        )
+                    );
+                    return NodeEvaluationResult.failed(failCmds, errorMsg);
+                }
+            }
+
             EngineCommand.ScheduleTask scheduleCmd = new EngineCommand.ScheduleTask(
                 taskId,
                 taskDef.taskType().name(),
