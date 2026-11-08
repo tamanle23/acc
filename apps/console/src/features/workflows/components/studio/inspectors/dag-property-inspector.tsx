@@ -1128,6 +1128,41 @@ export function DagPropertyInspector({
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
             {/* 1. General Tab */}
             <TabsContent value="general" className="mt-0 space-y-4">
+              {formData.taskDefName && (
+                <div className="p-3 rounded-xl bg-teal-500/10 border border-teal-500/30 space-y-1.5" data-testid="task-def-banner">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                      <span className="text-xs font-bold text-teal-700 dark:text-teal-300">
+                        Task Definition: {formData.taskDefName}
+                      </span>
+                    </div>
+                    <Badge className="bg-teal-500/20 text-teal-700 dark:text-teal-300 border-teal-500/30 text-[10px] font-mono">
+                      v{formData.taskDefVersion || 1}
+                    </Badge>
+                  </div>
+                  {formData.latestTaskDefVersion && formData.taskDefVersion && formData.latestTaskDefVersion > formData.taskDefVersion && (
+                    <div className="flex items-center justify-between pt-1 border-t border-teal-500/20 text-[11px]">
+                      <span className="text-muted-foreground">
+                        Newer version <span className="font-mono font-bold text-primary">v{formData.latestTaskDefVersion}</span> available
+                      </span>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="h-6 text-[10px] px-2 border-teal-500/40 text-teal-700 dark:text-teal-300 hover:bg-teal-500/20"
+                        onClick={() => {
+                          formData.onUpgradeTaskDef?.(formData.taskReferenceName);
+                        }}
+                        data-testid="upgrade-task-def-btn"
+                      >
+                        Review & Upgrade
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {formData.taskType === 'SIMPLE' && workerCatalog.length > 0 && (
                 <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 space-y-2">
                   <Label htmlFor="workerCatalogSelect" className="text-xs font-semibold flex items-center gap-1.5 text-primary">
@@ -1357,11 +1392,13 @@ export function DagPropertyInspector({
                       (k) => currentInputs[k] === undefined || currentInputs[k] === ''
                     );
 
-                    const contractSource = formData.declaredInputSchema || formData.inputSchema
-                      ? 'Custom Override'
-                      : matchedWorkerDescriptor?.inputSchema
-                        ? 'Worker Fleet'
-                        : 'Built-in Contract';
+                    const contractSource = formData.taskDefName
+                      ? `Task Def (${formData.taskDefName})`
+                      : formData.declaredInputSchema || formData.inputSchema
+                        ? 'Custom Override'
+                        : matchedWorkerDescriptor?.inputSchema
+                          ? 'Worker Fleet'
+                          : 'Built-in Contract';
 
                     return (
                       <div className="p-2.5 rounded-lg border border-border/50 bg-muted/20 space-y-2">
@@ -1449,6 +1486,70 @@ export function DagPropertyInspector({
                             >
                               Auto-Bind Missing
                             </Button>
+                          </div>
+                        )}
+
+                        {/* Dynamic Schema Form for Expected Parameters */}
+                        {expectedParams.length > 0 && (
+                          <div className="space-y-2 pt-2 border-t border-border/30">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold flex items-center gap-1">
+                                <SlidersHorizontal className="w-3 h-3 text-teal-500" />
+                                Contract Parameters Form
+                              </span>
+                              <span className="text-[9px] text-muted-foreground font-mono">
+                                {expectedParams.length} schema fields
+                              </span>
+                            </div>
+                            <div className="space-y-1.5">
+                              {expectedParams.map((param) => {
+                                const currentVal = currentInputs[param.key] !== undefined ? String(currentInputs[param.key]) : '';
+                                return (
+                                  <div key={param.key} className="p-2 rounded-lg border border-border/30 bg-background/50 space-y-1">
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-1.5 min-w-0">
+                                        <span className="text-[11px] font-mono font-semibold truncate">{param.key}</span>
+                                        <span className="text-[9px] px-1 py-0 rounded bg-muted text-muted-foreground font-mono uppercase">
+                                          {param.type}
+                                        </span>
+                                        {param.required && <span className="text-amber-500 font-bold text-xs">*</span>}
+                                      </div>
+                                      {nodes.length > 0 && (
+                                        <VariableBindingPopover
+                                          currentNodeId={nodeId}
+                                          nodes={nodes}
+                                          edges={edges}
+                                          currentValue={currentVal}
+                                          onSelectVariable={(expr) => {
+                                            handleFieldChange('inputParameters', {
+                                              ...(formData.inputParameters || {}),
+                                              [param.key]: expr,
+                                            });
+                                          }}
+                                          workerCatalog={workerCatalog}
+                                        />
+                                      )}
+                                    </div>
+                                    {param.description && (
+                                      <p className="text-[9px] text-muted-foreground leading-tight truncate">{param.description}</p>
+                                    )}
+                                    <Input
+                                      value={currentVal}
+                                      onChange={(e) => {
+                                        const nextVal = e.target.value;
+                                        handleFieldChange('inputParameters', {
+                                          ...(formData.inputParameters || {}),
+                                          [param.key]: nextVal,
+                                        });
+                                      }}
+                                      placeholder={param.defaultValue !== undefined ? String(param.defaultValue) : `Enter ${param.key} or \${...}`}
+                                      className="h-6 text-[11px] font-mono bg-background"
+                                      data-testid={`schema-param-input-${param.key}`}
+                                    />
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </div>
                         )}
                       </div>

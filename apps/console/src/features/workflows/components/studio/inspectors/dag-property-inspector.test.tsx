@@ -281,4 +281,81 @@ describe('DagPropertyInspector Drawer', () => {
       })
     );
   });
+
+  it('renders Task Definition banner and upgrade trigger when taskDefName is present', () => {
+    const handleUpgrade = vi.fn();
+    const customTaskData: DagNodeData = {
+      taskReferenceName: 'validateOrderTask',
+      taskType: 'SIMPLE',
+      taskDefName: 'validateOrder',
+      taskDefVersion: 1,
+      latestTaskDefVersion: 2,
+      onUpgradeTaskDef: handleUpgrade,
+      label: 'Validate Order',
+    };
+
+    renderWithClient(
+      <DagPropertyInspector
+        nodeId="node-validate"
+        nodeData={customTaskData}
+        open={true}
+        onOpenChange={vi.fn()}
+        onUpdateNodeData={vi.fn()}
+        availableTaskRefs={['validateOrderTask']}
+      />
+    );
+
+    expect(screen.getByTestId('task-def-banner')).toBeDefined();
+    expect(screen.getByText('Task Definition: validateOrder')).toBeDefined();
+    expect(screen.getByText('v1')).toBeDefined();
+    expect(screen.getByText(/Newer version/)).toBeDefined();
+
+    const upgradeBtn = screen.getByTestId('upgrade-task-def-btn');
+    fireEvent.click(upgradeBtn);
+    expect(handleUpgrade).toHaveBeenCalledWith('validateOrderTask');
+  });
+
+  it('renders dynamic contract parameter inputs and updates node input parameters', () => {
+    const handleUpdate = vi.fn();
+    const customTaskData: DagNodeData = {
+      taskReferenceName: 'validateOrderTask',
+      taskType: 'SIMPLE',
+      taskDefName: 'validateOrder',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          orderId: { type: 'string', description: 'Unique order identifier' },
+          customerId: { type: 'string', description: 'Target customer ID' },
+        },
+        required: ['orderId'],
+      },
+      inputParameters: {},
+    };
+
+    renderWithClient(
+      <DagPropertyInspector
+        nodeId="node-validate"
+        nodeData={customTaskData}
+        open={true}
+        defaultTab="params"
+        onOpenChange={vi.fn()}
+        onUpdateNodeData={handleUpdate}
+        availableTaskRefs={['validateOrderTask']}
+      />
+    );
+
+    expect(screen.getByText('Contract Parameters Form')).toBeDefined();
+    const orderInput = screen.getByTestId('schema-param-input-orderId');
+    expect(orderInput).toBeDefined();
+
+    fireEvent.change(orderInput, { target: { value: 'ORD-999' } });
+    expect(handleUpdate).toHaveBeenCalledWith(
+      'node-validate',
+      expect.objectContaining({
+        inputParameters: expect.objectContaining({
+          orderId: 'ORD-999',
+        }),
+      })
+    );
+  });
 });

@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Search, X } from 'lucide-react';
+import { Search, X, Play } from 'lucide-react';
 import { PALETTE_ITEMS, CATEGORIES, type PaletteItem } from '../palette/dag-palette';
 import { type DagNodeType, type DagNodeData } from './dag-node';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
+import { useTaskDefinitions } from '@/features/workflows/api/task-definition-api';
+import { taskContractRegistry } from '../utils/contracts/task-contract-registry';
 
 export interface DagQuickInsertPopoverProps {
   position: { x: number; y: number };
@@ -34,6 +36,36 @@ export const DagQuickInsertPopover: React.FC<DagQuickInsertPopoverProps> = ({
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [selectedIndex, setSelectedIndex] = useState(0);
 
+  const { data: taskDefs = [] } = useTaskDefinitions();
+
+  const catalogItems: PaletteItem[] = useMemo(() => {
+    if (!taskDefs || taskDefs.length === 0) return [];
+    return taskDefs
+      .filter((td) => !td.isBuiltIn && td.name !== 'SIMPLE' && !taskContractRegistry.isBuiltIn(td.name))
+      .map((td) => ({
+        type: 'SIMPLE' as DagNodeType,
+        label: td.name,
+        description: td.description || `Catalog task ${td.name} (v${td.version})`,
+        category: 'catalog' as const,
+        icon: <Play className="w-3.5 h-3.5 text-teal-500" />,
+        defaultData: {
+          taskType: 'SIMPLE',
+          taskDefName: td.name,
+          taskDefVersion: td.version,
+          latestTaskDefVersion: td.version,
+          label: td.name,
+          inputSchema: td.inputSchema,
+          outputSchema: td.outputSchema,
+          timeoutSeconds: td.timeoutSeconds,
+          retryCount: td.retryCount,
+          retryDelaySeconds: td.retryDelaySeconds,
+          backoffRate: td.backoffRate,
+        },
+      }));
+  }, [taskDefs]);
+
+  const allItems = useMemo(() => [...catalogItems, ...PALETTE_ITEMS], [catalogItems]);
+
   // Auto-focus search input on mount
   useEffect(() => {
     searchInputRef.current?.focus();
@@ -42,7 +74,7 @@ export const DagQuickInsertPopover: React.FC<DagQuickInsertPopoverProps> = ({
   // Filter items based on active category and query
   const filteredItems = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
-    return PALETTE_ITEMS.filter((item) => {
+    return allItems.filter((item) => {
       const matchesCategory = activeCategory === 'all' || item.category === activeCategory;
       const matchesQuery =
         !q ||
@@ -51,7 +83,7 @@ export const DagQuickInsertPopover: React.FC<DagQuickInsertPopoverProps> = ({
         item.description.toLowerCase().includes(q);
       return matchesCategory && matchesQuery;
     });
-  }, [searchQuery, activeCategory]);
+  }, [searchQuery, activeCategory, allItems]);
 
   // Keep selected index in bounds when list changes
   useEffect(() => {
@@ -138,7 +170,7 @@ export const DagQuickInsertPopover: React.FC<DagQuickInsertPopoverProps> = ({
           <Input
             ref={searchInputRef}
             type="text"
-            placeholder="Search 23 task node types..."
+            placeholder={`Search ${allItems.length} task node types...`}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="h-8 pl-8 text-xs bg-muted/40 border-border/50 rounded-xl focus-visible:ring-1"
@@ -159,8 +191,22 @@ export const DagQuickInsertPopover: React.FC<DagQuickInsertPopoverProps> = ({
               : 'bg-muted/40 text-muted-foreground hover:bg-muted/80'
           )}
         >
-          All (23)
+          All ({allItems.length})
         </button>
+        {catalogItems.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setActiveCategory('catalog')}
+            className={cn(
+              'px-2 py-0.5 rounded-full text-[10px] font-medium whitespace-nowrap transition-colors',
+              activeCategory === 'catalog'
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'bg-muted/40 text-muted-foreground hover:bg-muted/80'
+            )}
+          >
+            Custom ({catalogItems.length})
+          </button>
+        )}
         {CATEGORIES.map((cat) => (
           <button
             key={cat.id}
@@ -191,9 +237,10 @@ export const DagQuickInsertPopover: React.FC<DagQuickInsertPopoverProps> = ({
         ) : (
           filteredItems.map((item, index) => {
             const isSelected = index === selectedIndex;
+            const uniqueKey = item.defaultData?.taskDefName ? `taskdef-${item.defaultData.taskDefName}` : item.type;
             return (
               <div
-                key={item.type}
+                key={uniqueKey}
                 role="option"
                 aria-selected={isSelected}
                 tabIndex={0}
@@ -205,7 +252,7 @@ export const DagQuickInsertPopover: React.FC<DagQuickInsertPopoverProps> = ({
                     ? 'bg-primary/10 border border-primary/30 text-primary shadow-xs'
                     : 'hover:bg-muted/40 text-foreground border border-transparent'
                 )}
-                data-testid={`dag-quick-insert-item-${item.type}`}
+                data-testid={`dag-quick-insert-item-${uniqueKey}`}
               >
                 <div
                   className={cn(
@@ -228,9 +275,14 @@ export const DagQuickInsertPopover: React.FC<DagQuickInsertPopoverProps> = ({
                           Template
                         </span>
                       )}
+                      {item.category === 'catalog' && (
+                        <span className="text-[9px] font-medium px-1 py-0 rounded bg-teal-500/15 text-teal-600 dark:text-teal-400 border border-teal-500/25 shrink-0">
+                          Custom
+                        </span>
+                      )}
                     </div>
                     <span className="text-[9px] font-mono opacity-60 uppercase shrink-0 ml-1">
-                      {item.type}
+                      {item.defaultData?.taskDefName ? `v${item.defaultData.taskDefVersion || 1}` : item.type}
                     </span>
                   </div>
                   <p className="text-[10px] text-muted-foreground truncate leading-normal">

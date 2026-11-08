@@ -331,4 +331,53 @@ describe('Pre-Flight DAG Semantic Linter', () => {
     expect(unsatisfied?.paramKey).toBe('finalStatus');
     expect(unsatisfied?.message).toContain("Terminal exit outputSchema requires 'finalStatus'");
   });
+
+  it('detects missing required inputs on custom task definition nodes', () => {
+    const nodes: Node<DagNodeData>[] = [
+      {
+        id: 'start-node',
+        type: 'dagNode',
+        position: { x: 0, y: 0 },
+        data: {
+          taskReferenceName: 'start',
+          taskType: 'START_WORKFLOW',
+          isStartNode: true,
+        },
+      },
+      {
+        id: 'custom-node',
+        type: 'dagNode',
+        position: { x: 200, y: 0 },
+        data: {
+          taskReferenceName: 'validateOrderStep',
+          taskType: 'SIMPLE',
+          taskDefName: 'validateOrder',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              orderId: { type: 'string' },
+              amount: { type: 'number' },
+            },
+            required: ['orderId', 'amount'],
+          },
+          // Missing 'amount' in inputParameters
+          inputParameters: {
+            orderId: 'ORD-123',
+          },
+        },
+      },
+    ];
+
+    const edges: Edge[] = [
+      { id: 'e1', source: 'start-node', target: 'custom-node' },
+    ];
+
+    const issues = lintDagSemantics(nodes, edges);
+    const missingAmount = issues.find(
+      (i) => i.ruleId === 'MISSING_REQUIRED_INPUT' && i.paramKey === 'amount'
+    );
+    expect(missingAmount).toBeDefined();
+    expect(missingAmount?.severity).toBe('error');
+    expect(missingAmount?.message).toContain("missing required input 'amount'");
+  });
 });

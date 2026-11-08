@@ -271,6 +271,23 @@ describe('TaskContractRegistry', () => {
       expect(customContract.taskType).toBe('evaluateFraudRisk');
       expect(customContract.inputParameters.some((p) => p.key === 'userId')).toBe(true);
       expect(customContract.outputSchema.properties).toBeDefined();
+
+      // Verify nodeData with taskType='SIMPLE' and taskDefName='evaluateFraudRisk' resolves custom parameters
+      const nodeData: DagNodeData = {
+        taskReferenceName: 'fraudCheck',
+        taskType: 'SIMPLE',
+        taskDefName: 'evaluateFraudRisk',
+        taskDefVersion: 1,
+      };
+      const params = registry.getInputParameters(nodeData);
+      expect(params.some((p) => p.key === 'userId' && p.required)).toBe(true);
+      expect(params.some((p) => p.key === 'amount' && p.required)).toBe(true);
+
+      const resolvedInput = registry.resolveInputSchema(nodeData);
+      expect((resolvedInput.properties as any).userId).toBeDefined();
+
+      const resolvedOutput = registry.resolveOutputSchema(nodeData);
+      expect((resolvedOutput.properties as any).riskScore).toBeDefined();
     });
 
     it('identifies built-in tasks accurately', () => {

@@ -69,6 +69,29 @@ public final class SimpleTaskStrategy implements NodeEvaluatorStrategy {
 
         TaskStatus status = existing.status();
         if (status == TaskStatus.COMPLETED) {
+            // Defensive post-completion outputSchema validation gate
+            if (taskDef.outputSchema() != null && !taskDef.outputSchema().isEmpty()) {
+                com.acc.workflow.core.schema.WorkflowSchemaValidator validator = new com.acc.workflow.core.schema.WorkflowSchemaValidator();
+                List<com.acc.workflow.core.schema.WorkflowSchemaValidator.ValidationError> errors = validator.validate(existing.outputData(), taskDef.outputSchema());
+                if (!errors.isEmpty()) {
+                    String errorMsg = "Task '" + refName + "' output violates outputSchema: " + errors.get(0).message();
+                    List<EngineCommand> failCmds = List.of(
+                        new EngineCommand.UpdateTaskStatus(
+                            existing.taskId(),
+                            refName,
+                            TaskStatus.FAILED,
+                            existing.outputData(),
+                            errorMsg
+                        ),
+                        new EngineCommand.TransitionWorkflow(
+                            WorkflowStatus.FAILED,
+                            snapshot.outputPayload(),
+                            errorMsg
+                        )
+                    );
+                    return NodeEvaluationResult.failed(failCmds, errorMsg);
+                }
+            }
             return NodeEvaluationResult.completed(existing.outputData());
         } else if (status == TaskStatus.SKIPPED) {
             return NodeEvaluationResult.skipped();

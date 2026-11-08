@@ -454,26 +454,28 @@ export function DagPalette({
 
   const catalogItems: PaletteItem[] = useMemo(() => {
     if (!taskDefs || taskDefs.length === 0) return [];
-    return taskDefs.map((td) => ({
-      type: 'SIMPLE' as DagNodeType,
-      label: td.name,
-      description: td.description || `Catalog task ${td.name} (v${td.version})`,
-      category: 'catalog' as const,
-      icon: <Play className="w-3.5 h-3.5 text-teal-500" />,
-      defaultData: {
-        taskType: 'SIMPLE',
-        taskDefName: td.name,
-        taskDefVersion: td.version,
-        latestTaskDefVersion: td.version,
+    return taskDefs
+      .filter((td) => !td.isBuiltIn && td.name !== 'SIMPLE' && !taskContractRegistry.isBuiltIn(td.name))
+      .map((td) => ({
+        type: 'SIMPLE' as DagNodeType,
         label: td.name,
-        inputSchema: td.inputSchema,
-        outputSchema: td.outputSchema,
-        timeoutSeconds: td.timeoutSeconds,
-        retryCount: td.retryCount,
-        retryDelaySeconds: td.retryDelaySeconds,
-        backoffRate: td.backoffRate,
-      },
-    }));
+        description: td.description || `Catalog task ${td.name} (v${td.version})`,
+        category: 'catalog' as const,
+        icon: <Play className="w-3.5 h-3.5 text-teal-500" />,
+        defaultData: {
+          taskType: 'SIMPLE',
+          taskDefName: td.name,
+          taskDefVersion: td.version,
+          latestTaskDefVersion: td.version,
+          label: td.name,
+          inputSchema: td.inputSchema,
+          outputSchema: td.outputSchema,
+          timeoutSeconds: td.timeoutSeconds,
+          retryCount: td.retryCount,
+          retryDelaySeconds: td.retryDelaySeconds,
+          backoffRate: td.backoffRate,
+        },
+      }));
   }, [taskDefs]);
 
   const allItems = useMemo(() => [...catalogItems, ...PALETTE_ITEMS], [catalogItems]);

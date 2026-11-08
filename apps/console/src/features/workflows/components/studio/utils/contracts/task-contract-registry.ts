@@ -89,8 +89,8 @@ export class TaskContractRegistry {
     this.contracts.set(contract.taskType, contract);
   }
 
-  getContract(type: DagNodeType, workerDescriptor?: TaskContractDescriptor): NodeDataContract {
-    const base = this.contracts.get(type) || this.createFallbackContract(type);
+  getContract(type: DagNodeType | string, workerDescriptor?: TaskContractDescriptor): NodeDataContract {
+    const base = this.contracts.get(type as DagNodeType) || this.createFallbackContract(type as DagNodeType);
     if (type === 'SIMPLE' && workerDescriptor) {
       return {
         ...base,
@@ -124,7 +124,8 @@ export class TaskContractRegistry {
     if (nodeData.taskType === 'SIMPLE' && workerDescriptor?.inputSchema) {
       return workerDescriptor.inputSchema;
     }
-    const contract = this.getContract(nodeData.taskType, workerDescriptor);
+    const targetKey = (nodeData.taskDefName || nodeData.taskType) as DagNodeType;
+    const contract = this.getContract(targetKey, workerDescriptor);
     if (contract.inputParameters && contract.inputParameters.length > 0) {
       return this.convertParamsToJsonSchema(contract.inputParameters);
     }
@@ -145,7 +146,8 @@ export class TaskContractRegistry {
     if (nodeData.taskType === 'SIMPLE' && workerDescriptor?.inputSchema) {
       return this.convertJsonSchemaToParams(workerDescriptor.inputSchema);
     }
-    const contract = this.getContract(nodeData.taskType, workerDescriptor);
+    const targetKey = (nodeData.taskDefName || nodeData.taskType) as DagNodeType;
+    const contract = this.getContract(targetKey, workerDescriptor);
     return contract.inputParameters || [];
   }
 
@@ -178,7 +180,7 @@ export class TaskContractRegistry {
 
   /**
    * Resolves output schema using the 4-tier hierarchy:
-   * 1. Explicit override on node (declaredOutputSchema)
+   * 1. Explicit override on node (declaredOutputSchema or outputSchema)
    * 2. Inferred from node mockOutputPayload
    * 3. Worker fleet catalog descriptor (workerDescriptor.outputSchema)
    * 4. Static built-in contract default
@@ -190,13 +192,17 @@ export class TaskContractRegistry {
     if (nodeData.declaredOutputSchema && Object.keys(nodeData.declaredOutputSchema).length > 0) {
       return nodeData.declaredOutputSchema;
     }
+    if (nodeData.outputSchema && Object.keys(nodeData.outputSchema).length > 0) {
+      return nodeData.outputSchema;
+    }
     if (nodeData.mockOutputPayload && Object.keys(nodeData.mockOutputPayload).length > 0) {
       return this.inferSchemaFromPayload(nodeData.mockOutputPayload);
     }
     if (nodeData.taskType === 'SIMPLE' && workerDescriptor?.outputSchema) {
       return workerDescriptor.outputSchema;
     }
-    const contract = this.getContract(nodeData.taskType, workerDescriptor);
+    const targetKey = (nodeData.taskDefName || nodeData.taskType) as DagNodeType;
+    const contract = this.getContract(targetKey, workerDescriptor);
     return contract.outputSchema;
   }
 
@@ -208,7 +214,8 @@ export class TaskContractRegistry {
     workerDescriptor?: TaskWorkerDescriptor
   ): SchemaTreeNode[] {
     const schema = this.resolveOutputSchema(nodeData, workerDescriptor);
-    const mock = nodeData.mockOutputPayload || this.getContract(nodeData.taskType, workerDescriptor).defaultMockOutput;
+    const targetKey = (nodeData.taskDefName || nodeData.taskType) as DagNodeType;
+    const mock = nodeData.mockOutputPayload || this.getContract(targetKey, workerDescriptor).defaultMockOutput;
     return this.parseSchemaToTree(schema, '', mock);
   }
 
