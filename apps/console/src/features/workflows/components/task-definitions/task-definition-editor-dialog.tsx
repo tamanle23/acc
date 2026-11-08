@@ -551,7 +551,3 @@ export const TaskDefinitionEditorDialog: React.FC<TaskDefinitionEditorDialogProp
     </Dialog>
   );
 };
-      </DialogContent>
-    </Dialog>
-  );
-};
