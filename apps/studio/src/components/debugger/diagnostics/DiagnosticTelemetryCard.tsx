@@ -72,7 +72,7 @@ export function DiagnosticTelemetryCard(props: DiagnosticTelemetryCardProps) {
                   Schema Violations ({props.diagnostics.schemaValidation.errors.length})
                 </div>
                 <ul class="space-y-1 text-[10px] font-mono text-rose-200/90 list-disc pl-4 max-h-36 overflow-y-auto">
-                  <For items={props.diagnostics.schemaValidation.errors}>
+                  <For each={props.diagnostics.schemaValidation.errors}>
                     {(err) => (
                       <li class="break-words">
                         {err}
@@ -102,7 +102,7 @@ export function DiagnosticTelemetryCard(props: DiagnosticTelemetryCardProps) {
                   </Show>
                 </div>
                 <ul class="space-y-1 text-[10px] font-mono text-amber-200/90 list-disc pl-4">
-                  <For items={props.diagnostics.danglingAnchors}>
+                  <For each={props.diagnostics.danglingAnchors}>
                     {(d) => (
                       <li>
                         <code>{d.sequenceId}</code> references missing <code>{d.referenceId}</code>

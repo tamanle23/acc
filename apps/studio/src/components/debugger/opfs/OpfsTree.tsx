@@ -75,7 +75,7 @@ export function OpfsTree(props: OpfsTreeProps) {
     e.stopPropagation();
     setExpandedFolders((prev) => ({
       ...prev,
-      [path]: !prev[path],
+      [path]: !(prev[path] !== false),
     }));
   };
 
@@ -153,7 +153,7 @@ export function OpfsTree(props: OpfsTreeProps) {
         <div
           onClick={() => {
             if (isDir) {
-              setExpandedFolders((prev) => ({ ...prev, [node.path]: !prev[node.path] }));
+              setExpandedFolders((prev) => ({ ...prev, [node.path]: !(prev[node.path] !== false) }));
             }
             props.onSelectNode(node);
           }}
@@ -214,12 +214,24 @@ export function OpfsTree(props: OpfsTreeProps) {
         </div>
 
         {/* Render Children Recursively */}
-        <Show when={isDir && isExpanded() && visibleChildren().length > 0}>
-          <div class="flex flex-col">
-            <For items={visibleChildren()}>
-              {(child) => renderTree(child, depth + 1)}
-            </For>
-          </div>
+        <Show when={isDir && isExpanded()}>
+          <Show
+            when={visibleChildren().length > 0}
+            fallback={
+              <div
+                style={{ "padding-left": `${(depth + 1) * 14 + 24}px` }}
+                class="py-2 pr-2 text-[11px] font-mono text-muted-foreground/70 italic"
+              >
+                (Empty directory — click "+ Write Test File" or ingest media in Assets Vault)
+              </div>
+            }
+          >
+            <div class="flex flex-col">
+              <For each={visibleChildren()}>
+                {(child) => renderTree(child, depth + 1)}
+              </For>
+            </div>
+          </Show>
         </Show>
       </div>
     );
@@ -242,7 +254,7 @@ export function OpfsTree(props: OpfsTreeProps) {
           <Search class="w-3.5 h-3.5 text-muted-foreground absolute left-2.5 top-2.5" />
           <Input
             value={searchQuery()}
-            onInput={(e: InputEvent & { currentTarget: HTMLInputElement }) => setSearchQuery(currentTarget.value)}
+            onInput={(e: InputEvent & { currentTarget: HTMLInputElement }) => setSearchQuery(e.currentTarget.value)}
             placeholder="Search files or cache keys..."
             class="h-8 pl-8 pr-7 text-xs font-mono bg-muted/40 border-border/60"
           />
@@ -259,7 +271,7 @@ export function OpfsTree(props: OpfsTreeProps) {
 
         {/* Filter Chips */}
         <div class="flex items-center gap-1 overflow-x-auto pb-0.5 text-[10px] font-mono no-scrollbar">
-          <For items={['all', 'media', 'json', 'other'] as OpfsFilterType[]}>
+          <For each={['all', 'media', 'json', 'other'] as OpfsFilterType[]}>
             {(f) => (
               <button
                 type="button"

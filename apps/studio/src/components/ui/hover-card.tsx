@@ -6,9 +6,16 @@ function HoverCard(props: ComponentProps<typeof HoverCardPrimitive.Root> & { [ke
   return <HoverCardPrimitive.Root data-slot="hover-card" {...props} />;
 }
 
-function HoverCardTrigger(props: ComponentProps<typeof HoverCardPrimitive.Trigger> & { class?: string; className?: string; [key: string]: any }) {
-  const [local, rest] = splitProps(props, ["class", "className"]);
-  return <HoverCardPrimitive.Trigger data-slot="hover-card-trigger" class={local.class || local.className} {...rest} />;
+function HoverCardTrigger(props: ComponentProps<typeof HoverCardPrimitive.Trigger> & { class?: string; className?: string; asChild?: boolean; [key: string]: any }) {
+  const [local, rest] = splitProps(props, ["class", "className", "asChild", "as"]);
+  return (
+    <HoverCardPrimitive.Trigger
+      as={local.as ?? (local.asChild ? "div" : "a")}
+      data-slot="hover-card-trigger"
+      class={cn(local.asChild && "contents", local.class || local.className)}
+      {...rest}
+    />
+  );
 }
 
 function HoverCardContent(props: ComponentProps<typeof HoverCardPrimitive.Content> & {

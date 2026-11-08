@@ -100,7 +100,7 @@ export function EasingCurveSelector(props: EasingCurveSelectorProps) {
       </div>
 
       <div class="grid grid-cols-2 gap-2">
-        <For items={GSAP_EASING_PRESETS}>
+        <For each={GSAP_EASING_PRESETS}>
           {(preset) => {
             const isSelected = () => currentValue() === preset.id;
             const isHovered = () => hoveredId() === preset.id;

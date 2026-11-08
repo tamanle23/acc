@@ -105,7 +105,7 @@ export function ExportConfigModal(props: ExportConfigModalProps) {
             Target Resolution Standards ({activeRatio()})
           </label>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1">
-            <For items={matchingPresets()}>
+            <For each={matchingPresets()}>
               {(preset) => {
                 const isSelected = () => selectedPreset()?.id === preset.id;
                 return (

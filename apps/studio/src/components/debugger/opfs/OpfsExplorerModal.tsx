@@ -24,6 +24,7 @@ import {
   type OpfsStorageEstimate,
 } from '@acc/core-web';
 import { ContentCacheRegistry, ContentCacheStrategyId } from '@acc/core-isomorphic';
+import { IRStateManager } from '../../../lib/ir/irState';
 import { OpfsTree } from './OpfsTree';
 import { OpfsFilePreview } from './OpfsFilePreview';
 import type { OpfsFileDetails } from './types';
@@ -131,10 +132,24 @@ export function OpfsExplorerModal(props: OpfsDebuggerModalProps) {
       const supported = strategy.isSupported();
       setIsSupported(supported);
 
-      const [treeData, quotaData] = await Promise.all([
+      let [treeData, quotaData] = await Promise.all([
         strategy.inspectTree(),
         strategy.getStorageEstimate(),
       ]);
+
+      // Seed active VideoIR project snapshot into OPFS if directory is completely empty on first inspection
+      if (supported && (!treeData.children || treeData.children.length === 0)) {
+        try {
+          const irJson = IRStateManager.getInstance().exportJSON();
+          await strategy.set('project/active_video_ir.json', irJson, {
+            mimeType: 'application/json',
+          });
+          [treeData, quotaData] = await Promise.all([
+            strategy.inspectTree(),
+            strategy.getStorageEstimate(),
+          ]);
+        } catch { }
+      }
 
       setTree(treeData);
       setQuota(quotaData);
@@ -364,7 +379,7 @@ export function OpfsExplorerModal(props: OpfsDebuggerModalProps) {
                   <input
                     type="text"
                     value={newFileName()}
-                    onInput={(e: InputEvent & { currentTarget: HTMLInputElement }) => setNewFileName(currentTarget.value)}
+                    onInput={(e: InputEvent & { currentTarget: HTMLInputElement }) => setNewFileName(e.currentTarget.value)}
                     class="w-full h-8 px-3 rounded-lg bg-slate-900 border border-slate-700 text-foreground"
                   />
                 </div>
@@ -374,7 +389,7 @@ export function OpfsExplorerModal(props: OpfsDebuggerModalProps) {
                   <textarea
                     rows={6}
                     value={newFileContent()}
-                    onInput={(e: InputEvent & { currentTarget: HTMLTextAreaElement }) => setNewFileContent(currentTarget.value)}
+                    onInput={(e: InputEvent & { currentTarget: HTMLTextAreaElement }) => setNewFileContent(e.currentTarget.value)}
                     class="w-full p-3 rounded-lg bg-slate-900 border border-slate-700 text-foreground leading-relaxed font-mono"
                   />
                 </div>

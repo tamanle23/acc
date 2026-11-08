@@ -509,19 +509,17 @@ export function ViewportControlBar(props: ViewportControlBarProps) {
           <div class="h-4 w-px bg-glass-border shrink-0 mx-0.5" />
           <Popover open={isToolsMenuOpen()} onOpenChange={setIsToolsMenuOpen}>
             <Tooltip content="Viewport Options & Overlays">
-              <PopoverTrigger>
-                <button
-                  type="button"
-                  aria-label="Viewport options and tools"
-                  class="p-1.5 rounded-full border border-glass-border text-foreground/70 hover:text-foreground hover:bg-foreground/10 transition-all cursor-pointer shrink-0"
+              <PopoverTrigger
+                type="button"
+                aria-label="Viewport options and tools"
+                class="p-1.5 rounded-full border border-glass-border text-foreground/70 hover:text-foreground hover:bg-foreground/10 transition-all cursor-pointer shrink-0"
+              >
+                <Show
+                  when={lod() === 'compact'}
+                  fallback={<MoreHorizontal class="w-3.5 h-3.5" />}
                 >
-                  <Show
-                    when={lod() === 'compact'}
-                    fallback={<MoreHorizontal class="w-3.5 h-3.5" />}
-                  >
-                    <Sliders class="w-3.5 h-3.5 text-accent-theme" />
-                  </Show>
-                </button>
+                  <Sliders class="w-3.5 h-3.5 text-accent-theme" />
+                </Show>
               </PopoverTrigger>
             </Tooltip>
 

@@ -499,15 +499,14 @@ export function Titlebar(props: TitlebarProps) {
         <Show when={lod() !== 'full'}>
           <Popover open={isMoreMenuOpen()} onOpenChange={setIsMoreMenuOpen}>
             <Tooltip content="More Actions & Dev Tools">
-              <PopoverTrigger>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label="More actions and developer tools"
-                  class="h-8 w-8 text-muted-foreground hover:text-foreground shrink-0"
-                >
-                  <MoreHorizontal class="w-4 h-4" />
-                </Button>
+              <PopoverTrigger
+                as={Button}
+                variant="ghost"
+                size="icon"
+                aria-label="More actions and developer tools"
+                class="h-8 w-8 text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
+              >
+                <MoreHorizontal class="w-4 h-4" />
               </PopoverTrigger>
             </Tooltip>
 

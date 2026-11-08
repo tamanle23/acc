@@ -30,7 +30,7 @@ export function VisualJsonPathBreadcrumb(props: VisualJsonPathBreadcrumbProps) {
           <span>doc</span>
         </button>
 
-        <For items={props.path}>
+        <For each={props.path}>
           {(segment, idx) => {
             const slice = () => props.path.slice(0, idx() + 1);
             const isLast = () => idx() === props.path.length - 1;

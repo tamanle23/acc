@@ -1,5 +1,5 @@
 import { createSignal, createEffect, onCleanup, For, Show, type JSX } from 'solid-js';
-import { highlightCode } from '../../../lib/highlighter';
+import { highlightCode, type HighlightedToken } from '../../../lib/highlighter';
 
 export interface ShikiCodeViewerProps {
   code: string;
@@ -13,7 +13,7 @@ export interface ShikiCodeViewerProps {
 export function ShikiCodeViewer(props: ShikiCodeViewerProps) {
   let textareaRef: HTMLTextAreaElement | undefined;
   let preRef: HTMLPreElement | undefined;
-  const [highlightedLines, setHighlightedLines] = createSignal<JSX.Element[][] | null>(null);
+  const [highlightedLines, setHighlightedLines] = createSignal<HighlightedToken[][] | null>(null);
 
   const lines = () => props.code.split('\n');
   const lineCount = () => lines().length;
@@ -55,7 +55,7 @@ export function ShikiCodeViewer(props: ShikiCodeViewerProps) {
         aria-hidden="true"
         class="select-none py-3 px-2 text-right border-r border-glass-border bg-glass-surface/50 font-mono text-[11px] leading-[1.4rem] shrink-0 text-muted-foreground/60 w-12 backdrop-blur-xs"
       >
-        <For items={Array.from({ length: Math.max(1, lineCount()) })}>
+        <For each={Array.from({ length: Math.max(1, lineCount()) })}>
           {(_, i) => {
             const lineNum = i() + 1;
             const isError = () => errorLines().includes(lineNum);
@@ -87,11 +87,24 @@ export function ShikiCodeViewer(props: ShikiCodeViewerProps) {
             when={highlightedLines()}
             fallback={<code>{props.code}</code>}
           >
-            {(lines) => (
-              <For items={lines()}>
+            {(tokenLines) => (
+              <For each={tokenLines()}>
                 {(lineTokens) => (
                   <div class="min-h-[1.4rem]">
-                    {lineTokens.length === 0 ? '\n' : lineTokens}
+                    {lineTokens.length === 0 ? (
+                      '\n'
+                    ) : (
+                      <For each={lineTokens}>
+                        {(token) => (
+                          <span
+                            style={token.style as JSX.CSSProperties}
+                            class="text-(--shiki-light) dark:text-(--shiki-dark)"
+                          >
+                            {token.content}
+                          </span>
+                        )}
+                      </For>
+                    )}
                   </div>
                 )}
               </For>
@@ -105,7 +118,7 @@ export function ShikiCodeViewer(props: ShikiCodeViewerProps) {
           value={props.code}
           readOnly={props.readOnly}
           onInput={(e: InputEvent & { currentTarget: HTMLTextAreaElement }) =>
-            props.onChange(currentTarget.value)
+            props.onChange(e.currentTarget.value)
           }
           onScroll={handleScroll}
           spellcheck={false}

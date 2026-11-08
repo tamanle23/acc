@@ -115,7 +115,7 @@ export function VisualJsonTreeEditor(props: VisualJsonTreeEditorProps) {
               type="text"
               placeholder="Search keys, values, sequence IDs..."
               value={searchQuery()}
-              onInput={(e: InputEvent & { currentTarget: HTMLInputElement }) => setSearchQuery(currentTarget.value)}
+              onInput={(e: InputEvent & { currentTarget: HTMLInputElement }) => setSearchQuery(e.currentTarget.value)}
               class="h-7 pl-8 text-xs font-mono bg-[var(--glass-bg)] border-[var(--glass-border)] text-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-[var(--accent-primary)]"
             />
           </div>

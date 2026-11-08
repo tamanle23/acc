@@ -532,7 +532,7 @@ export function IrVisualEditorModal(props: VisualIRJsonDebuggerModalProps) {
                     Unresolved Asset IDs ({diagnostics().missingAssets.length})
                   </div>
                   <ul class="text-xs text-amber-200/80 list-disc pl-4">
-                    <For items={diagnostics().missingAssets}>
+                    <For each={diagnostics().missingAssets}>
                       {(m) => (
                         <li>
                           Sequence <code>{m.sequenceId}</code> references undeclared asset{' '}

@@ -99,7 +99,7 @@ export function VisualJsonFieldEditor(props: VisualJsonFieldEditorProps) {
                   type={typeof props.value === 'number' ? 'number' : 'text'}
                   autofocus
                   value={draftValue()}
-                  onInput={(e: InputEvent & { currentTarget: HTMLInputElement }) => setDraftValue(currentTarget.value)}
+                  onInput={(e: InputEvent & { currentTarget: HTMLInputElement }) => setDraftValue(e.currentTarget.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleCommit();
                     if (e.key === 'Escape') handleCancel();
@@ -136,7 +136,7 @@ export function VisualJsonFieldEditor(props: VisualJsonFieldEditorProps) {
             }}
             class="bg-glass-surface border border-glass-border rounded px-1.5 py-0.5 text-[11px] font-mono text-accent-theme focus:outline-hidden focus:border-accent-theme focus:shadow-accent-glow cursor-pointer"
           >
-            <For items={enumOptions()}>
+            <For each={enumOptions()}>
               {(opt) => (
                 <option value={opt} class="text-foreground bg-background">
                   "{opt}"

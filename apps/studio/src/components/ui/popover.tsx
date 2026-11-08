@@ -6,9 +6,16 @@ function Popover(props: ComponentProps<typeof PopoverPrimitive.Root> & { [key: s
   return <PopoverPrimitive.Root data-slot="popover" {...props} />;
 }
 
-function PopoverTrigger(props: ComponentProps<typeof PopoverPrimitive.Trigger> & { class?: string; className?: string; [key: string]: any }) {
-  const [local, rest] = splitProps(props, ["class", "className"]);
-  return <PopoverPrimitive.Trigger data-slot="popover-trigger" class={local.class || local.className} {...rest} />;
+function PopoverTrigger(props: ComponentProps<typeof PopoverPrimitive.Trigger> & { class?: string; className?: string; asChild?: boolean; [key: string]: any }) {
+  const [local, rest] = splitProps(props, ["class", "className", "asChild", "as"]);
+  return (
+    <PopoverPrimitive.Trigger
+      as={local.as ?? (local.asChild ? "div" : "button")}
+      data-slot="popover-trigger"
+      class={cn(local.asChild && "inline-flex items-center", local.class || local.className)}
+      {...rest}
+    />
+  );
 }
 
 function PopoverAnchor(props: ComponentProps<typeof PopoverPrimitive.Anchor> & { class?: string; className?: string; [key: string]: any }) {

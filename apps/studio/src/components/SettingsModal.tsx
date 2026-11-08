@@ -150,7 +150,7 @@ export function SettingsModal() {
             {/* Filter Pills & Search Bar */}
             <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 justify-between">
               <div class="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none">
-                <For items={categories}>
+                <For each={categories}>
                   {(cat) => (
                     <button
                       type="button"
@@ -171,7 +171,7 @@ export function SettingsModal() {
                 <Search class="w-3.5 h-3.5 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <Input
                   value={searchQuery()}
-                  onInput={(e: InputEvent & { currentTarget: HTMLInputElement }) => setSearchQuery(currentTarget.value)}
+                  onInput={(e: InputEvent & { currentTarget: HTMLInputElement }) => setSearchQuery(e.currentTarget.value)}
                   placeholder="Filter 20 themes..."
                   class="h-7 text-xs pl-8 bg-muted/30 border-glass-border rounded-lg"
                 />
@@ -184,7 +184,7 @@ export function SettingsModal() {
               aria-label="Studio theme presets"
               class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-[300px] overflow-y-auto pr-1"
             >
-              <For items={filteredPresets()}>
+              <For each={filteredPresets()}>
                 {(preset) => {
                   const isSelected = () => preset.id === currentPresetId();
                   return (
@@ -265,7 +265,7 @@ export function SettingsModal() {
                 Optical Glass Finish (Decoupled)
               </label>
               <div class="grid grid-cols-3 gap-1.5">
-                <For items={GLASS_STYLES}>
+                <For each={GLASS_STYLES}>
                   {(style) => {
                     const isStyleActive = () => theme.preferences.glassStyle === style.id;
                     return (
@@ -299,7 +299,7 @@ export function SettingsModal() {
                 Acrylic Blur Intensity
               </label>
               <div class="grid grid-cols-3 gap-1.5">
-                <For items={BLUR_INTENSITIES}>
+                <For each={BLUR_INTENSITIES}>
                   {(blur) => {
                     const isBlurActive = () => theme.preferences.blurIntensity === blur.id;
                     return (

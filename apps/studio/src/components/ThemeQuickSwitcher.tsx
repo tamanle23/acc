@@ -46,31 +46,27 @@ export function ThemeQuickSwitcher() {
 
   return (
     <Popover open={isOpen()} onOpenChange={setIsOpen}>
-      <Tooltip>
-        <TooltipTrigger>
-          <PopoverTrigger>
-            <Button
-              variant="ghost"
-              size="sm"
-              aria-label="Switch Theme Preset"
-              class="h-8 px-2 gap-1.5 text-xs text-muted-foreground hover:text-foreground border border-transparent hover:border-glass-border rounded-lg transition-all"
-            >
-              <div
-                class="w-3.5 h-3.5 rounded-full border border-glass-border flex items-center justify-center shrink-0 shadow-2xs"
-                style={{
-                  background: theme.activePreset.preview.primary,
-                  "box-shadow": `0 0 8px ${theme.activePreset.preview.primary}55`,
-                }}
-              >
-                <Palette class="w-2.5 h-2.5 text-black/70 mix-blend-overlay" />
-              </div>
-              <span class="hidden xl:inline font-medium text-[11px] truncate max-w-[90px]">
-                {theme.activePreset.name}
-              </span>
-            </Button>
-          </PopoverTrigger>
-        </TooltipTrigger>
-        <TooltipContent>Quick Theme Switcher (20 Presets)</TooltipContent>
+      <Tooltip content="Quick Theme Switcher (20 Presets)">
+        <PopoverTrigger
+          as={Button}
+          variant="ghost"
+          size="sm"
+          aria-label="Switch Theme Preset"
+          class="h-8 px-2 gap-1.5 text-xs text-muted-foreground hover:text-foreground border border-transparent hover:border-glass-border rounded-lg transition-all cursor-pointer"
+        >
+          <div
+            class="w-3.5 h-3.5 rounded-full border border-glass-border flex items-center justify-center shrink-0 shadow-2xs"
+            style={{
+              background: theme.activePreset.preview.primary,
+              "box-shadow": `0 0 8px ${theme.activePreset.preview.primary}55`,
+            }}
+          >
+            <Palette class="w-2.5 h-2.5 text-black/70 mix-blend-overlay" />
+          </div>
+          <span class="hidden xl:inline font-medium text-[11px] truncate max-w-[90px]">
+            {theme.activePreset.name}
+          </span>
+        </PopoverTrigger>
       </Tooltip>
 
       <PopoverContent

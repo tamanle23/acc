@@ -1,4 +1,4 @@
-import { createSignal, createEffect, onCleanup } from 'solid-js';
+import { createSignal, createEffect, onCleanup, untrack } from 'solid-js';
 import {
   type ShuttleSpeed,
   getNextShuttleSpeed,
@@ -62,6 +62,7 @@ export function createShuttleEngine(options: UseShuttleEngineOptions): UseShuttl
     }
 
     setSpeedState(newSpeed);
+    PlayheadController.getInstance().setIsPlaying(newSpeed !== 0);
 
     if (newSpeed === 0) {
       const snapped = snapToDiscreteFrame(getCurrentFrame());
@@ -115,13 +116,17 @@ export function createShuttleEngine(options: UseShuttleEngineOptions): UseShuttl
     const currentSpeed = speed();
     if (currentSpeed === 0) return;
 
+    const initialFrame = untrack(getCurrentFrame);
+    const initialFps = untrack(getFps);
+    const initialTotalFrames = untrack(getTotalFrames);
+
     const clock = new DeterministicTimelineClock({
-      fps: getFps(),
-      totalFrames: getTotalFrames(),
+      fps: initialFps,
+      totalFrames: initialTotalFrames,
       mode: currentSpeed === 1 && !shouldMuteAudio(currentSpeed) ? 'audio_master' : 'monotonic_worker',
     });
 
-    clock.play(getCurrentFrame(), currentSpeed);
+    clock.play(initialFrame, currentSpeed);
 
     if (clock.getSyncMode() === 'audio_master') {
       const audioStart = WebAudioEngine.getInstance().getPlaybackStartAudioTime();
@@ -134,6 +139,8 @@ export function createShuttleEngine(options: UseShuttleEngineOptions): UseShuttl
 
     const tick = (now: number) => {
       let targetFrame: number;
+      const deltaSec = Math.max(0, (now - lastTime) / 1000);
+      lastTime = now;
 
       if (
         clock.getSyncMode() === 'audio_master' &&
@@ -143,10 +150,11 @@ export function createShuttleEngine(options: UseShuttleEngineOptions): UseShuttl
         const audioNow = WebAudioEngine.getInstance().getAudioCurrentTime();
         targetFrame = clock.tick(audioNow);
       } else {
-        const deltaSec = (now - lastTime) / 1000;
+        if (clock.getSyncMode() === 'audio_master') {
+          clock.setSyncMode('monotonic_worker');
+        }
         targetFrame = clock.tick(deltaSec);
       }
-      lastTime = now;
 
       const total = getTotalFrames() || 300;
       const endFrame = Math.max(0, total - 1);

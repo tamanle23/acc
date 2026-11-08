@@ -195,7 +195,7 @@ export function VisualJsonTreeNode(props: VisualJsonTreeNodeProps) {
 
         <Show when={expanded()}>
           <div class="border-l border-[var(--glass-border)] ml-3">
-            <For items={entries()}>
+            <For each={entries()}>
               {([k, v]) => (
                 <VisualJsonTreeNode
                   label={k}

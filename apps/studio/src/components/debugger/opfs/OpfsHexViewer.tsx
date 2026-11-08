@@ -266,7 +266,7 @@ export function OpfsHexViewer(props: OpfsHexViewerProps) {
               </tr>
             </thead>
             <tbody>
-              <For items={rows()}>
+              <For each={rows()}>
                 {(row) => (
                   <tr class="hover:bg-slate-900/60 transition-colors">
                     <td class="text-cyan-500/80 pr-4 select-none font-bold">{row.offset}</td>

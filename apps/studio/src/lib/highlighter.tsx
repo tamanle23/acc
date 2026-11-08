@@ -44,6 +44,11 @@ function getLanguage(language: string) {
   return aliases[name] ?? null;
 }
 
+export interface HighlightedToken {
+  content: string;
+  style?: string | Record<string, string>;
+}
+
 // Loads a language and returns a highlighter for it, or null for a language
 // that is not listed.
 export async function loadHighlighter(language: string) {
@@ -60,9 +65,12 @@ export async function loadHighlighter(language: string) {
   }
 
   return {
-    // Returns one Solid node per line, and the grammar state after the last
-    // line. Pass that state back to continue where the code left off.
-    highlight(code: string, state?: GrammarState) {
+    // Returns plain token arrays per line (safe outside Solid reactive roots),
+    // and the grammar state after the last line.
+    highlight(code: string, state?: GrammarState): {
+      lines: HighlightedToken[][];
+      state: GrammarState | undefined;
+    } {
       const tokenize = (text: string) =>
         shiki.codeToTokens(text, {
           lang,
@@ -80,14 +88,10 @@ export async function loadHighlighter(language: string) {
 
       return {
         lines: tokens.map((line) =>
-          line.map((token) => (
-            <span
-              style={token.htmlStyle as JSX.CSSProperties}
-              class="text-(--shiki-light) dark:text-(--shiki-dark)"
-            >
-              {token.content}
-            </span>
-          ))
+          line.map((token) => ({
+            content: token.content,
+            style: token.htmlStyle,
+          }))
         ),
         state: shiki.getLastGrammarState(tokens),
       };
@@ -95,8 +99,11 @@ export async function loadHighlighter(language: string) {
   };
 }
 
-// Returns one Solid node per line, or null for a language that is not listed.
-export async function highlightCode(code: string, language: string) {
+// Returns tokenized lines, or null for a language that is not listed.
+export async function highlightCode(
+  code: string,
+  language: string
+): Promise<HighlightedToken[][] | null> {
   const highlighter = await loadHighlighter(language);
 
   return highlighter ? highlighter.highlight(code).lines : null;
