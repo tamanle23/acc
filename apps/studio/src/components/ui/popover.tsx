@@ -30,7 +30,7 @@ function PopoverContent(props: ComponentProps<typeof PopoverPrimitive.Content> &
   sideOffset?: number;
   [key: string]: any;
 }) {
-  const [local, rest] = splitProps(props, ["class", "className", "children", "sideOffset"]);
+  const [local, rest] = splitProps(props, ["class", "className", "children", "sideOffset", "onFocusOutside"]);
 
   return (
     <PopoverPrimitive.Portal>
@@ -40,6 +40,14 @@ function PopoverContent(props: ComponentProps<typeof PopoverPrimitive.Content> &
           "z-50 flex w-72 flex-col gap-4 rounded-3xl bg-popover p-4 text-sm text-popover-foreground shadow-lg ring-1 ring-foreground/5 outline-none duration-100 dark:ring-foreground/10",
           local.class || local.className
         )}
+        onFocusOutside={(e: any) => {
+          const target = e.detail?.originalEvent?.target as HTMLElement | undefined;
+          if (target && (e.currentTarget?.contains?.(target) || target.closest?.('[data-slot="popover-content"]'))) {
+            e.preventDefault();
+            return;
+          }
+          local.onFocusOutside?.(e);
+        }}
         {...rest}
       >
         {local.children}

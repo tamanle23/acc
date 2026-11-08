@@ -134,3 +134,4 @@
 | 468 | [Fix Studio RightSidebar Property Modifications and Sequence Preview Popup Positioning](./468_fix_studio_right_sidebar_properties_and_sequence_preview_popup.md) | Completed |
 | 469 | [End-to-End Task Contract Design & Runtime Integrity](./469_task_contract_studio_engine_integrity.md) | Completed |
 | 470 | [Fix Studio RightSidebar Sliders Not Moving](./470_fix_studio_right_sidebar_sliders_not_moving.md) | Completed |
+| 471 | [Fix Studio Add Effect Popover Flashing](./471_fix_studio_add_effect_popover_flashing.md) | Completed |

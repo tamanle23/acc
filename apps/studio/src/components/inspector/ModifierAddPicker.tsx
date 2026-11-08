@@ -1,4 +1,4 @@
-import { createSignal, createMemo, Show, For, type JSX } from 'solid-js';
+import { createSignal, createMemo, createEffect, Show, For, type JSX } from 'solid-js';
 import {
   Search,
   Check,
@@ -50,8 +50,17 @@ const CATEGORY_MAP: Record<string, { label: string; icon: any }> = {
  * VideoIR modifiers and visual effects.
  */
 export function ModifierAddPicker(props: ModifierAddPickerProps) {
+  let searchInputRef: HTMLInputElement | undefined;
   const [searchQuery, setSearchQuery] = createSignal('');
   const [selectedCategory, setSelectedCategory] = createSignal<string>('all');
+
+  createEffect(() => {
+    if (props.open) {
+      setTimeout(() => {
+        searchInputRef?.focus();
+      }, 50);
+    }
+  });
 
   const filteredModifiers = createMemo(() => {
     const q = searchQuery().toLowerCase().trim();
@@ -97,12 +106,12 @@ export function ModifierAddPicker(props: ModifierAddPickerProps) {
         <div class="p-2 border-b border-glass-border bg-glass-surface/50 flex items-center gap-2">
           <Search class="w-3.5 h-3.5 text-accent-theme shrink-0" />
           <input
+            ref={searchInputRef}
             type="text"
             placeholder="Search effects & modifiers..."
             value={searchQuery()}
             onInput={(e) => setSearchQuery(e.currentTarget.value)}
             class="flex-1 bg-transparent text-xs text-foreground placeholder:text-muted-foreground outline-none font-sans"
-            autofocus
           />
           <Show when={searchQuery()}>
             <button

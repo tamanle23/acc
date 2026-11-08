@@ -28,6 +28,7 @@ export interface InspectorHeaderProps {
   onToggleBypassAll: () => void;
   onOpenAddPicker?: () => void;
   addEffectSlot?: JSX.Element;
+  children?: JSX.Element;
 }
 
 const MODALITY_COLOR_MAP: Record<string, string> = {
@@ -99,25 +100,20 @@ export function InspectorHeader(props: InspectorHeaderProps) {
 
           {/* Add Effect Launcher */}
           <Show when={props.canAddEffect}>
-            <Show
-              when={props.addEffectSlot}
-              fallback={
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={props.isAddEffectDisabled}
-                  onClick={props.onOpenAddPicker}
-                  class="h-6 text-[10px] gap-1 px-1.5 border-accent-theme/40 text-accent-theme bg-accent-theme/10 hover:bg-accent-theme/20 cursor-pointer disabled:cursor-not-allowed"
-                  title="Add effect or modifier"
-                  aria-label="Add effect or modifier"
-                >
-                  <Plus class="w-3 h-3" />
-                  Add Effect
-                </Button>
-              }
-            >
-              {props.addEffectSlot}
-            </Show>
+            {props.children ?? props.addEffectSlot ?? (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={props.isAddEffectDisabled}
+                onClick={props.onOpenAddPicker}
+                class="h-6 text-[10px] gap-1 px-1.5 border-accent-theme/40 text-accent-theme bg-accent-theme/10 hover:bg-accent-theme/20 cursor-pointer disabled:cursor-not-allowed"
+                title="Add effect or modifier"
+                aria-label="Add effect or modifier"
+              >
+                <Plus class="w-3 h-3" />
+                Add Effect
+              </Button>
+            )}
           </Show>
         </div>
       </div>

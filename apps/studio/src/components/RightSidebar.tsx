@@ -211,29 +211,28 @@ export function RightSidebar() {
         isBypassAllActive={isBypassAllActive()}
         onToggleBypassAll={() => setIsBypassAllActive((prev) => !prev)}
         onOpenAddPicker={() => setIsAddPickerOpen(true)}
-        addEffectSlot={
-          <ModifierAddPicker
-            open={isAddPickerOpen()}
-            onOpenChange={setIsAddPickerOpen}
-            relevantModifiers={relevantModifiers()}
-            activeEntityModifiers={activeEntityModifiers()}
-            isDisabled={isAddEffectDisabled()}
-            onSelectModifier={handleAddEffect}
+      >
+        <ModifierAddPicker
+          open={isAddPickerOpen()}
+          onOpenChange={setIsAddPickerOpen}
+          relevantModifiers={relevantModifiers()}
+          activeEntityModifiers={activeEntityModifiers()}
+          isDisabled={isAddEffectDisabled()}
+          onSelectModifier={handleAddEffect}
+        >
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={isAddEffectDisabled()}
+            class="h-6 text-[10px] gap-1 px-1.5 border-accent-theme/40 text-accent-theme bg-accent-theme/10 hover:bg-accent-theme/20 cursor-pointer disabled:cursor-not-allowed"
+            title="Add effect or modifier"
+            aria-label="Add effect or modifier"
           >
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={isAddEffectDisabled()}
-              class="h-6 text-[10px] gap-1 px-1.5 border-accent-theme/40 text-accent-theme bg-accent-theme/10 hover:bg-accent-theme/20 cursor-pointer disabled:cursor-not-allowed"
-              title="Add effect or modifier"
-              aria-label="Add effect or modifier"
-            >
-              <Plus class="w-3 h-3" />
-              Add Effect
-            </Button>
-          </ModifierAddPicker>
-        }
-      />
+            <Plus class="w-3 h-3" />
+            Add Effect
+          </Button>
+        </ModifierAddPicker>
+      </InspectorHeader>
 
       {/* 2. Real-Time Property Search Filter */}
       <Show when={isSearchOpen()}>
