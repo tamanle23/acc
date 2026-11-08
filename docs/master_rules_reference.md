@@ -3,6 +3,26 @@
 This document is the authoritative, comprehensive repository of all architectural standards, development workflows, design systems, and operational constraints for the **acc** monorepo.
 
 ---
+## 0. Rule: Reuse-Before-Build & Architectural Alignment (Zero Wheel-Reinvention)
+
+### 1. Core Mandate
+NEVER implement custom utilities, wrappers, state managers, data fetchers, or architectural patterns when the existing codebase, shared monorepo packages, or installed dependencies already provide the capability.
+
+### 2. Mandatory Pre-Implementation Audit
+Before generating any new module, helper, or abstraction, the Agent MUST execute a 3-step discovery check:
+1. **Local & Monorepo Scan:** Search existing shared packages (`packages/*`, `src/lib`, `src/utils`, `src/common`, `src/core`) for established implementations, base classes, or interfaces.
+2. **Dependency Audit:** Inspect `package.json` / `pom.xml` / `Cargo.toml` to verify if an installed library or framework feature (e.g., Spring Boot starters, native Web/Runtime APIs, utility libraries) already solves the problem.
+3. **Pattern Conformance:** Identify how adjacent modules or existing features solve the exact same category of problem (e.g., error handling, logging, validation, DB queries) and mirror that exact pattern.
+
+### 3. Strict Prohibitions
+- **No Redundant Wrappers:** Do not wrap standard framework primitives or existing project clients (e.g., custom HTTP/DB wrappers, custom event emitters) unless explicitly instructed.
+- **No Shadow Utilities:** Do not write inline/duplicate string, date, math, stream, or collection helpers if a project utility or standard runtime API already exists.
+- **No Paradigm Drift:** Do not introduce a second state management pattern, validation schema library, or DI mechanism alongside the one already established in the architecture.
+
+### 4. Exception & Escalation Protocol
+If an existing architectural capability is close to the requirement but lacks a specific feature:
+- **Extend, Do Not Fork:** Propose a backward-compatible extension to the existing module rather than creating a parallel implementation.
+- **Justify New Code:** If creating a net-new abstraction is unavoidable, you MUST explicitly state in your plan: *"Audited `<path/to/existing>` and `<dependencies>`; none support `<requirement>` because `<reason>`."*
 
 ## 1. Rule Management Standard Operating Procedure (SOP)
 

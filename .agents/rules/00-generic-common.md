@@ -3,6 +3,8 @@ trigger: always_on
 description: Universal operational constraints, code standards, git workflow, and WCAG accessibility.
 ---
 
+# **Zero Wheel-Reinvention (Reuse-Before-Build):** NEVER write custom helpers, wrappers, or new architectural patterns before auditing existing codebase utilities (`src/utils`, `src/lib`, shared packages) and installed dependencies (`package.json`/`pom.xml`). Always reuse or extend existing primitives and strictly mirror adjacent module patterns. If a net-new abstraction is required, explicitly state what existing files were audited and why they could not be used.
+
 # RULE MANAGEMENT SOP (CRITICAL CONSTRAINT)
 Constraint: YOU MUST NEVER write long, detailed rules directly into the `.agents/rules/` directory.
 Workflow:
