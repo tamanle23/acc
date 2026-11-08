@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
-import { DndContext, DragOverlay, pointerWithin } from '@dnd-kit/core';
-import { AlertCircle } from 'lucide-react';
+import { createSignal, createEffect, onMount, onCleanup, Suspense, lazy, Show } from 'solid-js';
+import { DragDropProvider, DragOverlay } from '@dnd-kit/solid';
+import { AlertCircle } from 'lucide-solid';
 import { Titlebar } from './components/Titlebar';
 import { LeftSidebar, DragOverlayPreview, type LeftNavTab } from './components/LeftSidebar';
 import { RightSidebar } from './components/RightSidebar';
@@ -8,19 +8,19 @@ import { Preview } from './components/Preview';
 import { Timeline } from './components/Timeline';
 import { StudioBootController } from './lib/boot/StudioBootController';
 
-// Performance optimization (react-ui-performance-tuning): Lazy-load on-demand modals to reduce initial bundle TTI
-const ExportProgressModal = React.lazy(() =>
+const ExportProgressModal = lazy(() =>
   import('./components/ExportProgressModal').then((m) => ({ default: m.ExportProgressModal }))
 );
-const ExportConfigModal = React.lazy(() =>
+const ExportConfigModal = lazy(() =>
   import('./components/ExportConfigModal').then((m) => ({ default: m.ExportConfigModal }))
 );
-const SettingsModal = React.lazy(() =>
+const SettingsModal = lazy(() =>
   import('./components/SettingsModal').then((m) => ({ default: m.SettingsModal }))
 );
+
 import { TooltipProvider } from './components/ui';
 import { Toaster } from './components/ui/sonner';
-import { toast } from 'sonner';
+import { toast } from 'solid-sonner';
 import {
   ResizablePanelGroup,
   ResizablePanel,
@@ -42,51 +42,41 @@ import {
 
 function StudioWorkspace() {
   const irState = useIRState();
-  const [currentFrame, setCurrentFrame] = useState(0);
-  const currentFrameRef = useRef(currentFrame);
-  currentFrameRef.current = currentFrame;
+  const [currentFrame, setCurrentFrame] = createSignal(0);
 
   // Enterprise Dual-Sidebar Workspace Layout with Responsive Auto-Collapse & Zen Mode
-  const [isLeftOpen, setIsLeftOpen] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return window.innerWidth >= 1200;
-    }
-    return true;
-  });
-  const [isRightOpen, setIsRightOpen] = useState(true);
-  const [activeNav, setActiveNav] = useState<LeftNavTab>('vault');
-  const prevSidebarStateRef = useRef<{ left: boolean; right: boolean }>({
-    left: true,
-    right: true,
-  });
+  const [isLeftOpen, setIsLeftOpen] = createSignal(
+    typeof window !== 'undefined' ? window.innerWidth >= 1200 : true
+  );
+  const [isRightOpen, setIsRightOpen] = createSignal(true);
+  const [activeNav, setActiveNav] = createSignal<LeftNavTab>('vault');
+  let prevSidebarState = { left: true, right: true };
 
-  const isZenMode = !isLeftOpen && !isRightOpen;
+  const isZenMode = () => !isLeftOpen() && !isRightOpen();
 
-  const handleToggleZen = useCallback(() => {
-    if (isZenMode) {
-      // Restore previous state
-      setIsLeftOpen(prevSidebarStateRef.current.left);
-      setIsRightOpen(prevSidebarStateRef.current.right);
+  const handleToggleZen = () => {
+    if (isZenMode()) {
+      setIsLeftOpen(prevSidebarState.left);
+      setIsRightOpen(prevSidebarState.right);
     } else {
-      // Save current state and collapse both
-      prevSidebarStateRef.current = { left: isLeftOpen, right: isRightOpen };
+      prevSidebarState = { left: isLeftOpen(), right: isRightOpen() };
       setIsLeftOpen(false);
       setIsRightOpen(false);
     }
-  }, [isZenMode, isLeftOpen, isRightOpen]);
+  };
 
-  const [isExportConfigOpen, setIsExportConfigOpen] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
-  const [exportProgress, setExportProgress] = useState<number>(0);
-  const exportAbortControllerRef = useRef<AbortController | null>(null);
+  const [isExportConfigOpen, setIsExportConfigOpen] = createSignal(false);
+  const [isExporting, setIsExporting] = createSignal(false);
+  const [exportProgress, setExportProgress] = createSignal<number>(0);
+  let exportAbortController: AbortController | null = null;
 
-  const fps = irState.doc.meta.globalFps || 30;
-  const totalFrames = irState.timeline?.totalFrames || 300;
-  const width = irState.doc.meta.canvasSize.w || 1920;
-  const height = irState.doc.meta.canvasSize.h || 1080;
+  const fps = () => irState.doc?.meta?.globalFps || 30;
+  const totalFrames = () => irState.timeline?.totalFrames || 300;
+  const width = () => irState.doc?.meta?.canvasSize?.w || 1920;
+  const height = () => irState.doc?.meta?.canvasSize?.h || 1080;
 
   // Global Workspace Hotkeys: [ (left drawer), ] (right inspector), \ (zen mode)
-  useEffect(() => {
+  onMount(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (
         e.target instanceof HTMLInputElement ||
@@ -102,17 +92,17 @@ function StudioWorkspace() {
       }
     };
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleToggleZen]);
+    onCleanup(() => window.removeEventListener('keydown', handleKeyDown));
+  });
 
-  const [timelineScrollLeft, setTimelineScrollLeft] = useState(0);
-  const [timelineZoomScale, setTimelineZoomScale] = useState(1.65);
+  const [timelineScrollLeft, setTimelineScrollLeft] = createSignal(0);
+  const [timelineZoomScale, setTimelineZoomScale] = createSignal(1.65);
 
-  const handleSequenceInserted = useCallback(() => {
+  const handleSequenceInserted = () => {
     setIsRightOpen(true);
-  }, []);
+  };
 
-  const { sensors, activeDragItem, handleDragStart, handleDragEnd } = useWorkspaceDnd({
+  const dnd = useWorkspaceDnd({
     currentFrame,
     fps,
     timelineScrollLeft,
@@ -121,30 +111,30 @@ function StudioWorkspace() {
   });
 
   // Dismiss pre-hydration boot splash after preview worker warms up & first-paint synchronization
-  useEffect(() => {
+  onMount(() => {
     StudioBootController.waitForEngineWarmup();
-  }, []);
+  });
 
   // Sync PlayheadController configuration
-  useEffect(() => {
-    PlayheadController.getInstance().setConfig(fps, totalFrames);
-  }, [fps, totalFrames]);
+  createEffect(() => {
+    PlayheadController.getInstance().setConfig(fps(), totalFrames());
+  });
 
-  // Subscribe low-frequency updates to sync React state (e.g. for clip inspector) without per-frame re-renders
-  useEffect(() => {
-    return PlayheadController.getInstance().subscribeLowFrequency((frame) => {
+  // Subscribe low-frequency updates to sync Solid state without per-frame re-renders
+  onMount(() => {
+    const unsub = PlayheadController.getInstance().subscribeLowFrequency((frame) => {
       setCurrentFrame(frame);
-      currentFrameRef.current = frame;
     });
-  }, []);
+    onCleanup(unsub);
+  });
 
   const handleScrub = (frame: number) => {
     const discrete = snapToDiscreteFrame(frame);
-    const clamped = Math.max(0, Math.min(discrete, totalFrames));
-    currentFrameRef.current = clamped;
+    const clamped = Math.max(0, Math.min(discrete, totalFrames()));
+    setCurrentFrame(clamped);
     PlayheadController.getInstance().seek(clamped, !shuttle.isPlaying);
     if (!shuttle.isPlaying) {
-      WebAudioEngine.getInstance().playScrubFeedback(clamped, fps, irState);
+      WebAudioEngine.getInstance().playScrubFeedback(clamped, fps(), irState);
     }
   };
 
@@ -158,11 +148,9 @@ function StudioWorkspace() {
     enableKeybindings: true,
   });
 
-  const isPlaying = shuttle.isPlaying;
-
-  useEffect(() => {
-    PlayheadController.getInstance().setIsPlaying(isPlaying);
-  }, [isPlaying]);
+  createEffect(() => {
+    PlayheadController.getInstance().setIsPlaying(shuttle.isPlaying);
+  });
 
   const handleTogglePlay = () => {
     shuttle.togglePlay();
@@ -177,12 +165,12 @@ function StudioWorkspace() {
     height?: number;
     videoBitrate?: number;
   }) => {
-    const exportWidth = config?.width ?? width;
-    const exportHeight = config?.height ?? height;
+    const exportWidth = config?.width ?? width();
+    const exportHeight = config?.height ?? height();
     const exportBitrate = config?.videoBitrate ?? 4_000_000;
 
     const abortController = new AbortController();
-    exportAbortControllerRef.current = abortController;
+    exportAbortController = abortController;
     try {
       setIsExporting(true);
       setExportProgress(0);
@@ -191,8 +179,8 @@ function StudioWorkspace() {
         width: exportWidth,
         height: exportHeight,
         videoBitrate: exportBitrate,
-        fps,
-        totalFrames,
+        fps: fps(),
+        totalFrames: totalFrames(),
         signal: abortController.signal,
         onProgress: setExportProgress,
       });
@@ -201,72 +189,73 @@ function StudioWorkspace() {
         if (result.buffer) downloadExportedMp4(result.buffer);
         toast.success('MP4 Export Completed!', {
           description: `Rendered ${result.framesConsumed} frames at ${exportWidth}x${exportHeight} (${(result.fileSizeBytes / 1024 / 1024).toFixed(2)} MB)`,
-          action: result.buffer ? { label: 'Download Again', onClick: () => downloadExportedMp4(result.buffer!) } : undefined,
+          action: result.buffer
+            ? { label: 'Download Again', onClick: () => downloadExportedMp4(result.buffer!) }
+            : undefined,
         });
       }
     } catch (err: unknown) {
       console.error('Client export error:', err);
       toast.error('Client Export Failed', { description: getErrorMessage(err) });
     } finally {
-      exportAbortControllerRef.current = null;
+      exportAbortController = null;
       setIsExporting(false);
       setExportProgress(0);
     }
   };
 
-  const handleCancelExport = useCallback(() => {
-    exportAbortControllerRef.current?.abort();
+  const handleCancelExport = () => {
+    exportAbortController?.abort();
     setIsExporting(false);
-  }, []);
+  };
 
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={pointerWithin}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
+    <DragDropProvider
+      onDragStart={dnd.handleDragStart}
+      onDragEnd={dnd.handleDragEnd}
     >
-      <div className="flex flex-col h-screen select-none liquid-ambient-mesh bg-background text-foreground transition-colors duration-200">
+      <div class="flex flex-col h-screen select-none liquid-ambient-mesh bg-background text-foreground transition-colors duration-200">
         <Suspense fallback={null}>
           <SettingsModal />
         </Suspense>
+
         {/* 1. Top Titlebar */}
         <Titlebar
-          projectTitle={irState.doc.meta.contentId}
-          fps={fps}
-          currentFrame={currentFrame}
-          totalFrames={totalFrames}
-          isExporting={isExporting}
+          projectTitle={irState.doc?.meta?.contentId || 'Untitled Project'}
+          fps={fps()}
+          currentFrame={currentFrame()}
+          totalFrames={totalFrames()}
+          isExporting={isExporting()}
           onStartExport={handleOpenExportConfig}
           onCancelExport={handleCancelExport}
-          isLeftOpen={isLeftOpen}
-          onToggleLeft={() => setIsLeftOpen(!isLeftOpen)}
-          isRightOpen={isRightOpen}
-          onToggleRight={() => setIsRightOpen(!isRightOpen)}
-          isZenMode={isZenMode}
+          isLeftOpen={isLeftOpen()}
+          onToggleLeft={() => setIsLeftOpen(!isLeftOpen())}
+          isRightOpen={isRightOpen()}
+          onToggleRight={() => setIsRightOpen(!isRightOpen())}
+          isZenMode={isZenMode()} /* isZenMode={isZenMode} */
           onToggleZen={handleToggleZen}
         />
 
         {/* IR Error Banner if any */}
-        {irState.error && (
-          <div className="bg-destructive/15 border-b border-destructive/30 px-6 py-2 flex items-center gap-2 text-xs text-destructive">
-            <AlertCircle className="w-4 h-4 text-destructive shrink-0" />
-            <span className="font-mono font-medium truncate">{irState.error}</span>
+        <Show when={irState.error}>
+          <div class="bg-destructive/15 border-b border-destructive/30 px-6 py-2 flex items-center gap-2 text-xs text-destructive">
+            <AlertCircle class="w-4 h-4 text-destructive shrink-0" />
+            <span class="font-mono font-medium truncate">{irState.error}</span>
           </div>
-        )}
+        </Show>
 
         {/* 2. Main Middle Workspace & Timeline in Resizable Vertical Layout */}
-        <ResizablePanelGroup direction="vertical" className="flex-1">
-          <ResizablePanel defaultSize="62%" minSize="30%" className="h-full">
-            <div className="flex h-full w-full overflow-hidden">
+        <ResizablePanelGroup direction="vertical" class="flex-1">
+          <ResizablePanel defaultSize="62%" minSize="30%" class="h-full">
+            <div class="flex h-full w-full overflow-hidden">
               <LeftSidebar
-                isOpen={isLeftOpen}
-                onToggle={() => setIsLeftOpen(!isLeftOpen)}
-                activeNav={activeNav}
+                isOpen={isLeftOpen()}
+                onToggle={() => setIsLeftOpen(!isLeftOpen())}
+                activeNav={activeNav()}
                 setActiveNav={setActiveNav}
                 onInsertPreset={(preset) => {
                   const seq = preset.createSequence({
-                    startFrame: currentFrame,
+                    startFrame: currentFrame(),
                     normX: 0.5,
                     normY: 0.5,
                   });
@@ -279,52 +268,61 @@ function StudioWorkspace() {
               />
 
               {/* Horizontal Bento Splitting for Preview Canvas and Right Inspector */}
-              <ResizablePanelGroup direction="horizontal" className="flex-1 h-full">
-                <ResizablePanel id="preview-viewport-panel" defaultSize={isRightOpen ? "72%" : "100%"} minSize="40%" className="h-full">
-                  <div className="h-full w-full flex flex-col items-center justify-center p-3 relative overflow-hidden bg-background/50">
+              <ResizablePanelGroup direction="horizontal" class="flex-1 h-full">
+                <ResizablePanel
+                  id="preview-viewport-panel"
+                  defaultSize={isRightOpen() ? '72%' : '100%'}
+                  minSize="40%"
+                  class="h-full"
+                >
+                  <div class="h-full w-full flex flex-col items-center justify-center p-3 relative overflow-hidden bg-background/50">
                     <Preview
                       playhead={{
-                        currentFrame,
-                        totalFrames,
-                        currentTime: currentFrame / fps,
-                        fps,
+                        currentFrame: currentFrame(),
+                        totalFrames: totalFrames(),
+                        currentTime: currentFrame() / fps(),
+                        fps: fps(),
                       }}
-                      isPlaying={isPlaying}
+                      isPlaying={shuttle.isPlaying}
                       onTogglePlay={handleTogglePlay}
                       onScrub={handleScrub}
                     />
 
                     <Suspense fallback={null}>
                       <ExportConfigModal
-                        open={isExportConfigOpen}
+                        open={isExportConfigOpen()}
                         onOpenChange={setIsExportConfigOpen}
-                        width={width}
-                        height={height}
-                        aspectRatio={irState.doc.meta.aspectRatio}
-                        fps={fps}
-                        totalFrames={totalFrames}
+                        width={width()}
+                        height={height()}
+                        aspectRatio={irState.doc?.meta?.aspectRatio}
+                        fps={fps()}
+                        totalFrames={totalFrames()}
                         onConfirmExport={({ width: w, height: h, videoBitrate }) => {
                           handleStartExport({ width: w, height: h, videoBitrate });
                         }}
                       />
 
                       <ExportProgressModal
-                        isExporting={isExporting}
-                        exportProgress={exportProgress}
+                        isExporting={isExporting()}
+                        exportProgress={exportProgress()}
                         onCancelExport={handleCancelExport}
                       />
                     </Suspense>
                   </div>
                 </ResizablePanel>
 
-                {isRightOpen && (
-                  <>
-                    <ResizableHandle withHandle />
-                    <ResizablePanel id="inspector-panel" defaultSize="28%" minSize="280px" maxSize="55%" className="h-full">
-                      <RightSidebar />
-                    </ResizablePanel>
-                  </>
-                )}
+                <Show when={isRightOpen()}>
+                  <ResizableHandle withHandle />
+                  <ResizablePanel
+                    id="inspector-panel"
+                    defaultSize="28%"
+                    minSize="280px"
+                    maxSize="55%"
+                    class="h-full"
+                  >
+                    <RightSidebar />
+                  </ResizablePanel>
+                </Show>
               </ResizablePanelGroup>
             </div>
           </ResizablePanel>
@@ -332,21 +330,21 @@ function StudioWorkspace() {
           <ResizableHandle withHandle />
 
           {/* 3. Bottom Timeline Scrubber */}
-          <ResizablePanel defaultSize="38%" minSize="20%" className="h-full">
-            <div className="h-full overflow-hidden">
+          <ResizablePanel defaultSize="38%" minSize="20%" class="h-full">
+            <div class="h-full overflow-hidden">
               <Timeline
                 playhead={{
-                  currentFrame,
-                  totalFrames,
-                  fps,
+                  currentFrame: currentFrame(),
+                  totalFrames: totalFrames(),
+                  fps: fps(),
                 }}
                 onScrub={handleScrub}
-                isPlaying={isPlaying}
+                isPlaying={shuttle.isPlaying}
                 onTogglePlay={handleTogglePlay}
                 shuttle={shuttle}
-                zoomScale={timelineZoomScale}
+                zoomScale={timelineZoomScale()}
                 onZoomChange={setTimelineZoomScale}
-                scrollLeft={timelineScrollLeft}
+                scrollLeft={timelineScrollLeft()}
                 onScrollChange={setTimelineScrollLeft}
               />
             </div>
@@ -355,10 +353,10 @@ function StudioWorkspace() {
 
         {/* 4. Drag Overlay */}
         <DragOverlay dropAnimation={null}>
-          <DragOverlayPreview item={activeDragItem} />
+          <DragOverlayPreview item={dnd.activeDragItemSignal()} />
         </DragOverlay>
       </div>
-    </DndContext>
+    </DragDropProvider>
   );
 }
 

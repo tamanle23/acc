@@ -1,91 +1,101 @@
-import * as React from "react"
-import { cn } from "cn"
+import { splitProps, type ComponentProps } from "solid-js";
+import { cn } from "cn";
 
-function Card({
-  className,
-  size = "default",
-  ...props
-}: React.ComponentProps<"div"> & { size?: "default" | "sm" }) {
+export interface CardProps extends ComponentProps<"div"> {
+  class?: string;
+  className?: string;
+  size?: "default" | "sm";
+}
+
+function Card(props: CardProps) {
+  const [local, rest] = splitProps(props, ["class", "className", "size"]);
+
   return (
     <div
       data-slot="card"
-      data-size={size}
-      className={cn(
+      data-size={local.size ?? "default"}
+      class={cn(
         "group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-4xl bg-card py-(--card-spacing) text-sm text-card-foreground shadow-md ring-1 ring-foreground/5 [--card-spacing:--spacing(6)] has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(4)] dark:ring-foreground/10 *:[img:first-child]:rounded-t-4xl *:[img:last-child]:rounded-b-4xl",
-        className
+        local.class || local.className
       )}
-      {...props}
+      {...rest}
     />
-  )
+  );
 }
 
-function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
+function CardHeader(props: ComponentProps<"div"> & { class?: string; className?: string }) {
+  const [local, rest] = splitProps(props, ["class", "className"]);
   return (
     <div
       data-slot="card-header"
-      className={cn(
+      class={cn(
         "group/card-header @container/card-header grid auto-rows-min items-start gap-1.5 rounded-t-4xl px-(--card-spacing) has-data-[slot=card-action]:grid-cols-[1fr_auto] has-data-[slot=card-description]:grid-rows-[auto_auto] [.border-b]:pb-(--card-spacing)",
-        className
+        local.class || local.className
       )}
-      {...props}
+      {...rest}
     />
-  )
+  );
 }
 
-function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
+function CardTitle(props: ComponentProps<"div"> & { class?: string; className?: string }) {
+  const [local, rest] = splitProps(props, ["class", "className"]);
   return (
     <div
       data-slot="card-title"
-      className={cn("text-base font-medium", className)}
-      {...props}
+      class={cn("text-base font-medium", local.class || local.className)}
+      {...rest}
     />
-  )
+  );
 }
 
-function CardDescription({ className, ...props }: React.ComponentProps<"div">) {
+function CardDescription(props: ComponentProps<"div"> & { class?: string; className?: string }) {
+  const [local, rest] = splitProps(props, ["class", "className"]);
   return (
     <div
       data-slot="card-description"
-      className={cn("text-sm text-muted-foreground", className)}
-      {...props}
+      class={cn("text-sm text-muted-foreground", local.class || local.className)}
+      {...rest}
     />
-  )
+  );
 }
 
-function CardAction({ className, ...props }: React.ComponentProps<"div">) {
+function CardAction(props: ComponentProps<"div"> & { class?: string; className?: string }) {
+  const [local, rest] = splitProps(props, ["class", "className"]);
   return (
     <div
       data-slot="card-action"
-      className={cn(
+      class={cn(
         "col-start-2 row-span-2 row-start-1 self-start justify-self-end",
-        className
+        local.class || local.className
       )}
-      {...props}
+      {...rest}
     />
-  )
+  );
 }
 
-function CardContent({ className, ...props }: React.ComponentProps<"div">) {
+function CardContent(props: ComponentProps<"div"> & { class?: string; className?: string }) {
+  const [local, rest] = splitProps(props, ["class", "className"]);
   return (
     <div
       data-slot="card-content"
-      className={cn("px-(--card-spacing)", className)}
-      {...props}
+      class={cn("px-(--card-spacing)", local.class || local.className)}
+      {...rest}
     />
-  )
+  );
 }
 
-function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
+function CardFooter(props: ComponentProps<"div"> & { class?: string; className?: string }) {
+  const [local, rest] = splitProps(props, ["class", "className"]);
   return (
     <div
       data-slot="card-footer"
-      className={cn(
+      class={cn(
         "flex items-center rounded-b-4xl px-(--card-spacing) [.border-t]:pt-(--card-spacing)",
-        className
+        local.class || local.className
       )}
-      {...props}
+      {...rest}
     />
-  )
+  );
 }
 
 export {
@@ -96,4 +106,4 @@ export {
   CardAction,
   CardDescription,
   CardContent,
-}
+};

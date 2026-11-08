@@ -1,14 +1,28 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
     "lib": [
       "DOM",
       "DOM.Iterable",
       "ESNext"
     ],
     "outDir": "dist",
-    "jsx": "react-jsx",
+    "jsx": "preserve",
+    "jsxImportSource": "solid-js",
+    "types": ["vite/client"],
+    "skipLibCheck": true,
     "paths": {
+      "@/*": [
+        "./src/*"
+      ],
+      "cn": [
+        "./src/lib/utils.ts"
+      ],
       "@acc/studio": [
         "./src/*"
       ],

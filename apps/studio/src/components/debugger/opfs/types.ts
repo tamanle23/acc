@@ -30,3 +30,10 @@ export interface OpfsActionState {
   isAddingTestFile: boolean;
   isDeleting: boolean;
 }
+
+/**
+ * Helper to determine whether an OPFS node is a companion metadata file (*.meta.json)
+ */
+export function isMetadataFile(node: OpfsTreeNode): boolean {
+  return Boolean(node.isMetadata || /\.meta\.json$/i.test(node.name));
+}

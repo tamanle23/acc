@@ -1,64 +1,101 @@
-import { useRef, useSyncExternalStore } from 'react';
+import { createSignal, createMemo, onCleanup, type Accessor } from 'solid-js';
 import { IRStateManager, type IRState } from './irState';
 import { PlayheadController } from '../playhead/PlayheadController';
 
-/**
- * React 19 external store hook returning the full IRState snapshot.
- * Automatically re-renders when IRStateManager transitions state.
- */
-export function useIRState(): IRState {
-  const manager = IRStateManager.getInstance();
-  return useSyncExternalStore(manager.subscribe, manager.getSnapshot, manager.getSnapshot);
+export type ReactiveIRState = Accessor<IRState> & IRState;
+
+function createReactiveProxy(accessor: Accessor<IRState>): ReactiveIRState {
+  return new Proxy(accessor, {
+    apply(target) {
+      return target();
+    },
+    get(target, prop) {
+      const snapshot = target();
+      const val = (snapshot as any)[prop];
+      if (typeof val === 'function') {
+        return val.bind(snapshot);
+      }
+      return val;
+    },
+  }) as ReactiveIRState;
 }
 
 /**
- * React 19 external store selector hook for fine-grained subscriptions to IRState.
- * Caches the previous selected slice and uses `isEqual` (default `Object.is`)
- * to prevent unnecessary re-renders or tearing when unrelated state changes.
+ * SolidJS fine-grained external store hook returning a reactive Accessor (and proxy) to IRState.
+ * Automatically notifies subscribers when IRStateManager transitions state.
+ */
+export function useIRState(): ReactiveIRState {
+  const manager = IRStateManager.getInstance();
+  const [state, setState] = createSignal<IRState>(manager.getSnapshot());
+
+  const unsubscribe = manager.subscribe(() => {
+    setState(manager.getSnapshot());
+  });
+  onCleanup(unsubscribe);
+
+  return createReactiveProxy(state);
+}
+
+/**
+ * SolidJS fine-grained external store selector hook for targeted subscriptions to IRState.
+ * Prevents unnecessary re-computations when unrelated state slices change.
  */
 export function useIRSelector<T>(
   selector: (state: IRState) => T,
   isEqual: (a: T, b: T) => boolean = Object.is
-): T {
+): Accessor<T> {
   const manager = IRStateManager.getInstance();
-  const prevRef = useRef<{ hasValue: boolean; value: T }>({
-    hasValue: false,
-    value: undefined as unknown as T,
+  const [state, setState] = createSignal<IRState>(manager.getSnapshot());
+
+  const unsubscribe = manager.subscribe(() => {
+    setState(manager.getSnapshot());
   });
+  onCleanup(unsubscribe);
 
-  const getSelection = (): T => {
-    const next = selector(manager.getSnapshot());
-    if (prevRef.current.hasValue && isEqual(prevRef.current.value, next)) {
-      return prevRef.current.value;
-    }
-    prevRef.current = { hasValue: true, value: next };
-    return next;
+  return createMemo(() => selector(state()), undefined, { equals: isEqual });
+}
+
+/**
+ * SolidJS fine-grained hook subscribed to PlayheadController's
+ * frame updates.
+ */
+export function usePlayheadFrame(): Accessor<number> {
+  const controller = PlayheadController.getInstance();
+  const [frame, setFrame] = createSignal<number>(controller.getFrame());
+
+  const unsubscribe = controller.subscribeLowFrequency((f) => {
+    setFrame(f);
+  });
+  onCleanup(unsubscribe);
+
+  return frame;
+}
+
+/**
+ * SolidJS fine-grained hook subscribed to PlayheadController's playing state.
+ */
+export function usePlayheadIsPlaying(): Accessor<boolean> {
+  const controller = PlayheadController.getInstance();
+  const [isPlaying, setIsPlaying] = createSignal<boolean>(controller.getIsPlaying());
+
+  const unsubscribe = controller.subscribeLowFrequency(() => {
+    setIsPlaying(controller.getIsPlaying());
+  });
+  onCleanup(unsubscribe);
+
+  return isPlaying;
+}
+
+/**
+ * Studio master hook returning reactive accessors and command dispatchers.
+ */
+export function useStudioStore() {
+  const irState = useIRState();
+  const manager = IRStateManager.getInstance();
+  return {
+    irState,
+    dispatch: manager.dispatch.bind(manager),
+    undo: manager.undo.bind(manager),
+    redo: manager.redo.bind(manager),
   };
-
-  return useSyncExternalStore(manager.subscribe, getSelection, getSelection);
-}
-
-/**
- * React 19 external store hook subscribed to PlayheadController's
- * low-frequency (~10 Hz during playback, immediate on seek/stop) frame updates.
- */
-export function usePlayheadFrame(): number {
-  const controller = PlayheadController.getInstance();
-  return useSyncExternalStore(
-    controller.subscribeLowFrequency,
-    controller.getFrame,
-    controller.getFrame
-  );
-}
-
-/**
- * React 19 external store hook subscribed to PlayheadController's playing state.
- */
-export function usePlayheadIsPlaying(): boolean {
-  const controller = PlayheadController.getInstance();
-  return useSyncExternalStore(
-    controller.subscribeLowFrequency,
-    controller.getIsPlaying,
-    controller.getIsPlaying
-  );
 }

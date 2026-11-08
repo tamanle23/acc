@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import { createSignal, For, Show } from 'solid-js';
 import type { ResolvedSequence } from '@acc/ir';
-import { CanvasHitTester, type SequenceHitRegion } from '../../lib/hit-test/CanvasHitTester';
+import { CanvasHitTester } from '../../lib/hit-test/CanvasHitTester';
 import { IRStateManager } from '../../lib/ir/irState';
 import type { StudioTrack } from '../../lib/ir/studioTypes';
-import { Type, Sparkles, Box, Film, Image } from 'lucide-react';
+import { Type, Sparkles, Box, Film, Image as ImageIcon } from 'lucide-solid';
 
 export interface UniversalCanvasHitOverlayProps {
   activeSequences: ResolvedSequence[];
@@ -12,99 +12,93 @@ export interface UniversalCanvasHitOverlayProps {
   onStartEditingCue?: (cue: { sequenceId: string; cueIndex: number; text: string }) => void;
 }
 
-export const UniversalCanvasHitOverlay: React.FC<UniversalCanvasHitOverlayProps> = ({
-  activeSequences,
-  selectedSeqId,
-  tracks = [],
-  onStartEditingCue,
-}) => {
-  const [hoveredSeqId, setHoveredSeqId] = useState<string | null>(null);
-
-  if (!activeSequences || activeSequences.length === 0) return null;
-
-  const hitRegions = CanvasHitTester.computeHitRegions(activeSequences, tracks);
+export function UniversalCanvasHitOverlay(props: UniversalCanvasHitOverlayProps) {
+  const [hoveredSeqId, setHoveredSeqId] = createSignal<string | null>(null);
 
   const getArchetypeIcon = (type: string) => {
     switch (type) {
       case 'text':
-        return <Type className="w-3 h-3 text-violet-400" />;
+        return <Type class="w-3 h-3 text-violet-400" />;
       case 'shape':
-        return <Box className="w-3 h-3 text-cyan-400" />;
+        return <Box class="w-3 h-3 text-cyan-400" />;
       case 'image':
-        return <Image className="w-3 h-3 text-blue-400" />;
+        return <ImageIcon class="w-3 h-3 text-blue-400" />;
       case 'overlay':
-        return <Sparkles className="w-3 h-3 text-amber-400" />;
+        return <Sparkles class="w-3 h-3 text-amber-400" />;
       default:
-        return <Film className="w-3 h-3 text-indigo-400" />;
+        return <Film class="w-3 h-3 text-indigo-400" />;
     }
   };
 
+  const hitRegions = () =>
+    CanvasHitTester.computeHitRegions(props.activeSequences || [], props.tracks || []);
+
   return (
-    <>
-      {hitRegions.map((region) => {
-        const isSelected = selectedSeqId === region.sequenceId;
-        const isHovered = hoveredSeqId === region.sequenceId;
+    <Show when={props.activeSequences && props.activeSequences.length > 0}>
+      <For each={hitRegions()}>
+        {(region) => {
+          const isSelected = () => props.selectedSeqId === region.sequenceId;
+          const isHovered = () => hoveredSeqId() === region.sequenceId;
 
-        // Skip rendering hit bounds for selected sequence (TransformGizmo handles it)
-        if (isSelected) return null;
+          const leftPercent = () => (region.normX - region.normWidth / 2) * 100;
+          const topPercent = () => (region.normY - region.normHeight / 2) * 100;
+          const widthPercent = () => region.normWidth * 100;
+          const heightPercent = () => region.normHeight * 100;
 
-        const leftPercent = (region.normX - region.normWidth / 2) * 100;
-        const topPercent = (region.normY - region.normHeight / 2) * 100;
-        const widthPercent = region.normWidth * 100;
-        const heightPercent = region.normHeight * 100;
-
-        return (
-          <div
-            key={region.sequenceId}
-            onMouseEnter={() => setHoveredSeqId(region.sequenceId)}
-            onMouseLeave={() => setHoveredSeqId(null)}
-            onClick={(e) => {
-              e.stopPropagation();
-              IRStateManager.getInstance().setSelectedSequenceId(region.sequenceId);
-              IRStateManager.getInstance().setInspectorMode('sequence');
-            }}
-            onDoubleClick={(e) => {
-              e.stopPropagation();
-              const seq = activeSequences.find((s) => s.id === region.sequenceId);
-              const textMod = seq?.modifiers?.find(
-                (m) => m.type === 'text/draw' || m.type === 'text/overlay'
-              );
-              if (textMod && onStartEditingCue) {
-                onStartEditingCue({
-                  sequenceId: seq.id,
-                  cueIndex: 0,
-                  text: (textMod.params as any)?.text ?? seq.name ?? '',
-                });
-              } else if (seq && (seq.cues?.length || seq.type === 'text') && onStartEditingCue) {
-                onStartEditingCue({
-                  sequenceId: seq.id,
-                  cueIndex: 0,
-                  text: seq.cues?.[0]?.text || seq.name || '',
-                });
-              }
-            }}
-            style={{
-              left: `${leftPercent}%`,
-              top: `${topPercent}%`,
-              width: `${widthPercent}%`,
-              height: `${heightPercent}%`,
-              zIndex: region.zIndex,
-            }}
-            className={`absolute pointer-events-auto cursor-pointer rounded-md transition-all duration-150 flex items-start justify-end p-1 select-none ${
-              isHovered
-                ? 'border-2 border-dashed border-accent-theme/80 bg-accent-theme/10 shadow-accent-glow'
-                : 'border border-transparent hover:border-accent-theme/40'
-            }`}
-          >
-            {isHovered && (
-              <div className="glass-pill text-[10px] font-mono px-2 py-0.5 rounded flex items-center gap-1.5 shadow-md text-foreground -mt-5 mr-1 animate-in fade-in zoom-in-95">
-                {getArchetypeIcon(region.sequenceType)}
-                <span className="truncate max-w-[140px] font-medium">{region.label}</span>
+          return (
+            <Show when={!isSelected()}>
+              <div
+                onMouseEnter={() => setHoveredSeqId(region.sequenceId)}
+                onMouseLeave={() => setHoveredSeqId(null)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  IRStateManager.getInstance().setSelectedSequenceId(region.sequenceId);
+                  IRStateManager.getInstance().setInspectorMode('sequence');
+                }}
+                onDblClick={(e) => {
+                  e.stopPropagation();
+                  const seq = props.activeSequences.find((s) => s.id === region.sequenceId);
+                  const textMod = seq?.modifiers?.find(
+                    (m) => m.type === 'text/draw' || m.type === 'text/overlay'
+                  );
+                  if (textMod && props.onStartEditingCue && seq) {
+                    props.onStartEditingCue({
+                      sequenceId: seq.id,
+                      cueIndex: 0,
+                      text: (textMod.params as any)?.text ?? seq.name ?? '',
+                    });
+                  } else if (seq && (seq.cues?.length || seq.type === 'text') && props.onStartEditingCue) {
+                    props.onStartEditingCue({
+                      sequenceId: seq.id,
+                      cueIndex: 0,
+                      text: seq.cues?.[0]?.text || seq.name || '',
+                    });
+                  }
+                }}
+                style={{
+                  left: `${leftPercent()}%`,
+                  top: `${topPercent()}%`,
+                  width: `${widthPercent()}%`,
+                  height: `${heightPercent()}%`,
+                  "z-index": region.zIndex,
+                }}
+                class={`absolute pointer-events-auto cursor-pointer rounded-md transition-all duration-150 flex items-start justify-end p-1 select-none ${
+                  isHovered()
+                    ? 'border-2 border-dashed border-accent-theme/80 bg-accent-theme/10 shadow-accent-glow'
+                    : 'border border-transparent hover:border-accent-theme/40'
+                }`}
+              >
+                <Show when={isHovered()}>
+                  <div class="glass-pill text-[10px] font-mono px-2 py-0.5 rounded flex items-center gap-1.5 shadow-md text-foreground -mt-5 mr-1 animate-in fade-in zoom-in-95">
+                    {getArchetypeIcon(region.sequenceType)}
+                    <span class="truncate max-w-[140px] font-medium">{region.label}</span>
+                  </div>
+                </Show>
               </div>
-            )}
-          </div>
-        );
-      })}
-    </>
+            </Show>
+          );
+        }}
+      </For>
+    </Show>
   );
-};
+}

@@ -1,47 +1,44 @@
-import { useTheme } from "next-themes"
-import { Toaster as Sonner, type ToasterProps } from "sonner"
-import { CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon, Loader2Icon } from "lucide-react"
+import { Toaster as Sonner, toast } from "solid-sonner";
+import { CircleCheck, Info, TriangleAlert, OctagonX, Loader2 } from "lucide-solid";
+import { useTheme } from "../../lib/theme/ThemeProvider";
 
-const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme()
+export interface ToasterProps {
+  position?: "top-left" | "top-right" | "bottom-left" | "bottom-right" | "top-center" | "bottom-center";
+  richColors?: boolean;
+  expand?: boolean;
+  duration?: number;
+  gap?: number;
+  [key: string]: any;
+}
+
+const Toaster = (props: ToasterProps) => {
+  let themeMode = "dark";
+  try {
+    const theme = useTheme();
+    themeMode = theme.preferences.mode;
+  } catch {
+    // fallback
+  }
 
   return (
     <Sonner
-      theme={theme as ToasterProps["theme"]}
-      className="toaster group"
+      theme={themeMode as any}
+      class="toaster group"
       icons={{
-        success: (
-          <CircleCheckIcon className="size-4" />
-        ),
-        info: (
-          <InfoIcon className="size-4" />
-        ),
-        warning: (
-          <TriangleAlertIcon className="size-4" />
-        ),
-        error: (
-          <OctagonXIcon className="size-4" />
-        ),
-        loading: (
-          <Loader2Icon className="size-4 animate-spin" />
-        ),
+        success: <CircleCheck class="size-4" />,
+        info: <Info class="size-4" />,
+        warning: <TriangleAlert class="size-4" />,
+        error: <OctagonX class="size-4" />,
+        loading: <Loader2 class="size-4 animate-spin" />,
       }}
-      style={
-        {
-          "--normal-bg": "var(--popover)",
-          "--normal-text": "var(--popover-foreground)",
-          "--normal-border": "var(--border)",
-          "--border-radius": "var(--radius)",
-        } as React.CSSProperties
-      }
       toastOptions={{
-        classNames: {
+        classes: {
           toast: "cn-toast",
         },
       }}
       {...props}
     />
-  )
-}
+  );
+};
 
-export { Toaster }
+export { Toaster, toast };

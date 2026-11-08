@@ -121,3 +121,4 @@
 | 455 | [Mandatory Workflow Input/Output Schemas and Unaware Task Context Passing](./455_mandatory_workflow_io_schemas_and_context_passing.md) | Completed |
 | 456 | [Backend Sandbox Sample Workflow Seeder & End-to-End Flow Verification](./456_backend_sandbox_sample_workflow_seeder.md) | Completed |
 | 457 | [Predefined Task Node Schemas & Contract Inspector](./457_predefined_task_node_schemas_and_contract_inspector.md) | Completed |
+| 458 | [Studio Migration from React 19 to SolidJS 1.9](./458_studio_react_to_solid_migration.md) | Completed |

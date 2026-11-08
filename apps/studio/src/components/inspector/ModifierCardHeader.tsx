@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ChevronUp, ChevronDown, Copy, Check, RotateCcw, Trash2 } from 'lucide-react';
+import { createSignal, Show } from 'solid-js';
+import { ChevronUp, ChevronDown, Copy, Check, RotateCcw, Trash2 } from 'lucide-solid';
 import { Button } from '../ui/button';
 import { Switch } from '../ui/switch';
 import type { ModifierNode } from '@acc/ir';
@@ -24,26 +24,15 @@ export interface ModifierCardHeaderProps {
  * (no nested buttons/switches inside native accordion triggers).
  * Provides reordering (Up/Down), copy settings, reset defaults, delete, and soft bypass toggle.
  */
-export const ModifierCardHeader: React.FC<ModifierCardHeaderProps> = ({
-  modifier,
-  index,
-  totalModifiers,
-  catalogEntry,
-  isLocked = false,
-  onMoveUp,
-  onMoveDown,
-  onToggleEnabled,
-  onReset,
-  onRemove,
-}) => {
-  const [copied, setCopied] = useState(false);
-  const isEnabled = modifier.params?.enabled !== false;
+export function ModifierCardHeader(props: ModifierCardHeaderProps) {
+  const [copied, setCopied] = createSignal(false);
+  const isEnabled = () => props.modifier.params?.enabled !== false;
 
-  const handleCopyParams = (e: React.MouseEvent) => {
+  const handleCopyParams = (e: MouseEvent) => {
     e.stopPropagation();
-    if (!modifier.params) return;
+    if (!props.modifier.params) return;
     try {
-      navigator.clipboard?.writeText(JSON.stringify(modifier.params, null, 2));
+      navigator.clipboard?.writeText(JSON.stringify(props.modifier.params, null, 2));
       setCopied(true);
       setTimeout(() => setCopied(false), 1200);
     } catch (err) {
@@ -53,112 +42,110 @@ export const ModifierCardHeader: React.FC<ModifierCardHeaderProps> = ({
 
   return (
     <div
-      className="flex items-center gap-1"
-      onClick={(e) => e.stopPropagation()}
+      class="flex items-center gap-1"
+      onClick={(e: MouseEvent) => e.stopPropagation()}
     >
       {/* Reorder Up */}
-      {onMoveUp && totalModifiers > 1 && (
+      <Show when={props.onMoveUp && props.totalModifiers > 1}>
         <Button
           type="button"
           variant="ghost"
           size="icon"
-          disabled={isLocked || index === 0}
-          onClick={(e) => {
+          disabled={props.isLocked || props.index === 0}
+          onClick={(e: MouseEvent) => {
             e.stopPropagation();
-            onMoveUp();
+            props.onMoveUp?.();
           }}
-          className="h-5 w-5 text-muted-foreground hover:text-foreground cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed"
-          title={index === 0 ? 'Top of modifier pipeline' : 'Move up in pipeline'}
+          class="h-5 w-5 text-muted-foreground hover:text-foreground cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed"
+          title={props.index === 0 ? 'Top of modifier pipeline' : 'Move up in pipeline'}
           aria-label="Move modifier up in pipeline order"
         >
-          <ChevronUp className="w-3 h-3" />
+          <ChevronUp class="w-3 h-3" />
         </Button>
-      )}
+      </Show>
 
       {/* Reorder Down */}
-      {onMoveDown && totalModifiers > 1 && (
+      <Show when={props.onMoveDown && props.totalModifiers > 1}>
         <Button
           type="button"
           variant="ghost"
           size="icon"
-          disabled={isLocked || index === totalModifiers - 1}
-          onClick={(e) => {
+          disabled={props.isLocked || props.index === props.totalModifiers - 1}
+          onClick={(e: MouseEvent) => {
             e.stopPropagation();
-            onMoveDown();
+            props.onMoveDown?.();
           }}
-          className="h-5 w-5 text-muted-foreground hover:text-foreground cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed"
-          title={index === totalModifiers - 1 ? 'Bottom of modifier pipeline' : 'Move down in pipeline'}
+          class="h-5 w-5 text-muted-foreground hover:text-foreground cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed"
+          title={props.index === props.totalModifiers - 1 ? 'Bottom of modifier pipeline' : 'Move down in pipeline'}
           aria-label="Move modifier down in pipeline order"
         >
-          <ChevronDown className="w-3 h-3" />
+          <ChevronDown class="w-3 h-3" />
         </Button>
-      )}
+      </Show>
 
       {/* Copy Settings */}
       <Button
         type="button"
         variant="ghost"
         size="icon"
-        disabled={isLocked}
+        disabled={props.isLocked}
         onClick={handleCopyParams}
-        className="h-5 w-5 text-muted-foreground hover:text-foreground cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+        class="h-5 w-5 text-muted-foreground hover:text-foreground cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
         title="Copy modifier settings JSON"
         aria-label="Copy modifier parameters to clipboard"
       >
-        {copied ? (
-          <Check className="w-2.5 h-2.5 text-emerald-500" />
-        ) : (
-          <Copy className="w-2.5 h-2.5" />
-        )}
+        <Show when={copied()} fallback={<Copy class="w-2.5 h-2.5" />}>
+          <Check class="w-2.5 h-2.5 text-emerald-500" />
+        </Show>
       </Button>
 
       {/* Reset to schema defaults */}
-      {catalogEntry?.defaultParams && onReset && (
+      <Show when={props.catalogEntry?.defaultParams && props.onReset}>
         <Button
           type="button"
           variant="ghost"
           size="icon"
-          disabled={isLocked}
-          onClick={(e) => {
+          disabled={props.isLocked}
+          onClick={(e: MouseEvent) => {
             e.stopPropagation();
-            onReset();
+            props.onReset?.();
           }}
-          className="h-5 w-5 text-muted-foreground hover:text-foreground cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+          class="h-5 w-5 text-muted-foreground hover:text-foreground cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
           title="Reset parameters to defaults"
           aria-label="Reset modifier parameters to schema defaults"
         >
-          <RotateCcw className="w-2.5 h-2.5" />
+          <RotateCcw class="w-2.5 h-2.5" />
         </Button>
-      )}
+      </Show>
 
       {/* Remove modifier */}
       <Button
         type="button"
         variant="ghost"
         size="icon"
-        disabled={isLocked}
-        onClick={(e) => {
+        disabled={props.isLocked}
+        onClick={(e: MouseEvent) => {
           e.stopPropagation();
-          onRemove();
+          props.onRemove();
         }}
-        className="h-5 w-5 text-muted-foreground hover:text-destructive cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+        class="h-5 w-5 text-muted-foreground hover:text-destructive cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
         title="Remove modifier from sequence"
         aria-label="Remove modifier"
       >
-        <Trash2 className="w-2.5 h-2.5 text-destructive" />
+        <Trash2 class="w-2.5 h-2.5 text-destructive" />
       </Button>
 
       {/* Soft bypass / enable switch (optional internal) */}
-      {onToggleEnabled && (
-        <div className="pl-0.5">
+      <Show when={props.onToggleEnabled}>
+        <div class="pl-0.5">
           <Switch
-            checked={isEnabled}
-            disabled={isLocked}
-            onCheckedChange={(checked) => onToggleEnabled(checked)}
-            aria-label={isEnabled ? 'Bypass modifier' : 'Enable modifier'}
+            checked={isEnabled()}
+            disabled={props.isLocked}
+            onChange={(checked) => props.onToggleEnabled?.(checked)}
+            aria-label={isEnabled() ? 'Bypass modifier' : 'Enable modifier'}
           />
         </div>
-      )}
+      </Show>
     </div>
   );
-};
+}

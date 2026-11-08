@@ -1,4 +1,4 @@
-import React from 'react';
+import { Show, type JSX } from 'solid-js';
 import { HoverCard, HoverCardTrigger, HoverCardContent } from '../ui/hover-card';
 import { ClipInsightCard } from './ClipInsightCard';
 import type { StudioSequence, StudioTrack } from '../../lib/ir/studioTypes';
@@ -8,45 +8,33 @@ export interface ClipHoverHUDProps {
   track?: StudioTrack | null;
   fps: number;
   disabled?: boolean;
-  children: React.ReactNode;
+  children: JSX.Element;
 }
 
 export type TimelineClipHoverHUDProps = ClipHoverHUDProps;
 
 /**
  * ClipHoverHUD:
- * Accessible, Radix/Shadcn-powered HoverCard wrapper around a timeline clip.
+ * Accessible, Kobalte-powered HoverCard wrapper around a timeline clip.
  * Automatically handles viewport edge detection, floating collision boundaries,
  * portal rendering above sticky headers, and smooth enter/exit transitions without manual coordinate hacking.
  */
-export const ClipHoverHUD: React.FC<ClipHoverHUDProps> = ({
-  seq,
-  track,
-  fps,
-  disabled = false,
-  children,
-}) => {
-  if (disabled) {
-    return <>{children}</>;
-  }
-
+export function ClipHoverHUD(props: ClipHoverHUDProps) {
   return (
-    <HoverCard openDelay={200} closeDelay={100}>
-      <HoverCardTrigger asChild>
-        {children}
-      </HoverCardTrigger>
-      <HoverCardContent
-        side="top"
-        align="center"
-        sideOffset={8}
-        avoidCollisions={true}
-        className="w-80 p-3 glass-panel border border-glass-border shadow-2xl rounded-xl backdrop-blur-xl bg-popover/95 text-foreground z-[100] pointer-events-auto select-auto"
-      >
-        <ClipInsightCard seq={seq} track={track} fps={fps} />
-      </HoverCardContent>
-    </HoverCard>
+    <Show when={!props.disabled} fallback={props.children}>
+      <HoverCard openDelay={200} closeDelay={100}>
+        <HoverCardTrigger asChild>
+          {props.children}
+        </HoverCardTrigger>
+        <HoverCardContent
+          class="w-80 p-3 glass-panel border border-glass-border shadow-2xl rounded-xl backdrop-blur-xl bg-popover/95 text-foreground z-[100] pointer-events-auto select-auto"
+        >
+          <ClipInsightCard seq={props.seq} track={props.track} fps={props.fps} />
+        </HoverCardContent>
+      </HoverCard>
+    </Show>
   );
-};
+}
 
 // Backward-compatible alias
 export const TimelineClipHoverHUD = ClipHoverHUD;

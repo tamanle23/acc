@@ -1,4 +1,4 @@
-import React from 'react';
+import { Show } from 'solid-js';
 
 export interface TimecodeBadgeProps {
   pixelsPerFrame: number;
@@ -10,50 +10,42 @@ export interface TimecodeBadgeProps {
   } | null;
 }
 
-export type TimelineTimecodeBadgeProps = TimecodeBadgeProps;
-
-/**
- * TimecodeBadge:
- * Renders the floating numeric timecode/delta badge during active clip drag or trim interactions.
- */
-export const TimecodeBadge: React.FC<TimecodeBadgeProps> = ({
-  pixelsPerFrame,
-  timecodeHUD,
-}) => {
-  if (!timecodeHUD) return null;
-
+export function TimecodeBadge(props: TimecodeBadgeProps) {
   return (
-    <div
-      className="absolute z-40 pointer-events-none -top-1 px-2.5 py-1 rounded bg-popover/95 border border-accent-theme text-accent-theme font-mono text-[10px] shadow-xl flex items-center gap-2 backdrop-blur-md transition-transform"
-      style={{
-        left: `${Math.max(210, 208 + timecodeHUD.frame * pixelsPerFrame - 40)}px`,
-      }}
-    >
-      <span className="font-semibold text-foreground">Frame {timecodeHUD.frame}</span>
-      <span
-        className={
-          timecodeHUD.deltaFrames > 0
-            ? 'text-emerald-400 font-bold'
-            : timecodeHUD.deltaFrames < 0
-              ? 'text-amber-400 font-bold'
-              : 'text-muted-foreground'
-        }
-      >
-        ({timecodeHUD.deltaFrames >= 0 ? `+${timecodeHUD.deltaFrames}` : timecodeHUD.deltaFrames}f)
-      </span>
-      {timecodeHUD.durationFrames !== undefined && (
-        <span className="text-muted-foreground text-[9px] border-l border-border pl-1.5">
-          Dur: {timecodeHUD.durationFrames}f
-        </span>
+    <Show when={props.timecodeHUD}>
+      {(hud) => (
+        <div
+          class="absolute z-40 pointer-events-none -top-1 px-2.5 py-1 rounded bg-popover/95 border border-accent-theme text-accent-theme font-mono text-[10px] shadow-xl flex items-center gap-2 backdrop-blur-md transition-transform"
+          style={{
+            left: `${Math.max(210, 208 + hud().frame * props.pixelsPerFrame - 40)}px`,
+          }}
+        >
+          <span class="font-semibold text-foreground">Frame {hud().frame}</span>
+          <span
+            class={
+              hud().deltaFrames > 0
+                ? 'text-emerald-400 font-bold'
+                : hud().deltaFrames < 0
+                  ? 'text-amber-400 font-bold'
+                  : 'text-muted-foreground'
+            }
+          >
+            ({hud().deltaFrames >= 0 ? `+${hud().deltaFrames}` : hud().deltaFrames}f)
+          </span>
+          <Show when={hud().durationFrames !== undefined}>
+            <span class="text-muted-foreground text-[9px] border-l border-border pl-1.5">
+              Dur: {hud().durationFrames}f
+            </span>
+          </Show>
+          <Show when={hud().snapLabel}>
+            <span class="text-accent-theme text-[9px] bg-accent-theme/15 border border-accent-theme/30 px-1 rounded">
+              {hud().snapLabel}
+            </span>
+          </Show>
+        </div>
       )}
-      {timecodeHUD.snapLabel && (
-        <span className="text-accent-theme text-[9px] bg-accent-theme/15 border border-accent-theme/30 px-1 rounded">
-          {timecodeHUD.snapLabel}
-        </span>
-      )}
-    </div>
+    </Show>
   );
-};
+}
 
-// Backward-compatible alias
 export const TimelineTimecodeBadge = TimecodeBadge;

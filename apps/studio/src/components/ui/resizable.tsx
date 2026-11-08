@@ -1,59 +1,95 @@
-"use client"
+import { splitProps, type ValidComponent, type JSX } from "solid-js";
+import Resizable from "@corvu/resizable";
+import { cn } from "cn";
 
-import { cn } from "cn"
-import * as ResizablePrimitive from "react-resizable-panels"
-
-interface ResizablePanelGroupProps extends Omit<ResizablePrimitive.GroupProps, "orientation"> {
-  direction?: "horizontal" | "vertical"
-  orientation?: "horizontal" | "vertical"
+export interface ResizablePanelGroupProps {
+  class?: string;
+  className?: string;
+  direction?: "horizontal" | "vertical";
+  orientation?: "horizontal" | "vertical";
+  children?: JSX.Element;
+  [key: string]: any;
 }
 
-function ResizablePanelGroup({
-  className,
-  direction,
-  orientation,
-  ...props
-}: ResizablePanelGroupProps) {
-  const resolvedOrientation = orientation ?? direction ?? "horizontal"
+function ResizablePanelGroup(props: ResizablePanelGroupProps) {
+  const [local, rest] = splitProps(props, ["class", "className", "direction", "orientation", "children"]);
+  const orientation = () => local.orientation ?? local.direction ?? "horizontal";
 
   return (
-    <ResizablePrimitive.Group
-      data-slot="resizable-panel-group"
-      orientation={resolvedOrientation}
-      className={cn(
-        "flex h-full w-full aria-[orientation=vertical]:flex-col",
-        className
+    <Resizable
+      orientation={orientation()}
+      class={cn(
+        "flex h-full w-full data-[orientation=vertical]:flex-col",
+        local.class || local.className
       )}
-      {...props}
-    />
-  )
-}
-
-function ResizablePanel({ ...props }: ResizablePrimitive.PanelProps) {
-  return <ResizablePrimitive.Panel data-slot="resizable-panel" {...props} />
-}
-
-function ResizableHandle({
-  withHandle,
-  className,
-  ...props
-}: ResizablePrimitive.SeparatorProps & {
-  withHandle?: boolean
-}) {
-  return (
-    <ResizablePrimitive.Separator
-      data-slot="resizable-handle"
-      className={cn(
-        "relative flex w-1.5 items-center justify-center bg-border/60 hover:bg-accent-theme/60 transition-colors ring-offset-background after:absolute after:inset-y-0 after:left-1/2 after:w-2 after:-translate-x-1/2 focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-hidden aria-[orientation=horizontal]:h-1.5 aria-[orientation=horizontal]:w-full aria-[orientation=horizontal]:after:left-0 aria-[orientation=horizontal]:after:h-2 aria-[orientation=horizontal]:after:w-full aria-[orientation=horizontal]:after:translate-x-0 aria-[orientation=horizontal]:after:-translate-y-1/2 [&[aria-orientation=horizontal]>div]:rotate-90",
-        className
-      )}
-      {...props}
+      {...rest}
     >
-      {withHandle && (
-        <div className="z-10 flex h-6 w-1 shrink-0 rounded-lg bg-border" />
-      )}
-    </ResizablePrimitive.Separator>
-  )
+      {local.children}
+    </Resizable>
+  );
 }
 
-export { ResizableHandle, ResizablePanel, ResizablePanelGroup }
+export interface ResizablePanelProps {
+  class?: string;
+  className?: string;
+  defaultSize?: number | `${number}%` | `${number}px`;
+  initialSize?: number | `${number}%` | `${number}px`;
+  minSize?: number | `${number}%` | `${number}px`;
+  maxSize?: number | `${number}%` | `${number}px`;
+  collapsible?: boolean;
+  children?: JSX.Element;
+  [key: string]: any;
+}
+
+function ResizablePanel(props: ResizablePanelProps) {
+  const [local, rest] = splitProps(props, [
+    "class",
+    "className",
+    "defaultSize",
+    "initialSize",
+    "minSize",
+    "maxSize",
+    "children",
+  ]);
+
+  const initialSize = () => local.initialSize ?? local.defaultSize;
+
+  return (
+    <Resizable.Panel
+      initialSize={initialSize()}
+      minSize={local.minSize}
+      maxSize={local.maxSize}
+      class={cn("overflow-hidden", local.class || local.className)}
+      {...rest}
+    >
+      {local.children}
+    </Resizable.Panel>
+  );
+}
+
+export interface ResizableHandleProps {
+  class?: string;
+  className?: string;
+  withHandle?: boolean;
+  [key: string]: any;
+}
+
+function ResizableHandle(props: ResizableHandleProps) {
+  const [local, rest] = splitProps(props, ["class", "className", "withHandle"]);
+
+  return (
+    <Resizable.Handle
+      class={cn(
+        "relative flex w-1.5 items-center justify-center bg-border/60 hover:bg-accent-theme/60 transition-colors focus-visible:outline-none data-[orientation=horizontal]:h-1.5 data-[orientation=horizontal]:w-full select-none cursor-col-resize data-[orientation=horizontal]:cursor-row-resize",
+        local.class || local.className
+      )}
+      {...rest}
+    >
+      {local.withHandle && (
+        <div class="z-10 flex h-6 w-1 shrink-0 rounded-lg bg-border" />
+      )}
+    </Resizable.Handle>
+  );
+}
+
+export { ResizableHandle, ResizablePanel, ResizablePanelGroup };

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { createSignal, createEffect, onCleanup, createMemo } from 'solid-js';
 import { IRStateManager } from '../../lib/ir/irState';
 import {
   getSequenceDurationFrames,
@@ -12,6 +12,7 @@ import {
   type BoundingBox2D,
   type SnappingGuide,
   type TransformHandleType,
+  type SiblingGuideBox,
 } from '../../lib/gizmo';
 import { CanvasHitTester, type SequenceBounds } from '../../lib/hit-test/CanvasHitTester';
 
@@ -62,62 +63,53 @@ export interface UseGizmoTransformOptions {
   onRenderFrame?: () => void;
 }
 
-export function useGizmoTransform({
-  selectedSeqId,
-  width,
-  height,
-  isLocked,
-  timeline,
-  doc,
-  activeSequences = [],
-  previewEngine,
-  onRenderFrame,
-}: UseGizmoTransformOptions) {
-  const overlayRef = useRef<Gizmo2DTransformation>(new Gizmo2DTransformation());
-  const [transform, setTransform] = useState<TransformState>({
+export function useGizmoTransform(options: UseGizmoTransformOptions) {
+  const overlay = new Gizmo2DTransformation();
+  const [transform, setTransform] = createSignal<TransformState>({
     x: 0,
     y: 0,
     scale: 1.0,
     rotation: 0,
   });
-  const [isDragging, setIsDragging] = useState(false);
-  const [activeHandle, setActiveHandle] = useState<TransformHandleType | null>(null);
-  const [activeGuides, setActiveGuides] = useState<SnappingGuide[]>([]);
-  const [telemetry, setTelemetry] = useState<GizmoTelemetry | null>(null);
-  const [startTransform, setStartTransform] = useState<TransformState>({
+  const [isDragging, setIsDragging] = createSignal(false);
+  const [activeHandle, setActiveHandle] = createSignal<TransformHandleType | null>(null);
+  const [activeGuides, setActiveGuides] = createSignal<SnappingGuide[]>([]);
+  const [telemetry, setTelemetry] = createSignal<GizmoTelemetry | null>(null);
+  let startTransform: TransformState = {
     x: 0,
     y: 0,
     scale: 1.0,
     rotation: 0,
-  });
+  };
 
   // Studio Pro NLE HUD Controls & Mode States
-  const [gizmoTool, setGizmoTool] = useState<'move' | 'anchor'>('move');
-  const [snapEnabled, setSnapEnabled] = useState(true);
-  const [axisLock, setAxisLock] = useState(false);
-  const [centerScale, setCenterScale] = useState(true);
-  const [anchorPoint, setAnchorPoint] = useState<[number, number]>([0.5, 0.5]);
-  const [startAnchorPoint, setStartAnchorPoint] = useState<[number, number]>([0.5, 0.5]);
-  const latestAnchorPointRef = useRef<[number, number]>(anchorPoint);
+  const [gizmoTool, setGizmoTool] = createSignal<'move' | 'anchor'>('move');
+  const [snapEnabled, setSnapEnabled] = createSignal(true);
+  const [axisLock, setAxisLock] = createSignal(false);
+  const [centerScale, setCenterScale] = createSignal(true);
+  const [anchorPoint, setAnchorPoint] = createSignal<[number, number]>([0.5, 0.5]);
+  let startAnchorPoint: [number, number] = [0.5, 0.5];
+  let latestAnchorPoint: [number, number] = [0.5, 0.5];
 
-  useEffect(() => {
-    latestAnchorPointRef.current = anchorPoint;
-  }, [anchorPoint]);
+  createEffect(() => {
+    latestAnchorPoint = anchorPoint();
+  });
 
   // Resolve active selected sequence
-  const allSeqs: StudioSequence[] = useMemo(() => {
-    return timeline?.sequences
-      ? Array.from(timeline.sequences.values())
-      : doc?.tracks?.flatMap((t) => t.sequences) || [];
-  }, [timeline, doc]);
+  const allSeqs = createMemo<StudioSequence[]>(() => {
+    return options.timeline?.sequences
+      ? Array.from(options.timeline.sequences.values())
+      : options.doc?.tracks?.flatMap((t) => t.sequences) || [];
+  });
 
-  const selectedSeq = useMemo(() => {
-    return allSeqs.find((s) => s.id === selectedSeqId);
-  }, [allSeqs, selectedSeqId]);
+  const selectedSeq = createMemo(() => {
+    return allSeqs().find((s) => s.id === options.selectedSeqId);
+  });
 
   // Compute dynamic target bounds with 8px breathing padding
-  const targetBounds: SequenceBounds = useMemo(() => {
-    if (!selectedSeq) {
+  const targetBounds = createMemo<SequenceBounds>(() => {
+    const seq = selectedSeq();
+    if (!seq) {
       return {
         normX: 0.5,
         normY: 0.5,
@@ -127,24 +119,26 @@ export function useGizmoTransform({
         sequenceType: 'video',
       };
     }
-    return CanvasHitTester.resolveSequenceBounds(selectedSeq as any, width, height, 8);
-  }, [selectedSeq, width, height]);
+    return CanvasHitTester.resolveSequenceBounds(seq as any, options.width, options.height, 8);
+  });
 
   // Sync transform state from selected sequence modifier if available, and auto-seek when paused
-  useEffect(() => {
-    if (isDragging) return;
-    if (!selectedSeqId) {
+  createEffect(() => {
+    if (isDragging()) return;
+    const seqId = options.selectedSeqId;
+    if (!seqId) {
       setTransform({ x: 0, y: 0, scale: 1.0, rotation: 0 });
       setTelemetry(null);
       return;
     }
 
-    if (selectedSeq) {
+    const seq = selectedSeq();
+    if (seq) {
       const playheadController = PlayheadController.getInstance();
       const isPaused = !playheadController.getIsPlaying();
       const currentNeedleFrame = playheadController.getFrame();
-      const seqStart = getSequenceStartFrame(selectedSeq);
-      const seqDuration = getSequenceDurationFrames(selectedSeq, 0);
+      const seqStart = getSequenceStartFrame(seq);
+      const seqDuration = getSequenceDurationFrames(seq, 0);
       const seqEnd = seqStart + seqDuration;
 
       if (isPaused && (currentNeedleFrame < seqStart || currentNeedleFrame >= seqEnd)) {
@@ -152,8 +146,8 @@ export function useGizmoTransform({
       }
     }
 
-    if (selectedSeq?.modifiers) {
-      const transMod = selectedSeq.modifiers.find((m: ModifierNode) => m.type === 'transform');
+    if (seq?.modifiers) {
+      const transMod = seq.modifiers.find((m: ModifierNode) => m.type === 'transform');
       if (transMod?.params) {
         const p = transMod.params as Record<string, unknown>;
         setTransform({
@@ -165,10 +159,10 @@ export function useGizmoTransform({
         if (Array.isArray(p.anchorPoint) && p.anchorPoint.length === 2) {
           const pt: [number, number] = [Number(p.anchorPoint[0]), Number(p.anchorPoint[1])];
           setAnchorPoint(pt);
-          latestAnchorPointRef.current = pt;
+          latestAnchorPoint = pt;
         } else {
           setAnchorPoint([0.5, 0.5]);
-          latestAnchorPointRef.current = [0.5, 0.5];
+          latestAnchorPoint = [0.5, 0.5];
         }
         return;
       }
@@ -181,282 +175,291 @@ export function useGizmoTransform({
       rotation: 0,
     });
     setAnchorPoint([0.5, 0.5]);
-    latestAnchorPointRef.current = [0.5, 0.5];
-  }, [selectedSeqId, selectedSeq]);
+    latestAnchorPoint = [0.5, 0.5];
+  });
 
-  const dragStartCoordsRef = useRef<{ clientX: number; clientY: number } | null>(null);
-  const latestTransformRef = useRef<TransformState>(transform);
+  let dragStartCoords: { clientX: number; clientY: number } | null = null;
+  let latestTransform: TransformState = transform();
 
-  useEffect(() => {
-    latestTransformRef.current = transform;
-  }, [transform]);
+  createEffect(() => {
+    latestTransform = transform();
+  });
 
-  const handlePointerDown = useCallback(
-    (handleType: TransformHandleType, e: React.PointerEvent) => {
-      if (isLocked) return;
-      e.stopPropagation();
-      try {
-        (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-      } catch {}
+  const handlePointerDown = (handleType: TransformHandleType, e: PointerEvent) => {
+    if (options.isLocked) return;
+    e.stopPropagation();
+    try {
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {}
 
-      dragStartCoordsRef.current = { clientX: e.clientX, clientY: e.clientY };
-      setIsDragging(true);
-      setActiveHandle(handleType);
-      setStartTransform({ ...transform });
-      setStartAnchorPoint([...anchorPoint]);
+    dragStartCoords = { clientX: e.clientX, clientY: e.clientY };
+    setIsDragging(true);
+    setActiveHandle(handleType);
+    startTransform = { ...transform() };
+    startAnchorPoint = [...anchorPoint()];
 
-      const mode = handleType === 'anchor' ? 'anchor' : handleType === 'body' ? 'move' : handleType === 'rotate' ? 'rotate' : 'scale';
-      overlayRef.current.setActiveInteraction(handleType, mode === 'anchor' ? 'move' : mode);
-    },
-    [isLocked, transform, anchorPoint]
-  );
-
-  const handlePointerMove = useCallback(
-    (e: React.PointerEvent) => {
-      if (!isDragging || !activeHandle || !selectedSeqId || isLocked || !dragStartCoordsRef.current) return;
-      e.stopPropagation();
-
-      const dx = e.clientX - dragStartCoordsRef.current.clientX;
-      const dy = e.clientY - dragStartCoordsRef.current.clientY;
-
-      const baseW = Math.max(0.02, targetBounds.normWidth);
-      const baseH = Math.max(0.02, targetBounds.normHeight);
-      const originNormX = targetBounds.normX;
-      const originNormY = targetBounds.normY;
-      const canvasW = width;
-      const canvasH = height;
-
-      const startNormBox: BoundingBox2D = {
-        x: originNormX + startTransform.x / canvasW,
-        y: originNormY + startTransform.y / canvasH,
-        width: baseW * startTransform.scale,
-        height: baseH * startTransform.scale,
-        rotation: startTransform.rotation,
-      };
-
-      const currentPointerNorm = {
-        x: originNormX + startTransform.x / canvasW + dx / Math.max(1, width),
-        y: originNormY + startTransform.y / canvasH + dy / Math.max(1, height),
-      };
-      const startPointerNorm = {
-        x: originNormX + startTransform.x / canvasW,
-        y: originNormY + startTransform.y / canvasH,
-      };
-
-      // Pro NLE Scaling interaction: Corner handles scale uniformly by default (Shift to free-scale).
-      // Edge handles stretch single axis.
-      const isCorner = activeHandle === 'tl' || activeHandle === 'tr' || activeHandle === 'bl' || activeHandle === 'br';
-      const lockAspectRatio = isCorner ? !e.shiftKey : false;
-
-      // Dynamic Sibling Harvesting for Magnetic Snapping
-      const siblingBoxes: SiblingGuideBox[] = (activeSequences || [])
-        .filter((s) => s.id !== selectedSeqId)
-        .map((s) => {
-          const b = CanvasHitTester.resolveSequenceBounds(s as any, width, height, 8);
-          return {
-            id: s.id,
-            label: s.name || b.label || 'Sibling',
-            normX: b.normX,
-            normY: b.normY,
-            normWidth: b.normWidth,
-            normHeight: b.normHeight,
-          };
-        });
-
-      // Keyboard modifiers & HUD toggles
-      const disableSnapping = !snapEnabled || e.ctrlKey || e.metaKey;
-      const isAxisLocked = axisLock || (activeHandle === 'body' && e.shiftKey);
-      const isCenterScaling = centerScale || e.altKey;
-
-      const dragRes = Gizmo2DTransformation.computeDragTransform(
-        startNormBox,
-        activeHandle,
-        currentPointerNorm,
-        startPointerNorm,
-        lockAspectRatio,
-        disableSnapping,
-        siblingBoxes,
-        isCenterScaling,
-        isAxisLocked,
-        latestAnchorPointRef.current
-      );
-
-      if (dragRes.anchorResult) {
-        latestAnchorPointRef.current = dragRes.anchorResult;
-        setAnchorPoint(dragRes.anchorResult);
-      }
-
-      const guides = dragRes.snapResult?.activeGuides || [];
-      setActiveGuides(guides);
-
-      const newNormBox = dragRes.box;
-      const newTransform: TransformState = {
-        x: Math.round((newNormBox.x - originNormX) * canvasW),
-        y: Math.round((newNormBox.y - originNormY) * canvasH),
-        scale: Number((newNormBox.width / baseW).toFixed(2)),
-        rotation: newNormBox.rotation,
-      };
-
-      latestTransformRef.current = newTransform;
-      setTransform(newTransform);
-      overlayRef.current.update(newNormBox, guides);
-
-      // Update Live Telemetry HUD state
-      const currentMode =
-        activeHandle === 'anchor'
-          ? 'anchor'
-          : activeHandle === 'body'
+    const mode =
+      handleType === 'anchor'
+        ? 'anchor'
+        : handleType === 'body'
           ? 'move'
-          : activeHandle === 'rotate'
-          ? 'rotate'
-          : 'scale';
+          : handleType === 'rotate'
+            ? 'rotate'
+            : 'scale';
+    overlay.setActiveInteraction(handleType, mode === 'anchor' ? 'move' : mode);
+  };
 
-      setTelemetry({
-        mode: currentMode,
-        deltaX: newTransform.x,
-        deltaY: newTransform.y,
-        widthPx: Math.round(newNormBox.width * canvasW),
-        heightPx: Math.round(newNormBox.height * canvasH),
-        scale: newTransform.scale,
-        rotation: newTransform.rotation,
-        activeGuides: guides,
-        anchorPoint: dragRes.anchorResult || latestAnchorPointRef.current,
-        gizmoTool,
-      });
+  const handlePointerMove = (e: PointerEvent) => {
+    const handle = activeHandle();
+    if (!isDragging() || !handle || !options.selectedSeqId || options.isLocked || !dragStartCoords)
+      return;
+    e.stopPropagation();
 
-      if (previewEngine?.setEphemeralTransformOverride && selectedSeqId) {
-        previewEngine.setEphemeralTransformOverride(selectedSeqId, {
-          x: newTransform.x,
-          y: newTransform.y,
-          scaleX: newTransform.scale,
-          scaleY: newTransform.scale,
-          rotation: newTransform.rotation,
-          anchorPoint: latestAnchorPointRef.current,
-          normWidth: targetBounds.normWidth,
-          normHeight: targetBounds.normHeight,
-        });
-        onRenderFrame?.();
-      }
-    },
-    [
-      isDragging,
-      activeHandle,
-      selectedSeqId,
-      isLocked,
-      startTransform,
-      targetBounds,
-      width,
-      height,
-      activeSequences,
-      snapEnabled,
-      axisLock,
-      centerScale,
-      gizmoTool,
-      previewEngine,
-      onRenderFrame,
-    ]
-  );
+    const dx = e.clientX - dragStartCoords.clientX;
+    const dy = e.clientY - dragStartCoords.clientY;
 
-  const handlePointerUp = useCallback(
-    (e: React.PointerEvent) => {
-      if (!isDragging) return;
-      e.stopPropagation();
-      try {
-        (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
-      } catch {}
+    const bounds = targetBounds();
+    const baseW = Math.max(0.02, bounds.normWidth);
+    const baseH = Math.max(0.02, bounds.normHeight);
+    const originNormX = bounds.normX;
+    const originNormY = bounds.normY;
+    const canvasW = options.width;
+    const canvasH = options.height;
 
-      dragStartCoordsRef.current = null;
-      const finalTransform = latestTransformRef.current || transform;
-      const finalAnchor = latestAnchorPointRef.current || anchorPoint;
-      if (selectedSeqId && !isLocked) {
-        IRStateManager.getInstance().updateModifier(selectedSeqId, 'transform', {
-          ...finalTransform,
-          anchorPoint: finalAnchor,
-          normWidth: targetBounds.normWidth,
-          normHeight: targetBounds.normHeight,
-        });
-      }
-      if (previewEngine?.setEphemeralTransformOverride && selectedSeqId) {
-        previewEngine.setEphemeralTransformOverride(selectedSeqId, null);
-        onRenderFrame?.();
-      }
-      setIsDragging(false);
-      setActiveHandle(null);
-      setActiveGuides([]);
-      setTelemetry(null);
-      overlayRef.current.setActiveInteraction(null, null);
-    },
-    [isDragging, selectedSeqId, isLocked, transform, anchorPoint, previewEngine, onRenderFrame]
-  );
-
-  // Studio Keyboard Nudging & Shortcuts
-  useEffect(() => {
-    if (!selectedSeqId || isLocked || isDragging) return;
-
-    const onKeyDown = (e: KeyboardEvent) => {
-      // Don't intercept if user is typing in an input or textarea
-      const target = e.target as HTMLElement | null;
-      if (
-        target &&
-        (target.tagName === 'INPUT' ||
-          target.tagName === 'TEXTAREA' ||
-          target.isContentEditable ||
-          target.getAttribute('role') === 'textbox')
-      ) {
-        return;
-      }
-
-      const step = e.shiftKey ? 10 : 1;
-      let dx = 0;
-      let dy = 0;
-
-      if (e.key === 'ArrowLeft') dx = -step;
-      else if (e.key === 'ArrowRight') dx = step;
-      else if (e.key === 'ArrowUp') dy = -step;
-      else if (e.key === 'ArrowDown') dy = step;
-      else if (e.key === 'Escape') {
-        e.preventDefault();
-        IRStateManager.getInstance().setSelectedSequenceId(null);
-        return;
-      } else if (e.key === 'Delete' || e.key === 'Backspace') {
-        e.preventDefault();
-        IRStateManager.getInstance().deleteSequence(selectedSeqId);
-        return;
-      } else {
-        return;
-      }
-
-      e.preventDefault();
-      const newT: TransformState = {
-        ...latestTransformRef.current,
-        x: latestTransformRef.current.x + dx,
-        y: latestTransformRef.current.y + dy,
-      };
-      latestTransformRef.current = newT;
-      setTransform(newT);
-      IRStateManager.getInstance().updateModifier(selectedSeqId, 'transform', { ...newT });
-      onRenderFrame?.();
+    const startNormBox: BoundingBox2D = {
+      x: originNormX + startTransform.x / canvasW,
+      y: originNormY + startTransform.y / canvasH,
+      width: baseW * startTransform.scale,
+      height: baseH * startTransform.scale,
+      rotation: startTransform.rotation,
     };
 
+    const currentPointerNorm = {
+      x: originNormX + startTransform.x / canvasW + dx / Math.max(1, options.width),
+      y: originNormY + startTransform.y / canvasH + dy / Math.max(1, options.height),
+    };
+    const startPointerNorm = {
+      x: originNormX + startTransform.x / canvasW,
+      y: originNormY + startTransform.y / canvasH,
+    };
+
+    const isCorner = handle === 'tl' || handle === 'tr' || handle === 'bl' || handle === 'br';
+    const lockAspectRatio = isCorner ? !e.shiftKey : false;
+
+    // Dynamic Sibling Harvesting for Magnetic Snapping
+    const siblingBoxes: SiblingGuideBox[] = (options.activeSequences || [])
+      .filter((s) => s.id !== options.selectedSeqId)
+      .map((s) => {
+        const b = CanvasHitTester.resolveSequenceBounds(s as any, options.width, options.height, 8);
+        return {
+          id: s.id,
+          label: s.name || b.label || 'Sibling',
+          normX: b.normX,
+          normY: b.normY,
+          normWidth: b.normWidth,
+          normHeight: b.normHeight,
+        };
+      });
+
+    const disableSnapping = !snapEnabled() || e.ctrlKey || e.metaKey;
+    const isAxisLocked = axisLock() || (handle === 'body' && e.shiftKey);
+    const isCenterScaling = centerScale() || e.altKey;
+
+    const dragRes = Gizmo2DTransformation.computeDragTransform(
+      startNormBox,
+      handle,
+      currentPointerNorm,
+      startPointerNorm,
+      lockAspectRatio,
+      disableSnapping,
+      siblingBoxes,
+      isCenterScaling,
+      isAxisLocked,
+      latestAnchorPoint
+    );
+
+    if (dragRes.anchorResult) {
+      latestAnchorPoint = dragRes.anchorResult;
+      setAnchorPoint(dragRes.anchorResult);
+    }
+
+    const guides = dragRes.snapResult?.activeGuides || [];
+    setActiveGuides(guides);
+
+    const newNormBox = dragRes.box;
+    const newTransform: TransformState = {
+      x: Math.round((newNormBox.x - originNormX) * canvasW),
+      y: Math.round((newNormBox.y - originNormY) * canvasH),
+      scale: Number((newNormBox.width / baseW).toFixed(2)),
+      rotation: newNormBox.rotation,
+    };
+
+    latestTransform = newTransform;
+    setTransform(newTransform);
+    overlay.update(newNormBox, guides);
+
+    const currentMode =
+      handle === 'anchor'
+        ? 'anchor'
+        : handle === 'body'
+          ? 'move'
+          : handle === 'rotate'
+            ? 'rotate'
+            : 'scale';
+
+    setTelemetry({
+      mode: currentMode,
+      deltaX: newTransform.x,
+      deltaY: newTransform.y,
+      widthPx: Math.round(newNormBox.width * canvasW),
+      heightPx: Math.round(newNormBox.height * canvasH),
+      scale: newTransform.scale,
+      rotation: newTransform.rotation,
+      activeGuides: guides,
+      anchorPoint: dragRes.anchorResult || latestAnchorPoint,
+      gizmoTool: gizmoTool(),
+    });
+
+    if (options.previewEngine?.setEphemeralTransformOverride && options.selectedSeqId) {
+      options.previewEngine.setEphemeralTransformOverride(options.selectedSeqId, {
+        x: newTransform.x,
+        y: newTransform.y,
+        scaleX: newTransform.scale,
+        scaleY: newTransform.scale,
+        rotation: newTransform.rotation,
+        anchorPoint: latestAnchorPoint,
+        normWidth: bounds.normWidth,
+        normHeight: bounds.normHeight,
+      });
+      options.onRenderFrame?.();
+    }
+  };
+
+  const handlePointerUp = (e: PointerEvent) => {
+    if (!isDragging()) return;
+    e.stopPropagation();
+    try {
+      (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+    } catch {}
+
+    dragStartCoords = null;
+    const finalTransform = latestTransform || transform();
+    const finalAnchor = latestAnchorPoint || anchorPoint();
+    if (options.selectedSeqId && !options.isLocked) {
+      IRStateManager.getInstance().updateModifier(options.selectedSeqId, 'transform', {
+        ...finalTransform,
+        anchorPoint: finalAnchor,
+        normWidth: targetBounds().normWidth,
+        normHeight: targetBounds().normHeight,
+      });
+    }
+    if (options.previewEngine?.setEphemeralTransformOverride && options.selectedSeqId) {
+      options.previewEngine.setEphemeralTransformOverride(options.selectedSeqId, null);
+      options.onRenderFrame?.();
+    }
+    setIsDragging(false);
+    setActiveHandle(null);
+    setActiveGuides([]);
+    setTelemetry(null);
+    overlay.setActiveInteraction(null, null);
+  };
+
+  // Studio Keyboard Nudging & Shortcuts
+  const onKeyDown = (e: KeyboardEvent) => {
+    const seqId = options.selectedSeqId;
+    if (!seqId || options.isLocked || isDragging()) return;
+
+    const target = e.target as HTMLElement | null;
+    if (
+      target &&
+      (target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable ||
+        target.getAttribute('role') === 'textbox')
+    ) {
+      return;
+    }
+
+    const step = e.shiftKey ? 10 : 1;
+    let dx = 0;
+    let dy = 0;
+
+    if (e.key === 'ArrowLeft') dx = -step;
+    else if (e.key === 'ArrowRight') dx = step;
+    else if (e.key === 'ArrowUp') dy = -step;
+    else if (e.key === 'ArrowDown') dy = step;
+    else if (e.key === 'Escape') {
+      e.preventDefault();
+      IRStateManager.getInstance().setSelectedSequenceId(null);
+      return;
+    } else if (e.key === 'Delete' || e.key === 'Backspace') {
+      e.preventDefault();
+      IRStateManager.getInstance().deleteSequence(seqId);
+      return;
+    } else {
+      return;
+    }
+
+    e.preventDefault();
+    const newT: TransformState = {
+      ...latestTransform,
+      x: latestTransform.x + dx,
+      y: latestTransform.y + dy,
+    };
+    latestTransform = newT;
+    setTransform(newT);
+    IRStateManager.getInstance().updateModifier(seqId, 'transform', { ...newT });
+    options.onRenderFrame?.();
+  };
+
+  if (typeof window !== 'undefined') {
     window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [selectedSeqId, isLocked, isDragging, onRenderFrame]);
+    onCleanup(() => window.removeEventListener('keydown', onKeyDown));
+  }
 
   return {
-    overlayRef,
-    transform,
+    overlayRef: { current: overlay },
+    get transform() {
+      return transform();
+    },
+    transformSignal: transform,
     setTransform,
-    targetBounds,
-    isDragging,
-    activeHandle,
-    activeGuides,
-    telemetry,
+    get targetBounds() {
+      return targetBounds();
+    },
+    targetBoundsSignal: targetBounds,
+    get isDragging() {
+      return isDragging();
+    },
+    isDraggingSignal: isDragging,
+    get activeHandle() {
+      return activeHandle();
+    },
+    activeHandleSignal: activeHandle,
+    get activeGuides() {
+      return activeGuides();
+    },
+    activeGuidesSignal: activeGuides,
+    get telemetry() {
+      return telemetry();
+    },
+    telemetrySignal: telemetry,
     hudControls: {
-      tool: gizmoTool,
-      snapEnabled,
-      axisLock,
-      centerScale,
-      anchorPoint,
+      get tool() {
+        return gizmoTool();
+      },
+      get snapEnabled() {
+        return snapEnabled();
+      },
+      get axisLock() {
+        return axisLock();
+      },
+      get centerScale() {
+        return centerScale();
+      },
+      get anchorPoint() {
+        return anchorPoint();
+      },
       setTool: setGizmoTool,
       setSnapEnabled,
       setAxisLock,

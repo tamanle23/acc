@@ -1,5 +1,5 @@
-import React from 'react';
-import { useDraggable } from '@dnd-kit/core';
+import { Show, For, createMemo } from 'solid-js';
+import { useDraggable } from '@dnd-kit/solid';
 import {
   Link2,
   Unlink,
@@ -8,8 +8,8 @@ import {
   Sparkles,
   Clock,
   Film,
-  Image
-} from 'lucide-react';
+  Image as ImageIcon,
+} from 'lucide-solid';
 import { TrimHandle } from './TrimHandle';
 import { TransitionBlock } from './TransitionBlock';
 import { AudioWaveform } from './AudioWaveform';
@@ -32,12 +32,10 @@ export interface ClipItemProps {
   activeTool: 'select' | 'razor' | 'hand';
   fps?: number;
   getTrackBadgeStyle: (track: StudioTrack) => string;
-  onClipClick: (seq: StudioSequence, e: React.MouseEvent) => void;
+  onClipClick: (seq: StudioSequence, e: MouseEvent) => void;
   onClipHover?: (clipData: { seq: StudioSequence; track: StudioTrack; position: { leftPx: number; topPx: number; widthPx: number } } | null) => void;
   /**
    * Scoped primitive drag props for 60 FPS memoization isolation.
-   * Stationary clips receive constant primitive booleans so they do not re-render
-   * on every animation frame while another clip is being dragged.
    */
   isBeingDragged?: boolean;
   isPairedDrag?: boolean;
@@ -62,294 +60,287 @@ export interface ClipItemProps {
 
 export type TimelineClipItemProps = ClipItemProps;
 
-function ClipItemInner({
-  seq,
-  track,
-  pixelsPerFrame,
-  isSelected,
-  activeTool,
-  fps = 30,
-  getTrackBadgeStyle,
-  onClipClick,
-  onClipHover,
-  isBeingDragged: propIsBeingDragged,
-  isPairedDrag: propIsPairedDrag,
-  dragType: propDragType,
-  trimHandle: propTrimHandle,
-  trimDeltaFrames: propTrimDeltaFrames,
-  isAnyDragActive: propIsAnyDragActive,
-  activeDragState,
-}: ClipItemProps) {
-  const isBeingDragged = propIsBeingDragged ?? (activeDragState?.seqId === seq.id);
-  const isPairedDrag = propIsPairedDrag ?? (activeDragState?.pairedSeqId === seq.id);
-  const effectiveDragType = propDragType ?? (isBeingDragged ? activeDragState?.type ?? null : null);
-  const effectiveTrimHandle = propTrimHandle ?? activeDragState?.handle;
-  const effectiveTrimDelta = propTrimDeltaFrames ?? (activeDragState?.deltaFrames ?? 0);
-  const anyDragActive = propIsAnyDragActive ?? Boolean(activeDragState);
+export function ClipItem(props: ClipItemProps) {
+  const isBeingDragged = () => props.isBeingDragged ?? (props.activeDragState?.seqId === props.seq.id);
+  const isPairedDrag = () => props.isPairedDrag ?? (props.activeDragState?.pairedSeqId === props.seq.id);
+  const effectiveDragType = () => props.dragType ?? (isBeingDragged() ? props.activeDragState?.type ?? null : null);
+  const effectiveTrimHandle = () => props.trimHandle ?? props.activeDragState?.handle;
+  const effectiveTrimDelta = () => props.trimDeltaFrames ?? (props.activeDragState?.deltaFrames ?? 0);
+  const anyDragActive = () => props.isAnyDragActive ?? Boolean(props.activeDragState);
 
-  const isAudio = seq.type === 'audio';
-  const isTextOrOverlay =
-    track.type === 'overlay' ||
-    track.type === 'timed_text' ||
-    seq.type === 'text' ||
-    (seq.cues && seq.cues.length > 0);
-  const isFx = !seq.assetId;
-  const isImageAsset = seq.type === 'image';
+  const isAudio = () => props.seq.type === 'audio';
+  const isTextOrOverlay = () =>
+    props.track.type === 'overlay' ||
+    props.track.type === 'timed_text' ||
+    props.seq.type === 'text' ||
+    Boolean(props.seq.cues && props.seq.cues.length > 0);
+  const isFx = () => !props.seq.assetId;
+  const isImageAsset = () => props.seq.type === 'image';
 
-  const rawStart = getSequenceStartFrame(seq);
-  const seqDurationFrames = getSequenceDurationFrames(seq, 30);
-  let displayStartFrame = rawStart;
-  let displayDurationFrames = seqDurationFrames;
+  const rawStart = () => getSequenceStartFrame(props.seq);
+  const seqDurationFrames = () => getSequenceDurationFrames(props.seq, 30);
 
-  // Trim handle interaction directly modifies display frames during trim
-  if (isBeingDragged && effectiveDragType === 'trim') {
-    if (effectiveTrimHandle === 'start') {
-      displayStartFrame = Math.max(0, rawStart + effectiveTrimDelta);
-      displayDurationFrames = Math.max(1, seqDurationFrames - effectiveTrimDelta);
-    } else {
-      displayDurationFrames = Math.max(1, seqDurationFrames + effectiveTrimDelta);
+  const displayStartFrame = () => {
+    if (isBeingDragged() && effectiveDragType() === 'trim') {
+      if (effectiveTrimHandle() === 'start') {
+        return Math.max(0, rawStart() + effectiveTrimDelta());
+      }
     }
-  }
+    return rawStart();
+  };
 
-  const leftPx = displayStartFrame * pixelsPerFrame;
-  const widthPx = Math.max(16, displayDurationFrames * pixelsPerFrame);
+  const displayDurationFrames = () => {
+    if (isBeingDragged() && effectiveDragType() === 'trim') {
+      if (effectiveTrimHandle() === 'start') {
+        return Math.max(1, seqDurationFrames() - effectiveTrimDelta());
+      } else {
+        return Math.max(1, seqDurationFrames() + effectiveTrimDelta());
+      }
+    }
+    return seqDurationFrames();
+  };
 
-  const { attributes, listeners, setNodeRef } = useDraggable({
-    id: `clip-${seq.id}`,
-    data: {
+  const leftPx = () => displayStartFrame() * props.pixelsPerFrame;
+  const widthPx = () => Math.max(16, displayDurationFrames() * props.pixelsPerFrame);
+
+  const draggable = useDraggable({
+    id: () => `clip-${props.seq.id}`,
+    data: () => ({
       type: 'clip',
-      seq,
-      trackId: track.id,
-    },
-    disabled: activeTool === 'razor',
+      seq: props.seq,
+      trackId: props.track.id,
+    }),
+    disabled: () => props.activeTool === 'razor',
   });
 
-  // Extract first cue text snippet if present
-  const cueSnippet =
-    seq.cues && seq.cues.length > 0 && seq.cues[0]?.text
-      ? String(seq.cues[0].text).trim()
+  const cueSnippet = () =>
+    props.seq.cues && props.seq.cues.length > 0 && props.seq.cues[0]?.text
+      ? String(props.seq.cues[0].text).trim()
       : null;
 
-  // Derive LOD Mode based on rendered pixel width
-  // LOD 0 (< 36px): Micro icon only
-  // LOD 1 (36px - 90px): Compact (Icon + Truncated ID)
-  // LOD 2 (90px - 220px): Standard (Icon + ID + Duration + Waveform/Filmstrip)
-  // LOD 3 (> 220px): Expanded (Icon + ID + Cue Text / Asset + Full SMPTE + Modifier Badges)
-  const lod = widthPx < 36 ? 0 : widthPx < 90 ? 1 : widthPx < 220 ? 2 : 3;
+  const lod = () => (widthPx() < 36 ? 0 : widthPx() < 90 ? 1 : widthPx() < 220 ? 2 : 3);
 
-  // Format Duration string
-  const durationSec = (displayDurationFrames / 30).toFixed(1);
-  const durationBadge = displayDurationFrames >= 30 ? `${durationSec}s` : `${displayDurationFrames}f`;
+  const durationSec = () => (displayDurationFrames() / 30).toFixed(1);
+  const durationBadge = () => (displayDurationFrames() >= 30 ? `${durationSec()}s` : `${displayDurationFrames()}f`);
+
+  const transMod = () => {
+    if (!props.seq.modifiers) return null;
+    const found = props.seq.modifiers.find(
+      (m: ModifierNode) => m.type.startsWith('transition/') || m.type.startsWith('editorial/transition')
+    );
+    if (!found || found.params?.enabled === false) return null;
+    return found;
+  };
+
+  const avLink = () => props.seq.modifiers?.find((m: ModifierNode) => m.type === 'editorial/av_link');
+  const isLinked = () => (avLink() ? avLink()!.params?.enabled !== false : false);
+  const linkedSeqId = () => avLink()?.params?.linkedSequenceId as string | undefined;
 
   return (
-    <ClipHoverHUD seq={seq} track={track} fps={fps} disabled={anyDragActive}>
+    <ClipHoverHUD seq={props.seq} track={props.track} fps={props.fps ?? 30} disabled={anyDragActive()}>
       <div
-        ref={setNodeRef}
-        {...listeners}
-        {...attributes}
-        onClick={(e) => onClipClick(seq, e)}
-        onMouseEnter={(e) => {
-          if (anyDragActive) return;
+        ref={draggable.ref}
+        onClick={(e: MouseEvent) => props.onClipClick(props.seq, e)}
+        onMouseEnter={(e: MouseEvent) => {
+          if (anyDragActive()) return;
           const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-          onClipHover?.({
-            seq,
-            track,
+          props.onClipHover?.({
+            seq: props.seq,
+            track: props.track,
             position: {
-              leftPx: leftPx,
+              leftPx: leftPx(),
               topPx: rect.height + 12,
-              widthPx,
+              widthPx: widthPx(),
             },
           });
         }}
-        onMouseLeave={() => onClipHover?.(null)}
+        onMouseLeave={() => props.onClipHover?.(null)}
         style={{
-          left: `${leftPx}px`,
-          width: `${widthPx}px`,
+          left: `${leftPx()}px`,
+          width: `${widthPx()}px`,
         }}
-        className={`absolute top-1 bottom-1 rounded-sm border px-1.5 flex items-center justify-between select-none group overflow-hidden ${
-          isBeingDragged
-            ? 'transition-none'
-            : 'transition-all'
+        class={`absolute top-1 bottom-1 rounded-sm border px-1.5 flex items-center justify-between select-none group overflow-hidden ${
+          isBeingDragged() ? 'transition-none' : 'transition-all'
         } ${
-          isBeingDragged && effectiveDragType === 'clip'
+          isBeingDragged() && effectiveDragType() === 'clip'
             ? 'opacity-35 border-dashed border-accent-theme/70 bg-accent-theme/15 z-10'
-            : isPairedDrag
+            : isPairedDrag()
               ? 'ring-1 ring-dashed ring-accent-theme/70 opacity-70 z-10'
-              : activeTool === 'razor'
+              : props.activeTool === 'razor'
                 ? 'cursor-crosshair'
                 : 'cursor-grab'
-        } ${isSelected && !isBeingDragged
+        } ${
+          props.isSelected && !isBeingDragged()
             ? 'ring-2 ring-accent-theme shadow-md z-20 brightness-110'
             : 'hover:brightness-110 z-10'
-        } ${getTrackBadgeStyle(track)}`}
+        } ${props.getTrackBadgeStyle(props.track)}`}
       >
-        <TrimHandle seq={seq} handle="start" />
+        <TrimHandle seq={props.seq} handle="start" />
 
-      {/* Visual Transition Block Handle (Cut boundary) */}
-      {seq.modifiers &&
-        (() => {
-          const transMod = seq.modifiers.find(
-            (m: ModifierNode) =>
-              m.type.startsWith('transition/') || m.type.startsWith('editorial/transition')
-          );
-          if (!transMod || transMod.params?.enabled === false) return null;
-          return (
+        {/* Visual Transition Block Handle (Cut boundary) */}
+        <Show when={transMod()}>
+          {(mod) => (
             <TransitionBlock
-              transitionModifier={transMod}
-              sequenceId={seq.id}
-              pixelsPerFrame={pixelsPerFrame}
-              onClick={(e) => {
+              transitionModifier={mod()}
+              sequenceId={props.seq.id}
+              pixelsPerFrame={props.pixelsPerFrame}
+              onClick={(e: MouseEvent) => {
                 e.stopPropagation();
-                IRStateManager.getInstance().setSelectedSequenceId(seq.id);
+                IRStateManager.getInstance().setSelectedSequenceId(props.seq.id);
                 IRStateManager.getInstance().setInspectorMode('sequence');
               }}
             />
-          );
-        })()}
-
-      <div className="flex-1 truncate px-0.5 flex items-center gap-1.5 relative overflow-hidden h-full pointer-events-none">
-        {/* Background Visual Artifact (Waveform or Filmstrip) */}
-        {isAudio ? (
-          <AudioWaveform
-            id={seq.assetId || seq.id}
-            durationFrames={seqDurationFrames}
-            width={widthPx}
-            height={28}
-          />
-        ) : (
-          <FilmstripThumbnail
-            assetId={seq.assetId || seq.id}
-            width={widthPx}
-            height={28}
-          />
-        )}
-
-        {/* Semantic Archetype Leading Icon: Always rendered across all LODs */}
-        <span className="shrink-0 relative z-10 opacity-90">
-          {isAudio ? (
-            <Music className="w-3 h-3 text-emerald-400" />
-          ) : isTextOrOverlay ? (
-            <Type className="w-3 h-3 text-violet-400" />
-          ) : isFx ? (
-            <Sparkles className="w-3 h-3 text-amber-400" />
-          ) : isImageAsset ? (
-            <Image className="w-3 h-3 text-blue-400" />
-          ) : (
-            <Film className="w-3 h-3 text-indigo-400" />
           )}
-        </span>
+        </Show>
 
-        {/* LOD 1+: Compact & Above - Clip ID (truncated for compact, full for standard/expanded) */}
-        {lod >= 1 && (
-          <span
-            className={`font-mono font-semibold text-white relative z-10 drop-shadow-xs truncate ${
-              lod === 1 ? 'text-[9px] max-w-[50px]' : 'text-[10px]'
-            }`}
+        <div class="flex-1 truncate px-0.5 flex items-center gap-1.5 relative overflow-hidden h-full pointer-events-none">
+          {/* Background Visual Artifact (Waveform or Filmstrip) */}
+          <Show
+            when={isAudio()}
+            fallback={
+              <FilmstripThumbnail
+                assetId={props.seq.assetId || props.seq.id}
+                width={widthPx()}
+                height={28}
+              />
+            }
           >
-            {seq.id}
-          </span>
-        )}
+            <AudioWaveform
+              id={props.seq.assetId || props.seq.id}
+              durationFrames={seqDurationFrames()}
+              width={widthPx()}
+              height={28}
+            />
+          </Show>
 
-        {/* LOD 2+: Standard & Expanded - Duration Badge & Linked A/V button */}
-        {lod >= 2 && (
-          <span className="shrink-0 text-[8px] font-mono text-white/80 bg-black/50 px-1 py-0.2 rounded relative z-10 border border-white/10 flex items-center gap-0.5">
-            <Clock className="w-2 h-2 text-white/60" />
-            {durationBadge}
+          {/* Semantic Archetype Leading Icon: Always rendered across all LODs */}
+          <span class="shrink-0 relative z-10 opacity-90">
+            <Show
+              when={isAudio()}
+              fallback={
+                <Show
+                  when={isTextOrOverlay()}
+                  fallback={
+                    <Show
+                      when={isFx()}
+                      fallback={
+                        <Show
+                          when={isImageAsset()}
+                          fallback={<Film class="w-3 h-3 text-indigo-400" />}
+                        >
+                          <ImageIcon class="w-3 h-3 text-blue-400" />
+                        </Show>
+                      }
+                    >
+                      <Sparkles class="w-3 h-3 text-amber-400" />
+                    </Show>
+                  }
+                >
+                  <Type class="w-3 h-3 text-violet-400" />
+                </Show>
+              }
+            >
+              <Music class="w-3 h-3 text-emerald-400" />
+            </Show>
           </span>
-        )}
 
-        {/* LOD 3 Exclusively: Expanded View (>= 220px) - Dialogue Cue Snippet, Modifiers Pills, and AV Link */}
-        {lod === 3 && cueSnippet && (
-          <span className="text-[9px] font-sans italic text-violet-200/90 truncate max-w-[140px] bg-violet-900/60 px-1.5 py-0.5 rounded border border-violet-400/30">
-            "{cueSnippet}"
-          </span>
-        )}
+          {/* LOD 1+: Compact & Above - Clip ID */}
+          <Show when={lod() >= 1}>
+            <span
+              class={`font-mono font-semibold text-white relative z-10 drop-shadow-xs truncate ${
+                lod() === 1 ? 'text-[9px] max-w-[50px]' : 'text-[10px]'
+              }`}
+            >
+              {props.seq.id}
+            </span>
+          </Show>
 
-        {/* Linked A/V Button (Available on LOD 2 and LOD 3) */}
-        {lod >= 2 &&
-          (() => {
-            const avLink = seq.modifiers?.find((m: ModifierNode) => m.type === 'editorial/av_link');
-            if (!avLink) return null;
-            const isLinked = avLink.params?.enabled !== false;
-            const linkedSeqId = avLink.params?.linkedSequenceId as string | undefined;
-            return (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  const newEnabled = !isLinked;
-                  // Update on this sequence
-                  IRStateManager.getInstance().updateModifier(seq.id, 'editorial/av_link', {
-                    ...avLink.params,
+          {/* LOD 2+: Standard & Expanded - Duration Badge & Linked A/V button */}
+          <Show when={lod() >= 2}>
+            <span class="shrink-0 text-[8px] font-mono text-white/80 bg-black/50 px-1 py-0.2 rounded relative z-10 border border-white/10 flex items-center gap-0.5">
+              <Clock class="w-2 h-2 text-white/60" />
+              {durationBadge()}
+            </span>
+          </Show>
+
+          {/* LOD 3 Exclusively: Expanded View (>= 220px) - Dialogue Cue Snippet */}
+          <Show when={lod() === 3 && cueSnippet()}>
+            <span class="text-[9px] font-sans italic text-violet-200/90 truncate max-w-[140px] bg-violet-900/60 px-1.5 py-0.5 rounded border border-violet-400/30">
+              "{cueSnippet()}"
+            </span>
+          </Show>
+
+          {/* Linked A/V Button (Available on LOD 2 and LOD 3) */}
+          <Show when={lod() >= 2 && avLink()}>
+            <button
+              type="button"
+              onClick={(e: MouseEvent) => {
+                e.stopPropagation();
+                const link = avLink();
+                if (!link) return;
+                const newEnabled = !isLinked();
+                // Update on this sequence
+                IRStateManager.getInstance().updateModifier(props.seq.id, 'editorial/av_link', {
+                  ...link.params,
+                  enabled: newEnabled,
+                });
+                // Also update on partner sequence if present
+                const partnerId = linkedSeqId();
+                if (partnerId) {
+                  IRStateManager.getInstance().updateModifier(partnerId, 'editorial/av_link', {
+                    ...link.params,
+                    linkedSequenceId: props.seq.id,
+                    linkedTrackId: props.track.id,
                     enabled: newEnabled,
                   });
-                  // Also update on partner sequence if present
-                  if (linkedSeqId) {
-                    IRStateManager.getInstance().updateModifier(
-                      linkedSeqId,
-                      'editorial/av_link',
-                      {
-                        ...avLink.params,
-                        linkedSequenceId: seq.id,
-                        linkedTrackId: track.id,
-                        enabled: newEnabled,
-                      }
-                    );
-                  }
-                }}
-                className={`p-0.5 rounded pointer-events-auto cursor-pointer relative z-10 transition-colors ${
-                  isLinked
-                    ? 'text-accent-theme bg-accent-theme/20 hover:bg-accent-theme/30 border border-accent-theme/50'
-                    : 'text-muted-foreground bg-muted/40 hover:bg-muted/80 border border-border/40'
-                }`}
-                title={
-                  isLinked
-                    ? `Linked to ${linkedSeqId} (Click to unlink)`
-                    : 'Unlinked A/V (Click to re-link)'
                 }
-              >
-                {isLinked ? <Link2 className="w-2.5 h-2.5" /> : <Unlink className="w-2.5 h-2.5" />}
-              </button>
-            );
-          })()}
+              }}
+              class={`p-0.5 rounded pointer-events-auto cursor-pointer relative z-10 transition-colors ${
+                isLinked()
+                  ? 'text-accent-theme bg-accent-theme/20 hover:bg-accent-theme/30 border border-accent-theme/50'
+                  : 'text-muted-foreground bg-muted/40 hover:bg-muted/80 border border-border/40'
+              }`}
+              title={
+                isLinked()
+                  ? `Linked to ${linkedSeqId()} (Click to unlink)`
+                  : 'Unlinked A/V (Click to re-link)'
+              }
+            >
+              <Show when={isLinked()} fallback={<Unlink class="w-2.5 h-2.5" />}>
+                <Link2 class="w-2.5 h-2.5" />
+              </Show>
+            </button>
+          </Show>
 
-        {/* LOD 2 Modifier Count Badge (compact) vs LOD 3 Individual Modifier Chips */}
-        {lod === 2 && seq.modifiers && seq.modifiers.length > 0 && (
-          <span className="shrink-0 text-[8px] font-mono bg-white/20 text-white font-medium px-1 py-0.5 rounded-xs relative z-10 backdrop-blur-xs">
-            {seq.modifiers.length} mod
-          </span>
-        )}
+          {/* LOD 2 Modifier Count Badge (compact) */}
+          <Show when={lod() === 2 && props.seq.modifiers && props.seq.modifiers.length > 0}>
+            <span class="shrink-0 text-[8px] font-mono bg-white/20 text-white font-medium px-1 py-0.5 rounded-xs relative z-10 backdrop-blur-xs">
+              {props.seq.modifiers?.length} mod
+            </span>
+          </Show>
 
-        {/* LOD 3: Individual Active Modifier Pills */}
-        {lod === 3 && seq.modifiers && seq.modifiers.length > 0 && (
-          <div className="flex items-center gap-1 shrink-0 relative z-10">
-            {seq.modifiers.slice(0, 3).map((mod: ModifierNode, mIdx: number) => {
-              const modShortName = (mod.type || '').split('/').pop() || 'mod';
-              return (
-                <span
-                  key={mIdx}
-                  className="text-[7.5px] font-mono uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40 px-1 py-0.2 rounded-xs"
-                >
-                  {modShortName}
-                </span>
-              );
-            })}
-          </div>
-        )}
+          {/* LOD 3: Individual Active Modifier Pills */}
+          <Show when={lod() === 3 && props.seq.modifiers && props.seq.modifiers.length > 0}>
+            <div class="flex items-center gap-1 shrink-0 relative z-10">
+              <For each={props.seq.modifiers?.slice(0, 3)}>
+                {(mod) => {
+                  const modShortName = (mod.type || '').split('/').pop() || 'mod';
+                  return (
+                    <span class="text-[7.5px] font-mono uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40 px-1 py-0.2 rounded-xs">
+                      {modShortName}
+                    </span>
+                  );
+                }}
+              </For>
+            </div>
+          </Show>
+        </div>
+
+        <TrimHandle seq={props.seq} handle="end" />
       </div>
-
-      <TrimHandle seq={seq} handle="end" />
-    </div>
-  </ClipHoverHUD>
+    </ClipHoverHUD>
   );
 }
-
-/**
- * Memoized ClipItem component.
- * Prevents stationary clips across all timeline tracks from re-rendering at 60Hz
- * when another clip is being dragged or trimmed.
- */
-export const ClipItem = React.memo(ClipItemInner);
 
 // Backward-compatible alias
 export const TimelineClipItem = ClipItem;

@@ -1,5 +1,5 @@
-import React from 'react';
-import { Copy, Plus, Trash2, Layers, Check } from 'lucide-react';
+import { createSignal, Show } from 'solid-js';
+import { Copy, Plus, Trash2, Layers, Check } from 'lucide-solid';
 import { type JsonPath, formatJsonPath } from '../types';
 
 export interface VisualJsonNodeContextMenuProps {
@@ -12,81 +12,75 @@ export interface VisualJsonNodeContextMenuProps {
   onCopyPath?: (path: JsonPath) => void;
 }
 
-export function VisualJsonNodeContextMenu({
-  path,
-  isArray,
-  isObject,
-  onInsertChild,
-  onDuplicate,
-  onDelete,
-  onCopyPath,
-}: VisualJsonNodeContextMenuProps) {
-  const [copied, setCopied] = React.useState(false);
+export function VisualJsonNodeContextMenu(props: VisualJsonNodeContextMenuProps) {
+  const [copied, setCopied] = createSignal(false);
 
-  const handleCopy = (e: React.MouseEvent) => {
+  const handleCopy = (e: MouseEvent) => {
     e.stopPropagation();
-    const str = formatJsonPath(path);
+    const str = formatJsonPath(props.path);
     navigator.clipboard.writeText(str);
     setCopied(true);
     setTimeout(() => setCopied(false), 1200);
-    onCopyPath?.(path);
+    props.onCopyPath?.(props.path);
   };
 
   return (
     <div
       onClick={(e) => e.stopPropagation()}
-      className="opacity-0 group-hover/node:opacity-100 transition-opacity flex items-center gap-0.5 ml-2 glass-card px-1 py-0.5 rounded-md shadow-xs shrink-0"
+      class="opacity-0 group-hover/node:opacity-100 transition-opacity flex items-center gap-0.5 ml-2 glass-card px-1 py-0.5 rounded-md shadow-xs shrink-0"
     >
       <button
         type="button"
         onClick={handleCopy}
-        className="p-1 rounded text-muted-foreground hover:text-[var(--accent-primary)] hover:bg-[var(--glass-bg)] transition-colors cursor-pointer"
+        class="p-1 rounded text-muted-foreground hover:text-[var(--accent-primary)] hover:bg-[var(--glass-bg)] transition-colors cursor-pointer"
         title="Copy JSON path pointer"
       >
-        {copied ? <Check className="w-2.5 h-2.5 text-emerald-400" /> : <Copy className="w-2.5 h-2.5" />}
+        <Show when={copied()} fallback={<Copy class="w-2.5 h-2.5" />}>
+          <Check class="w-2.5 h-2.5 text-emerald-400" />
+        </Show>
       </button>
 
-      {isArray && onInsertChild && (
+      <Show when={props.isArray && props.onInsertChild}>
         <button
           type="button"
           onClick={(e) => {
             e.stopPropagation();
-            onInsertChild(path);
+            props.onInsertChild?.(props.path);
           }}
-          className="p-1 rounded text-muted-foreground hover:text-emerald-400 hover:bg-[var(--glass-bg)] transition-colors cursor-pointer"
+          class="p-1 rounded text-muted-foreground hover:text-emerald-400 hover:bg-[var(--glass-bg)] transition-colors cursor-pointer"
           title="Add element to array"
         >
-          <Plus className="w-2.5 h-2.5" />
+          <Plus class="w-2.5 h-2.5" />
         </button>
-      )}
+      </Show>
 
-      {path.length > 0 && onDuplicate && (
+      <Show when={props.path.length > 0 && props.onDuplicate}>
         <button
           type="button"
           onClick={(e) => {
             e.stopPropagation();
-            onDuplicate(path);
+            props.onDuplicate?.(props.path);
           }}
-          className="p-1 rounded text-muted-foreground hover:text-[var(--accent-primary)] hover:bg-[var(--glass-bg)] transition-colors cursor-pointer"
+          class="p-1 rounded text-muted-foreground hover:text-[var(--accent-primary)] hover:bg-[var(--glass-bg)] transition-colors cursor-pointer"
           title="Duplicate this node"
         >
-          <Layers className="w-2.5 h-2.5" />
+          <Layers class="w-2.5 h-2.5" />
         </button>
-      )}
+      </Show>
 
-      {path.length > 0 && onDelete && (
+      <Show when={props.path.length > 0 && props.onDelete}>
         <button
           type="button"
           onClick={(e) => {
             e.stopPropagation();
-            onDelete(path);
+            props.onDelete?.(props.path);
           }}
-          className="p-1 rounded text-muted-foreground hover:text-rose-400 hover:bg-[var(--glass-bg)] transition-colors cursor-pointer"
+          class="p-1 rounded text-muted-foreground hover:text-rose-400 hover:bg-[var(--glass-bg)] transition-colors cursor-pointer"
           title="Delete this node"
         >
-          <Trash2 className="w-2.5 h-2.5" />
+          <Trash2 class="w-2.5 h-2.5" />
         </button>
-      )}
+      </Show>
     </div>
   );
 }

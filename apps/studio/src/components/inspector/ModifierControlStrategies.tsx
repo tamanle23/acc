@@ -1,5 +1,5 @@
-import React from 'react';
-import { Plus, Volume2 } from 'lucide-react';
+import { createSignal, type JSX } from 'solid-js';
+import { Plus, Volume2 } from 'lucide-solid';
 import { Button } from '../ui/button';
 import type { ParamFieldDescriptor, IRSequence } from '@acc/ir';
 import { ProceduralAudioSynthesizer } from '@acc/ir';
@@ -16,8 +16,7 @@ import {
   CurveControlStrategy,
 } from './strategies/PrimitiveControlStrategies';
 import { RegionsArrayControlStrategy } from './strategies/RegionsArrayControlStrategy';
-// Composite Strategies (Decomposed per Task 303)
-// Exposes Motion Preset & Lifecycle controls: Pop In, Slide In, Bounce, Intro Duration, Outro Duration
+// Composite Strategies
 import {
   MotionLifecycleControlStrategy,
   ShaderGroupControlStrategy,
@@ -55,23 +54,19 @@ export {
  * Strategy 7b: CurveControlStrategyWithEasing
  * Inline wrapper ensuring <EasingCurveSelector is available directly in ModifierControlStrategies.
  */
-export const InlineEasingCurvePreview: React.FC<{ value?: string; onChange: (ease: string) => void }> = ({
-  value = 'power2.out',
-  onChange,
-}) => <EasingCurveSelector value={value} onChange={onChange} />;
+export function InlineEasingCurvePreview(props: { value?: string; onChange: (ease: string) => void }) {
+  return <EasingCurveSelector value={props.value ?? 'power2.out'} onChange={props.onChange} />;
+}
 
 /**
  * Strategy 11: SFXActionsControlStrategy
  * Renders Audition SFX and Add to Timeline action buttons with live Web Audio synthesis.
  */
-export const SFXActionsControlStrategy: React.FC<ControlStrategyProps> = ({
-  value,
-  disabled = false,
-}) => {
-  const [isPlayingAudition, setIsPlayingAudition] = React.useState(false);
+export function SFXActionsControlStrategy(props: ControlStrategyProps) {
+  const [isPlayingAudition, setIsPlayingAudition] = createSignal(false);
 
   const handleAuditionSFX = (synthType: string = 'whoosh', durationSec: number = 1.5) => {
-    if (disabled) return;
+    if (props.disabled) return;
     setIsPlayingAudition(true);
     let buf: Float32Array;
     switch (synthType) {
@@ -108,7 +103,7 @@ export const SFXActionsControlStrategy: React.FC<ControlStrategyProps> = ({
     durationSec: number = 1.5,
     duckingFactor: number = 0.75
   ) => {
-    if (disabled) return;
+    if (props.disabled) return;
     const startFrame = 0;
     const durationFrames = Math.round(durationSec * 30);
     const seq: IRSequence = {
@@ -138,44 +133,44 @@ export const SFXActionsControlStrategy: React.FC<ControlStrategyProps> = ({
     });
   };
 
-  const currentType = value?.synthType || value?.sfxType || 'whoosh';
-  const durationSec = value?.durationSec ?? 1.5;
-  const ducking = value?.duckingFactor ?? 0.75;
+  const currentType = () => props.value?.synthType || props.value?.sfxType || 'whoosh';
+  const durationSec = () => props.value?.durationSec ?? 1.5;
+  const ducking = () => props.value?.duckingFactor ?? 0.75;
 
   return (
     <div
-      className={`pt-2 border-t border-glass-border flex items-center gap-2 ${
-        disabled ? 'opacity-50 pointer-events-none' : ''
+      class={`pt-2 border-t border-glass-border flex items-center gap-2 ${
+        props.disabled ? 'opacity-50 pointer-events-none' : ''
       }`}
     >
       <Button
         size="sm"
         variant="outline"
-        onClick={() => handleAuditionSFX(currentType, durationSec)}
-        disabled={disabled || isPlayingAudition}
-        className="flex-1 text-[11px] font-mono gap-1.5 cursor-pointer border-glass-border hover:border-accent-theme hover:text-accent-theme disabled:cursor-not-allowed"
+        onClick={() => handleAuditionSFX(currentType(), durationSec())}
+        disabled={props.disabled || isPlayingAudition()}
+        class="flex-1 text-[11px] font-mono gap-1.5 cursor-pointer border-glass-border hover:border-accent-theme hover:text-accent-theme disabled:cursor-not-allowed"
       >
         <Volume2
-          className={`w-3.5 h-3.5 ${
-            isPlayingAudition ? 'text-accent-theme animate-pulse' : ''
+          class={`w-3.5 h-3.5 ${
+            isPlayingAudition() ? 'text-accent-theme animate-pulse' : ''
           }`}
         />
-        {isPlayingAudition ? 'Playing...' : 'Audition SFX'}
+        {isPlayingAudition() ? 'Playing...' : 'Audition SFX'}
       </Button>
 
       <Button
         size="sm"
         variant="accent"
-        disabled={disabled}
-        onClick={() => handleInsertProceduralSFX(currentType, durationSec, ducking)}
-        className="flex-1 text-[11px] font-mono gap-1.5 cursor-pointer disabled:cursor-not-allowed"
+        disabled={props.disabled}
+        onClick={() => handleInsertProceduralSFX(currentType(), durationSec(), ducking())}
+        class="flex-1 text-[11px] font-mono gap-1.5 cursor-pointer disabled:cursor-not-allowed"
       >
-        <Plus className="w-3.5 h-3.5" />
+        <Plus class="w-3.5 h-3.5" />
         Insert to Track
       </Button>
     </div>
   );
-};
+}
 
 /**
  * Control Strategy Factory:
@@ -183,7 +178,7 @@ export const SFXActionsControlStrategy: React.FC<ControlStrategyProps> = ({
  */
 export function resolveParamControlStrategy(
   descriptor: ParamFieldDescriptor
-): React.FC<ControlStrategyProps> {
+): (props: ControlStrategyProps) => JSX.Element {
   switch (descriptor.type) {
     case 'number':
       return NumberControlStrategy;

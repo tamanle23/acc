@@ -1,55 +1,50 @@
-import React from 'react';
-import { useDroppable } from '@dnd-kit/core';
+import { type JSX } from 'solid-js';
+import { useDroppable } from '@dnd-kit/solid';
 import type { StudioTrack } from '../../lib/ir/studioTypes';
 
 export interface DroppableTrackLaneProps {
   track: StudioTrack;
   isLocked: boolean;
   isInvalidDrop?: boolean;
-  children: React.ReactNode;
+  children: JSX.Element;
   scrollLeft?: number;
   viewportWidth?: number;
   pixelsPerFrame?: number;
   fps?: number;
 }
 
-export function DroppableTrackLane({
-  track,
-  isLocked,
-  isInvalidDrop,
-  children,
-}: DroppableTrackLaneProps) {
-  const { setNodeRef, isOver } = useDroppable({
-    id: `track-${track.id}`,
-    data: {
+export function DroppableTrackLane(props: DroppableTrackLaneProps) {
+  const droppable = useDroppable({
+    id: () => `track-${props.track.id}`,
+    data: () => ({
       type: 'track',
-      trackId: track.id,
-      trackType: track.type || 'video',
-    },
-    disabled: isLocked,
+      trackId: props.track.id,
+      trackType: props.track.type || 'video',
+    }),
+    disabled: () => props.isLocked,
   });
 
-  const isInvalidOver = isOver && isInvalidDrop;
-  const isValidOver = isOver && !isInvalidDrop;
+  const isInvalidOver = () => droppable.isDropTarget() && props.isInvalidDrop;
+  const isValidOver = () => droppable.isDropTarget() && !props.isInvalidDrop;
 
   return (
     <div
-      ref={setNodeRef}
+      ref={droppable.ref}
       style={{
-        contentVisibility: 'auto',
-        containIntrinsicSize: '1000px 40px',
+        'content-visibility': 'auto',
+        'contain-intrinsic-size': '1000px 40px',
       }}
-      className={`flex-1 h-full rounded-md border relative overflow-hidden transition-colors ${
-        isLocked
+      class={`flex-1 h-full rounded-md border relative overflow-hidden transition-colors ${
+        props.isLocked
           ? 'opacity-60 pointer-events-none bg-muted/40 border-[var(--glass-border)]'
-          : isInvalidOver
+          : isInvalidOver()
             ? 'bg-destructive/15 border-destructive/60 ring-2 ring-destructive/40 cursor-not-allowed shadow-[0_0_15px_rgba(239,68,68,0.2)]'
-            : isValidOver
+            : isValidOver()
               ? 'bg-[var(--accent-primary)]/10 border-[var(--accent-primary)]/40 ring-1 ring-[var(--accent-primary)]/30'
               : 'bg-background/25 border-[var(--glass-border)] hover:border-[var(--glass-border-highlight)]/40'
       }`}
     >
-      {children}
+      {props.children}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useMemo } from 'react';
+import { createMemo, createEffect, Show } from 'solid-js';
 import type { StudioSequence } from '../../lib/ir/studioTypes';
 import { getCachedPeaks } from './WaveSurferWaveform';
 
@@ -11,7 +11,7 @@ export interface TrackWaveformVirtualCanvasProps {
   pixelsPerFrame: number;
   fps?: number;
   color?: string;
-  className?: string;
+  class?: string;
 }
 
 /**
@@ -20,40 +20,38 @@ export interface TrackWaveformVirtualCanvasProps {
  * Replaces O(N) per-clip WaveSurfer DOM/Canvas instances with a single sticky viewport-sized <canvas>.
  * Implements deterministic frustum culling, LOD pyramid decimation, and single-path batch drawing.
  */
-export function TrackWaveformVirtualCanvas({
-  trackId,
-  sequences,
-  viewportWidth,
-  laneHeight = 36,
-  scrollLeft,
-  pixelsPerFrame,
-  fps = 30,
-  color = 'rgba(52, 211, 153, 0.45)', // Emerald-400 theme
-  className,
-}: TrackWaveformVirtualCanvasProps) {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+export function TrackWaveformVirtualCanvas(props: TrackWaveformVirtualCanvasProps) {
+  let canvasRef: HTMLCanvasElement | undefined;
+  const laneHeight = () => props.laneHeight ?? 36;
+  const color = () => props.color ?? 'rgba(52, 211, 153, 0.45)';
 
   // 1. Frustum Culling: Slices visible sequences in timeline viewport [F_start, F_end]
-  const visibleSequences = useMemo(() => {
-    if (pixelsPerFrame <= 0 || viewportWidth <= 0) return [];
-    const fStart = Math.max(0, Math.floor(scrollLeft / pixelsPerFrame));
-    const fEnd = Math.ceil((scrollLeft + viewportWidth) / pixelsPerFrame);
+  const visibleSequences = createMemo(() => {
+    if (props.pixelsPerFrame <= 0 || props.viewportWidth <= 0) return [];
+    const fStart = Math.max(0, Math.floor(props.scrollLeft / props.pixelsPerFrame));
+    const fEnd = Math.ceil((props.scrollLeft + props.viewportWidth) / props.pixelsPerFrame);
 
-    return sequences.filter((seq) => {
+    return props.sequences.filter((seq) => {
       const seqStart = seq.startFrame;
       const seqEnd = seqStart + seq.durationFrames;
       return seqEnd >= fStart && seqStart <= fEnd;
     });
-  }, [sequences, scrollLeft, viewportWidth, pixelsPerFrame]);
+  });
 
   // 2. High-Performance Batched 2D Canvas Draw Loop
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || viewportWidth <= 0 || laneHeight <= 0) return;
+  createEffect(() => {
+    const canvas = canvasRef;
+    const vWidth = props.viewportWidth;
+    const lHeight = laneHeight();
+    const ppf = props.pixelsPerFrame;
+    const sLeft = props.scrollLeft;
+    const seqs = visibleSequences();
+
+    if (!canvas || vWidth <= 0 || lHeight <= 0) return;
 
     const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
-    const targetWidth = Math.max(1, Math.floor(viewportWidth * dpr));
-    const targetHeight = Math.max(1, Math.floor(laneHeight * dpr));
+    const targetWidth = Math.max(1, Math.floor(vWidth * dpr));
+    const targetHeight = Math.max(1, Math.floor(lHeight * dpr));
 
     if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
       canvas.width = targetWidth;
@@ -65,30 +63,30 @@ export function TrackWaveformVirtualCanvas({
 
     ctx.save();
     ctx.scale(dpr, dpr);
-    ctx.clearRect(0, 0, viewportWidth, laneHeight);
+    ctx.clearRect(0, 0, vWidth, lHeight);
 
-    if (visibleSequences.length === 0 || pixelsPerFrame <= 0) {
+    if (seqs.length === 0 || ppf <= 0) {
       ctx.restore();
       return;
     }
 
-    ctx.strokeStyle = color;
+    ctx.strokeStyle = color();
     ctx.lineWidth = 1.5;
     ctx.lineCap = 'round';
     ctx.beginPath();
 
-    const centerY = laneHeight / 2;
-    const maxAmplitude = laneHeight * 0.42;
+    const centerY = lHeight / 2;
+    const maxAmplitude = lHeight * 0.42;
     const barSpacing = Math.max(2, Math.floor(2 * dpr));
 
-    for (const seq of visibleSequences) {
-      const clipStartPx = seq.startFrame * pixelsPerFrame;
-      const clipWidthPx = seq.durationFrames * pixelsPerFrame;
-      const screenStartPx = clipStartPx - scrollLeft;
+    for (const seq of seqs) {
+      const clipStartPx = seq.startFrame * ppf;
+      const clipWidthPx = seq.durationFrames * ppf;
+      const screenStartPx = clipStartPx - sLeft;
       const screenEndPx = screenStartPx + clipWidthPx;
 
       const drawStart = Math.max(0, Math.floor(screenStartPx));
-      const drawEnd = Math.min(viewportWidth, Math.ceil(screenEndPx));
+      const drawEnd = Math.min(vWidth, Math.ceil(screenEndPx));
 
       if (drawEnd <= drawStart) continue;
 
@@ -112,30 +110,30 @@ export function TrackWaveformVirtualCanvas({
 
     ctx.stroke();
     ctx.restore();
-  }, [visibleSequences, viewportWidth, laneHeight, scrollLeft, pixelsPerFrame, color, fps]);
-
-  if (viewportWidth <= 0) return null;
+  });
 
   return (
-    <div
-      style={{
-        position: 'sticky',
-        left: 0,
-        width: `${viewportWidth}px`,
-        height: `${laneHeight}px`,
-        pointerEvents: 'none',
-      }}
-      className={`absolute inset-y-0 z-0 overflow-hidden ${className || ''}`}
-      data-testid={`track-waveform-canvas-${trackId}`}
-    >
-      <canvas
-        ref={canvasRef}
+    <Show when={props.viewportWidth > 0}>
+      <div
         style={{
-          width: `${viewportWidth}px`,
-          height: `${laneHeight}px`,
+          position: 'sticky',
+          left: 0,
+          width: `${props.viewportWidth}px`,
+          height: `${laneHeight()}px`,
+          'pointer-events': 'none',
         }}
-        className="block"
-      />
-    </div>
+        class={`absolute inset-y-0 z-0 overflow-hidden ${props.class || ''}`}
+        data-testid={`track-waveform-canvas-${props.trackId}`}
+      >
+        <canvas
+          ref={canvasRef}
+          style={{
+            width: `${props.viewportWidth}px`,
+            height: `${laneHeight()}px`,
+          }}
+          class="block"
+        />
+      </div>
+    </Show>
   );
 }

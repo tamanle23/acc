@@ -1,13 +1,5 @@
-import React from 'react';
-import {
-  DndContext,
-  useDraggable,
-  useSensor,
-  useSensors,
-  PointerSensor,
-  type DragEndEvent,
-} from '@dnd-kit/core';
-import { SunMedium } from 'lucide-react';
+import { createSignal, Show } from 'solid-js';
+import { SunMedium } from 'lucide-solid';
 import { IRStateManager } from '../../lib/ir/irState';
 import type { ModifierNode } from '@acc/ir';
 import type { StudioSequence } from '../../lib/ir/studioTypes';
@@ -20,139 +12,143 @@ export interface LightGizmoOverlayProps {
   zoomLevel: number | 'fit';
 }
 
-function DraggableLightBulb({
-  lightX,
-  lightY,
-  width,
-  height,
-}: {
-  lightX: number;
-  lightY: number;
-  width: number;
-  height: number;
-}) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: 'light-source-gizmo',
-    data: {
-      type: 'light-gizmo',
-      lightX,
-      lightY,
-    },
-  });
+export function LightGizmoOverlay(props: LightGizmoOverlayProps) {
+  const selectedSeq = () => {
+    if (!props.selectedSeqId) return null;
+    const timelineSeqs = IRStateManager.getInstance().getState().timeline?.sequences;
+    return (
+      props.activeSequences.find((s) => s.id === props.selectedSeqId) ||
+      (timelineSeqs ? timelineSeqs.get(props.selectedSeqId) : undefined)
+    );
+  };
 
-  // Map normalized light coordinates [-1, 1] to pixel positions inside canvas
-  const centerX = width / 2;
-  const centerY = height / 2;
-  const pixelX = centerX + (lightX * (width / 2)) + (transform ? transform.x : 0);
-  const pixelY = centerY + (lightY * (height / 2)) + (transform ? transform.y : 0);
+  const relightMod = () => {
+    const seq = selectedSeq();
+    const mod = seq?.modifiers?.find(
+      (m: ModifierNode) => m.type === 'vfx/depth_relighting' || m.type === 'vfx/depth3d_relighting'
+    );
+    if (!mod || mod.params?.enabled === false) return null;
+    return mod;
+  };
 
-  return (
-    <div
-      ref={setNodeRef}
-      {...listeners}
-      {...attributes}
-      style={{
-        position: 'absolute',
-        left: `${pixelX}px`,
-        top: `${pixelY}px`,
-        transform: 'translate(-50%, -50%)',
-        touchAction: 'none',
-      }}
-      className={`group cursor-grab active:cursor-grabbing pointer-events-auto z-20 transition-shadow ${
-        isDragging ? 'scale-110' : ''
-      }`}
-      title="3D Point Light Source (Drag to position azimuth / elevation)"
-    >
-      {/* Light Vector Line to Center */}
-      <svg
-        style={{
-          position: 'absolute',
-          left: '50%',
-          top: '50%',
-          width: `${width}px`,
-          height: `${height}px`,
-          transform: `translate(${-pixelX}px, ${-pixelY}px)`,
-          pointerEvents: 'none',
-        }}
-      >
-        <line
-          x1={pixelX}
-          y1={pixelY}
-          x2={centerX}
-          y2={centerY}
-          stroke="rgba(6, 182, 212, 0.45)"
-          strokeWidth="1.5"
-          strokeDasharray="4 3"
-        />
-      </svg>
+  const lightX = () => {
+    const mod = relightMod();
+    return typeof mod?.params?.lightX === 'number' ? mod.params.lightX : 0.0;
+  };
 
-      {/* Point Light Glowing Sphere */}
-      <div className="relative flex items-center justify-center w-8 h-8 rounded-full bg-cyan-500/20 border-2 border-cyan-400 shadow-[0_0_16px_rgba(6,182,212,0.8)] backdrop-blur-xs">
-        <SunMedium className="w-4 h-4 text-cyan-300 animate-pulse" />
-        <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[9px] font-mono font-bold text-cyan-300 bg-black/60 px-1 py-0.5 rounded border border-cyan-500/40 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-          X: {lightX.toFixed(2)} | Y: {lightY.toFixed(2)}
-        </span>
-      </div>
-    </div>
-  );
-}
+  const lightY = () => {
+    const mod = relightMod();
+    return typeof mod?.params?.lightY === 'number' ? mod.params.lightY : 0.0;
+  };
 
-export function LightGizmoOverlay({
-  selectedSeqId,
-  activeSequences,
-  width,
-  height,
-}: LightGizmoOverlayProps) {
-  if (!selectedSeqId) return null;
+  const [dragOffset, setDragOffset] = createSignal<{ x: number; y: number } | null>(null);
+  let dragStartCoords: { clientX: number; clientY: number } | null = null;
 
-  const timelineSeqs = IRStateManager.getInstance().getState().timeline?.sequences;
-  const selectedSeq =
-    activeSequences.find((s) => s.id === selectedSeqId) ||
-    (timelineSeqs ? timelineSeqs.get(selectedSeqId) : undefined);
+  const handlePointerDown = (e: PointerEvent) => {
+    e.stopPropagation();
+    try {
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {}
+    dragStartCoords = { clientX: e.clientX, clientY: e.clientY };
+    setDragOffset({ x: 0, y: 0 });
+  };
 
-  if (!selectedSeq) return null;
+  const handlePointerMove = (e: PointerEvent) => {
+    if (!dragStartCoords) return;
+    e.stopPropagation();
+    setDragOffset({
+      x: e.clientX - dragStartCoords.clientX,
+      y: e.clientY - dragStartCoords.clientY,
+    });
+  };
 
-  // Look for relighting modifier on the active sequence
-  const relightMod = selectedSeq.modifiers?.find(
-    (m: ModifierNode) => m.type === 'vfx/depth_relighting' || m.type === 'vfx/depth3d_relighting'
-  );
+  const handlePointerUp = (e: PointerEvent) => {
+    if (!dragStartCoords) return;
+    e.stopPropagation();
+    try {
+      (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+    } catch {}
 
-  if (!relightMod || relightMod.params?.enabled === false) {
-    return null;
-  }
+    const offset = dragOffset();
+    dragStartCoords = null;
+    setDragOffset(null);
 
-  const lightX = typeof relightMod.params?.lightX === 'number' ? relightMod.params.lightX : 0.0;
-  const lightY = typeof relightMod.params?.lightY === 'number' ? relightMod.params.lightY : 0.0;
+    const mod = relightMod();
+    if (!mod || !props.selectedSeqId || !offset) return;
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 2,
-      },
-    })
-  );
+    const deltaNormX = offset.x / (props.width / 2);
+    const deltaNormY = offset.y / (props.height / 2);
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { delta } = event;
-    if (!delta.x && !delta.y) return;
+    const nextX = Math.max(-1.5, Math.min(1.5, Number((lightX() + deltaNormX).toFixed(2))));
+    const nextY = Math.max(-1.5, Math.min(1.5, Number((lightY() + deltaNormY).toFixed(2))));
 
-    // Convert delta pixels back to [-1, 1] normalized bounds
-    const deltaNormX = (delta.x / (width / 2));
-    const deltaNormY = (delta.y / (height / 2));
-
-    const nextX = Math.max(-1.5, Math.min(1.5, Number((lightX + deltaNormX).toFixed(2))));
-    const nextY = Math.max(-1.5, Math.min(1.5, Number((lightY + deltaNormY).toFixed(2))));
-
-    IRStateManager.getInstance().updateModifier(selectedSeqId, relightMod.type, {
-      ...relightMod.params,
+    IRStateManager.getInstance().updateModifier(props.selectedSeqId, mod.type, {
+      ...mod.params,
       lightX: nextX,
       lightY: nextY,
     });
   };
 
   return (
-    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-      <DraggableLightBulb lightX={lightX} lightY={lightY} width={width} height={height} />
-    </DndContext>
+    <Show when={relightMod()}>
+      {(() => {
+        const centerX = () => props.width / 2;
+        const centerY = () => props.height / 2;
+        const currentOffset = () => dragOffset() || { x: 0, y: 0 };
+        const pixelX = () => centerX() + lightX() * (props.width / 2) + currentOffset().x;
+        const pixelY = () => centerY() + lightY() * (props.height / 2) + currentOffset().y;
+
+        return (
+          <div
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
+            style={{
+              position: 'absolute',
+              left: `${pixelX()}px`,
+              top: `${pixelY()}px`,
+              transform: 'translate(-50%, -50%)',
+              'touch-action': 'none',
+            }}
+            class={`group cursor-grab active:cursor-grabbing pointer-events-auto z-20 transition-shadow ${
+              dragOffset() ? 'scale-110' : ''
+            }`}
+            title="3D Point Light Source (Drag to position azimuth / elevation)"
+          >
+            {/* Light Vector Line to Center */}
+            <svg
+              style={{
+                position: 'absolute',
+                left: '50%',
+                top: '50%',
+                width: `${props.width}px`,
+                height: `${props.height}px`,
+                transform: `translate(${-pixelX()}px, ${-pixelY()}px)`,
+                'pointer-events': 'none',
+              }}
+            >
+              <line
+                x1={pixelX()}
+                y1={pixelY()}
+                x2={centerX()}
+                y2={centerY()}
+                stroke="rgba(6, 182, 212, 0.45)"
+                stroke-width="1.5"
+                stroke-dasharray="4 3"
+              />
+            </svg>
+
+            {/* Point Light Glowing Sphere */}
+            <div class="relative flex items-center justify-center w-8 h-8 rounded-full bg-cyan-500/20 border-2 border-cyan-400 shadow-[0_0_16px_rgba(6,182,212,0.8)] backdrop-blur-xs">
+              <SunMedium class="w-4 h-4 text-cyan-300 animate-pulse" />
+              <span class="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[9px] font-mono font-bold text-cyan-300 bg-black/60 px-1 py-0.5 rounded border border-cyan-500/40 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                X: {lightX().toFixed(2)} | Y: {lightY().toFixed(2)}
+              </span>
+            </div>
+          </div>
+        );
+      })()}
+    </Show>
   );
 }

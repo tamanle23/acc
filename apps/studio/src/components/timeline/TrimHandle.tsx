@@ -1,5 +1,4 @@
-import React from 'react';
-import { useDraggable } from '@dnd-kit/core';
+import { useDraggable } from '@dnd-kit/solid';
 import type { StudioSequence } from '../../lib/ir/studioTypes';
 
 export interface TrimHandleProps {
@@ -7,28 +6,26 @@ export interface TrimHandleProps {
   handle: 'start' | 'end';
 }
 
-export function TrimHandle({ seq, handle }: TrimHandleProps) {
-  const { attributes, listeners, setNodeRef } = useDraggable({
-    id: `trim-${handle}-${seq.id}`,
-    data: {
+export function TrimHandle(props: TrimHandleProps) {
+  const draggable = useDraggable({
+    id: () => `trim-${props.handle}-${props.seq.id}`,
+    data: () => ({
       type: 'trim',
-      handle,
-      seq,
-    },
+      handle: props.handle,
+      seq: props.seq,
+    }),
   });
 
   return (
     <div
-      ref={setNodeRef}
-      {...listeners}
-      {...attributes}
-      onClick={(e) => e.stopPropagation()}
-      className={`w-2 h-full ${
-        handle === 'start' ? '-ml-2 rounded-l-xs' : '-mr-2 rounded-r-xs'
+      ref={draggable.ref}
+      onClick={(e: MouseEvent) => e.stopPropagation()}
+      class={`w-2 h-full ${
+        props.handle === 'start' ? '-ml-2 rounded-l-xs' : '-mr-2 rounded-r-xs'
       } cursor-col-resize hover:bg-white/50 active:bg-accent-theme/60 flex items-center justify-center transition-colors z-30`}
-      title={`Drag to Trim ${handle === 'start' ? 'Start' : 'End'} (Snap enabled)`}
+      title={`Drag to Trim ${props.handle === 'start' ? 'Start' : 'End'} (Snap enabled)`}
     >
-      <div className="w-0.5 h-3 bg-white/60 rounded-full" />
+      <div class="w-0.5 h-3 bg-white/60 rounded-full" />
     </div>
   );
 }

@@ -85,7 +85,7 @@ export class SplitSequenceCommand implements ICommand {
           id: newSeqId,
           name: `${baseName} (Part 2)`,
           time: {
-            start: this.splitFrame,
+            start: { after: originalSeq.id },
             duration: dur2,
           },
         };

@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
+import solidPlugin from 'vite-plugin-solid';
 import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
 
@@ -7,12 +7,13 @@ export default defineConfig({
   worker: {
     format: 'es',
   },
-  plugins: [react(), tailwindcss()],
+  plugins: [solidPlugin(), tailwindcss()],
   root: '.',
   build: {
+    target: 'esnext',
     outDir: 'dist/client',
     emptyOutDir: true,
-    chunkSizeWarningLimit: 1200,
+    chunkSizeWarningLimit: 1400,
     rollupOptions: {
       external: [
         /@napi-rs\/canvas/,
@@ -32,8 +33,11 @@ export default defineConfig({
           if (id.includes('node_modules/wavesurfer.js/')) {
             return 'vendor-wavesurfer';
           }
-          if (id.includes('node_modules/@radix-ui/') || id.includes('node_modules/@base-ui/')) {
-            return 'vendor-ui-primitives';
+          if (id.includes('node_modules/@kobalte/') || id.includes('node_modules/@corvu/')) {
+            return 'vendor-solid-primitives';
+          }
+          if (id.includes('node_modules/@dnd-kit/')) {
+            return 'vendor-dnd';
           }
         },
       },
@@ -46,7 +50,6 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),
-      // Resolve shadcn/ui bare 'cn' import to the project's clsx+tailwind-merge util
       'cn': path.resolve(__dirname, 'src/lib/utils'),
       '@acc/core-isomorphic': path.resolve(__dirname, '../../packages/core-isomorphic/src'),
       '@acc/core-web': path.resolve(__dirname, '../../packages/core-web/src'),

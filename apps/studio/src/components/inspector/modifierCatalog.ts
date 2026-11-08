@@ -11,7 +11,7 @@ import {
   Film,
   Clock,
   Monitor,
-} from 'lucide-react';
+} from 'lucide-solid';
 import {
   ModifierPluginRegistry,
   registerCoreModifierPlugins,
@@ -135,7 +135,7 @@ export type ModifierCategory =
   | 'time_space'
   | 'custom';
 
-export type ModifierIconComponent = React.ComponentType<{ className?: string }>;
+export type ModifierIconComponent = (props: { class?: string; className?: string }) => any;
 
 export interface AvailableModifierDef extends ModifierPlugin<Record<string, unknown>> {
   type: string;

@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import { createSignal, onMount, onCleanup, Show } from 'solid-js';
 import { cn } from 'cn';
 import {
   Download,
@@ -7,8 +7,6 @@ import {
   Redo2,
   FileJson,
   XCircle,
-  Film,
-  Sparkles,
   PanelLeft,
   PanelRight,
   Sun,
@@ -20,7 +18,7 @@ import {
   Maximize2,
   Minimize2,
   MoreHorizontal,
-} from 'lucide-react';
+} from 'lucide-solid';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Tooltip } from './ui/tooltip';
@@ -64,39 +62,27 @@ export interface TitlebarProps {
   lod?: TitlebarLOD;
 }
 
-export function Titlebar({
-  projectTitle,
-  fps,
-  currentFrame,
-  totalFrames,
-  isExporting,
-  onStartExport,
-  onCancelExport,
-  isLeftOpen,
-  onToggleLeft,
-  isRightOpen,
-  onToggleRight,
-  isZenMode,
-  onToggleZen,
-  lod: explicitLod,
-}: TitlebarProps) {
-  const headerRef = useRef<HTMLElement | null>(null);
-  const measuredLod = useTitlebarLOD(headerRef);
-  const lod = explicitLod ?? measuredLod;
+export function Titlebar(props: TitlebarProps) {
+  let headerRef!: HTMLElement;
+  let fileInputRef!: HTMLInputElement;
 
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const measuredLod = useTitlebarLOD(() => headerRef);
+  const lod = () => props.lod ?? measuredLod();
+  // lod === 'compact' lod === 'full' reactive proxy evaluation
+
   const manager = IRStateManager.getInstance();
   const activeTemplate = useIRSelector((s) => s.activeTemplate);
   const canUndo = useIRSelector((s) => s.canUndo);
   const canRedo = useIRSelector((s) => s.canRedo);
   const docMeta = useIRSelector((s) => s.doc?.meta);
-  const { preferences, toggleMode, setIsSettingsOpen } = useTheme();
-  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
-  const [isDebuggerOpen, setIsDebuggerOpen] = useState(false);
-  const [isOpfsOpen, setIsOpfsOpen] = useState(false);
-  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
+  const theme = useTheme();
 
-  useEffect(() => {
+  const [isShortcutsOpen, setIsShortcutsOpen] = createSignal(false);
+  const [isDebuggerOpen, setIsDebuggerOpen] = createSignal(false);
+  const [isOpfsOpen, setIsOpfsOpen] = createSignal(false);
+  const [isMoreMenuOpen, setIsMoreMenuOpen] = createSignal(false);
+
+  onMount(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'j') {
         e.preventDefault();
@@ -115,8 +101,8 @@ export function Titlebar({
       }
     };
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+    onCleanup(() => window.removeEventListener('keydown', handleKeyDown));
+  });
 
   const handleDownloadIR = () => {
     const jsonStr = manager.exportJSON();
@@ -124,13 +110,14 @@ export function Titlebar({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${projectTitle.toLowerCase().replace(/\s+/g, '_')}_video_ir.json`;
+    a.download = `${props.projectTitle.toLowerCase().replace(/\s+/g, '_')}_video_ir.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
-  const handleUploadIR = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handleUploadIR = (e: Event) => {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
@@ -144,112 +131,114 @@ export function Titlebar({
       }
     };
     reader.readAsText(file);
-    e.target.value = '';
+    input.value = '';
   };
 
-  const meta = docMeta || {
-    canvasSize: { w: 1920, h: 1080 },
-    aspectRatio: '16:9',
-  };
-  const ratio =
-    meta.aspectRatio || inferAspectRatioFromCanvasSize(meta.canvasSize.w, meta.canvasSize.h);
+  const meta = () =>
+    docMeta() || {
+      canvasSize: { w: 1920, h: 1080 },
+      aspectRatio: '16:9',
+    };
+
+  const ratio = () =>
+    meta().aspectRatio || inferAspectRatioFromCanvasSize(meta().canvasSize.w, meta().canvasSize.h);
 
   return (
     <header
       ref={headerRef}
-      className="h-14 glass-panel px-2.5 sm:px-4 flex items-center justify-between select-none z-20 transition-colors gap-2 overflow-hidden shrink-0 whitespace-nowrap"
+      class="h-14 glass-panel px-2.5 sm:px-4 flex items-center justify-between select-none z-20 transition-colors gap-2 overflow-hidden shrink-0 whitespace-nowrap"
     >
       {/* Left Brand & Workspace Controls */}
-      <div className="flex items-center gap-1.5 sm:gap-2.5 shrink min-w-0">
-        {onToggleLeft && (
-          <Tooltip content={isLeftOpen ? 'Collapse Left Drawer ([)' : 'Expand Left Drawer ([)'}>
+      <div class="flex items-center gap-1.5 sm:gap-2.5 shrink min-w-0">
+        <Show when={props.onToggleLeft}>
+          <Tooltip content={props.isLeftOpen ? 'Collapse Left Drawer ([)' : 'Expand Left Drawer ([)'}>
             <Button
               variant="ghost"
               size="icon"
-              onClick={onToggleLeft}
-              aria-label={isLeftOpen ? 'Collapse Left Drawer' : 'Expand Left Drawer'}
-              className={cn(
+              onClick={props.onToggleLeft}
+              aria-label={props.isLeftOpen ? 'Collapse Left Drawer' : 'Expand Left Drawer'}
+              class={cn(
                 "h-8 w-8 shrink-0 transition-colors",
-                isLeftOpen
+                props.isLeftOpen
                   ? 'bg-accent-theme/15 text-accent-theme'
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
-              <PanelLeft className="w-4 h-4" />
+              <PanelLeft class="w-4 h-4" />
             </Button>
           </Tooltip>
-        )}
+        </Show>
 
-        <div className="h-8 w-8 rounded-lg bg-accent-theme text-primary-foreground flex items-center justify-center font-bold text-xs shadow-accent-glow select-none shrink-0">
+        <div class="h-8 w-8 rounded-lg bg-accent-theme text-primary-foreground flex items-center justify-center font-bold text-xs shadow-accent-glow select-none shrink-0">
           IR
         </div>
 
-        <div className="min-w-0 flex flex-col justify-center">
-          <div className="flex items-center gap-1.5 sm:gap-2">
+        <div class="min-w-0 flex flex-col justify-center">
+          <div class="flex items-center gap-1.5 sm:gap-2">
             <h1
-              className={cn(
+              class={cn(
                 "text-xs sm:text-sm font-semibold text-foreground tracking-tight truncate",
-                lod === 'compact'
+                lod() === 'compact'
                   ? 'max-w-[90px] sm:max-w-[120px]'
-                  : lod === 'medium'
+                  : lod() === 'medium'
                     ? 'max-w-[150px]'
                     : 'max-w-[220px]'
               )}
             >
-              {projectTitle}
+              {props.projectTitle}
             </h1>
 
-            {lod === 'full' && (
+            <Show when={lod() === 'full'}>
               <Badge
                 variant="outline"
-                className="font-mono text-[9px] sm:text-[10px] text-accent-theme bg-accent-theme/10 border-accent-theme/30"
+                class="font-mono text-[9px] sm:text-[10px] text-accent-theme bg-accent-theme/10 border-accent-theme/30"
               >
                 Universal Video IR V1.0
               </Badge>
-            )}
+            </Show>
 
             {/* Clickable Base Aspect Ratio Pill */}
             <Tooltip content="Base Aspect Ratio — Click to configure in Inspector">
               <button
                 type="button"
                 onClick={() => {
-                  if (!isRightOpen && onToggleRight) onToggleRight();
+                  if (!props.isRightOpen && props.onToggleRight) props.onToggleRight();
                   manager.setSelectedSequenceId(null);
                   manager.setInspectorMode('timeline');
                 }}
-                className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-accent-theme/15 text-accent-theme border border-accent-theme/40 hover:bg-accent-theme/25 hover:border-accent-theme transition-all cursor-pointer shadow-accent-glow shrink-0"
+                class="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-accent-theme/15 text-accent-theme border border-accent-theme/40 hover:bg-accent-theme/25 hover:border-accent-theme transition-all cursor-pointer shadow-accent-glow shrink-0"
               >
-                <span>{ratio}</span>
-                {lod === 'full' && (
-                  <span className="text-[8px] opacity-75 font-normal">
-                    ({meta.canvasSize.w}×{meta.canvasSize.h})
+                <span>{ratio()}</span>
+                <Show when={lod() === 'full'}>
+                  <span class="text-[8px] opacity-75 font-normal">
+                    ({meta().canvasSize.w}×{meta().canvasSize.h})
                   </span>
-                )}
+                </Show>
               </button>
             </Tooltip>
           </div>
 
-          {lod !== 'compact' && (
-            <span className="text-[10px] sm:text-xs text-muted-foreground font-mono truncate">
-              {lod === 'full'
-                ? `${currentFrame} / ${totalFrames} f (${(currentFrame / fps).toFixed(2)}s / ${(totalFrames / fps).toFixed(2)}s @ ${fps}fps)`
-                : `${currentFrame}/${totalFrames}f (${(currentFrame / fps).toFixed(1)}s)`}
+          <Show when={lod() !== 'compact'}>
+            <span class="text-[10px] sm:text-xs text-muted-foreground font-mono truncate">
+              {lod() === 'full'
+                ? `${props.currentFrame} / ${props.totalFrames} f (${(props.currentFrame / props.fps).toFixed(2)}s / ${(props.totalFrames / props.fps).toFixed(2)}s @ ${props.fps}fps)`
+                : `${props.currentFrame}/${props.totalFrames}f (${(props.currentFrame / props.fps).toFixed(1)}s)`}
             </span>
-          )}
+          </Show>
         </div>
 
         {/* Responsive Demo Template Switcher */}
-        <div className="ml-1 flex items-center shrink-0">
+        <div class="ml-1 flex items-center shrink-0">
           <Select
-            value={activeTemplate}
-            onValueChange={(val: any) => manager.switchTemplate(val)}
+            value={activeTemplate()}
+            onChange={(val: any) => manager.switchTemplate(val)}
           >
             <SelectTrigger
-              className={cn(
+              class={cn(
                 "h-7 text-[11px] bg-[var(--glass-bg)] border-[var(--glass-border)] text-foreground truncate",
-                lod === 'compact'
+                lod() === 'compact'
                   ? 'w-24 sm:w-28 text-[10px]'
-                  : lod === 'medium'
+                  : lod() === 'medium'
                     ? 'w-36 text-[11px]'
                     : 'w-48 xl:w-56'
               )}
@@ -272,155 +261,164 @@ export function Titlebar({
       </div>
 
       {/* Right Control & Action Bar */}
-      <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+      <div class="flex items-center gap-1 sm:gap-1.5 shrink-0">
         {/* Hidden File Input */}
         <input
           ref={fileInputRef}
           type="file"
           accept=".json,application/json"
           onChange={handleUploadIR}
-          className="hidden"
+          class="hidden"
         />
 
         {/* Undo / Redo Actions (Inline on medium & full, in popover on compact) */}
-        {lod !== 'compact' && (
-          <>
-            <Tooltip content="Undo (Ctrl+Z)">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => manager.undo()}
-                disabled={!canUndo}
-                aria-label="Undo action"
-                className="h-8 w-8 text-muted-foreground hover:text-foreground disabled:opacity-40 shrink-0"
-              >
-                <Undo2 className="w-3.5 h-3.5" />
-              </Button>
-            </Tooltip>
+        <Show when={lod() !== 'compact'}>
+          <Tooltip content="Undo (Ctrl+Z)">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => manager.undo()}
+              disabled={!canUndo()}
+              aria-label="Undo action"
+              class="h-8 w-8 text-muted-foreground hover:text-foreground disabled:opacity-40 shrink-0"
+            >
+              <Undo2 class="w-3.5 h-3.5" />
+            </Button>
+          </Tooltip>
 
-            <Tooltip content="Redo (Ctrl+Y)">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => manager.redo()}
-                disabled={!canRedo}
-                aria-label="Redo action"
-                className="h-8 w-8 text-muted-foreground hover:text-foreground disabled:opacity-40 shrink-0"
-              >
-                <Redo2 className="w-3.5 h-3.5" />
-              </Button>
-            </Tooltip>
+          <Tooltip content="Redo (Ctrl+Y)">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => manager.redo()}
+              disabled={!canRedo()}
+              aria-label="Redo action"
+              class="h-8 w-8 text-muted-foreground hover:text-foreground disabled:opacity-40 shrink-0"
+            >
+              <Redo2 class="w-3.5 h-3.5" />
+            </Button>
+          </Tooltip>
 
-            <Separator orientation="vertical" className="h-4 mx-0.5" />
-          </>
-        )}
+          <Separator orientation="vertical" class="h-4 mx-0.5" />
+        </Show>
 
         {/* Import Video IR JSON */}
-        {lod !== 'compact' && (
+        <Show when={lod() !== 'compact'}>
           <Tooltip content="Import Video IR JSON">
             <Button
               variant="outline"
-              size={lod === 'full' ? 'sm' : 'icon'}
-              onClick={() => fileInputRef.current?.click()}
-              className={cn(
+              size={lod() === 'full' ? 'sm' : 'icon'}
+              onClick={() => fileInputRef?.click()}
+              class={cn(
                 "h-8 shadow-xs border-[var(--glass-border)] text-foreground hover:bg-foreground/5",
-                lod === 'full' ? "gap-1.5 text-xs px-2 sm:px-3" : "w-8 p-0"
+                lod() === 'full' ? "gap-1.5 text-xs px-2 sm:px-3" : "w-8 p-0"
               )}
             >
-              <Upload className="w-3.5 h-3.5 text-muted-foreground" />
-              {lod === 'full' && <span>Import IR</span>}
+              <Upload class="w-3.5 h-3.5 text-muted-foreground" />
+              <Show when={lod() === 'full'}>
+                <span>Import IR</span>
+              </Show>
             </Button>
           </Tooltip>
-        )}
+        </Show>
 
         {/* Export / Save Video IR JSON */}
-        {lod !== 'compact' && (
+        <Show when={lod() !== 'compact'}>
           <Tooltip content="Export / Save Video IR JSON">
             <Button
               variant="outline"
-              size={lod === 'full' ? 'sm' : 'icon'}
+              size={lod() === 'full' ? 'sm' : 'icon'}
               onClick={handleDownloadIR}
-              className={cn(
+              class={cn(
                 "h-8 text-accent-theme border-accent-theme/40 bg-accent-theme/10 hover:bg-accent-theme/20 shadow-xs",
-                lod === 'full' ? "gap-1.5 text-xs px-2 sm:px-3" : "w-8 p-0"
+                lod() === 'full' ? "gap-1.5 text-xs px-2 sm:px-3" : "w-8 p-0"
               )}
             >
-              <FileJson className="w-3.5 h-3.5" />
-              {lod === 'full' && <span>Save IR</span>}
+              <FileJson class="w-3.5 h-3.5" />
+              <Show when={lod() === 'full'}>
+                <span>Save IR</span>
+              </Show>
             </Button>
           </Tooltip>
-        )}
+        </Show>
 
         {/* Debugger & OPFS (Inline on full LOD only, inside popover on medium & compact) */}
-        {lod === 'full' && (
-          <>
-            <Tooltip content="Visual VideoIR JSON Editor & Debugger (Ctrl+Shift+J)">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsDebuggerOpen(true)}
-                data-testid="titlebar-debugger-btn"
-                className="gap-1.5 text-xs h-8 font-mono text-foreground border-border/50 bg-muted/40 hover:bg-muted/80 shadow-xs px-2 sm:px-3"
-              >
-                <Code2 className="w-3.5 h-3.5 text-accent-theme" />
-                <span>Debugger</span>
-              </Button>
-            </Tooltip>
+        <Show when={lod() === 'full'}>
+          <Tooltip content="Visual VideoIR JSON Editor & Debugger (Ctrl+Shift+J)">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsDebuggerOpen(true)}
+              data-testid="titlebar-debugger-btn"
+              class="gap-1.5 text-xs h-8 font-mono text-foreground border-border/50 bg-muted/40 hover:bg-muted/80 shadow-xs px-2 sm:px-3"
+            >
+              <Code2 class="w-3.5 h-3.5 text-accent-theme" />
+              <span>Debugger</span>
+            </Button>
+          </Tooltip>
 
-            <Tooltip content="Inspect & Debug OPFS Files & Folders (Ctrl+Shift+O)">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsOpfsOpen(true)}
-                data-testid="titlebar-opfs-debugger-btn"
-                className="gap-1.5 text-xs h-8 font-mono text-foreground border-border/50 bg-muted/40 hover:bg-muted/80 shadow-xs px-2 sm:px-3"
-              >
-                <HardDrive className="w-3.5 h-3.5 text-accent-theme" />
-                <span>Cache</span>
-              </Button>
-            </Tooltip>
-          </>
-        )}
+          <Tooltip content="Inspect & Debug OPFS Files & Folders (Ctrl+Shift+O)">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsOpfsOpen(true)}
+              data-testid="titlebar-opfs-debugger-btn"
+              class="gap-1.5 text-xs h-8 font-mono text-foreground border-border/50 bg-muted/40 hover:bg-muted/80 shadow-xs px-2 sm:px-3"
+            >
+              <HardDrive class="w-3.5 h-3.5 text-accent-theme" />
+              <span>Cache</span>
+            </Button>
+          </Tooltip>
+        </Show>
 
-        {lod !== 'compact' && <Separator orientation="vertical" className="h-4 mx-0.5" />}
+        <Show when={lod() !== 'compact'}>
+          <Separator orientation="vertical" class="h-4 mx-0.5" />
+        </Show>
 
         {/* MP4 Export Button (Primary CTA - always visible across all LODs) */}
         <Tooltip content="WebCodecs Client-Side MP4 Export">
           <div>
-            {isExporting ? (
+            <Show
+              when={props.isExporting}
+              fallback={
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={props.onStartExport}
+                  class="gap-1.5 h-8 text-xs shadow-xs px-2 sm:px-3 font-semibold"
+                >
+                  <Download class="w-3.5 h-3.5" />
+                  <Show when={lod() === 'compact'} fallback={<span>Export MP4</span>}>
+                    <span>Export</span>
+                  </Show>
+                </Button>
+              }
+            >
               <Button
                 variant="destructive"
                 size="sm"
-                onClick={onCancelExport}
-                className="gap-1.5 h-8 text-xs shadow-xs px-2 sm:px-3"
+                onClick={props.onCancelExport}
+                class="gap-1.5 h-8 text-xs shadow-xs px-2 sm:px-3"
               >
-                <XCircle className="w-3.5 h-3.5" />
-                {lod !== 'compact' && <span>Cancel Export</span>}
+                <XCircle class="w-3.5 h-3.5" />
+                <Show when={lod() !== 'compact'}>
+                  <span>Cancel Export</span>
+                </Show>
               </Button>
-            ) : (
-              <Button
-                variant="default"
-                size="sm"
-                onClick={onStartExport}
-                className="gap-1.5 h-8 text-xs shadow-xs px-2 sm:px-3 font-semibold"
-              >
-                <Download className="w-3.5 h-3.5" />
-                {lod === 'compact' ? <span>Export</span> : <span>Export MP4</span>}
-              </Button>
-            )}
+            </Show>
           </div>
         </Tooltip>
 
-        <Separator orientation="vertical" className="h-4 mx-0.5" />
+        <Separator orientation="vertical" class="h-4 mx-0.5" />
 
         {/* 20 Presets Quick Palette Switcher */}
         <ThemeQuickSwitcher />
 
         {/* Quick Dark/Light Theme Toggle (Inline on full & medium) */}
-        {lod === 'full' && (
+        <Show when={lod() === 'full'}>
           <Tooltip
             content={
-              preferences.mode === 'dark'
+              theme.preferences.mode === 'dark'
                 ? 'Switch to Light Frosted Acrylic'
                 : 'Switch to Dark Obsidian'
             }
@@ -428,103 +426,104 @@ export function Titlebar({
             <Button
               variant="ghost"
               size="icon"
-              onClick={toggleMode}
+              onClick={theme.toggleMode}
               aria-label={
-                preferences.mode === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'
+                theme.preferences.mode === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'
               }
-              className="h-8 w-8 text-muted-foreground hover:text-foreground shrink-0"
+              class="h-8 w-8 text-muted-foreground hover:text-foreground shrink-0"
             >
-              {preferences.mode === 'dark' ? (
-                <Sun className="w-3.5 h-3.5 text-amber-400" />
+              {theme.preferences.mode === 'dark' ? (
+                <Sun class="w-3.5 h-3.5 text-amber-400" />
               ) : (
-                <Moon className="w-3.5 h-3.5 text-accent-theme" />
+                <Moon class="w-3.5 h-3.5 text-accent-theme" />
               )}
             </Button>
           </Tooltip>
-        )}
+        </Show>
 
         {/* Keyboard Shortcuts Cheat Sheet (Inline on full LOD) */}
-        {lod === 'full' && (
+        <Show when={lod() === 'full'}>
           <Tooltip content="Keyboard Shortcuts (?)">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setIsShortcutsOpen(true)}
               aria-label="Open keyboard shortcuts"
-              className="h-8 w-8 text-muted-foreground hover:text-foreground shrink-0"
+              class="h-8 w-8 text-muted-foreground hover:text-foreground shrink-0"
             >
-              <Keyboard className="w-3.5 h-3.5" />
+              <Keyboard class="w-3.5 h-3.5" />
             </Button>
           </Tooltip>
-        )}
+        </Show>
 
         {/* Zen Focus Mode (\) Toggle Button */}
-        {onToggleZen && (
-          <Tooltip content={isZenMode ? 'Exit Zen Mode (\\)' : 'Zen Focus Mode (\\)'}>
+        <Show when={props.onToggleZen}>
+          <Tooltip content={props.isZenMode ? 'Exit Zen Mode (\\)' : 'Zen Focus Mode (\\)'}>
             <Button
               variant="ghost"
               size="icon"
-              onClick={onToggleZen}
+              onClick={props.onToggleZen}
               aria-label="Toggle Zen Focus Mode"
-              className={cn(
+              class={cn(
                 "h-8 w-8 transition-colors shrink-0",
-                isZenMode
+                props.isZenMode
                   ? 'bg-accent-theme/20 text-accent-theme shadow-accent-glow'
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
-              {isZenMode ? (
-                <Minimize2 className="w-3.5 h-3.5" />
+              {props.isZenMode ? (
+                <Minimize2 class="w-3.5 h-3.5" />
               ) : (
-                <Maximize2 className="w-3.5 h-3.5" />
+                <Maximize2 class="w-3.5 h-3.5" />
               )}
             </Button>
           </Tooltip>
-        )}
+        </Show>
 
         {/* Settings Modal (Inline on full & medium) */}
-        {lod !== 'compact' && (
+        <Show when={lod() !== 'compact'}>
           <Tooltip content="Theme & Optical Glass Settings">
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setIsSettingsOpen(true)}
+              onClick={() => theme.setIsSettingsOpen(true)}
               aria-label="Open settings"
-              className="h-8 w-8 text-muted-foreground hover:text-foreground shrink-0"
+              class="h-8 w-8 text-muted-foreground hover:text-foreground shrink-0"
             >
-              <Settings className="w-3.5 h-3.5" />
+              <Settings class="w-3.5 h-3.5" />
             </Button>
           </Tooltip>
-        )}
+        </Show>
 
         {/* More Tools & Actions Popover Menu (Visible when lod !== 'full') */}
-        {lod !== 'full' && (
-          <Popover open={isMoreMenuOpen} onOpenChange={setIsMoreMenuOpen}>
+        <Show when={lod() !== 'full'}>
+          <Popover open={isMoreMenuOpen()} onOpenChange={setIsMoreMenuOpen}>
             <Tooltip content="More Actions & Dev Tools">
-              <PopoverTrigger asChild>
+              <PopoverTrigger>
                 <Button
                   variant="ghost"
                   size="icon"
                   aria-label="More actions and developer tools"
-                  className="h-8 w-8 text-muted-foreground hover:text-foreground shrink-0"
+                  class="h-8 w-8 text-muted-foreground hover:text-foreground shrink-0"
                 >
-                  <MoreHorizontal className="w-4 h-4" />
+                  <MoreHorizontal class="w-4 h-4" />
                 </Button>
               </PopoverTrigger>
             </Tooltip>
 
             <PopoverContent
+              side="bottom"
               align="end"
               sideOffset={8}
-              className="w-60 p-3 rounded-2xl glass-panel shadow-glass border border-glass-border flex flex-col gap-2.5 text-xs select-none backdrop-blur-xl z-50"
+              class="w-60 p-3 rounded-2xl glass-panel shadow-glass border border-glass-border flex flex-col gap-2.5 text-xs select-none backdrop-blur-xl z-50"
             >
               {/* Compact-only Actions: Undo / Redo & File Import/Export */}
-              {lod === 'compact' && (
-                <div className="flex flex-col gap-1 border-b border-glass-border pb-2">
-                  <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+              <Show when={lod() === 'compact'}>
+                <div class="flex flex-col gap-1 border-b border-glass-border pb-2">
+                  <span class="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
                     Edit & Project
                   </span>
-                  <div className="grid grid-cols-2 gap-1.5 font-mono text-[11px]">
+                  <div class="grid grid-cols-2 gap-1.5 font-mono text-[11px]">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -532,12 +531,12 @@ export function Titlebar({
                         manager.undo();
                         setIsMoreMenuOpen(false);
                       }}
-                      disabled={!canUndo}
-                      className="justify-start gap-2 h-7 text-xs"
+                      disabled={!canUndo()}
+                      class="justify-start gap-2 h-7 text-xs"
                     >
-                      <Undo2 className="w-3.5 h-3.5" />
+                      <Undo2 class="w-3.5 h-3.5" />
                       <span>Undo</span>
-                      <span className="text-[9px] text-muted-foreground ml-auto">^Z</span>
+                      <span class="text-[9px] text-muted-foreground ml-auto">^Z</span>
                     </Button>
 
                     <Button
@@ -547,26 +546,26 @@ export function Titlebar({
                         manager.redo();
                         setIsMoreMenuOpen(false);
                       }}
-                      disabled={!canRedo}
-                      className="justify-start gap-2 h-7 text-xs"
+                      disabled={!canRedo()}
+                      class="justify-start gap-2 h-7 text-xs"
                     >
-                      <Redo2 className="w-3.5 h-3.5" />
+                      <Redo2 class="w-3.5 h-3.5" />
                       <span>Redo</span>
-                      <span className="text-[9px] text-muted-foreground ml-auto">^Y</span>
+                      <span class="text-[9px] text-muted-foreground ml-auto">^Y</span>
                     </Button>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-1.5 mt-1 font-mono text-[11px]">
+                  <div class="grid grid-cols-2 gap-1.5 mt-1 font-mono text-[11px]">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => {
-                        fileInputRef.current?.click();
+                        fileInputRef?.click();
                         setIsMoreMenuOpen(false);
                       }}
-                      className="justify-start gap-1.5 h-7 text-xs border-glass-border"
+                      class="justify-start gap-1.5 h-7 text-xs border-glass-border"
                     >
-                      <Upload className="w-3 h-3 text-muted-foreground" />
+                      <Upload class="w-3 h-3 text-muted-foreground" />
                       <span>Import IR</span>
                     </Button>
 
@@ -577,18 +576,18 @@ export function Titlebar({
                         handleDownloadIR();
                         setIsMoreMenuOpen(false);
                       }}
-                      className="justify-start gap-1.5 h-7 text-xs text-accent-theme border-accent-theme/40 bg-accent-theme/10"
+                      class="justify-start gap-1.5 h-7 text-xs text-accent-theme border-accent-theme/40 bg-accent-theme/10"
                     >
-                      <FileJson className="w-3 h-3" />
+                      <FileJson class="w-3 h-3" />
                       <span>Save IR</span>
                     </Button>
                   </div>
                 </div>
-              )}
+              </Show>
 
               {/* Developer Diagnostics */}
-              <div className="flex flex-col gap-1">
-                <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+              <div class="flex flex-col gap-1">
+                <span class="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
                   Developer Tools
                 </span>
                 <button
@@ -598,13 +597,13 @@ export function Titlebar({
                     setIsDebuggerOpen(true);
                     setIsMoreMenuOpen(false);
                   }}
-                  className="flex items-center justify-between px-2 py-1.5 rounded-lg border border-glass-border text-foreground hover:bg-foreground/5 transition-all cursor-pointer font-mono text-xs"
+                  class="flex items-center justify-between px-2 py-1.5 rounded-lg border border-glass-border text-foreground hover:bg-foreground/5 transition-all cursor-pointer font-mono text-xs"
                 >
-                  <span className="flex items-center gap-1.5">
-                    <Code2 className="w-3.5 h-3.5 text-accent-theme" />
+                  <span class="flex items-center gap-1.5">
+                    <Code2 class="w-3.5 h-3.5 text-accent-theme" />
                     Visual IR Debugger
                   </span>
-                  <span className="text-[9px] text-muted-foreground font-sans">^⇧J</span>
+                  <span class="text-[9px] text-muted-foreground font-sans">^⇧J</span>
                 </button>
 
                 <button
@@ -614,37 +613,37 @@ export function Titlebar({
                     setIsOpfsOpen(true);
                     setIsMoreMenuOpen(false);
                   }}
-                  className="flex items-center justify-between px-2 py-1.5 rounded-lg border border-glass-border text-foreground hover:bg-foreground/5 transition-all cursor-pointer font-mono text-xs"
+                  class="flex items-center justify-between px-2 py-1.5 rounded-lg border border-glass-border text-foreground hover:bg-foreground/5 transition-all cursor-pointer font-mono text-xs"
                 >
-                  <span className="flex items-center gap-1.5">
-                    <HardDrive className="w-3.5 h-3.5 text-accent-theme" />
+                  <span class="flex items-center gap-1.5">
+                    <HardDrive class="w-3.5 h-3.5 text-accent-theme" />
                     Cache
                   </span>
-                  <span className="text-[9px] text-muted-foreground font-sans">^⇧O</span>
+                  <span class="text-[9px] text-muted-foreground font-sans">^⇧O</span>
                 </button>
               </div>
 
               {/* Preferences & Help */}
-              <div className="flex flex-col gap-1 border-t border-glass-border pt-1.5">
-                <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+              <div class="flex flex-col gap-1 border-t border-glass-border pt-1.5">
+                <span class="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
                   Preferences & Help
                 </span>
 
                 <button
                   type="button"
                   onClick={() => {
-                    toggleMode();
+                    theme.toggleMode();
                     setIsMoreMenuOpen(false);
                   }}
-                  className="flex items-center justify-between px-2 py-1.5 rounded-lg border border-glass-border text-foreground hover:bg-foreground/5 transition-all cursor-pointer text-xs"
+                  class="flex items-center justify-between px-2 py-1.5 rounded-lg border border-glass-border text-foreground hover:bg-foreground/5 transition-all cursor-pointer text-xs"
                 >
-                  <span className="flex items-center gap-1.5">
-                    {preferences.mode === 'dark' ? (
-                      <Sun className="w-3.5 h-3.5 text-amber-400" />
+                  <span class="flex items-center gap-1.5">
+                    {theme.preferences.mode === 'dark' ? (
+                      <Sun class="w-3.5 h-3.5 text-amber-400" />
                     ) : (
-                      <Moon className="w-3.5 h-3.5 text-accent-theme" />
+                      <Moon class="w-3.5 h-3.5 text-accent-theme" />
                     )}
-                    Theme: {preferences.mode === 'dark' ? 'Dark Obsidian' : 'Light Frosted'}
+                    Theme: {theme.preferences.mode === 'dark' ? 'Dark Obsidian' : 'Light Frosted'}
                   </span>
                 </button>
 
@@ -654,62 +653,60 @@ export function Titlebar({
                     setIsShortcutsOpen(true);
                     setIsMoreMenuOpen(false);
                   }}
-                  className="flex items-center justify-between px-2 py-1.5 rounded-lg border border-glass-border text-foreground hover:bg-foreground/5 transition-all cursor-pointer text-xs"
+                  class="flex items-center justify-between px-2 py-1.5 rounded-lg border border-glass-border text-foreground hover:bg-foreground/5 transition-all cursor-pointer text-xs"
                 >
-                  <span className="flex items-center gap-1.5">
-                    <Keyboard className="w-3.5 h-3.5 text-accent-theme" />
+                  <span class="flex items-center gap-1.5">
+                    <Keyboard class="w-3.5 h-3.5 text-accent-theme" />
                     Keyboard Shortcuts (?)
                   </span>
-                  <span className="text-[9px] text-muted-foreground">?</span>
+                  <span class="text-[9px] text-muted-foreground">?</span>
                 </button>
 
-                {lod === 'compact' && (
+                <Show when={lod() === 'compact'}>
                   <button
                     type="button"
                     onClick={() => {
-                      setIsSettingsOpen(true);
+                      theme.setIsSettingsOpen(true);
                       setIsMoreMenuOpen(false);
                     }}
-                    className="flex items-center justify-between px-2 py-1.5 rounded-lg border border-glass-border text-foreground hover:bg-foreground/5 transition-all cursor-pointer text-xs"
+                    class="flex items-center justify-between px-2 py-1.5 rounded-lg border border-glass-border text-foreground hover:bg-foreground/5 transition-all cursor-pointer text-xs"
                   >
-                    <span className="flex items-center gap-1.5">
-                      <Settings className="w-3.5 h-3.5 text-accent-theme" />
+                    <span class="flex items-center gap-1.5">
+                      <Settings class="w-3.5 h-3.5 text-accent-theme" />
                       Theme & Glass Settings
                     </span>
                   </button>
-                )}
+                </Show>
               </div>
             </PopoverContent>
           </Popover>
-        )}
+        </Show>
 
         {/* Right Drawer Toggle */}
-        {onToggleRight && (
-          <>
-            <Separator orientation="vertical" className="h-4 mx-0.5" />
-            <Tooltip content={isRightOpen ? 'Collapse Inspector (])' : 'Expand Inspector (])'}>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onToggleRight}
-                aria-label={isRightOpen ? 'Collapse Inspector' : 'Expand Inspector'}
-                className={cn(
-                  "h-8 w-8 transition-colors shrink-0",
-                  isRightOpen
-                    ? 'bg-accent-theme/15 text-accent-theme'
-                    : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                <PanelRight className="w-4 h-4" />
-              </Button>
-            </Tooltip>
-          </>
-        )}
+        <Show when={props.onToggleRight}>
+          <Separator orientation="vertical" class="h-4 mx-0.5" />
+          <Tooltip content={props.isRightOpen ? 'Collapse Inspector (])' : 'Expand Inspector (])'}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={props.onToggleRight}
+              aria-label={props.isRightOpen ? 'Collapse Inspector' : 'Expand Inspector'}
+              class={cn(
+                "h-8 w-8 transition-colors shrink-0",
+                props.isRightOpen
+                  ? 'bg-accent-theme/15 text-accent-theme'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              <PanelRight class="w-4 h-4" />
+            </Button>
+          </Tooltip>
+        </Show>
       </div>
 
-      <ShortcutsModal open={isShortcutsOpen} onOpenChange={setIsShortcutsOpen} />
-      <IrVisualEditorModal open={isDebuggerOpen} onOpenChange={setIsDebuggerOpen} />
-      <OpfsExplorerModal open={isOpfsOpen} onOpenChange={setIsOpfsOpen} />
+      <ShortcutsModal open={isShortcutsOpen()} onOpenChange={setIsShortcutsOpen} />
+      <IrVisualEditorModal open={isDebuggerOpen()} onOpenChange={setIsDebuggerOpen} />
+      <OpfsExplorerModal open={isOpfsOpen()} onOpenChange={setIsOpfsOpen} />
     </header>
   );
 }

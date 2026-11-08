@@ -41,13 +41,14 @@
     "studio:build": "bun --cwd apps/studio build"
   },
   "devDependencies": {
-    "prettier": "^3.8.1",
-    "typescript": "^6.0.3",
     "@types/bun": "latest",
     "@types/node": "^26.6.2",
     "mitata": "^1.0.34",
+    "prettier": "^3.8.1",
     "pts": "^1.0.3",
-    "turbo": "^2.11.7"
+    "solid-js": "^1.9.18",
+    "turbo": "^2.11.7",
+    "typescript": "^6.0.3"
   },
   "packageManager": "pnpm@9.0.0",
   "workspaces": [

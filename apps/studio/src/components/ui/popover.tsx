@@ -1,78 +1,77 @@
-import * as React from "react"
-import { cn } from "cn"
-import { Popover as PopoverPrimitive } from "radix-ui"
+import { splitProps, type ComponentProps, type JSX } from "solid-js";
+import { Popover as PopoverPrimitive } from "@kobalte/core/popover";
+import { cn } from "cn";
 
-function Popover({
-  ...props
-}: React.ComponentProps<typeof PopoverPrimitive.Root>) {
-  return <PopoverPrimitive.Root data-slot="popover" {...props} />
+function Popover(props: ComponentProps<typeof PopoverPrimitive.Root> & { [key: string]: any }) {
+  return <PopoverPrimitive.Root data-slot="popover" {...props} />;
 }
 
-function PopoverTrigger({
-  ...props
-}: React.ComponentProps<typeof PopoverPrimitive.Trigger>) {
-  return <PopoverPrimitive.Trigger data-slot="popover-trigger" {...props} />
+function PopoverTrigger(props: ComponentProps<typeof PopoverPrimitive.Trigger> & { class?: string; className?: string; [key: string]: any }) {
+  const [local, rest] = splitProps(props, ["class", "className"]);
+  return <PopoverPrimitive.Trigger data-slot="popover-trigger" class={local.class || local.className} {...rest} />;
 }
 
-function PopoverContent({
-  className,
-  align = "center",
-  sideOffset = 4,
-  ...props
-}: React.ComponentProps<typeof PopoverPrimitive.Content>) {
+function PopoverAnchor(props: ComponentProps<typeof PopoverPrimitive.Anchor> & { class?: string; className?: string; [key: string]: any }) {
+  const [local, rest] = splitProps(props, ["class", "className"]);
+  return <PopoverPrimitive.Anchor data-slot="popover-anchor" class={local.class || local.className} {...rest} />;
+}
+
+function PopoverContent(props: ComponentProps<typeof PopoverPrimitive.Content> & {
+  class?: string;
+  className?: string;
+  children?: JSX.Element;
+  sideOffset?: number;
+  [key: string]: any;
+}) {
+  const [local, rest] = splitProps(props, ["class", "className", "children", "sideOffset"]);
+
   return (
     <PopoverPrimitive.Portal>
       <PopoverPrimitive.Content
         data-slot="popover-content"
-        align={align}
-        sideOffset={sideOffset}
-        className={cn(
-          "z-50 flex w-72 origin-(--radix-popover-content-transform-origin) flex-col gap-4 rounded-3xl bg-popover p-4 text-sm text-popover-foreground shadow-lg ring-1 ring-foreground/5 outline-hidden duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 dark:ring-foreground/10 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
-          className
+        class={cn(
+          "z-50 flex w-72 flex-col gap-4 rounded-3xl bg-popover p-4 text-sm text-popover-foreground shadow-lg ring-1 ring-foreground/5 outline-none duration-100 dark:ring-foreground/10",
+          local.class || local.className
         )}
-        {...props}
-      />
+        {...rest}
+      >
+        {local.children}
+      </PopoverPrimitive.Content>
     </PopoverPrimitive.Portal>
-  )
+  );
 }
 
-function PopoverAnchor({
-  ...props
-}: React.ComponentProps<typeof PopoverPrimitive.Anchor>) {
-  return <PopoverPrimitive.Anchor data-slot="popover-anchor" {...props} />
-}
-
-function PopoverHeader({ className, ...props }: React.ComponentProps<"div">) {
+function PopoverHeader(props: ComponentProps<"div"> & { class?: string; className?: string }) {
+  const [local, rest] = splitProps(props, ["class", "className"]);
   return (
     <div
       data-slot="popover-header"
-      className={cn("flex flex-col gap-1 text-sm", className)}
-      {...props}
+      class={cn("flex flex-col gap-1 text-sm", local.class || local.className)}
+      {...rest}
     />
-  )
+  );
 }
 
-function PopoverTitle({ className, ...props }: React.ComponentProps<"h2">) {
+function PopoverTitle(props: ComponentProps<typeof PopoverPrimitive.Title> & { class?: string; className?: string; [key: string]: any }) {
+  const [local, rest] = splitProps(props, ["class", "className"]);
   return (
-    <div
+    <PopoverPrimitive.Title
       data-slot="popover-title"
-      className={cn("text-base font-medium", className)}
-      {...props}
+      class={cn("text-base font-medium", local.class || local.className)}
+      {...rest}
     />
-  )
+  );
 }
 
-function PopoverDescription({
-  className,
-  ...props
-}: React.ComponentProps<"p">) {
+function PopoverDescription(props: ComponentProps<typeof PopoverPrimitive.Description> & { class?: string; className?: string; [key: string]: any }) {
+  const [local, rest] = splitProps(props, ["class", "className"]);
   return (
-    <p
+    <PopoverPrimitive.Description
       data-slot="popover-description"
-      className={cn("text-muted-foreground", className)}
-      {...props}
+      class={cn("text-muted-foreground", local.class || local.className)}
+      {...rest}
     />
-  )
+  );
 }
 
 export {
@@ -83,4 +82,4 @@ export {
   PopoverHeader,
   PopoverTitle,
   PopoverTrigger,
-}
+};

@@ -1,6 +1,6 @@
 import { describe, test, expect, beforeEach } from 'bun:test';
 import { IRStateManager } from '../apps/studio/src/lib/ir/irState';
-import { analyzeVideoIRJson } from '../apps/studio/src/components/debugger/VisualIRJsonDebuggerModal';
+import { analyzeVideoIRJson } from '../apps/studio/src/components/debugger/irJsonAnalyzer';
 
 describe('Visual VideoIR JSON Editor & Live Debugger Round-Trip', () => {
   const manager = IRStateManager.getInstance();

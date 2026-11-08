@@ -1,4 +1,4 @@
-import React from 'react';
+import { Show, For } from 'solid-js';
 import { Input } from '../../ui/input';
 import { Textarea } from '../../ui/textarea';
 import { Slider } from '../../ui/slider';
@@ -20,202 +20,187 @@ export interface ControlStrategyProps {
  * Supports horizontal click-drag scrubbing (Shift: 10x, Alt: 0.1x), double-click direct text
  * with safe math expressions (e.g. 1080/2), and double-click reset to defaults.
  */
-export const NumberControlStrategy: React.FC<ControlStrategyProps> = ({
-  descriptor,
-  value,
-  onChange,
-  disabled = false,
-}) => {
-  const min = descriptor.min ?? 0;
-  const max = descriptor.max ?? 100;
-  const step = descriptor.step ?? 1;
-  const defaultVal = typeof descriptor.defaultValue === 'number' ? descriptor.defaultValue : min;
+export function NumberControlStrategy(props: ControlStrategyProps) {
+  const min = () => props.descriptor.min ?? 0;
+  const max = () => props.descriptor.max ?? 100;
+  const step = () => props.descriptor.step ?? 1;
+  const defaultVal = () =>
+    typeof props.descriptor.defaultValue === 'number' ? props.descriptor.defaultValue : min();
 
   // Resolve current scalar value (fall back to default if NaN, undefined, or an object)
-  const numericVal =
-    typeof value === 'number' && !Number.isNaN(value)
-      ? value
-      : defaultVal;
+  const numericVal = () =>
+    typeof props.value === 'number' && !Number.isNaN(props.value) ? props.value : defaultVal();
 
   return (
-    <div className={`space-y-1.5 ${disabled ? 'pointer-events-none opacity-60' : ''}`}>
-      <div className="flex justify-between items-center text-[11px]">
+    <div class={`space-y-1.5 ${props.disabled ? 'pointer-events-none opacity-60' : ''}`}>
+      <div class="flex justify-between items-center text-[11px]">
         <span
-          onDoubleClick={() => !disabled && onChange(defaultVal)}
-          className={`text-muted-foreground hover:text-accent-theme select-none truncate ${
-            disabled ? 'cursor-not-allowed' : 'cursor-pointer'
+          onDoubleClick={() => !props.disabled && props.onChange(defaultVal())}
+          class={`text-muted-foreground hover:text-accent-theme select-none truncate ${
+            props.disabled ? 'cursor-not-allowed' : 'cursor-pointer'
           } transition-colors`}
-          title={disabled ? undefined : `Double-click to reset (${defaultVal})`}
+          title={props.disabled ? undefined : `Double-click to reset (${defaultVal()})`}
         >
-          {descriptor.label}
+          {props.descriptor.label}
         </span>
         <ScrubbableNumberInput
-          value={numericVal}
-          min={min}
-          max={max}
-          step={step}
-          unit={descriptor.unit}
-          defaultValue={defaultVal}
-          disabled={disabled}
-          onChange={onChange}
+          value={numericVal()}
+          min={min()}
+          max={max()}
+          step={step()}
+          unit={props.descriptor.unit}
+          defaultValue={defaultVal()}
+          disabled={props.disabled}
+          onChange={props.onChange}
         />
       </div>
       <Slider
-        min={min}
-        max={max}
-        step={step}
-        disabled={disabled}
-        value={[numericVal]}
-        onValueChange={(v) => {
-          if (disabled) return;
-          onChange(v[0]);
+        min={min()}
+        max={max()}
+        step={step()}
+        disabled={props.disabled}
+        value={[numericVal()]}
+        onChange={(v: number[]) => {
+          if (props.disabled) return;
+          props.onChange(v[0]);
         }}
       />
     </div>
   );
-};
+}
 
 /**
  * Strategy 2: SwitchControlStrategy
  * Renders a boolean toggle switch.
  */
-export const SwitchControlStrategy: React.FC<ControlStrategyProps> = ({
-  descriptor,
-  value,
-  onChange,
-  disabled = false,
-}) => {
-  const checked = typeof value === 'boolean' ? value : Boolean(descriptor.defaultValue);
+export function SwitchControlStrategy(props: ControlStrategyProps) {
+  const checked = () =>
+    typeof props.value === 'boolean' ? props.value : Boolean(props.descriptor.defaultValue);
 
   return (
-    <div className={`flex items-center justify-between py-1 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
-      <span className="text-[11px] font-medium text-foreground/90">
-        {descriptor.label}
+    <div class={`flex items-center justify-between py-1 ${props.disabled ? 'opacity-50 pointer-events-none' : ''}`}>
+      <span class="text-[11px] font-medium text-foreground/90">
+        {props.descriptor.label}
       </span>
-      <Switch checked={checked} disabled={disabled} onCheckedChange={(c) => !disabled && onChange(c)} />
+      <Switch
+        checked={checked()}
+        disabled={props.disabled}
+        onChange={(c: boolean) => !props.disabled && props.onChange(c)}
+      />
     </div>
   );
-};
+}
 
 /**
  * Strategy 3: SelectControlStrategy
  * Renders a clean dropdown select menu for enumerated options.
  */
-export const SelectControlStrategy: React.FC<ControlStrategyProps> = ({
-  descriptor,
-  value,
-  onChange,
-  disabled = false,
-}) => {
-  const currentVal = value ?? descriptor.defaultValue ?? descriptor.options?.[0]?.value ?? '';
+export function SelectControlStrategy(props: ControlStrategyProps) {
+  const currentVal = () =>
+    props.value ?? props.descriptor.defaultValue ?? props.descriptor.options?.[0]?.value ?? '';
 
   return (
-    <div className={`space-y-1 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
-      <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground block">
-        {descriptor.label}
+    <div class={`space-y-1 ${props.disabled ? 'opacity-50 pointer-events-none' : ''}`}>
+      <label class="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground block">
+        {props.descriptor.label}
       </label>
       <select
-        value={String(currentVal)}
-        disabled={disabled}
-        onChange={(e) => !disabled && onChange(e.target.value)}
-        className="w-full h-7 rounded-md border border-glass-border bg-glass-surface px-2 text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-accent-theme disabled:cursor-not-allowed"
+        value={String(currentVal())}
+        disabled={props.disabled}
+        onChange={(e) => !props.disabled && props.onChange(e.currentTarget.value)}
+        class="w-full h-7 rounded-md border border-glass-border bg-glass-surface px-2 text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-accent-theme disabled:cursor-not-allowed"
       >
-        {(descriptor.options || []).map((opt) => (
-          <option key={String(opt.value)} value={String(opt.value)}>
-            {opt.label}
-          </option>
-        ))}
+        <For each={props.descriptor.options || []}>
+          {(opt) => (
+            <option value={String(opt.value)}>
+              {opt.label}
+            </option>
+          )}
+        </For>
       </select>
     </div>
   );
-};
+}
 
 /**
  * Strategy 4: ColorControlStrategy
  * Renders a dual color swatch + hex input.
  */
-export const ColorControlStrategy: React.FC<ControlStrategyProps> = ({
-  descriptor,
-  value,
-  onChange,
-  disabled = false,
-}) => {
-  const colorVal = typeof value === 'string' && value.startsWith('#') ? value : (descriptor.defaultValue || '#00ffff');
+export function ColorControlStrategy(props: ControlStrategyProps) {
+  const colorVal = () =>
+    typeof props.value === 'string' && props.value.startsWith('#')
+      ? props.value
+      : props.descriptor.defaultValue || '#00ffff';
 
   return (
-    <div className={`flex items-center justify-between pt-1 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
-      <span className="text-[11px] text-foreground/90 font-medium">
-        {descriptor.label}
+    <div class={`flex items-center justify-between pt-1 ${props.disabled ? 'opacity-50 pointer-events-none' : ''}`}>
+      <span class="text-[11px] text-foreground/90 font-medium">
+        {props.descriptor.label}
       </span>
-      <div className="flex items-center gap-1.5">
+      <div class="flex items-center gap-1.5">
         <input
           type="color"
-          disabled={disabled}
-          value={colorVal.slice(0, 7)}
-          onChange={(e) => !disabled && onChange(e.target.value)}
-          className="w-6 h-6 rounded border border-glass-border cursor-pointer p-0 bg-transparent disabled:cursor-not-allowed"
+          disabled={props.disabled}
+          value={colorVal().slice(0, 7)}
+          onInput={(e) => !props.disabled && props.onChange(e.currentTarget.value)}
+          class="w-6 h-6 rounded border border-glass-border cursor-pointer p-0 bg-transparent disabled:cursor-not-allowed"
         />
-        <span className="text-[10px] font-mono text-muted-foreground uppercase">
-          {colorVal}
+        <span class="text-[10px] font-mono text-muted-foreground uppercase">
+          {colorVal()}
         </span>
       </div>
     </div>
   );
-};
+}
 
 /**
  * Strategy 5: StringControlStrategy
  * Renders a compact text input field.
  */
-export const StringControlStrategy: React.FC<ControlStrategyProps> = ({
-  descriptor,
-  value,
-  onChange,
-  disabled = false,
-}) => {
-  const isMultiLine = descriptor.key === 'text' || (descriptor as any).type === 'textarea';
+export function StringControlStrategy(props: ControlStrategyProps) {
+  const isMultiLine = () => props.descriptor.key === 'text' || (props.descriptor as any).type === 'textarea';
 
   return (
-    <div className={`space-y-1 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
-      <span className="text-[11px] font-medium text-foreground/90 block">
-        {descriptor.label}
+    <div class={`space-y-1 ${props.disabled ? 'opacity-50 pointer-events-none' : ''}`}>
+      <span class="text-[11px] font-medium text-foreground/90 block">
+        {props.descriptor.label}
       </span>
-      {isMultiLine ? (
+      <Show
+        when={isMultiLine()}
+        fallback={
+          <Input
+            type="text"
+            disabled={props.disabled}
+            value={String(props.value ?? props.descriptor.defaultValue ?? '')}
+            onInput={(e) => !props.disabled && props.onChange(e.currentTarget.value)}
+            class="w-full h-7 px-2 text-xs font-mono rounded border border-glass-border bg-glass-surface text-foreground disabled:cursor-not-allowed"
+          />
+        }
+      >
         <Textarea
-          disabled={disabled}
-          value={String(value ?? descriptor.defaultValue ?? '')}
-          onChange={(e) => !disabled && onChange(e.target.value)}
+          disabled={props.disabled}
+          value={String(props.value ?? props.descriptor.defaultValue ?? '')}
+          onInput={(e) => !props.disabled && props.onChange(e.currentTarget.value)}
           rows={3}
           placeholder="Enter text..."
-          className="w-full min-h-[64px] p-2 text-xs font-mono rounded border border-glass-border bg-glass-surface text-foreground disabled:cursor-not-allowed resize-y"
+          class="w-full min-h-[64px] p-2 text-xs font-mono rounded border border-glass-border bg-glass-surface text-foreground disabled:cursor-not-allowed resize-y"
         />
-      ) : (
-        <Input
-          type="text"
-          disabled={disabled}
-          value={String(value ?? descriptor.defaultValue ?? '')}
-          onChange={(e) => !disabled && onChange(e.target.value)}
-          className="w-full h-7 px-2 text-xs font-mono rounded border border-glass-border bg-glass-surface text-foreground disabled:cursor-not-allowed"
-        />
-      )}
+      </Show>
     </div>
   );
-};
+}
 
 /**
  * Strategy 7: CurveControlStrategy
  * Renders GSAP easing curve preview and selector with animated travel path.
  */
-export const CurveControlStrategy: React.FC<ControlStrategyProps> = ({
-  value,
-  onChange,
-}) => {
+export function CurveControlStrategy(props: ControlStrategyProps) {
   return (
-    <div className="pt-1">
+    <div class="pt-1">
       <EasingCurveSelector
-        value={typeof value === 'string' ? value : 'power2.out'}
-        onChange={(ease) => onChange(ease)}
+        value={typeof props.value === 'string' ? props.value : 'power2.out'}
+        onChange={(ease) => props.onChange(ease)}
       />
     </div>
   );
-};
+}

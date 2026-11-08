@@ -5,7 +5,7 @@ import {
   DEFAULT_THEME_PREFERENCES,
   THEME_STORAGE_KEY,
   type ThemePreferences,
-} from '../apps/studio/src/lib/theme/ThemeProvider';
+} from '../apps/studio/src/lib/theme/themePresets';
 
 describe('Studio Liquid Glass Theme System & Design Tokens', () => {
   describe('Theme Tokens & CSS Specification Integrity', () => {

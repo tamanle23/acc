@@ -1,41 +1,39 @@
-import * as React from "react"
-import { cn } from "cn"
-import { HoverCard as HoverCardPrimitive } from "radix-ui"
+import { splitProps, type ComponentProps, type JSX } from "solid-js";
+import { HoverCard as HoverCardPrimitive } from "@kobalte/core/hover-card";
+import { cn } from "cn";
 
-function HoverCard({
-  ...props
-}: React.ComponentProps<typeof HoverCardPrimitive.Root>) {
-  return <HoverCardPrimitive.Root data-slot="hover-card" {...props} />
+function HoverCard(props: ComponentProps<typeof HoverCardPrimitive.Root> & { [key: string]: any }) {
+  return <HoverCardPrimitive.Root data-slot="hover-card" {...props} />;
 }
 
-function HoverCardTrigger({
-  ...props
-}: React.ComponentProps<typeof HoverCardPrimitive.Trigger>) {
-  return (
-    <HoverCardPrimitive.Trigger data-slot="hover-card-trigger" {...props} />
-  )
+function HoverCardTrigger(props: ComponentProps<typeof HoverCardPrimitive.Trigger> & { class?: string; className?: string; [key: string]: any }) {
+  const [local, rest] = splitProps(props, ["class", "className"]);
+  return <HoverCardPrimitive.Trigger data-slot="hover-card-trigger" class={local.class || local.className} {...rest} />;
 }
 
-function HoverCardContent({
-  className,
-  align = "center",
-  sideOffset = 4,
-  ...props
-}: React.ComponentProps<typeof HoverCardPrimitive.Content>) {
+function HoverCardContent(props: ComponentProps<typeof HoverCardPrimitive.Content> & {
+  class?: string;
+  className?: string;
+  children?: JSX.Element;
+  sideOffset?: number;
+  [key: string]: any;
+}) {
+  const [local, rest] = splitProps(props, ["class", "className", "children", "sideOffset"]);
+
   return (
     <HoverCardPrimitive.Portal data-slot="hover-card-portal">
       <HoverCardPrimitive.Content
         data-slot="hover-card-content"
-        align={align}
-        sideOffset={sideOffset}
-        className={cn(
-          "z-50 w-72 origin-(--radix-hover-card-content-transform-origin) rounded-3xl bg-popover p-4 text-sm text-popover-foreground shadow-lg ring-1 ring-foreground/5 outline-hidden duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 dark:ring-foreground/10 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
-          className
+        class={cn(
+          "z-50 w-72 rounded-3xl bg-popover p-4 text-sm text-popover-foreground shadow-lg ring-1 ring-foreground/5 outline-none duration-100 dark:ring-foreground/10",
+          local.class || local.className
         )}
-        {...props}
-      />
+        {...rest}
+      >
+        {local.children}
+      </HoverCardPrimitive.Content>
     </HoverCardPrimitive.Portal>
-  )
+  );
 }
 
-export { HoverCard, HoverCardTrigger, HoverCardContent }
+export { HoverCard, HoverCardTrigger, HoverCardContent };

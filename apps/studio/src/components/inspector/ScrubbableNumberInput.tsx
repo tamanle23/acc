@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { createSignal, createEffect, onCleanup, Show } from 'solid-js';
 import { Input } from '../ui/input';
 
 export interface ScrubbableNumberInputProps {
@@ -11,6 +11,7 @@ export interface ScrubbableNumberInputProps {
   label?: string;
   defaultValue?: number;
   onChange: (value: number) => void;
+  class?: string;
   className?: string;
 }
 
@@ -23,11 +24,23 @@ export function evaluateSafeMathExpression(expr: string, baseValue: number): num
   if (!trimmed) return null;
 
   // Relative prefix: e.g. "+50" or "-25"
-  if (trimmed.startsWith('+') && !trimmed.slice(1).includes('+') && !trimmed.slice(1).includes('-') && !trimmed.slice(1).includes('*') && !trimmed.slice(1).includes('/')) {
+  if (
+    trimmed.startsWith('+') &&
+    !trimmed.slice(1).includes('+') &&
+    !trimmed.slice(1).includes('-') &&
+    !trimmed.slice(1).includes('*') &&
+    !trimmed.slice(1).includes('/')
+  ) {
     const delta = parseFloat(trimmed.slice(1));
     return Number.isNaN(delta) ? null : baseValue + delta;
   }
-  if (trimmed.startsWith('-') && !trimmed.slice(1).includes('+') && !trimmed.slice(1).includes('-') && !trimmed.slice(1).includes('*') && !trimmed.slice(1).includes('/')) {
+  if (
+    trimmed.startsWith('-') &&
+    !trimmed.slice(1).includes('+') &&
+    !trimmed.slice(1).includes('-') &&
+    !trimmed.slice(1).includes('*') &&
+    !trimmed.slice(1).includes('/')
+  ) {
     const delta = parseFloat(trimmed.slice(1));
     return Number.isNaN(delta) ? null : baseValue - delta;
   }
@@ -89,63 +102,54 @@ export function evaluateSafeMathExpression(expr: string, baseValue: number): num
  * - Double-click input to type direct text with safe math evaluation.
  * - Double-click label to reset to defaultValue.
  */
-export const ScrubbableNumberInput: React.FC<ScrubbableNumberInputProps> = ({
-  value,
-  min = -Infinity,
-  max = Infinity,
-  step = 1,
-  unit = '',
-  disabled = false,
-  label,
-  defaultValue,
-  onChange,
-  className = '',
-}) => {
-  const [localText, setLocalText] = useState(String(value));
-  const [isEditing, setIsEditing] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const startXRef = useRef<number>(0);
-  const startValRef = useRef<number>(value);
-  const inputRef = useRef<HTMLInputElement>(null);
+export function ScrubbableNumberInput(props: ScrubbableNumberInputProps) {
+  const [localText, setLocalText] = createSignal(String(props.value));
+  const [isEditing, setIsEditing] = createSignal(false);
+  const [isDragging, setIsDragging] = createSignal(false);
 
-  useEffect(() => {
-    if (!isEditing) {
-      setLocalText(String(value));
+  let inputRef: HTMLInputElement | undefined;
+
+  createEffect(() => {
+    if (!isEditing()) {
+      setLocalText(String(props.value));
     }
-  }, [value, isEditing]);
+  });
 
-  const roundToStep = useCallback((val: number, stepVal: number): number => {
+  const roundToStep = (val: number, stepVal: number): number => {
     const decimals = stepVal.toString().split('.')[1]?.length || 0;
     const factor = 10 ** Math.min(decimals, 4);
     return Math.round(val * factor) / factor;
-  }, []);
+  };
 
-  const clampValue = useCallback((val: number): number => {
+  const clampValue = (val: number): number => {
+    const min = props.min ?? -Infinity;
+    const max = props.max ?? Infinity;
     return Math.max(min, Math.min(max, val));
-  }, [min, max]);
+  };
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (disabled || isEditing) return;
+  const handleMouseDown = (e: MouseEvent) => {
+    if (props.disabled || isEditing()) return;
     // Only primary mouse button initiates drag scrub
     if (e.button !== 0) return;
 
     e.preventDefault();
     setIsDragging(true);
-    startXRef.current = e.clientX;
-    startValRef.current = value;
+    const startX = e.clientX;
+    const startVal = props.value;
     document.body.style.cursor = 'ew-resize';
     document.body.style.userSelect = 'none';
 
     const handleMouseMove = (moveEvent: MouseEvent) => {
-      const deltaX = moveEvent.clientX - startXRef.current;
+      const deltaX = moveEvent.clientX - startX;
       let multiplier = 1;
       if (moveEvent.shiftKey) multiplier = 10;
       else if (moveEvent.altKey || moveEvent.metaKey) multiplier = 0.1;
 
+      const step = props.step ?? 1;
       const increment = deltaX * step * multiplier;
-      const rawNewVal = startValRef.current + increment;
+      const rawNewVal = startVal + increment;
       const rounded = roundToStep(clampValue(rawNewVal), step * multiplier);
-      onChange(rounded);
+      props.onChange(rounded);
     };
 
     const handleMouseUp = () => {
@@ -161,90 +165,91 @@ export const ScrubbableNumberInput: React.FC<ScrubbableNumberInputProps> = ({
   };
 
   const handleDoubleClick = () => {
-    if (disabled) return;
+    if (props.disabled) return;
     setIsEditing(true);
     setTimeout(() => {
-      inputRef.current?.focus();
-      inputRef.current?.select();
+      inputRef?.focus();
+      inputRef?.select();
     }, 10);
   };
 
   const handleInputBlur = () => {
     setIsEditing(false);
-    const evaluated = evaluateSafeMathExpression(localText, value);
+    const evaluated = evaluateSafeMathExpression(localText(), props.value);
+    const step = props.step ?? 1;
     if (evaluated !== null && !Number.isNaN(evaluated)) {
       const clamped = clampValue(roundToStep(evaluated, step));
-      onChange(clamped);
+      props.onChange(clamped);
       setLocalText(String(clamped));
     } else {
-      setLocalText(String(value));
+      setLocalText(String(props.value));
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: KeyboardEvent) => {
     if (e.key === 'Enter') {
-      inputRef.current?.blur();
+      inputRef?.blur();
     } else if (e.key === 'Escape') {
-      setLocalText(String(value));
+      setLocalText(String(props.value));
       setIsEditing(false);
     }
   };
 
   return (
-    <div className={`flex items-center gap-1.5 select-none ${className}`}>
-      {label && (
+    <div class={`flex items-center gap-1.5 select-none ${props.class || props.className || ''}`}>
+      <Show when={props.label}>
         <span
           onDoubleClick={() => {
-            if (!disabled && defaultValue !== undefined) {
-              onChange(defaultValue);
+            if (!props.disabled && props.defaultValue !== undefined) {
+              props.onChange(props.defaultValue);
             }
           }}
-          className={`text-[11px] text-muted-foreground transition-colors ${
-            disabled
+          class={`text-[11px] text-muted-foreground transition-colors ${
+            props.disabled
               ? 'cursor-not-allowed opacity-50'
               : 'hover:text-accent-theme cursor-pointer'
           }`}
-          title={defaultValue !== undefined ? `Double-click to reset (${defaultValue})` : undefined}
+          title={props.defaultValue !== undefined ? `Double-click to reset (${props.defaultValue})` : undefined}
         >
-          {label}
+          {props.label}
         </span>
-      )}
+      </Show>
 
       <div
-        onMouseDown={!isEditing ? handleMouseDown : undefined}
+        onMouseDown={!isEditing() ? handleMouseDown : undefined}
         onDoubleClick={handleDoubleClick}
-        className={`relative flex items-center h-6 rounded border border-glass-border bg-glass-surface/50 px-1.5 transition-all ${
-          disabled
+        class={`relative flex items-center h-6 rounded border border-glass-border bg-glass-surface/50 px-1.5 transition-all ${
+          props.disabled
             ? 'opacity-40 cursor-not-allowed'
-            : isDragging
-            ? 'border-accent-theme/80 bg-accent-theme/10 cursor-ew-resize ring-1 ring-accent-theme/40'
-            : 'hover:border-accent-theme/40 hover:bg-glass-surface cursor-ew-resize'
+            : isDragging()
+              ? 'border-accent-theme/80 bg-accent-theme/10 cursor-ew-resize ring-1 ring-accent-theme/40'
+              : 'hover:border-accent-theme/40 hover:bg-glass-surface cursor-ew-resize'
         }`}
         title={
-          disabled
+          props.disabled
             ? undefined
             : 'Click and drag to scrub (Shift: 10x, Alt: 0.1x). Double-click to type or enter math (e.g. 100/2).'
         }
       >
-        <Input
+        <input
           ref={inputRef}
           type="text"
-          disabled={disabled}
-          readOnly={!isEditing}
-          value={localText}
-          onChange={(e) => setLocalText(e.target.value)}
+          disabled={props.disabled}
+          readOnly={!isEditing()}
+          value={localText()}
+          onInput={(e) => setLocalText(e.currentTarget.value)}
           onBlur={handleInputBlur}
           onKeyDown={handleKeyDown}
-          className={`h-5 w-14 border-0 p-0 text-right font-mono text-[10px] bg-transparent text-foreground shadow-none focus-visible:ring-0 ${
-            !isEditing ? 'cursor-ew-resize pointer-events-none' : 'cursor-text'
+          class={`h-5 w-14 border-0 p-0 text-right font-mono text-[10px] bg-transparent text-foreground shadow-none focus-visible:ring-0 outline-none ${
+            !isEditing() ? 'cursor-ew-resize pointer-events-none' : 'cursor-text'
           }`}
         />
-        {unit && (
-          <span className="ml-1 font-mono text-[9px] text-muted-foreground shrink-0">
-            {unit}
+        <Show when={props.unit}>
+          <span class="ml-1 font-mono text-[9px] text-muted-foreground shrink-0">
+            {props.unit}
           </span>
-        )}
+        </Show>
       </div>
     </div>
   );
-};
+}

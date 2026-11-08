@@ -1,8 +1,17 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Copy, Check, FileCode2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, RefreshCw } from 'lucide-react';
+import { createSignal, createEffect, onCleanup, createMemo, Show, For } from 'solid-js';
+import {
+  Copy,
+  Check,
+  FileCode2,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  RefreshCw,
+} from 'lucide-solid';
 import { Button } from '../../ui/button';
 import { formatOpfsBytes } from '@acc/core-web';
-import { toast } from 'sonner';
+import { toast } from '../../ui/sonner';
 
 interface OpfsHexViewerProps {
   blob?: Blob | null;
@@ -10,26 +19,31 @@ interface OpfsHexViewerProps {
   maxChunkSize?: number;
 }
 
-export function OpfsHexViewer({
-  blob,
-  fallbackBytes,
-  maxChunkSize = 2048,
-}: OpfsHexViewerProps) {
-  const [offset, setOffset] = useState<number>(0);
-  const [chunkSize, setChunkSize] = useState<number>(maxChunkSize);
-  const [currentBytes, setCurrentBytes] = useState<Uint8Array | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [copied, setCopied] = useState<boolean>(false);
+export function OpfsHexViewer(props: OpfsHexViewerProps) {
+  const maxChunk = () => props.maxChunkSize || 2048;
+  const [offset, setOffset] = createSignal<number>(0);
+  const [chunkSize, setChunkSize] = createSignal<number>(maxChunk());
+  const [currentBytes, setCurrentBytes] = createSignal<Uint8Array | null>(null);
+  const [isLoading, setIsLoading] = createSignal<boolean>(false);
+  const [copied, setCopied] = createSignal<boolean>(false);
 
-  const totalSize = blob ? blob.size : fallbackBytes ? fallbackBytes.byteLength : 0;
+  const totalSize = createMemo(() => {
+    if (props.blob) return props.blob.size;
+    if (props.fallbackBytes) return props.fallbackBytes.byteLength;
+    return 0;
+  });
 
   // Lazily slice and load only the requested chunk
-  useEffect(() => {
+  createEffect(() => {
     let cancelled = false;
+    const blob = props.blob;
+    const fallback = props.fallbackBytes;
+    const curOffset = offset();
+    const curChunk = chunkSize();
 
     async function loadChunk() {
-      if (fallbackBytes) {
-        const slice = fallbackBytes.slice(offset, offset + chunkSize);
+      if (fallback) {
+        const slice = fallback.slice(curOffset, curOffset + curChunk);
         setCurrentBytes(slice);
         return;
       }
@@ -41,8 +55,8 @@ export function OpfsHexViewer({
 
       setIsLoading(true);
       try {
-        const end = Math.min(blob.size, offset + chunkSize);
-        const sliceBlob = blob.slice(offset, end);
+        const end = Math.min(blob.size, curOffset + curChunk);
+        const sliceBlob = blob.slice(curOffset, end);
         const ab = await sliceBlob.arrayBuffer();
         if (!cancelled) {
           setCurrentBytes(new Uint8Array(ab));
@@ -60,18 +74,21 @@ export function OpfsHexViewer({
 
     loadChunk();
 
-    return () => {
+    onCleanup(() => {
       cancelled = true;
-    };
-  }, [blob, fallbackBytes, offset, chunkSize]);
+    });
+  });
 
   // When blob changes, reset offset to 0
-  useEffect(() => {
+  createEffect(() => {
+    // track props.blob
+    const _ = props.blob;
     setOffset(0);
-  }, [blob]);
+  });
 
-  const rows = useMemo(() => {
-    if (!currentBytes || currentBytes.length === 0) return [];
+  const rows = createMemo(() => {
+    const bytes = currentBytes();
+    if (!bytes || bytes.length === 0) return [];
     const result: Array<{
       offset: string;
       hexGroup1: string[];
@@ -79,9 +96,10 @@ export function OpfsHexViewer({
       ascii: string;
     }> = [];
 
-    const len = currentBytes.length;
+    const len = bytes.length;
+    const baseOffset = offset();
     for (let i = 0; i < len; i += 16) {
-      const globalOffset = offset + i;
+      const globalOffset = baseOffset + i;
       const offsetHex = globalOffset.toString(16).padStart(8, '0');
       const hexGroup1: string[] = [];
       const hexGroup2: string[] = [];
@@ -90,7 +108,7 @@ export function OpfsHexViewer({
       for (let j = 0; j < 16; j++) {
         const idx = i + j;
         if (idx < len) {
-          const byte = currentBytes[idx];
+          const byte = bytes[idx];
           const hex = byte.toString(16).padStart(2, '0');
           if (j < 8) {
             hexGroup1.push(hex);
@@ -111,11 +129,12 @@ export function OpfsHexViewer({
       result.push({ offset: offsetHex, hexGroup1, hexGroup2, ascii });
     }
     return result;
-  }, [currentBytes, offset]);
+  });
 
   const handleCopyHex = () => {
-    if (!currentBytes) return;
-    const hexString = Array.from(currentBytes)
+    const bytes = currentBytes();
+    if (!bytes) return;
+    const hexString = Array.from(bytes)
       .map((b) => b.toString(16).padStart(2, '0'))
       .join(' ');
     navigator.clipboard.writeText(hexString);
@@ -125,14 +144,14 @@ export function OpfsHexViewer({
   };
 
   const handleNextChunk = () => {
-    const nextOffset = offset + chunkSize;
-    if (nextOffset < totalSize) {
+    const nextOffset = offset() + chunkSize();
+    if (nextOffset < totalSize()) {
       setOffset(nextOffset);
     }
   };
 
   const handlePrevChunk = () => {
-    const prevOffset = Math.max(0, offset - chunkSize);
+    const prevOffset = Math.max(0, offset() - chunkSize());
     setOffset(prevOffset);
   };
 
@@ -141,120 +160,130 @@ export function OpfsHexViewer({
   };
 
   const handleJumpEnd = () => {
-    if (totalSize <= 0) return;
-    const lastOffset = Math.max(0, Math.floor((totalSize - 1) / chunkSize) * chunkSize);
+    const total = totalSize();
+    if (total <= 0) return;
+    const lastOffset = Math.max(0, Math.floor((total - 1) / chunkSize()) * chunkSize());
     setOffset(lastOffset);
   };
 
-  const currentEnd = Math.min(totalSize, offset + chunkSize);
+  const currentEnd = () => Math.min(totalSize(), offset() + chunkSize());
 
   return (
-    <div className="flex flex-col h-full bg-slate-950/80 rounded-xl border border-slate-800/80 overflow-hidden font-mono text-[11px] select-text">
+    <div class="flex flex-col h-full bg-slate-950/80 rounded-xl border border-slate-800/80 overflow-hidden font-mono text-[11px] select-text">
       {/* Hex Toolbar */}
-      <div className="flex items-center justify-between px-3 py-2 bg-slate-900/90 border-b border-slate-800 text-slate-400 gap-2 flex-wrap">
-        <div className="flex items-center gap-2">
-          <FileCode2 className="w-3.5 h-3.5 text-cyan-400" />
-          <span className="font-semibold text-slate-300">
-            Hex Stream ({offset.toLocaleString()} – {currentEnd.toLocaleString()} of {formatOpfsBytes(totalSize)})
+      <div class="flex items-center justify-between px-3 py-2 bg-slate-900/90 border-b border-slate-800 text-slate-400 gap-2 flex-wrap">
+        <div class="flex items-center gap-2">
+          <FileCode2 class="w-3.5 h-3.5 text-cyan-400" />
+          <span class="font-semibold text-slate-300">
+            Hex Stream ({offset().toLocaleString()} – {currentEnd().toLocaleString()} of {formatOpfsBytes(totalSize())})
           </span>
-          {isLoading && <RefreshCw className="w-3 h-3 text-cyan-400 animate-spin" />}
+          <Show when={isLoading()}>
+            <RefreshCw class="w-3 h-3 text-cyan-400 animate-spin" />
+          </Show>
         </div>
 
         {/* Chunk Navigation & Controls */}
-        <div className="flex items-center gap-1.5">
+        <div class="flex items-center gap-1.5">
           <Button
             variant="ghost"
             size="sm"
             onClick={handleJumpStart}
-            disabled={offset === 0 || isLoading}
+            disabled={offset() === 0 || isLoading()}
             title="First chunk"
-            className="h-6 w-6 p-0 text-slate-400 hover:text-slate-100 disabled:opacity-30"
+            class="h-6 w-6 p-0 text-slate-400 hover:text-slate-100 disabled:opacity-30"
           >
-            <ChevronsLeft className="w-3.5 h-3.5" />
+            <ChevronsLeft class="w-3.5 h-3.5" />
           </Button>
           <Button
             variant="ghost"
             size="sm"
             onClick={handlePrevChunk}
-            disabled={offset === 0 || isLoading}
+            disabled={offset() === 0 || isLoading()}
             title="Previous chunk"
-            className="h-6 w-6 p-0 text-slate-400 hover:text-slate-100 disabled:opacity-30"
+            class="h-6 w-6 p-0 text-slate-400 hover:text-slate-100 disabled:opacity-30"
           >
-            <ChevronLeft className="w-3.5 h-3.5" />
+            <ChevronLeft class="w-3.5 h-3.5" />
           </Button>
 
-          <span className="text-[10px] text-slate-400 px-1">
-            {formatOpfsBytes(chunkSize)} / window
+          <span class="text-[10px] text-slate-400 px-1">
+            {formatOpfsBytes(chunkSize())} / window
           </span>
 
           <Button
             variant="ghost"
             size="sm"
             onClick={handleNextChunk}
-            disabled={currentEnd >= totalSize || isLoading}
+            disabled={currentEnd() >= totalSize() || isLoading()}
             title="Next chunk"
-            className="h-6 w-6 p-0 text-slate-400 hover:text-slate-100 disabled:opacity-30"
+            class="h-6 w-6 p-0 text-slate-400 hover:text-slate-100 disabled:opacity-30"
           >
-            <ChevronRight className="w-3.5 h-3.5" />
+            <ChevronRight class="w-3.5 h-3.5" />
           </Button>
           <Button
             variant="ghost"
             size="sm"
             onClick={handleJumpEnd}
-            disabled={currentEnd >= totalSize || isLoading}
+            disabled={currentEnd() >= totalSize() || isLoading()}
             title="Last chunk"
-            className="h-6 w-6 p-0 text-slate-400 hover:text-slate-100 disabled:opacity-30"
+            class="h-6 w-6 p-0 text-slate-400 hover:text-slate-100 disabled:opacity-30"
           >
-            <ChevronsRight className="w-3.5 h-3.5" />
+            <ChevronsRight class="w-3.5 h-3.5" />
           </Button>
 
-          <div className="h-3 w-px bg-slate-800 mx-1" />
+          <div class="h-3 w-px bg-slate-800 mx-1" />
 
           <Button
             variant="ghost"
             size="sm"
             onClick={handleCopyHex}
-            disabled={!currentBytes || currentBytes.length === 0}
-            className="h-6 text-[10px] px-2 text-slate-400 hover:text-slate-100 hover:bg-slate-800 gap-1"
+            disabled={!currentBytes() || currentBytes()!.length === 0}
+            class="h-6 text-[10px] px-2 text-slate-400 hover:text-slate-100 hover:bg-slate-800 gap-1"
           >
-            {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-            {copied ? 'Copied' : 'Copy'}
+            <Show when={copied()} fallback={<Copy class="w-3 h-3" />}>
+              <Check class="w-3 h-3 text-emerald-400" />
+            </Show>
+            {copied() ? 'Copied' : 'Copy'}
           </Button>
         </div>
       </div>
 
       {/* Hex Stream Container */}
-      <div className="flex-1 overflow-auto p-3 leading-5">
-        {rows.length > 0 ? (
-          <table className="w-full border-collapse">
+      <div class="flex-1 overflow-auto p-3 leading-5">
+        <Show
+          when={rows().length > 0}
+          fallback={
+            <div class="flex items-center justify-center h-full text-muted-foreground text-xs">
+              {isLoading() ? 'Streaming bytes from OPFS...' : 'Empty file or no data available.'}
+            </div>
+          }
+        >
+          <table class="w-full border-collapse">
             <thead>
-              <tr className="text-slate-500 border-b border-slate-800/60 pb-1 text-left select-none">
-                <th className="pr-4 font-normal w-20">Offset</th>
-                <th className="pr-4 font-normal">00 01 02 03 04 05 06 07  08 09 0A 0B 0C 0D 0E 0F</th>
-                <th className="pl-4 font-normal">Decoded Text</th>
+              <tr class="text-slate-500 border-b border-slate-800/60 pb-1 text-left select-none">
+                <th class="pr-4 font-normal w-20">Offset</th>
+                <th class="pr-4 font-normal">00 01 02 03 04 05 06 07  08 09 0A 0B 0C 0D 0E 0F</th>
+                <th class="pl-4 font-normal">Decoded Text</th>
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => (
-                <tr key={row.offset} className="hover:bg-slate-900/60 transition-colors">
-                  <td className="text-cyan-500/80 pr-4 select-none font-bold">{row.offset}</td>
-                  <td className="pr-4 text-slate-300 tracking-wider">
-                    <span className="text-cyan-300">{row.hexGroup1.join(' ')}</span>
-                    <span className="text-slate-600 mx-1.5">|</span>
-                    <span className="text-slate-400">{row.hexGroup2.join(' ')}</span>
-                  </td>
-                  <td className="pl-4 text-emerald-400/90 whitespace-pre border-l border-slate-800/80">
-                    {row.ascii}
-                  </td>
-                </tr>
-              ))}
+              <For items={rows()}>
+                {(row) => (
+                  <tr class="hover:bg-slate-900/60 transition-colors">
+                    <td class="text-cyan-500/80 pr-4 select-none font-bold">{row.offset}</td>
+                    <td class="pr-4 text-slate-300 tracking-wider">
+                      <span class="text-cyan-300">{row.hexGroup1.join(' ')}</span>
+                      <span class="text-slate-600 mx-1.5">|</span>
+                      <span class="text-slate-400">{row.hexGroup2.join(' ')}</span>
+                    </td>
+                    <td class="pl-4 text-emerald-400/90 whitespace-pre border-l border-slate-800/80">
+                      {row.ascii}
+                    </td>
+                  </tr>
+                )}
+              </For>
             </tbody>
           </table>
-        ) : (
-          <div className="flex items-center justify-center h-full text-muted-foreground text-xs">
-            {isLoading ? 'Streaming bytes from OPFS...' : 'Empty file or no data available.'}
-          </div>
-        )}
+        </Show>
       </div>
     </div>
   );

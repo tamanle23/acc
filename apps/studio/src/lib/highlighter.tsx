@@ -1,21 +1,21 @@
-import * as React from "react"
+import type { JSX } from "solid-js";
 import {
   createHighlighterCore,
   type GrammarState,
   type HighlighterCore,
-} from "shiki/core"
-import { createJavaScriptRegexEngine } from "shiki/engine/javascript"
+} from "shiki/core";
+import { createJavaScriptRegexEngine } from "shiki/engine/javascript";
 
 // Add the languages you need. Each one loads the first time it is used.
 const languages = {
   json: () => import("shiki/langs/json.mjs"),
-}
+};
 
 const aliases: Record<string, keyof typeof languages> = {
   jsonc: "json",
-}
+};
 
-let highlighter: Promise<HighlighterCore> | undefined
+let highlighter: Promise<HighlighterCore> | undefined;
 
 function getHighlighter() {
   highlighter ??= createHighlighterCore({
@@ -25,42 +25,42 @@ function getHighlighter() {
     ],
     langs: [],
     engine: createJavaScriptRegexEngine({ forgiving: true }),
-  })
+  });
 
-  return highlighter
+  return highlighter;
 }
 
 function getLanguage(language: string) {
-  const name = language.toLowerCase()
+  const name = language.toLowerCase();
 
   if (name === "ansi") {
-    return name
+    return name;
   }
 
   if (name in languages) {
-    return name as keyof typeof languages
+    return name as keyof typeof languages;
   }
 
-  return aliases[name] ?? null
+  return aliases[name] ?? null;
 }
 
 // Loads a language and returns a highlighter for it, or null for a language
 // that is not listed.
 export async function loadHighlighter(language: string) {
-  const lang = getLanguage(language)
+  const lang = getLanguage(language);
 
   if (!lang) {
-    return null
+    return null;
   }
 
-  const shiki = await getHighlighter()
+  const shiki = await getHighlighter();
 
   if (lang !== "ansi" && !shiki.getLoadedLanguages().includes(lang)) {
-    await shiki.loadLanguage(languages[lang])
+    await shiki.loadLanguage(languages[lang]);
   }
 
   return {
-    // Returns one React node per line, and the grammar state after the last
+    // Returns one Solid node per line, and the grammar state after the last
     // line. Pass that state back to continue where the code left off.
     highlight(code: string, state?: GrammarState) {
       const tokenize = (text: string) =>
@@ -69,36 +69,35 @@ export async function loadHighlighter(language: string) {
           themes: { light: "github-light", dark: "github-dark" },
           defaultColor: false,
           grammarState: state,
-        }).tokens
+        }).tokens;
 
       // ANSI has no grammar state, so each line is tokenized on its own and
       // gets the same colors whether it arrives in one piece or streams.
       const tokens =
         lang === "ansi"
           ? code.split("\n").flatMap((line) => tokenize(line))
-          : tokenize(code)
+          : tokenize(code);
 
       return {
         lines: tokens.map((line) =>
-          line.map((token, index) => (
+          line.map((token) => (
             <span
-              key={index}
-              style={token.htmlStyle as React.CSSProperties}
-              className="text-(--shiki-light) dark:text-(--shiki-dark)"
+              style={token.htmlStyle as JSX.CSSProperties}
+              class="text-(--shiki-light) dark:text-(--shiki-dark)"
             >
               {token.content}
             </span>
           ))
         ),
         state: shiki.getLastGrammarState(tokens),
-      }
+      };
     },
-  }
+  };
 }
 
-// Returns one React node per line, or null for a language that is not listed.
+// Returns one Solid node per line, or null for a language that is not listed.
 export async function highlightCode(code: string, language: string) {
-  const highlighter = await loadHighlighter(language)
+  const highlighter = await loadHighlighter(language);
 
-  return highlighter ? highlighter.highlight(code).lines : null
+  return highlighter ? highlighter.highlight(code).lines : null;
 }

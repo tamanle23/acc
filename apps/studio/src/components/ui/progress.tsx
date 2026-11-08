@@ -1,30 +1,39 @@
-"use client"
+import { splitProps, type ComponentProps } from "solid-js";
+import { Progress as ProgressPrimitive } from "@kobalte/core/progress";
+import { cn } from "cn";
 
-import * as React from "react"
-import { cn } from "cn"
-import { Progress as ProgressPrimitive } from "radix-ui"
-
-function Progress({
-  className,
-  value,
-  ...props
-}: React.ComponentProps<typeof ProgressPrimitive.Root>) {
-  return (
-    <ProgressPrimitive.Root
-      data-slot="progress"
-      className={cn(
-        "relative flex h-3 w-full items-center overflow-x-hidden rounded-full bg-muted",
-        className
-      )}
-      {...props}
-    >
-      <ProgressPrimitive.Indicator
-        data-slot="progress-indicator"
-        className="size-full flex-1 bg-primary transition-all"
-        style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
-      />
-    </ProgressPrimitive.Root>
-  )
+export interface ProgressProps {
+  class?: string;
+  className?: string;
+  value?: number;
+  minValue?: number;
+  maxValue?: number;
+  [key: string]: any;
 }
 
-export { Progress }
+function Progress(props: ProgressProps) {
+  const [local, rest] = splitProps(props, ["class", "className", "value", "minValue", "maxValue"]);
+
+  return (
+    <ProgressPrimitive.Root
+      value={local.value ?? 0}
+      minValue={local.minValue ?? 0}
+      maxValue={local.maxValue ?? 100}
+      data-slot="progress"
+      class={cn(
+        "relative flex h-3 w-full items-center overflow-x-hidden rounded-full bg-muted",
+        local.class || local.className
+      )}
+      {...rest}
+    >
+      <ProgressPrimitive.Track class="w-full h-full">
+        <ProgressPrimitive.Fill
+          data-slot="progress-indicator"
+          class="h-full bg-primary transition-all rounded-full"
+        />
+      </ProgressPrimitive.Track>
+    </ProgressPrimitive.Root>
+  );
+}
+
+export { Progress };
