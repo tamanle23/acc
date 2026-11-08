@@ -312,7 +312,7 @@ export function Timeline(props: TimelineProps) {
   });
 
   return (
-    <footer class="h-full glass-panel border-t border-border/50 flex flex-col select-none shadow-glass z-10 shrink-0">
+    <footer class="h-full min-h-0 overflow-hidden glass-panel border-t border-border/50 flex flex-col select-none shadow-glass z-10 shrink-0">
       {/* 1. Pro Transport & Utility Bar */}
       <Toolbar
         activeTool={activeTool()}
@@ -337,7 +337,7 @@ export function Timeline(props: TimelineProps) {
         onMouseDown={handleTimelineMouseDown}
         onMouseMove={handleTimelineMouseMove}
         onMouseUp={handleTimelineMouseUp}
-        class={`flex-1 overflow-x-auto overflow-y-auto relative select-none ${
+        class={`flex-1 min-h-0 overflow-x-auto overflow-y-auto relative select-none ${
           activeTool() === 'hand' ? 'cursor-grab active:cursor-grabbing' : ''
         }`}
       >

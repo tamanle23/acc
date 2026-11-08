@@ -314,7 +314,7 @@ export function LeftSidebar(props: LeftSidebarProps) {
   };
 
   return (
-    <div class="flex h-full select-none z-10 shrink-0">
+    <div class="flex h-full min-h-0 select-none z-10 shrink-0">
       {/* 1. 48px Enterprise Activity Rail */}
       <SidebarActivityRail
         isOpen={props.isOpen}
@@ -326,7 +326,7 @@ export function LeftSidebar(props: LeftSidebarProps) {
 
       {/* 2. 300px Slide-out Drawer */}
       <Show when={props.isOpen}>
-        <aside class="w-[300px] glass-panel border-r border-border/50 flex flex-col h-full shadow-glass">
+        <aside class="w-[300px] glass-panel border-r border-border/50 flex flex-col h-full min-h-0 overflow-hidden shadow-glass">
           {/* Drawer Header */}
           <div class="p-3 border-b border-border/40 bg-background/50 flex items-center justify-between">
             <div class="flex items-center gap-2">

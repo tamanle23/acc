@@ -196,7 +196,7 @@ export function RightSidebar() {
   };
 
   return (
-    <aside class="w-full glass-panel border-l border-glass-border flex flex-col h-full select-none shadow-glass z-10">
+    <aside class="w-full glass-panel border-l border-glass-border flex flex-col h-full min-h-0 overflow-hidden select-none shadow-glass z-10">
       {/* 1. Header with Multi-Tier Breadcrumbs & Global Actions */}
       <InspectorHeader
         currentMode={currentMode()}
@@ -245,7 +245,7 @@ export function RightSidebar() {
       </Show>
 
       {/* 3. Main Inspector Content Routing */}
-      <div class="flex-1 p-3 overflow-y-auto">
+      <div class="flex-1 p-3 overflow-y-auto min-h-0">
         <Switch>
           <Match when={currentMode() === 'track' && resolved().effectiveTrack}>
             <TrackInspector selectedTrack={resolved().effectiveTrack!} irState={irState()} />

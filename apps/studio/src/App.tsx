@@ -214,14 +214,14 @@ function StudioWorkspace() {
       onDragStart={dnd.handleDragStart}
       onDragEnd={dnd.handleDragEnd}
     >
-      <div class="flex flex-col h-screen select-none liquid-ambient-mesh bg-background text-foreground transition-colors duration-200">
+      <div class="flex flex-col h-screen w-screen overflow-hidden select-none liquid-ambient-mesh bg-background text-foreground transition-colors duration-200">
         <Suspense fallback={null}>
           <SettingsModal />
         </Suspense>
 
         {/* 1. Top Titlebar */}
         <Titlebar
-          projectTitle={irState.doc?.meta?.contentId || 'Untitled Project'}
+          projectTitle={irState().doc?.meta?.contentId || 'Untitled Project'}
           fps={fps()}
           currentFrame={currentFrame()}
           totalFrames={totalFrames()}
@@ -237,17 +237,17 @@ function StudioWorkspace() {
         />
 
         {/* IR Error Banner if any */}
-        <Show when={irState.error}>
-          <div class="bg-destructive/15 border-b border-destructive/30 px-6 py-2 flex items-center gap-2 text-xs text-destructive">
+        <Show when={irState().error}>
+          <div class="bg-destructive/15 border-b border-destructive/30 px-6 py-2 flex items-center gap-2 text-xs text-destructive shrink-0">
             <AlertCircle class="w-4 h-4 text-destructive shrink-0" />
-            <span class="font-mono font-medium truncate">{irState.error}</span>
+            <span class="font-mono font-medium truncate">{irState().error}</span>
           </div>
         </Show>
 
         {/* 2. Main Middle Workspace & Timeline in Resizable Vertical Layout */}
-        <ResizablePanelGroup direction="vertical" class="flex-1">
-          <ResizablePanel defaultSize="62%" minSize="30%" class="h-full">
-            <div class="flex h-full w-full overflow-hidden">
+        <ResizablePanelGroup direction="vertical" class="flex-1 min-h-0 overflow-hidden">
+          <ResizablePanel defaultSize="62%" minSize="30%" class="min-h-0 overflow-hidden">
+            <div class="flex h-full w-full min-h-0 overflow-hidden">
               <LeftSidebar
                 isOpen={isLeftOpen()}
                 onToggle={() => setIsLeftOpen(!isLeftOpen())}
@@ -268,12 +268,12 @@ function StudioWorkspace() {
               />
 
               {/* Horizontal Bento Splitting for Preview Canvas and Right Inspector */}
-              <ResizablePanelGroup direction="horizontal" class="flex-1 h-full">
+              <ResizablePanelGroup direction="horizontal" class="flex-1 h-full min-w-0 min-h-0 overflow-hidden">
                 <ResizablePanel
                   id="preview-viewport-panel"
                   defaultSize={isRightOpen() ? '72%' : '100%'}
                   minSize="40%"
-                  class="h-full"
+                  class="h-full min-w-0 min-h-0"
                 >
                   <div class="h-full w-full flex flex-col items-center justify-center p-3 relative overflow-hidden bg-background/50">
                     <Preview
@@ -318,7 +318,7 @@ function StudioWorkspace() {
                     defaultSize="28%"
                     minSize="280px"
                     maxSize="55%"
-                    class="h-full"
+                    class="h-full min-w-0 min-h-0"
                   >
                     <RightSidebar />
                   </ResizablePanel>
@@ -330,8 +330,8 @@ function StudioWorkspace() {
           <ResizableHandle withHandle />
 
           {/* 3. Bottom Timeline Scrubber */}
-          <ResizablePanel defaultSize="38%" minSize="20%" class="h-full">
-            <div class="h-full overflow-hidden">
+          <ResizablePanel defaultSize="38%" minSize="20%" class="min-h-0 overflow-hidden">
+            <div class="h-full min-h-0 overflow-hidden">
               <Timeline
                 playhead={{
                   currentFrame: currentFrame(),

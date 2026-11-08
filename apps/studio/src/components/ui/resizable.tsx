@@ -41,7 +41,7 @@ function ResizablePanelGroup(props: ResizablePanelGroupProps) {
     <Resizable
       orientation={orientation()}
       class={cn(
-        "flex h-full w-full data-[orientation=vertical]:flex-col",
+        "flex h-full w-full min-h-0 min-w-0 overflow-hidden data-[orientation=vertical]:flex-col",
         local.class || local.className
       )}
       {...rest}
@@ -87,7 +87,7 @@ function ResizablePanel(props: ResizablePanelProps) {
       minSize={minSize()}
       maxSize={maxSize()}
       collapsedSize={collapsedSize()}
-      class={cn("overflow-hidden", local.class || local.className)}
+      class={cn("min-h-0 min-w-0 overflow-hidden", local.class || local.className)}
       {...rest}
     >
       {local.children}
