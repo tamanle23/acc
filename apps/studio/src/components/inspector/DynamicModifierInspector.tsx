@@ -1,4 +1,4 @@
-import { Show, For, ErrorBoundary, type JSX } from 'solid-js';
+import { Show, For, ErrorBoundary, createMemo, type JSX } from 'solid-js';
 import {
   ModifierPluginRegistry,
   registerCoreModifierPlugins,
@@ -29,6 +29,7 @@ function ensureRegistryPopulated(registry: ModifierPluginRegistry): ModifierPlug
  * 1. Queries ModifierPluginRegistry.getInstance().getSchema(modifierType) for declarative field metadata.
  * 2. Resolves each ParamFieldDescriptor to its corresponding UI Control Strategy (Number, Switch, Select, Color, RegionsArray, String).
  * 3. Falls back to automatic reflective type inference for third-party / custom plugins without explicit schema definitions.
+ * 4. Preserves input DOM identity by keying list reconciliation across stable string keys rather than transient tuple instances.
  */
 export function DynamicModifierInspector(props: DynamicModifierInspectorProps) {
   const registry = ensureRegistryPopulated(ModifierPluginRegistry.getInstance());
@@ -42,37 +43,39 @@ export function DynamicModifierInspector(props: DynamicModifierInspectorProps) {
     });
   };
 
-  const schemaEntries = () => {
+  const schemaFieldKeys = createMemo(() => {
     const s = schema();
-    if (!s || !s.fields || Object.keys(s.fields).length === 0) return [];
-    return Object.entries(s.fields).filter(([, descriptor]) => {
-      if (typeof descriptor.visibleIf === 'function') {
-        return descriptor.visibleIf(props.params || {});
-      }
-      return true;
-    });
-  };
+    return s && s.fields ? Object.keys(s.fields) : [];
+  });
 
-  const extraRuntimeEntries = () => {
+  const extraRuntimeKeys = createMemo(() => {
     const s = schema();
     const fields = s?.fields || {};
-    return Object.entries(props.params || {}).filter(
-      ([k]) => k !== 'enabled' && !(k in fields)
+    return Object.keys(props.params || {}).filter(
+      (k) => k !== 'enabled' && !(k in fields)
     );
-  };
+  });
 
-  const fallbackParamEntries = () => {
-    return Object.entries(props.params || {}).filter(([k]) => k !== 'enabled');
-  };
+  const fallbackParamKeys = createMemo(() => {
+    return Object.keys(props.params || {}).filter((k) => k !== 'enabled');
+  });
 
   const renderStandardControls = () => {
     const s = schema();
     if (s && s.fields && Object.keys(s.fields).length > 0) {
       return (
         <div class={`space-y-2.5 ${props.disabled ? 'opacity-50 pointer-events-none' : ''}`}>
-          <For each={schemaEntries()}>
-            {([fieldKey, descriptor]) => {
+          <For each={schemaFieldKeys()}>
+            {(fieldKey) => {
+              const descriptor = s.fields[fieldKey];
+              if (!descriptor) return null;
               const ControlComponent = resolveParamControlStrategy(descriptor);
+              const isVisible = () => {
+                if (typeof descriptor.visibleIf === 'function') {
+                  return descriptor.visibleIf(props.params || {});
+                }
+                return true;
+              };
               const currentValue = () =>
                 descriptor.type === 'sfx_actions'
                   ? props.params || {}
@@ -81,24 +84,27 @@ export function DynamicModifierInspector(props: DynamicModifierInspectorProps) {
                     : descriptor.defaultValue;
 
               return (
-                <ControlComponent
-                  descriptor={descriptor}
-                  value={currentValue()}
-                  disabled={props.disabled}
-                  onChange={(val) => handleFieldChange(fieldKey, val)}
-                />
+                <Show when={isVisible()}>
+                  <ControlComponent
+                    descriptor={descriptor}
+                    value={currentValue()}
+                    disabled={props.disabled}
+                    onChange={(val) => handleFieldChange(fieldKey, val)}
+                  />
+                </Show>
               );
             }}
           </For>
-          <For each={extraRuntimeEntries()}>
-            {([key, val]) => {
-              const inferredDescriptor = inferFieldDescriptor(key, val);
+          <For each={extraRuntimeKeys()}>
+            {(key) => {
+              const val = () => (props.params || {})[key];
+              const inferredDescriptor = inferFieldDescriptor(key, val());
               const ControlComponent = resolveParamControlStrategy(inferredDescriptor);
 
               return (
                 <ControlComponent
                   descriptor={inferredDescriptor}
-                  value={val}
+                  value={val()}
                   disabled={props.disabled}
                   onChange={(newVal) => handleFieldChange(key, newVal)}
                 />
@@ -109,8 +115,8 @@ export function DynamicModifierInspector(props: DynamicModifierInspectorProps) {
       );
     }
 
-    const paramEntries = fallbackParamEntries();
-    if (paramEntries.length === 0) {
+    const paramKeys = fallbackParamKeys();
+    if (paramKeys.length === 0) {
       return (
         <p class="text-[10px] text-muted-foreground italic">
           No configurable parameters exposed for {props.modifierType}.
@@ -120,15 +126,16 @@ export function DynamicModifierInspector(props: DynamicModifierInspectorProps) {
 
     return (
       <div class={`space-y-2.5 ${props.disabled ? 'opacity-50 pointer-events-none' : ''}`}>
-        <For each={paramEntries}>
-          {([key, val]) => {
-            const inferredDescriptor = inferFieldDescriptor(key, val);
+        <For each={paramKeys}>
+          {(key) => {
+            const val = () => (props.params || {})[key];
+            const inferredDescriptor = inferFieldDescriptor(key, val());
             const ControlComponent = resolveParamControlStrategy(inferredDescriptor);
 
             return (
               <ControlComponent
                 descriptor={inferredDescriptor}
-                value={val}
+                value={val()}
                 disabled={props.disabled}
                 onChange={(newVal) => handleFieldChange(key, newVal)}
               />

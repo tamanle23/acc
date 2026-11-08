@@ -1,4 +1,4 @@
-import { createSignal, createMemo, Show, For } from 'solid-js';
+import { createSignal, createMemo, Show, For, Index } from 'solid-js';
 import {
   Copy,
   Check,
@@ -184,23 +184,28 @@ export function SequenceInspector(props: SequenceInspectorProps) {
   };
 
   // Resolved timing calculation
+  const currentSeq = () => props.selectedSeq;
+  const currentSeqTime = () => currentSeq()?.time;
   const timelineSeq = () => props.irState.timeline?.sequences?.get(selectedSeqId());
   const resolvedStartFrame = () =>
-    timelineSeq()?.startFrame ?? (typeof props.selectedSeq?.time?.start === 'number' ? (props.selectedSeq.time.start as number) : 0);
+    typeof currentSeqTime()?.start === 'number'
+      ? (currentSeqTime()!.start as number)
+      : (timelineSeq()?.startFrame ?? 0);
   const resolvedDurationFrames = () =>
-    timelineSeq()?.durationFrames ??
-    (typeof props.selectedSeq?.time?.duration === 'number' ? (props.selectedSeq.time.duration as number) : 90);
+    typeof currentSeqTime()?.duration === 'number'
+      ? (currentSeqTime()!.duration as number)
+      : (timelineSeq()?.durationFrames ?? 90);
   const resolvedEndFrame = () => resolvedStartFrame() + resolvedDurationFrames();
 
   const isStartRelational = () =>
-    typeof props.selectedSeq?.time?.start === 'object' && props.selectedSeq?.time?.start !== null;
+    typeof currentSeqTime()?.start === 'object' && currentSeqTime()?.start !== null;
   const isDurationRelational = () =>
-    typeof props.selectedSeq?.time?.duration === 'object' && props.selectedSeq?.time?.duration !== null;
+    typeof currentSeqTime()?.duration === 'object' && currentSeqTime()?.duration !== null;
 
   const currentStartNumber = () =>
-    typeof props.selectedSeq?.time?.start === 'number' ? props.selectedSeq.time.start : resolvedStartFrame();
+    typeof currentSeqTime()?.start === 'number' ? (currentSeqTime()!.start as number) : resolvedStartFrame();
   const currentDurationNumber = () =>
-    typeof props.selectedSeq?.time?.duration === 'number' ? props.selectedSeq.time.duration : resolvedDurationFrames();
+    typeof currentSeqTime()?.duration === 'number' ? (currentSeqTime()!.duration as number) : resolvedDurationFrames();
 
   const otherSequenceIds = () =>
     props.irState.doc.tracks
@@ -870,16 +875,19 @@ export function SequenceInspector(props: SequenceInspectorProps) {
             onChange={handleAccordionValueChange}
             class="border-glass-border space-y-2"
           >
-            <For each={filteredModifiers()}>
+            <Index each={filteredModifiers()}>
               {(mod, idx) => {
-                const modKey = () => (mod as any).id || `${mod.type}_${idx()}`;
-                const sectionId = () => getSectionIdForModifierType(mod.type);
-                const catalogEntry = () => MODIFIER_PRESENTATION_CATALOG[mod.type];
+                const modKey = () => (mod() as any).id || `${mod().type}_${idx}`;
+                const sectionId = () => getSectionIdForModifierType(mod().type);
+                const catalogEntry = () => MODIFIER_PRESENTATION_CATALOG[mod().type];
                 const Icon = () => catalogEntry()?.icon || Sparkles;
-                const title = () => catalogEntry()?.name || mod.type.split('/').pop() || mod.type;
-                const isEnabled = () => (mod.params as any)?.enabled !== false && !props.isBypassAll;
+                const title = () => catalogEntry()?.name || mod().type.split('/').pop() || mod().type;
+                const isEnabled = () => (mod().params as any)?.enabled !== false && !props.isBypassAll;
 
-                const TriggerIcon = Icon();
+                const TriggerIcon = () => {
+                  const Comp = Icon();
+                  return <Comp class="w-3.5 h-3.5 text-accent-theme" />;
+                };
 
                 return (
                   <AccordionItem
@@ -890,34 +898,34 @@ export function SequenceInspector(props: SequenceInspectorProps) {
                       actions={
                         <div class="flex items-center gap-1">
                           <ModifierCardHeader
-                            modifier={mod}
-                            index={idx()}
+                            modifier={mod()}
+                            index={idx}
                             totalModifiers={modifiers().length}
                             catalogEntry={catalogEntry() as any}
                             isLocked={isLocked()}
                             onMoveUp={() =>
-                              IRStateManager.getInstance().reorderModifier(selectedSeqId(), mod.type, 'up')
+                              IRStateManager.getInstance().reorderModifier(selectedSeqId(), mod().type, 'up')
                             }
                             onMoveDown={() =>
-                              IRStateManager.getInstance().reorderModifier(selectedSeqId(), mod.type, 'down')
+                              IRStateManager.getInstance().reorderModifier(selectedSeqId(), mod().type, 'down')
                             }
                             onReset={() =>
                               !isLocked() &&
                               catalogEntry()?.defaultParams &&
-                              updateModifierParams(mod.type, {
+                              updateModifierParams(mod().type, {
                                 ...catalogEntry()!.defaultParams,
                                 enabled: isEnabled(),
                               })
                             }
-                            onRemove={() => !isLocked() && removeModifier(mod.type)}
+                            onRemove={() => !isLocked() && removeModifier(mod().type)}
                           />
                           <Switch
                             checked={isEnabled()}
                             disabled={isLocked()}
                             onChange={(checked: boolean) =>
                               !isLocked() &&
-                              updateModifierParams(mod.type, {
-                                ...((mod.params as any) || {}),
+                              updateModifierParams(mod().type, {
+                                ...((mod().params as any) || {}),
                                 enabled: checked,
                               })
                             }
@@ -925,8 +933,8 @@ export function SequenceInspector(props: SequenceInspectorProps) {
                         </div>
                       }
                     >
-                      <div class="flex items-center gap-1.5">
-                        <TriggerIcon class="w-3.5 h-3.5 text-accent-theme" />
+                      <div className="flex items-center gap-1.5">
+                        <TriggerIcon />
                         <span class="text-xs font-bold text-foreground">
                           {title()}
                         </span>
@@ -936,7 +944,7 @@ export function SequenceInspector(props: SequenceInspectorProps) {
                     <AccordionContent class="p-3 space-y-3">
                       <Show when={sectionId() === 'transitions'}>
                         {(() => {
-                          const transDur = () => (mod.params as any)?.durationFrames ?? 15;
+                          const transDur = () => (mod().params as any)?.durationFrames ?? 15;
                           const seqDur = () => props.selectedSeq?.durationFrames ?? 90;
                           const hasInsufficientHead = () => (transDur() as number) > seqDur();
                           return (
@@ -952,16 +960,16 @@ export function SequenceInspector(props: SequenceInspectorProps) {
                         })()}
                       </Show>
                       <DynamicModifierInspector
-                        modifierType={mod.type}
-                        params={(mod.params as any) || {}}
+                        modifierType={mod().type}
+                        params={(mod().params as any) || {}}
                         disabled={isLocked() || !isEnabled() || props.isBypassAll}
-                        onChange={(nextParams) => !isLocked() && updateModifierParams(mod.type, nextParams)}
+                        onChange={(nextParams) => !isLocked() && updateModifierParams(mod().type, nextParams)}
                       />
                     </AccordionContent>
                   </AccordionItem>
                 );
               }}
-            </For>
+            </Index>
           </Accordion>
 
           {/* Subtitle Cue Timeline Management Modal */}

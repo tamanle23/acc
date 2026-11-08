@@ -42,7 +42,7 @@ export interface ClipInsightCardProps {
  * - Image: High-fidelity image thumbnail with quick modal / external full-resolution inspection
  * Designed to be embedded cleanly inside HoverCardContent.
  */
-export function ClipInsightCard(props: ClipInsightCardProps) {
+export const ClipInsightCard = function ClipInsightCard(props: ClipInsightCardProps) {
   const startFrame = () => getSequenceStartFrame(props.seq);
   const durationFrames = () => getSequenceDurationFrames(props.seq, 30);
   const endFrame = () => startFrame() + durationFrames();

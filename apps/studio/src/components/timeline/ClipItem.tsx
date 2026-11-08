@@ -142,46 +142,51 @@ export function ClipItem(props: ClipItemProps) {
   const linkedSeqId = () => (avLink()?.params as any)?.linkedSequenceId as string | undefined;
 
   return (
-    <ClipHoverHUD seq={props.seq} track={props.track} fps={props.fps ?? 30} disabled={anyDragActive()}>
-      <div
-        ref={draggable.ref}
-        onClick={(e: MouseEvent) => props.onClipClick(props.seq, e)}
-        onMouseEnter={(e: MouseEvent) => {
-          if (anyDragActive()) return;
-          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-          props.onClipHover?.({
-            seq: props.seq,
-            track: props.track,
-            position: {
-              leftPx: leftPx(),
-              topPx: rect.height + 12,
-              widthPx: widthPx(),
-            },
-          });
-        }}
-        onMouseLeave={() => props.onClipHover?.(null)}
-        style={{
-          left: `${leftPx()}px`,
-          width: `${widthPx()}px`,
-          'touch-action': 'none',
-        }}
-        class={`absolute top-1 bottom-1 rounded-sm border px-1.5 flex items-center justify-between select-none group overflow-hidden ${
-          isBeingDragged() ? 'transition-none' : 'transition-all'
-        } ${
-          isBeingDragged() && effectiveDragType() === 'clip'
-            ? 'opacity-35 border-dashed border-accent-theme/70 bg-accent-theme/15 z-10'
-            : isPairedDrag()
-              ? 'ring-1 ring-dashed ring-accent-theme/70 opacity-70 z-10'
-              : props.activeTool === 'razor'
-                ? 'cursor-crosshair'
-                : 'cursor-grab'
-        } ${
-          props.isSelected && !isBeingDragged()
-            ? 'ring-2 ring-accent-theme shadow-md z-20 brightness-110'
-            : 'hover:brightness-110 z-10'
-        } ${props.getTrackBadgeStyle(props.track)}`}
-      >
-        <TrimHandle seq={props.seq} handle="start" />
+    <ClipHoverHUD
+      seq={props.seq}
+      track={props.track}
+      fps={props.fps ?? 30}
+      disabled={anyDragActive()}
+      ref={(el: HTMLElement) => {
+        draggable.ref(el);
+      }}
+      onClick={(e: MouseEvent) => props.onClipClick(props.seq, e)}
+      onMouseEnter={(e: MouseEvent) => {
+        if (anyDragActive()) return;
+        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        props.onClipHover?.({
+          seq: props.seq,
+          track: props.track,
+          position: {
+            leftPx: leftPx(),
+            topPx: rect.height + 12,
+            widthPx: widthPx(),
+          },
+        });
+      }}
+      onMouseLeave={() => props.onClipHover?.(null)}
+      style={{
+        left: `${leftPx()}px`,
+        width: `${widthPx()}px`,
+        'touch-action': 'none',
+      }}
+      class={`absolute top-1 bottom-1 rounded-sm border px-1.5 flex items-center justify-between select-none group overflow-hidden ${
+        isBeingDragged() ? 'transition-none' : 'transition-all'
+      } ${
+        isBeingDragged() && effectiveDragType() === 'clip'
+          ? 'opacity-35 border-dashed border-accent-theme/70 bg-accent-theme/15 z-10'
+          : isPairedDrag()
+            ? 'ring-1 ring-dashed ring-accent-theme/70 opacity-70 z-10'
+            : props.activeTool === 'razor'
+              ? 'cursor-crosshair'
+              : 'cursor-grab'
+      } ${
+        props.isSelected && !isBeingDragged()
+          ? 'ring-2 ring-accent-theme shadow-md z-20 brightness-110'
+          : 'hover:brightness-110 z-10'
+      } ${props.getTrackBadgeStyle(props.track)}`}
+    >
+      <TrimHandle seq={props.seq} handle="start" />
 
         {/* Visual Transition Block Handle (Cut boundary) */}
         <Show when={transMod()}>
@@ -343,7 +348,6 @@ export function ClipItem(props: ClipItemProps) {
         </div>
 
         <TrimHandle seq={props.seq} handle="end" />
-      </div>
     </ClipHoverHUD>
   );
 }

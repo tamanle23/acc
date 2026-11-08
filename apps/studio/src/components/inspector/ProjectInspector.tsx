@@ -1,4 +1,4 @@
-import { Show, For } from 'solid-js';
+import { Show, For, Index } from 'solid-js';
 import { Settings, Clock, Sparkles, RotateCcw, Trash2 } from 'lucide-solid';
 import { Card } from '../ui/card';
 import { Badge } from '../ui/badge';
@@ -201,15 +201,18 @@ export function ProjectInspector(props: ProjectInspectorProps) {
             defaultValue={props.irState.doc.modifiers?.map((m: ModifierNode, i: number) => (m as any).id || `${m.type}_${i}`)}
             class="border-glass-border space-y-2"
           >
-            <For each={props.irState.doc.modifiers}>
+            <Index each={props.irState.doc.modifiers}>
               {(mod, idx) => {
-                const modKey = () => (mod as any).id || `${mod.type}_${idx()}`;
-                const catalogEntry = () => MODIFIER_PRESENTATION_CATALOG[mod.type];
+                const modKey = () => (mod() as any).id || `${mod().type}_${idx}`;
+                const catalogEntry = () => MODIFIER_PRESENTATION_CATALOG[mod().type];
                 const Icon = () => catalogEntry()?.icon || Sparkles;
-                const title = () => catalogEntry()?.name || mod.type.split('/').pop() || mod.type;
-                const isEnabled = () => mod.params?.enabled !== false;
+                const title = () => catalogEntry()?.name || mod().type.split('/').pop() || mod().type;
+                const isEnabled = () => mod().params?.enabled !== false;
 
-                const TriggerIcon = Icon();
+                const TriggerIcon = () => {
+                  const Comp = Icon();
+                  return <Comp class="w-3.5 h-3.5 text-accent-theme" />;
+                };
 
                 return (
                   <AccordionItem
@@ -225,7 +228,7 @@ export function ProjectInspector(props: ProjectInspectorProps) {
                               size="icon"
                               class="h-6 w-6 text-muted-foreground hover:text-foreground cursor-pointer"
                               onClick={() =>
-                                IRStateManager.getInstance().updateModifier('timeline', mod.type, {
+                                IRStateManager.getInstance().updateModifier('timeline', mod().type, {
                                   ...catalogEntry()?.defaultParams,
                                   enabled: isEnabled(),
                                 })
@@ -239,7 +242,7 @@ export function ProjectInspector(props: ProjectInspectorProps) {
                             variant="ghost"
                             size="icon"
                             class="h-6 w-6 text-muted-foreground hover:text-destructive cursor-pointer"
-                            onClick={() => IRStateManager.getInstance().removeModifier('timeline', mod.type)}
+                            onClick={() => IRStateManager.getInstance().removeModifier('timeline', mod().type)}
                             title="Remove modifier"
                           >
                             <Trash2 class="w-3 h-3 text-destructive" />
@@ -247,8 +250,8 @@ export function ProjectInspector(props: ProjectInspectorProps) {
                           <Switch
                             checked={isEnabled()}
                             onChange={(checked: boolean) =>
-                              IRStateManager.getInstance().updateModifier('timeline', mod.type, {
-                                ...(mod.params || {}),
+                              IRStateManager.getInstance().updateModifier('timeline', mod().type, {
+                                ...(mod().params || {}),
                                 enabled: checked,
                               })
                             }
@@ -257,7 +260,7 @@ export function ProjectInspector(props: ProjectInspectorProps) {
                       }
                     >
                       <div class="flex items-center gap-1.5">
-                        <TriggerIcon class="w-3.5 h-3.5 text-accent-theme" />
+                        <TriggerIcon />
                         <span class="text-xs font-bold text-foreground">
                           {title()}
                         </span>
@@ -266,18 +269,18 @@ export function ProjectInspector(props: ProjectInspectorProps) {
 
                     <AccordionContent class="p-3 space-y-3">
                       <DynamicModifierInspector
-                        modifierType={mod.type}
-                        params={mod.params || {}}
+                        modifierType={mod().type}
+                        params={mod().params || {}}
                         disabled={!isEnabled()}
                         onChange={(nextParams) =>
-                          IRStateManager.getInstance().updateModifier('timeline', mod.type, nextParams)
+                          IRStateManager.getInstance().updateModifier('timeline', mod().type, nextParams)
                         }
                       />
                     </AccordionContent>
                   </AccordionItem>
                 );
               }}
-            </For>
+            </Index>
           </Accordion>
         </div>
       </Show>

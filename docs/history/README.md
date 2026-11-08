@@ -131,3 +131,4 @@
 | 465 | [Dedicated Task Definitions Manager & Studio Hub](./465_dedicated_task_definitions_manager_and_studio_hub.md) | Completed |
 | 466 | [Backend SSOT Task Contracts & In-Memory Preloaded Registry](./466_backend_ssot_task_contracts_and_preloaded_registry.md) | Completed |
 | 467 | [Studio Memory Minimization & Multi-FPS Smooth Playback](./467_studio_memory_minimization_and_multi_fps_playback.md) | Completed |
+| 468 | [Fix Studio RightSidebar Property Modifications and Sequence Preview Popup Positioning](./468_fix_studio_right_sidebar_properties_and_sequence_preview_popup.md) | Completed |

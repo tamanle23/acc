@@ -1,4 +1,4 @@
-import { Show, For } from 'solid-js';
+import { Show, For, Index } from 'solid-js';
 import { ArrowUp, ArrowDown, Layers, Volume2, ChevronRight, Sparkles, RotateCcw, Trash2 } from 'lucide-solid';
 import { Card } from '../ui/card';
 import { Badge } from '../ui/badge';
@@ -260,15 +260,18 @@ export function TrackInspector(props: TrackInspectorProps) {
                 defaultValue={track().modifiers!.map((m: ModifierNode, i: number) => (m as any).id || `${m.type}_${i}`)}
                 class="border-glass-border space-y-2"
               >
-                <For each={track().modifiers}>
+                <Index each={track().modifiers}>
                   {(mod, idx) => {
-                    const modKey = () => (mod as any).id || `${mod.type}_${idx()}`;
-                    const catalogEntry = () => MODIFIER_PRESENTATION_CATALOG[mod.type];
+                    const modKey = () => (mod() as any).id || `${mod().type}_${idx}`;
+                    const catalogEntry = () => MODIFIER_PRESENTATION_CATALOG[mod().type];
                     const Icon = () => catalogEntry()?.icon || Sparkles;
-                    const title = () => catalogEntry()?.name || mod.type.split('/').pop() || mod.type;
-                    const isEnabled = () => (mod.params as any)?.enabled !== false;
+                    const title = () => catalogEntry()?.name || mod().type.split('/').pop() || mod().type;
+                    const isEnabled = () => (mod().params as any)?.enabled !== false;
 
-                    const TriggerIcon = Icon();
+                    const TriggerIcon = () => {
+                      const Comp = Icon();
+                      return <Comp class="w-3.5 h-3.5 text-accent-theme" />;
+                    };
 
                     return (
                       <AccordionItem
@@ -284,7 +287,7 @@ export function TrackInspector(props: TrackInspectorProps) {
                                   size="icon"
                                   class="h-6 w-6 text-muted-foreground hover:text-foreground cursor-pointer"
                                   onClick={() =>
-                                    IRStateManager.getInstance().updateModifier(track().id, mod.type, {
+                                    IRStateManager.getInstance().updateModifier(track().id, mod().type, {
                                       ...catalogEntry()?.defaultParams,
                                       enabled: isEnabled(),
                                     })
@@ -298,7 +301,7 @@ export function TrackInspector(props: TrackInspectorProps) {
                                 variant="ghost"
                                 size="icon"
                                 class="h-6 w-6 text-muted-foreground hover:text-destructive cursor-pointer"
-                                onClick={() => IRStateManager.getInstance().removeModifier(track().id, mod.type)}
+                                onClick={() => IRStateManager.getInstance().removeModifier(track().id, mod().type)}
                                 title="Remove modifier"
                               >
                                 <Trash2 class="w-3 h-3 text-destructive" />
@@ -306,8 +309,8 @@ export function TrackInspector(props: TrackInspectorProps) {
                               <Switch
                                 checked={isEnabled()}
                                 onChange={(checked: boolean) =>
-                                  IRStateManager.getInstance().updateModifier(track().id, mod.type, {
-                                    ...((mod.params as any) || {}),
+                                  IRStateManager.getInstance().updateModifier(track().id, mod().type, {
+                                    ...((mod().params as any) || {}),
                                     enabled: checked,
                                   })
                                 }
@@ -316,7 +319,7 @@ export function TrackInspector(props: TrackInspectorProps) {
                           }
                         >
                           <div class="flex items-center gap-1.5">
-                            <TriggerIcon class="w-3.5 h-3.5 text-accent-theme" />
+                            <TriggerIcon />
                             <span class="text-xs font-bold text-foreground">
                               {title()}
                             </span>
@@ -325,18 +328,18 @@ export function TrackInspector(props: TrackInspectorProps) {
 
                         <AccordionContent class="p-3 space-y-3">
                           <DynamicModifierInspector
-                            modifierType={mod.type}
-                            params={(mod.params as Record<string, unknown>) || {}}
+                            modifierType={mod().type}
+                            params={(mod().params as Record<string, unknown>) || {}}
                             disabled={!isEnabled()}
                             onChange={(nextParams) =>
-                              IRStateManager.getInstance().updateModifier(track().id, mod.type, nextParams)
+                              IRStateManager.getInstance().updateModifier(track().id, mod().type, nextParams)
                             }
                           />
                         </AccordionContent>
                       </AccordionItem>
                     );
                   }}
-                </For>
+                </Index>
               </Accordion>
             </div>
           </Show>

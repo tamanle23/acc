@@ -10,9 +10,9 @@ function HoverCardTrigger(props: ComponentProps<typeof HoverCardPrimitive.Trigge
   const [local, rest] = splitProps(props, ["class", "className", "asChild", "as"]);
   return (
     <HoverCardPrimitive.Trigger
-      as={local.as ?? (local.asChild ? "div" : "a")}
+      as={local.as ?? "div"}
       data-slot="hover-card-trigger"
-      class={cn(local.asChild && "contents", local.class || local.className)}
+      class={cn(local.class || local.className)}
       {...rest}
     />
   );
