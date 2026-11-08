@@ -8,6 +8,8 @@ import {
   VisionEngineRegistry,
   DepthStrategyId,
   SegmentationStrategyId,
+  IDepthEstimationStrategy,
+  ISubjectSegmentationStrategy,
   HeuristicDepthStrategy,
   GrabCutFallbackStrategy,
 } from '@acc/core-isomorphic';
@@ -24,7 +26,52 @@ export * from './media-engine/MediabunnyClientStrategy';
 export * from './cache/IndexedDbCacheStrategy';
 export * from './cache/WebCacheStrategy';
 export * from './cache/OpfsCacheStrategy';
-import { DepthAnythingV2SmallStrategy, RmbgStrategy } from '@acc/effect-engines';
+// Lightweight lazy proxies for neural vision models to avoid bundling Transformers.js and ONNX on the main thread
+export class LazyNeuralDepthStrategy implements IDepthEstimationStrategy {
+  public readonly id = DepthStrategyId.DepthAnythingV2Small;
+  public readonly name = 'depth-anything-v2-small';
+  public readonly modelId = 'onnx-community/depth-anything-v2-small';
+  public readonly isSupported = true;
+  private delegate: IDepthEstimationStrategy | null = null;
+
+  public async init(): Promise<void> {
+    if (!this.delegate) {
+      const { DepthAnythingV2SmallStrategy } = await import('@acc/effect-engines');
+      this.delegate = new DepthAnythingV2SmallStrategy();
+    }
+    if (typeof this.delegate.init === 'function') {
+      await this.delegate.init();
+    }
+  }
+
+  public async estimateDepth(input: any, options?: any): Promise<any> {
+    await this.init();
+    return this.delegate!.estimateDepth(input, options);
+  }
+}
+
+export class LazyNeuralSegmentationStrategy implements ISubjectSegmentationStrategy {
+  public readonly id = SegmentationStrategyId.Rmbg14;
+  public readonly name = 'rmbg-1.4';
+  public readonly modelId = 'briaai/RMBG-1.4';
+  public readonly isSupported = true;
+  private delegate: ISubjectSegmentationStrategy | null = null;
+
+  public async init(): Promise<void> {
+    if (!this.delegate) {
+      const { RmbgStrategy } = await import('@acc/effect-engines');
+      this.delegate = new RmbgStrategy();
+    }
+    if (typeof this.delegate.init === 'function') {
+      await this.delegate.init();
+    }
+  }
+
+  public async segment(input: any, options?: any): Promise<any> {
+    await this.init();
+    return this.delegate!.segment(input, options);
+  }
+}
 
 
 export interface BootstrapClientOptions {
@@ -75,10 +122,10 @@ export function bootstrapCoreWeb(options: BootstrapClientOptions = {}): void {
 
   // 4. Client-Safe Vision Strategies Registration (Heuristic & Algorithmic Defaults)
   VisionEngineRegistry.registerDepthStrategy(new HeuristicDepthStrategy(), true);
-  VisionEngineRegistry.registerDepthStrategy(new DepthAnythingV2SmallStrategy(), false);
+  VisionEngineRegistry.registerDepthStrategy(new LazyNeuralDepthStrategy(), false);
 
   VisionEngineRegistry.registerSegmentationStrategy(new GrabCutFallbackStrategy(), true);
-  VisionEngineRegistry.registerSegmentationStrategy(new RmbgStrategy(), false);
+  VisionEngineRegistry.registerSegmentationStrategy(new LazyNeuralSegmentationStrategy(), false);
 }
 
 export const bootstrapClient = bootstrapCoreWeb;

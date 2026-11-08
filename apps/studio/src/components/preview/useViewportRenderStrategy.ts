@@ -59,8 +59,11 @@ export function useViewportRenderStrategy(options: UseViewportRenderStrategyOpti
       baseCanvas.height = options.height;
     }
     if (overlayCanvas) {
-      overlayCanvas.width = options.timelineWidth || options.width;
-      overlayCanvas.height = options.timelineHeight || options.height;
+      // Downscale overlay canvas backing store to match active viewport virtual resolution (e.g. 960x540)
+      if (overlayCanvas.width !== options.width || overlayCanvas.height !== options.height) {
+        overlayCanvas.width = options.width;
+        overlayCanvas.height = options.height;
+      }
     }
 
     const targetTimeline = withTargetCanvasSize(timeline, options.width, options.height);

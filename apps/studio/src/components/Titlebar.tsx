@@ -1,4 +1,4 @@
-import { createSignal, onMount, onCleanup, Show } from 'solid-js';
+import { createSignal, onMount, onCleanup, Show, Suspense, lazy } from 'solid-js';
 import { cn } from 'cn';
 import {
   Download,
@@ -39,11 +39,19 @@ import { IRStateManager } from '../lib/ir/irState';
 import { useIRSelector } from '../lib/ir/useStudioStore';
 import { inferAspectRatioFromCanvasSize } from '@acc/ir';
 import { useTheme } from '../lib/theme';
-import { ShortcutsModal } from './ShortcutsModal';
-import { IrVisualEditorModal } from './debugger/IrVisualEditorModal';
-import { OpfsExplorerModal } from './debugger/opfs/OpfsExplorerModal';
+import { ModalProgressFallback } from './ui/ModalProgressFallback';
 import { ThemeQuickSwitcher } from './ThemeQuickSwitcher';
 import { useTitlebarLOD, type TitlebarLOD } from './preview/useContainerLOD';
+
+const ShortcutsModal = lazy(() =>
+  import('./ShortcutsModal').then((m) => ({ default: m.ShortcutsModal }))
+);
+const IrVisualEditorModal = lazy(() =>
+  import('./debugger/IrVisualEditorModal').then((m) => ({ default: m.IrVisualEditorModal }))
+);
+const OpfsExplorerModal = lazy(() =>
+  import('./debugger/opfs/OpfsExplorerModal').then((m) => ({ default: m.OpfsExplorerModal }))
+);
 
 export interface TitlebarProps {
   projectTitle: string;
@@ -703,9 +711,21 @@ export function Titlebar(props: TitlebarProps) {
         </Show>
       </div>
 
-      <ShortcutsModal open={isShortcutsOpen()} onOpenChange={setIsShortcutsOpen} />
-      <IrVisualEditorModal open={isDebuggerOpen()} onOpenChange={setIsDebuggerOpen} />
-      <OpfsExplorerModal open={isOpfsOpen()} onOpenChange={setIsOpfsOpen} />
+      <Show when={isShortcutsOpen()}>
+        <Suspense fallback={<ModalProgressFallback title="Loading Shortcuts..." />}>
+          <ShortcutsModal open={isShortcutsOpen()} onOpenChange={setIsShortcutsOpen} />
+        </Suspense>
+      </Show>
+      <Show when={isDebuggerOpen()}>
+        <Suspense fallback={<ModalProgressFallback title="Loading IR Visual Debugger..." />}>
+          <IrVisualEditorModal open={isDebuggerOpen()} onOpenChange={setIsDebuggerOpen} />
+        </Suspense>
+      </Show>
+      <Show when={isOpfsOpen()}>
+        <Suspense fallback={<ModalProgressFallback title="Loading OPFS Explorer..." />}>
+          <OpfsExplorerModal open={isOpfsOpen()} onOpenChange={setIsOpfsOpen} />
+        </Suspense>
+      </Show>
     </header>
   );
 }

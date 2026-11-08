@@ -19,7 +19,6 @@ export class AssetTextureCache implements Disposable {
   private static directStorage = new Map<string, any>();
   private static objectUrls = new Map<string, string>();
   private hotImageLRU = new Map<string, { img: CanvasImageSource; url?: string; lastUsed: number }>();
-  private hotVideoLRU = new Map<string, { video: HTMLVideoElement; lastUsed: number }>();
   private canvasCache = new Map<string, HTMLCanvasElement>();
   private dataUrlCache = new Map<string, string>();
   private placeholderCache = new Map<string, HTMLCanvasElement>();
@@ -27,11 +26,10 @@ export class AssetTextureCache implements Disposable {
   private subscribers = new Set<() => void>();
 
   private readonly MAX_DIRECT_ENTRIES = 16;
-  private readonly MAX_IMAGE_LRU = 8;
-  private readonly MAX_VIDEO_LRU = 4;
-  private readonly MAX_CANVAS_ENTRIES = 8;
-  private readonly MAX_DATA_URL_ENTRIES = 16;
-  private readonly MAX_PLACEHOLDER_ENTRIES = 4;
+  private readonly MAX_IMAGE_LRU = 4;
+  private readonly MAX_CANVAS_ENTRIES = 4;
+  private readonly MAX_DATA_URL_ENTRIES = 8;
+  private readonly MAX_PLACEHOLDER_ENTRIES = 2;
 
   private constructor() { }
 
@@ -167,16 +165,6 @@ export class AssetTextureCache implements Disposable {
       }
     }
 
-    for (const entry of this.hotVideoLRU.values()) {
-      try {
-        entry.video.onloadeddata = null;
-        entry.video.onerror = null;
-        entry.video.pause();
-        entry.video.removeAttribute('src');
-        entry.video.load();
-      } catch { }
-    }
-
     for (const val of AssetTextureCache.directStorage.values()) {
       if (val && typeof val.close === 'function') {
         try {
@@ -188,7 +176,6 @@ export class AssetTextureCache implements Disposable {
     AssetTextureCache.objectUrls.clear();
     AssetTextureCache.directStorage.clear();
     this.hotImageLRU.clear();
-    this.hotVideoLRU.clear();
     this.canvasCache.clear();
     this.dataUrlCache.clear();
     this.placeholderCache.clear();
@@ -239,26 +226,6 @@ export class AssetTextureCache implements Disposable {
       }
     }
     this.hotImageLRU.set(key, { img, url, lastUsed: performance.now() });
-  }
-
-  private setHotVideo(key: string, video: HTMLVideoElement): void {
-    if (this.hotVideoLRU.size >= this.MAX_VIDEO_LRU && !this.hotVideoLRU.has(key)) {
-      const oldestKey = this.hotVideoLRU.keys().next().value;
-      if (oldestKey) {
-        const old = this.hotVideoLRU.get(oldestKey);
-        if (old) {
-          try {
-            old.video.onloadeddata = null;
-            old.video.onerror = null;
-            old.video.pause();
-            old.video.removeAttribute('src');
-            old.video.load();
-          } catch { }
-        }
-        this.hotVideoLRU.delete(oldestKey);
-      }
-    }
-    this.hotVideoLRU.set(key, { video, lastUsed: performance.now() });
   }
 
   private async resolveImageAssetAsync(assetId: string, src: string): Promise<void> {
@@ -358,55 +325,15 @@ export class AssetTextureCache implements Disposable {
       }
     }
 
-    // 2. If real URL provided and video/media type
-    if (src && (assetType === 'video' || src.match(/\.(mp4|webm|mov|mkv)(\?.*)?$/i))) {
-      let vEntry = this.hotVideoLRU.get(src);
-      if (!vEntry) {
-        if (typeof document !== 'undefined' && typeof document.createElement === 'function') {
-          const video = document.createElement('video');
-          video.crossOrigin = 'anonymous';
-          video.muted = true;
-          video.playsInline = true;
-          video.preload = 'auto';
-
-          video.onloadeddata = () => {
-            this.notify();
-          };
-          video.onerror = () => {
-            console.warn(`[AssetTextureCache] Failed to load video: ${src}`);
-          };
-          video.src = src;
-
-          this.setHotVideo(src, video);
-          vEntry = this.hotVideoLRU.get(src);
-        }
-      }
-
-      if (vEntry && vEntry.video.videoWidth > 0) {
-        const targetTime = Math.max(0, timeSec);
-        if (Math.abs(vEntry.video.currentTime - targetTime) > 0.05) {
-          try {
-            vEntry.video.currentTime = targetTime;
-          } catch { }
-        }
-        return {
-          source: vEntry.video,
-          width: vEntry.video.videoWidth,
-          height: vEntry.video.videoHeight,
-          isReady: true,
-          type: 'video',
-        };
-      }
-    }
-
-    // 3. Fallback to Neutral Dark Video Charcoal (#151518) Isolated Placeholder
+    // 2. Fallback to Neutral Dark Video Charcoal (#151518) Isolated Placeholder
+    // Note: All real video decoding is strictly confined to preview.worker.ts via WebCodecs.
     const phCanvas = this.renderMissingAssetPlaceholder(assetId, assetType);
     return {
       source: phCanvas,
       width: phCanvas.width,
       height: phCanvas.height,
       isReady: true,
-      type: 'placeholder',
+      type: assetType === 'video' ? 'video' : 'placeholder',
     };
   }
 
@@ -592,11 +519,7 @@ export class AssetTextureCache implements Disposable {
     // 1. Check if real visual asset is available in direct storage or decoded LRU
     const direct = AssetTextureCache.directStorage.get(assetId);
     const hotImg = this.hotImageLRU.get(assetId);
-    const hotVideo = this.hotVideoLRU.get(assetId);
-    const visualSource =
-      direct ||
-      hotImg?.img ||
-      (hotVideo?.video && hotVideo.video.readyState >= 2 ? hotVideo.video : null);
+    const visualSource = direct || hotImg?.img || null;
 
     if (visualSource) {
       try {

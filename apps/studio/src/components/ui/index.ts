@@ -24,3 +24,4 @@ export * from './toggle';
 export * from './collapsible';
 export * from './radio-group';
 export * from './skeleton';
+export * from './ModalProgressFallback';

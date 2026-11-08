@@ -224,13 +224,16 @@ export function Preview(props: PreviewProps) {
 
   // Vector Snapping Guide Canvas Render Pass
   createEffect(() => {
+    if (props.isPlaying) return; // Zero GPU compositor / canvas overhead during active playback
     const overlayCanvas = overlayCanvasRef();
     if (overlayCanvas) {
       const overlayCtx = overlayCanvas.getContext('2d');
       if (overlayCtx) {
-        overlayCtx.clearRect(0, 0, width(), height());
+        const vW = virtualWidth();
+        const vH = virtualHeight();
+        overlayCtx.clearRect(0, 0, vW, vH);
         if (selectedSeqId() && gizmo.activeGuides.length > 0) {
-          gizmo.overlayRef.current.renderGuides(overlayCtx, width(), height(), gizmo.activeGuides);
+          gizmo.overlayRef.current.renderGuides(overlayCtx, vW, vH, gizmo.activeGuides);
         }
       }
     }

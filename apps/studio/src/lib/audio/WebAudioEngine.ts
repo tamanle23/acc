@@ -137,12 +137,12 @@ export class WebAudioEngine {
     this.lastFps = fps;
 
     if (preload && irState.timeline) {
-      // Lazy lookahead: Preload audio/video assets for sequences starting within 10 seconds or active
+      // Lazy lookahead: Preload audio assets for sequences starting within 6 seconds (~2.1MB per track) or active
       const proximateAssetIds = new Set<string>();
       for (const track of irState.timeline.tracks.values()) {
-        if (track.type === 'audio' || track.type === 'video') {
+        if (track.type === 'audio') {
           for (const seq of track.sequences) {
-            if (seq.assetId && (seq.startFrame <= (fps * 10) || seq.startFrame === 0)) {
+            if (seq.assetId && (seq.startFrame <= (fps * 6) || seq.startFrame === 0)) {
               proximateAssetIds.add(seq.assetId);
             }
           }
@@ -151,7 +151,7 @@ export class WebAudioEngine {
       const assets = irState.timeline.assets || irState.doc?.assets || {};
       const filteredAssets: Record<string, { src: string; type: string }> = {};
       for (const id of proximateAssetIds) {
-        if (assets[id] && (assets[id].type === 'audio' || assets[id].type === 'video')) {
+        if (assets[id] && assets[id].type === 'audio') {
           filteredAssets[id] = assets[id];
         }
       }

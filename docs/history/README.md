@@ -130,3 +130,4 @@
 | 464 | [Fix Preview Playback Lag & Optimize Sequential Video Reader](./464_fix_preview_playback_lag_and_optimize_sequential_reader.md) | Completed |
 | 465 | [Dedicated Task Definitions Manager & Studio Hub](./465_dedicated_task_definitions_manager_and_studio_hub.md) | Completed |
 | 466 | [Backend SSOT Task Contracts & In-Memory Preloaded Registry](./466_backend_ssot_task_contracts_and_preloaded_registry.md) | Completed |
+| 467 | [Studio Memory Minimization & Multi-FPS Smooth Playback](./467_studio_memory_minimization_and_multi_fps_playback.md) | Completed |

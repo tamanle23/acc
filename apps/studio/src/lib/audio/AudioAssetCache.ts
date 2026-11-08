@@ -21,8 +21,8 @@ export class AudioAssetCache {
   private subscribers = new Set<() => void>();
 
   // Strict LRU budget to prevent uncompressed Float32Array PCM heap blowups
-  private readonly MAX_CACHE_ENTRIES = 8;
-  private readonly MAX_TOTAL_PCM_BYTES = 64 * 1024 * 1024; // 64 MB ceiling
+  private readonly MAX_CACHE_ENTRIES = 4;
+  private readonly MAX_TOTAL_PCM_BYTES = 16 * 1024 * 1024; // 16 MB ceiling (aggressive savings)
   private currentPcmBytes = 0;
 
   private constructor() {}

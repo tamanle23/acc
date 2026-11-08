@@ -48,7 +48,7 @@ let currentFrame = 0;
 
 // Texture and video reader registries
 const textureCache = new Map<string, any>();
-const MAX_WORKER_TEXTURES = 32;
+const MAX_WORKER_TEXTURES = 8;
 const textureDisposalQueue: any[] = [];
 
 function drainDisposalQueue(): void {
