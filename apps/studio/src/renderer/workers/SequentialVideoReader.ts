@@ -32,8 +32,8 @@ export class SequentialVideoReader implements Disposable {
   private height: number;
   private canvasSink: CanvasSink | null;
 
-  // Single-flight promise queue to serialize all WebCodecs CanvasSink requests
-  private decodeQueue: Promise<any> = Promise.resolve();
+  // Mutex lock to guarantee strict single-flight CanvasSink access
+  private decodeLock: Promise<void> | null = null;
 
   constructor(canvasSink: CanvasSink | null, width: number, height: number) {
     this.canvasSink = canvasSink;
@@ -83,18 +83,27 @@ export class SequentialVideoReader implements Disposable {
   }
 
   /**
-   * Serializes calls to the underlying WebCodecs CanvasSink to prevent
-   * internal iterator collision ('Iterator returned nothing') errors.
+   * Acquires a re-entrant single-flight lock ensuring CanvasSink is never
+   * queried concurrently, eliminating WebCodecs iterator collision errors
+   * without creating head-of-line blocking queue cascades.
    */
-  private enqueueDecode<T>(fn: () => Promise<T>): Promise<T> {
-    const next = this.decodeQueue.then(fn, fn);
-    this.decodeQueue = next.then(() => {}, () => {});
-    return next;
+  private async acquireDecodeLock(): Promise<() => void> {
+    while (this.decodeLock) {
+      await this.decodeLock;
+    }
+    let release!: () => void;
+    this.decodeLock = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    return () => {
+      this.decodeLock = null;
+      release();
+    };
   }
 
   /**
    * Retrieves the active OffscreenCanvas containing the requested playback frame.
-   * Swaps slots if next frame is already pre-painted in inactive slot.
+   * Swaps slots if next frame is already pre-painted in inactive slot (0ms hit).
    * Dispatches background paint for next sequential frame (frame + 1).
    */
   public async getFrameCanvas(frame: number, fps: number): Promise<OffscreenCanvas | null> {
@@ -103,35 +112,57 @@ export class SequentialVideoReader implements Disposable {
       if (!this.canvasA || !this.canvasB) return null;
     }
 
-    // 1. If requested frame is already the active frame, return current canvas
+    // 1. If requested frame is already the active frame, return current canvas immediately
     if (this.currentFrame === frame) {
       return this.getActiveCanvas();
     }
 
-    // 2. If requested frame is currently being preloaded in inactive slot, await it!
-    if (this.isPreloading && this.preloadingFrame === frame && this.preloadPromise) {
-      await this.preloadPromise;
-    }
-
-    // 3. If requested frame matches preloaded frame in inactive slot, swap!
+    // 2. If requested frame is already pre-painted in inactive slot, swap immediately (0ms)!
     if (this.preloadedFrame === frame) {
       this.swap();
       this.currentFrame = frame;
+      this.preloadedFrame = -1;
       void this.preloadNext(frame + 1, fps);
       return this.getActiveCanvas();
     }
 
-    // 4. Otherwise (seek/startup/miss), decode into INACTIVE slot to protect the active buffer!
+    // 3. If requested frame is currently in-flight being preloaded, await it!
+    if (this.isPreloading && this.preloadingFrame === frame && this.preloadPromise) {
+      await this.preloadPromise;
+      if (this.preloadedFrame === frame) {
+        this.swap();
+        this.currentFrame = frame;
+        this.preloadedFrame = -1;
+        void this.preloadNext(frame + 1, fps);
+        return this.getActiveCanvas();
+      }
+    }
+
+    // 4. If an in-flight preload is active for a different frame (e.g. skip/seek), await it
+    // so that the inactive slot is freed and CanvasSink is idle.
+    if (this.preloadPromise) {
+      await this.preloadPromise;
+      if (this.preloadedFrame === frame) {
+        this.swap();
+        this.currentFrame = frame;
+        this.preloadedFrame = -1;
+        void this.preloadNext(frame + 1, fps);
+        return this.getActiveCanvas();
+      }
+    }
+
+    // 5. Otherwise, decode into INACTIVE slot to protect the active buffer!
     const inactive = this.getInactiveSlot();
     const painted = await this.paintSlot(inactive, frame, fps);
     if (painted) {
       this.swap();
       this.currentFrame = frame;
+      this.preloadedFrame = -1;
       void this.preloadNext(frame + 1, fps);
       return this.getActiveCanvas();
     }
 
-    // 5. Zero-Blackout Hold-On-Miss Guarantee:
+    // 6. Zero-Blackout Hold-On-Miss Guarantee:
     // If target frame decode is delayed or dropped, retain and return the active canvas slot
     // without having mutated it, preventing downstream compositors from painting black.
     const heldCanvas = this.getActiveCanvas();
@@ -148,9 +179,10 @@ export class SequentialVideoReader implements Disposable {
     const targetCtx = slot === 'A' ? this.ctxA : this.ctxB;
     if (!targetCtx || !this.canvasSink || !targetCanvas) return false;
 
+    const release = await this.acquireDecodeLock();
     const sec = Math.max(0, frame / (fps || 30));
     try {
-      const wrapped = await this.enqueueDecode(() => this.canvasSink!.getCanvas(sec));
+      const wrapped = await this.canvasSink.getCanvas(sec);
       if (wrapped) {
         const raw = typeof (wrapped as any).getRawCanvas === 'function'
           ? (wrapped as any).getRawCanvas()
@@ -172,12 +204,14 @@ export class SequentialVideoReader implements Disposable {
       }
     } catch (err) {
       console.warn('[SequentialVideoReader] paintSlot error at frame', frame, err);
+    } finally {
+      release();
     }
     return false;
   }
 
   private async preloadNext(frame: number, fps: number): Promise<void> {
-    if (this.isPreloading || this.preloadedFrame === frame) return;
+    if (this.isPreloading || this.preloadedFrame === frame || this.currentFrame === frame) return;
     this.isPreloading = true;
     this.preloadingFrame = frame;
     const inactive = this.getInactiveSlot();
@@ -201,7 +235,7 @@ export class SequentialVideoReader implements Disposable {
     this.preloadingFrame = -1;
     this.isPreloading = false;
     this.preloadPromise = null;
-    this.decodeQueue = Promise.resolve();
+    this.decodeLock = null;
   }
 
   public dispose(): void {

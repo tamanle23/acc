@@ -127,3 +127,4 @@
 | 461 | [Decouple Task Definitions from Workers & Versioned Catalog](./461_decouple_task_definitions_from_workers_and_versioned_catalog.md) | Completed |
 | 462 | [Preview Playback Black Flashing Resolution & RAM Optimization](./462_preview_playback_black_flashing_and_ram_optimization.md) | Completed |
 | 463 | [Eliminate Preview Black Flashing & Unify Shuttle Engine](./463_eliminate_preview_black_flashing_and_unify_shuttle_engine.md) | Completed |
+| 464 | [Fix Preview Playback Lag & Optimize Sequential Video Reader](./464_fix_preview_playback_lag_and_optimize_sequential_reader.md) | Completed |

@@ -174,16 +174,18 @@ async function renderCurrentFrame(
 
   // 3. Resolve active video frames from Mediabunny readers or MemoryManager using clip-local frames
   const activeSeqs = engine.seek(frame).activeSequences;
-  const activeAssetIds = new Set<string>();
+  const activeVideoAssetIds = new Set<string>();
   for (const seq of activeSeqs) {
-    if (seq.assetId) activeAssetIds.add(seq.assetId);
+    if (seq.assetId && videoReaders.has(seq.assetId)) {
+      activeVideoAssetIds.add(seq.assetId);
+    }
   }
 
   // Update hardware decoder lease priorities based on active timeline sequences
   decoderPool.updatePriorities({
     playheadFrame: frame,
     fps: currentFps,
-    activeAssetIds,
+    activeAssetIds: activeVideoAssetIds,
     timeline: currentTimeline || undefined,
   });
 
@@ -264,8 +266,8 @@ async function renderCurrentFrame(
     // If an active playing video clip was on the timeline but missed its texture (decode latency),
     // retain the existing front-buffer to guarantee zero black frame flashes.
     let hasMissingActiveTexture = false;
-    if (activePlaying && activeAssetIds.size > 0) {
-      for (const assetId of activeAssetIds) {
+    if (activePlaying && activeVideoAssetIds.size > 0) {
+      for (const assetId of activeVideoAssetIds) {
         if (!textureCache.has(assetId) || !textureCache.get(assetId)) {
           hasMissingActiveTexture = true;
           break;

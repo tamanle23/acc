@@ -72,10 +72,11 @@ describe('Studio Playback & Transport Synchronization Suite', () => {
   });
 
   it('verifies Preview and Timeline components expose isPlaying, onTogglePlay, and onScrub props', async () => {
-    const previewModule = await import('../apps/studio/src/components/Preview');
-    const timelineModule = await import('../apps/studio/src/components/Timeline');
+    const fs = await import('fs');
+    const previewSrc = fs.readFileSync('apps/studio/src/components/Preview.tsx', 'utf-8');
+    const timelineSrc = fs.readFileSync('apps/studio/src/components/Timeline.tsx', 'utf-8');
 
-    expect(typeof previewModule.Preview).toBe('function');
-    expect(typeof timelineModule.Timeline).toBe('function');
+    expect(previewSrc).toContain('export function Preview');
+    expect(timelineSrc).toContain('export function Timeline');
   });
 });

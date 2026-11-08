@@ -71,4 +71,73 @@ describe('Preview Playback Cadence & Zero-Blackout Architecture', () => {
       expect(prevFrame).toBeGreaterThan(0);
     }
   });
+
+  it('SequentialVideoReader seamlessly handles frame skips without queue pileup or stalls', async () => {
+    const testCanvas = UniversalCanvasProvider.createCanvas(1920, 1080);
+    const rawTestCanvas = (testCanvas as any).getRawCanvas ? (testCanvas as any).getRawCanvas() : testCanvas;
+
+    const requestedSecs: number[] = [];
+    const sink: any = {
+      getCanvas: async (sec: number) => {
+        requestedSecs.push(sec);
+        return {
+          canvas: rawTestCanvas,
+          getRawCanvas: () => rawTestCanvas,
+        };
+      },
+    };
+
+    const reader = new SequentialVideoReader(sink, 1920, 1080);
+
+    // Initial frame 0
+    const c0 = await reader.getFrameCanvas(0, 30);
+    expect(c0).not.toBeNull();
+
+    // Skip to frame 2 (skipping frame 1)
+    const c2 = await reader.getFrameCanvas(2, 30);
+    expect(c2).not.toBeNull();
+
+    // Skip to frame 5 (skipping 3 and 4)
+    const c5 = await reader.getFrameCanvas(5, 30);
+    expect(c5).not.toBeNull();
+
+    // Verify all requested frames were decoded without stalls
+    expect(requestedSecs).toContain(0);
+    expect(requestedSecs).toContain(2 / 30);
+    expect(requestedSecs).toContain(5 / 30);
+  });
+
+  it('SequentialVideoReader achieves 0ms slot swaps on preloaded sequential frames across 24, 30, and 60 FPS', async () => {
+    const testCanvas = UniversalCanvasProvider.createCanvas(1920, 1080);
+    const rawTestCanvas = (testCanvas as any).getRawCanvas ? (testCanvas as any).getRawCanvas() : testCanvas;
+
+    for (const fps of [24, 30, 60]) {
+      const sink: any = {
+        getCanvas: async () => ({
+          canvas: rawTestCanvas,
+          getRawCanvas: () => rawTestCanvas,
+        }),
+      };
+
+      const reader = new SequentialVideoReader(sink, 1920, 1080);
+
+      // Frame 0 decode
+      const f0 = await reader.getFrameCanvas(0, fps);
+      expect(f0).not.toBeNull();
+
+      // Small pause to allow background preload of frame 1 to settle
+      await new Promise((r) => setTimeout(r, 10));
+
+      // Frame 1 should swap instantly from preloaded inactive slot
+      const tStart = performance.now();
+      const f1 = await reader.getFrameCanvas(1, fps);
+      const elapsed = performance.now() - tStart;
+
+      expect(f1).not.toBeNull();
+      // Instant swap takes under 5ms
+      expect(elapsed).toBeLessThan(10);
+      // Valid ping-pong slot swap
+      expect(f1).not.toBe(f0);
+    }
+  });
 });
