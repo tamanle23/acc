@@ -453,8 +453,11 @@ public class TaskDefinitionRegistry {
         String effectiveTenant = (tenantId != null && !tenantId.isBlank()) ? tenantId : "system";
         Map<String, TaskDefinitionRecord> mergedByName = new LinkedHashMap<>();
 
-        // 1. Prepend all canonical built-in system contracts
+        // 1. Prepend all canonical built-in system contracts (excluding generic worker dispatch primitive)
         for (com.acc.workflow.core.schema.TaskTypeContract c : com.acc.workflow.core.schema.BuiltInTaskContracts.getContracts().values()) {
+            if ("SIMPLE".equalsIgnoreCase(c.taskType())) {
+                continue;
+            }
             mergedByName.put(c.taskType(), new TaskDefinitionRecord(
                 "system:" + c.taskType().toLowerCase() + ":v1",
                 "SYSTEM",

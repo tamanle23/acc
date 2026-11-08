@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { DataTableColumnHeader } from '@/components/data-table';
 import { type TaskDefinitionRecord, resolveTaskCategory } from '@/features/workflows/api/task-definition-api';
+import { taskContractRegistry } from '../studio/utils/contracts/task-contract-registry';
 
 interface CreateTaskDefinitionColumnsProps {
   onEditTaskDef: (taskDef: TaskDefinitionRecord) => void;
@@ -46,7 +47,7 @@ export const createTaskDefinitionColumns = ({
     ),
     cell: ({ row }) => {
       const item = row.original;
-      const isBuiltIn = Boolean(item.isBuiltIn || item.tenantId === 'SYSTEM' || item.tenantId === 'system');
+      const isBuiltIn = taskContractRegistry.isBuiltIn(item.name);
       const category = resolveTaskCategory(item.name);
       return (
         <div className="flex flex-col min-w-[200px]">
@@ -181,7 +182,7 @@ export const createTaskDefinitionColumns = ({
     header: () => <span className="sr-only">Actions</span>,
     cell: ({ row }) => {
       const item = row.original;
-      const isBuiltIn = Boolean(item.isBuiltIn || item.tenantId === 'SYSTEM' || item.tenantId === 'system');
+      const isBuiltIn = taskContractRegistry.isBuiltIn(item.name);
       const isDraft = item.status === 'DRAFT';
 
       return (

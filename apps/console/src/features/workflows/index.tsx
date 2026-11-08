@@ -30,6 +30,7 @@ import {
   useDeleteTaskDefinitionDraft,
   type TaskDefinitionRecord,
 } from './api/task-definition-api';
+import { taskContractRegistry } from './components/studio/utils/contracts/task-contract-registry';
 import { getRouteApi } from '@tanstack/react-router';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -63,7 +64,7 @@ export const WorkflowsFeature: React.FC = () => {
 
   const handleEditTaskDef = (taskDef: TaskDefinitionRecord) => {
     setEditingTaskDef(taskDef);
-    setEditorMode(taskDef.isBuiltIn || taskDef.tenantId === 'SYSTEM' ? 'inspect' : 'edit');
+    setEditorMode(taskContractRegistry.isBuiltIn(taskDef.name) ? 'inspect' : 'edit');
     setIsTaskEditorOpen(true);
   };
 

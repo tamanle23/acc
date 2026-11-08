@@ -1896,7 +1896,9 @@ export const SANDBOX_TASK_CONTRACTS: TaskTypeContractIR[] = [
 ];
 
 export function getBuiltinTaskDefinitions(): TaskDefinitionRecordIR[] {
-  return SANDBOX_TASK_CONTRACTS.map((c) => ({
+  return SANDBOX_TASK_CONTRACTS
+    .filter((c) => c.taskType.toUpperCase() !== 'SIMPLE')
+    .map((c) => ({
     taskDefId: `system:${c.taskType.toLowerCase()}:v1`,
     tenantId: 'SYSTEM',
     name: c.taskType,

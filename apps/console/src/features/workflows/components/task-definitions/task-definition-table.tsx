@@ -31,6 +31,7 @@ import {
   DataTableToolbar,
 } from '@/components/data-table';
 import { type TaskDefinitionRecord } from '@/features/workflows/api/task-definition-api';
+import { taskContractRegistry } from '../studio/utils/contracts/task-contract-registry';
 import { createTaskDefinitionColumns } from './task-definition-columns';
 import { cn } from '@/lib/utils';
 
@@ -77,7 +78,7 @@ export const TaskDefinitionTable: React.FC<TaskDefinitionTableProps> = ({
     const custom: TaskDefinitionRecord[] = [];
     const builtIn: TaskDefinitionRecord[] = [];
     for (const item of data) {
-      if (item.isBuiltIn || item.tenantId === 'SYSTEM' || item.tenantId === 'system') {
+      if (taskContractRegistry.isBuiltIn(item.name)) {
         builtIn.push(item);
       } else {
         custom.push(item);
