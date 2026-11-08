@@ -1,4 +1,4 @@
-import { createSignal, onMount, onCleanup, type Accessor } from 'solid-js';
+import { createSignal, createEffect, onCleanup, type Accessor } from 'solid-js';
 
 export type PreviewLOD = 'compact' | 'medium' | 'full';
 export type TitlebarLOD = 'compact' | 'medium' | 'full';
@@ -27,7 +27,7 @@ export function useContainerLOD(
 ): Accessor<PreviewLOD> {
   const [lod, setLod] = createSignal<PreviewLOD>('full');
 
-  onMount(() => {
+  createEffect(() => {
     const el = resolveTarget(target);
     if (!el) return;
 
@@ -69,7 +69,7 @@ export function useTitlebarLOD(
     typeof window !== 'undefined' ? getTitlebarLODTier(window.innerWidth) : 'full'
   );
 
-  onMount(() => {
+  createEffect(() => {
     const el = resolveTarget(target);
 
     const updateTier = (width: number) => {

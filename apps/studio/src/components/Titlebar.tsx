@@ -63,10 +63,10 @@ export interface TitlebarProps {
 }
 
 export function Titlebar(props: TitlebarProps) {
-  let headerRef!: HTMLElement;
+  const [headerRef, setHeaderRef] = createSignal<HTMLElement | null>(null);
   let fileInputRef!: HTMLInputElement;
 
-  const measuredLod = useTitlebarLOD(() => headerRef);
+  const measuredLod = useTitlebarLOD(headerRef);
   const lod = () => props.lod ?? measuredLod();
   // lod === 'compact' lod === 'full' reactive proxy evaluation
 
@@ -145,7 +145,7 @@ export function Titlebar(props: TitlebarProps) {
 
   return (
     <header
-      ref={headerRef}
+      ref={setHeaderRef}
       class="h-14 glass-panel px-2.5 sm:px-4 flex items-center justify-between select-none z-20 transition-colors gap-2 overflow-hidden shrink-0 whitespace-nowrap"
     >
       {/* Left Brand & Workspace Controls */}

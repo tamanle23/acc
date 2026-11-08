@@ -147,15 +147,15 @@ export function Timeline(props: TimelineProps) {
   };
 
   // Hand tool panning ref & state
-  let scrollContainerRef: HTMLDivElement | undefined;
-  let playheadNeedleRef: HTMLDivElement | undefined;
+  const [scrollContainerRef, setScrollContainerRef] = createSignal<HTMLDivElement | undefined>(undefined);
+  const [playheadNeedleRef, setPlayheadNeedleRef] = createSignal<HTMLDivElement | undefined>(undefined);
   let isPanning = false;
   let panStart = { x: 0, scrollLeft: 0 };
 
   // High-Frequency Direct DOM transform for 60fps playhead needle (Zero Solid reconciliation)
   createEffect(() => {
     const ppf = pixelsPerFrame();
-    const needle = playheadNeedleRef;
+    const needle = playheadNeedleRef();
     if (!needle) return;
 
     const unsub = PlayheadController.getInstance().subscribeHighFrequency((frame, isPlaying, fractionalFrame) => {
@@ -174,16 +174,17 @@ export function Timeline(props: TimelineProps) {
   const [clientWidth, setClientWidth] = createSignal(1200);
 
   const handleScroll = () => {
-    if (scrollContainerRef) {
-      const sl = scrollContainerRef.scrollLeft;
+    const container = scrollContainerRef();
+    if (container) {
+      const sl = container.scrollLeft;
       if (props.onScrollChange) props.onScrollChange(sl);
       else setInternalScrollLeft(sl);
-      setClientWidth(scrollContainerRef.clientWidth);
+      setClientWidth(container.clientWidth);
     }
   };
 
   createEffect(() => {
-    const el = scrollContainerRef;
+    const el = scrollContainerRef();
     if (!el) return;
     handleScroll();
     el.addEventListener('scroll', handleScroll, { passive: true });
@@ -191,18 +192,20 @@ export function Timeline(props: TimelineProps) {
   });
 
   const handleTimelineMouseDown = (e: MouseEvent) => {
-    if (activeTool() !== 'hand' || !scrollContainerRef) return;
+    const container = scrollContainerRef();
+    if (activeTool() !== 'hand' || !container) return;
     isPanning = true;
     panStart = {
       x: e.clientX,
-      scrollLeft: scrollContainerRef.scrollLeft,
+      scrollLeft: container.scrollLeft,
     };
   };
 
   const handleTimelineMouseMove = (e: MouseEvent) => {
-    if (isPanning && activeTool() === 'hand' && scrollContainerRef) {
+    const container = scrollContainerRef();
+    if (isPanning && activeTool() === 'hand' && container) {
       const dx = e.clientX - panStart.x;
-      scrollContainerRef.scrollLeft = panStart.scrollLeft - dx;
+      container.scrollLeft = panStart.scrollLeft - dx;
       return;
     }
 
@@ -330,7 +333,7 @@ export function Timeline(props: TimelineProps) {
 
       {/* 2. Unified Scroll Container with Sticky Track Headers and Sticky Timecode Ruler */}
       <div
-        ref={scrollContainerRef}
+        ref={setScrollContainerRef}
         onMouseDown={handleTimelineMouseDown}
         onMouseMove={handleTimelineMouseMove}
         onMouseUp={handleTimelineMouseUp}
@@ -361,7 +364,7 @@ export function Timeline(props: TimelineProps) {
 
           {/* Global Playhead Vertical Needle (Direct DOM Transform for 60fps Zero-Jank Movement) */}
           <div
-            ref={playheadNeedleRef}
+            ref={setPlayheadNeedleRef}
             class="absolute top-7 bottom-0 z-30 pointer-events-none will-change-transform flex flex-col items-center left-0"
             style={{
               transform: `translate3d(${208 + currentFrame() * pixelsPerFrame()}px, 0, 0)`,
@@ -402,7 +405,7 @@ export function Timeline(props: TimelineProps) {
               totalFrames={totalFrames()}
               pixelsPerFrame={pixelsPerFrame()}
               timelineWidth={timelineWidth()}
-              scrollContainerRef={scrollContainerRef}
+              scrollContainerRef={scrollContainerRef()}
               scrollLeft={scrollLeft()}
               clientWidth={clientWidth()}
               snapEnabled={snapEnabled()}

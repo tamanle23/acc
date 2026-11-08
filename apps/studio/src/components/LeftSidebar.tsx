@@ -75,8 +75,8 @@ export function LeftSidebar(props: LeftSidebarProps) {
   const [selectedAssetType, setSelectedAssetType] = createSignal<'all' | 'video' | 'audio' | 'image'>('all');
   let fileInputRef!: HTMLInputElement;
   const [isVaultDragOver, setIsVaultDragOver] = createSignal(false);
-  let presetScrollRef!: HTMLDivElement;
-  let assetScrollRef!: HTMLDivElement;
+  const [presetScrollRef, setPresetScrollRef] = createSignal<HTMLDivElement | null>(null);
+  const [assetScrollRef, setAssetScrollRef] = createSignal<HTMLDivElement | null>(null);
 
   const handleFilesIngest = (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -255,7 +255,7 @@ export function LeftSidebar(props: LeftSidebarProps) {
     get count() {
       return filteredPresets().length;
     },
-    getScrollElement: () => presetScrollRef,
+    getScrollElement: () => presetScrollRef(),
     estimateSize: (index) => {
       const p = filteredPresets()[index];
       if (!p) return 140;
@@ -271,7 +271,7 @@ export function LeftSidebar(props: LeftSidebarProps) {
     get count() {
       return filteredAssets().length;
     },
-    getScrollElement: () => assetScrollRef,
+    getScrollElement: () => assetScrollRef(),
     estimateSize: () => 80,
     overscan: 5,
   });
@@ -444,7 +444,7 @@ export function LeftSidebar(props: LeftSidebarProps) {
                   </div>
                 </div>
 
-                <div ref={assetScrollRef} class="flex-1 p-3 overflow-y-auto">
+                <div ref={setAssetScrollRef} class="flex-1 p-3 overflow-y-auto">
                   <Show
                     when={filteredAssets().length > 0}
                     fallback={
@@ -553,7 +553,7 @@ export function LeftSidebar(props: LeftSidebarProps) {
                 </Show>
               </div>
 
-              <div ref={presetScrollRef} class="flex-1 p-3 overflow-y-auto">
+              <div ref={setPresetScrollRef} class="flex-1 p-3 overflow-y-auto">
                 <Show
                   when={filteredPresets().length > 0}
                   fallback={

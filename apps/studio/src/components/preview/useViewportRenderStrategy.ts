@@ -100,8 +100,9 @@ export function useViewportRenderStrategy(options: UseViewportRenderStrategyOpti
   createEffect(() => {
     if (!strategy) return;
 
-    // Depend on reactive ticks/dimensions
+    // Depend on reactive ticks/dimensions and readiness
     assetTick();
+    isReady();
     const frame = options.currentFrame;
     const playing = options.isPlaying;
     const fps = options.fps;
@@ -109,6 +110,8 @@ export function useViewportRenderStrategy(options: UseViewportRenderStrategyOpti
     const debugMode = options.debugMode || 'none';
     const activeSeqs = options.activeSeqs;
     const assetsMap = options.assetsMap;
+
+    if (!strategy.isReady) return;
 
     if (playing) {
       // During active playback, frame rendering is driven exclusively by high-frequency playhead ticks.
@@ -159,7 +162,9 @@ export function useViewportRenderStrategy(options: UseViewportRenderStrategyOpti
 
   return {
     strategy,
-    previewEngine: strategy?.getEngine?.() ?? null,
+    get previewEngine() {
+      return strategy?.getEngine?.() ?? null;
+    },
     get isReady() {
       return isReady();
     },

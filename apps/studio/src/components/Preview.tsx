@@ -37,12 +37,12 @@ export interface PreviewProps {
 }
 
 export function Preview(props: PreviewProps) {
-  let canvasRef!: HTMLCanvasElement;
-  let overlayCanvasRef!: HTMLCanvasElement;
-  let containerRef!: HTMLDivElement;
+  const [canvasRef, setCanvasRef] = createSignal<HTMLCanvasElement | null>(null);
+  const [overlayCanvasRef, setOverlayCanvasRef] = createSignal<HTMLCanvasElement | null>(null);
+  const [containerRef, setContainerRef] = createSignal<HTMLDivElement | null>(null);
 
   // Adaptive Container LOD (Level of Detail) Tracking for Floating HUDs
-  const containerLOD = useContainerLOD(() => containerRef);
+  const containerLOD = useContainerLOD(containerRef);
 
   // Droppable container for dragging library presets into the viewport
   const droppable = useDroppable({
@@ -50,7 +50,7 @@ export function Preview(props: PreviewProps) {
     data: {
       type: 'canvas-viewport',
       getNormalizedCoords: (clientX: number, clientY: number) => {
-        const rect = canvasRef?.getBoundingClientRect();
+        const rect = canvasRef()?.getBoundingClientRect();
         if (rect && rect.width > 0 && rect.height > 0) {
           return {
             normX: Math.max(0.05, Math.min(0.95, (clientX - rect.left) / rect.width)),
@@ -119,33 +119,75 @@ export function Preview(props: PreviewProps) {
 
   // Domain Hook 4: Viewport Render Strategy (Decoupled Worker / Main-Thread Pipeline)
   const renderStrategy = useViewportRenderStrategy({
-    canvasRef: () => canvasRef,
-    overlayCanvasRef: () => overlayCanvasRef,
-    timeline: irState.timeline,
-    assetsMap: irState.doc?.assets || EMPTY_ASSETS,
-    width: virtualWidth(),
-    height: virtualHeight(),
-    timelineWidth: width(),
-    timelineHeight: height(),
-    fps: fps(),
-    totalFrames: totalFrames(),
-    currentFrame: currentFrame(),
-    isPlaying: props.isPlaying ?? false,
-    clearColor: clearColor(),
-    debugMode: debugMode(),
-    activeSeqs: activeSequences(),
+    canvasRef,
+    overlayCanvasRef,
+    get timeline() {
+      return irState.timeline;
+    },
+    get assetsMap() {
+      return irState.doc?.assets || EMPTY_ASSETS;
+    },
+    get width() {
+      return virtualWidth();
+    },
+    get height() {
+      return virtualHeight();
+    },
+    get timelineWidth() {
+      return width();
+    },
+    get timelineHeight() {
+      return height();
+    },
+    get fps() {
+      return fps();
+    },
+    get totalFrames() {
+      return totalFrames();
+    },
+    get currentFrame() {
+      return currentFrame();
+    },
+    get isPlaying() {
+      return props.isPlaying ?? false;
+    },
+    get clearColor() {
+      return clearColor();
+    },
+    get debugMode() {
+      return debugMode();
+    },
+    get activeSeqs() {
+      return activeSequences();
+    },
   });
 
   // Domain Hook 2: Gizmo Direct Manipulation & Vector Snapping
   const gizmo = useGizmoTransform({
-    selectedSeqId: selectedSeqId(),
-    width: width(),
-    height: height(),
-    isLocked: isLocked(),
-    timeline: irState.timeline,
-    doc: irState.doc,
-    activeSequences: activeSequences(),
-    previewEngine: renderStrategy.previewEngine,
+    get selectedSeqId() {
+      return selectedSeqId();
+    },
+    get width() {
+      return width();
+    },
+    get height() {
+      return height();
+    },
+    get isLocked() {
+      return isLocked();
+    },
+    get timeline() {
+      return irState.timeline;
+    },
+    get doc() {
+      return irState.doc;
+    },
+    get activeSequences() {
+      return activeSequences();
+    },
+    get previewEngine() {
+      return renderStrategy.previewEngine;
+    },
     onRenderFrame: () => renderStrategy.renderFrame(currentFrame()),
   });
 
@@ -176,7 +218,7 @@ export function Preview(props: PreviewProps) {
 
   // Vector Snapping Guide Canvas Render Pass
   createEffect(() => {
-    const overlayCanvas = overlayCanvasRef;
+    const overlayCanvas = overlayCanvasRef();
     if (overlayCanvas) {
       const overlayCtx = overlayCanvas.getContext('2d');
       if (overlayCtx) {
@@ -196,7 +238,7 @@ export function Preview(props: PreviewProps) {
   const handleDragOver = (e: DragEvent) => {
     e.preventDefault();
     if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
-    const rect = canvasRef?.getBoundingClientRect();
+    const rect = canvasRef()?.getBoundingClientRect();
     if (rect) {
       const normX = Math.max(0.05, Math.min(0.95, (e.clientX - rect.left) / rect.width));
       const normY = Math.max(0.05, Math.min(0.95, (e.clientY - rect.top) / rect.height));
@@ -217,7 +259,7 @@ export function Preview(props: PreviewProps) {
     try {
       let normX = 0.5;
       let normY = 0.5;
-      const rect = canvasRef?.getBoundingClientRect();
+      const rect = canvasRef()?.getBoundingClientRect();
       if (rect) {
         normX = Math.max(0.05, Math.min(0.95, (e.clientX - rect.left) / rect.width));
         normY = Math.max(0.05, Math.min(0.95, (e.clientY - rect.top) / rect.height));
@@ -253,7 +295,7 @@ export function Preview(props: PreviewProps) {
     <div
       id="preview-inner"
       ref={(el) => {
-        containerRef = el;
+        setContainerRef(el);
         droppable.ref(el);
       }}
       onMouseMove={handleMouseMove}
@@ -324,7 +366,7 @@ export function Preview(props: PreviewProps) {
         }`}
       >
         <div
-          class={`relative flex items-center justify-center isolate rounded-xl overflow-hidden shadow-[0_12px_40px_rgba(0,0,0,0.7)] border border-[var(--glass-border)] bg-black select-none transition-all duration-300 ${
+          class={`relative w-full h-full flex items-center justify-center isolate rounded-xl overflow-hidden shadow-[0_12px_40px_rgba(0,0,0,0.7)] border border-[var(--glass-border)] bg-black select-none transition-all duration-300 ${
             panZoom.isPanToolActive || panZoom.isSpacePressed
               ? panZoom.isPanning
                 ? 'cursor-grabbing'
@@ -349,7 +391,7 @@ export function Preview(props: PreviewProps) {
           onMouseDown={(e) => {
             if (panZoom.isPanToolActive || panZoom.isSpacePressed || e.button === 1) {
               panZoom.handleMouseDownPan(e);
-            } else if (e.target === canvasRef) {
+            } else if (e.target === canvasRef()) {
               IRStateManager.getInstance().setSelectedSequenceId(null);
               IRStateManager.getInstance().setInspectorMode('timeline');
             }
@@ -357,8 +399,8 @@ export function Preview(props: PreviewProps) {
         >
           {/* Dual-Layer Viewport Canvas */}
           <ViewportCanvasLayer
-            canvasRef={canvasRef}
-            overlayCanvasRef={overlayCanvasRef}
+            canvasRef={setCanvasRef}
+            overlayCanvasRef={setOverlayCanvasRef}
             isPanToolActive={panZoom.isPanToolActive}
             isSpacePressed={panZoom.isSpacePressed}
           />

@@ -421,9 +421,9 @@ function syncAssetSources(assets: Record<string, { src?: string; type?: string }
             if (bmp) {
               safeSetTexture(assetId, bmp);
               texturesDirty = true;
-              // if (!isPlaying) {
-              //   renderCurrentFrame(currentFrame, 1.0, false);
-              // }
+              if (!isPlaying) {
+                void renderCurrentFrame(currentFrame, 1.0, false, currentClearColor);
+              }
             }
           })
           .catch(() => { });
