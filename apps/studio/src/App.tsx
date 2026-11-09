@@ -129,13 +129,15 @@ function StudioWorkspace() {
   });
 
   const handleScrub = (frame: number) => {
+    // If playback is currently active, halt shuttle to park cleanly on scrubbed frame (standard NLE behavior)
+    if (PlayheadController.getInstance().getIsPlaying()) {
+      shuttle?.setSpeed(0);
+    }
     const discrete = snapToDiscreteFrame(frame);
     const clamped = Math.max(0, Math.min(discrete, totalFrames()));
     setCurrentFrame(clamped);
-    PlayheadController.getInstance().seek(clamped, !shuttle.isPlaying);
-    if (!shuttle.isPlaying) {
-      WebAudioEngine.getInstance().playScrubFeedback(clamped, fps(), irState);
-    }
+    PlayheadController.getInstance().seek(clamped, true);
+    WebAudioEngine.getInstance().playScrubFeedback(clamped, fps(), irState);
   };
 
   // Frame-Accurate J-K-L Shuttle Engine with Discrete Frame Snapping & Audio Clock Sync

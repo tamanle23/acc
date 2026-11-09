@@ -136,3 +136,4 @@
 | 470 | [Fix Studio RightSidebar Sliders Not Moving](./470_fix_studio_right_sidebar_sliders_not_moving.md) | Completed |
 | 471 | [Fix Studio Add Effect Popover Flashing](./471_fix_studio_add_effect_popover_flashing.md) | Completed |
 | 472 | [Fix Audio and Image Asset Cache Negative Caching and Dead Demo URLs](./472_fix_audio_and_image_asset_cache_negative_caching_and_dead_urls.md) | Completed |
+| 473 | [Fix Studio Playhead Controller and Playback Clock Desynchronization](./473_fix_studio_playhead_controller_and_playback_clock_desync.md) | Completed |

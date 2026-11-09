@@ -87,13 +87,19 @@ export class DeterministicTimelineClock {
   }
 
   public setSyncMode(mode: ClockSyncMode): void {
-    this.mode = mode;
+    if (this.mode !== mode) {
+      this.playbackStartFrame = this.currentFrame;
+      this.accumulatedElapsedSec = 0;
+      this.needsAudioReanchor = true;
+      this.mode = mode;
+    }
   }
 
   public getState(): ClockState {
-    const rationalTime = RationalTime.fromFrame(this.currentFrame, this.fps);
+    const discreteFrame = Math.round(this.currentFrame);
+    const rationalTime = RationalTime.fromFrame(discreteFrame, this.fps);
     return {
-      currentFrame: this.currentFrame,
+      currentFrame: discreteFrame,
       isPlaying: this.isPlaying,
       speed: this.speed,
       fps: this.fps,
@@ -105,10 +111,14 @@ export class DeterministicTimelineClock {
   }
 
   public getRationalTime(): RationalTime {
-    return RationalTime.fromFrame(this.currentFrame, this.fps);
+    return RationalTime.fromFrame(Math.round(this.currentFrame), this.fps);
   }
 
   public getFrame(): number {
+    return Math.round(this.currentFrame);
+  }
+
+  public getFractionalFrame(): number {
     return this.currentFrame;
   }
 
@@ -181,12 +191,12 @@ export class DeterministicTimelineClock {
       }
       const audioNow = timeOrDeltaSec ?? this.audioStartSec;
       const audioElapsed = Math.max(0, audioNow - this.audioStartSec);
-      const deltaFrames = Math.round(audioElapsed * this.fps * this.speed);
+      const deltaFrames = audioElapsed * this.fps * this.speed;
       targetFrame = this.playbackStartFrame + deltaFrames;
     } else if (this.mode === 'monotonic_worker') {
       const delta = timeOrDeltaSec ?? (1 / (this.fps * Math.abs(this.speed || 1)));
       this.accumulatedElapsedSec += delta;
-      const deltaFrames = Math.round(this.accumulatedElapsedSec * this.fps * this.speed);
+      const deltaFrames = this.accumulatedElapsedSec * this.fps * this.speed;
       targetFrame = this.playbackStartFrame + deltaFrames;
     }
 

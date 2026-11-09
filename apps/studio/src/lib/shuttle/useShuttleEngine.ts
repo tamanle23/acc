@@ -47,7 +47,7 @@ export function createShuttleEngine(options: UseShuttleEngineOptions): UseShuttl
   const [speed, setSpeedState] = createSignal<ShuttleSpeed>(0);
   let isKDown = false;
 
-  const getCurrentFrame = () => resolveVal(options.currentFrame);
+  const getCurrentFrame = () => PlayheadController.getInstance().getFrame();
   const getTotalFrames = () => resolveVal(options.totalFrames);
   const getFps = () => resolveVal(options.fps);
   const getIrState = () => resolveVal(options.irState);
@@ -55,9 +55,11 @@ export function createShuttleEngine(options: UseShuttleEngineOptions): UseShuttl
   const setSpeed = (newSpeed: ShuttleSpeed) => {
     const total = getTotalFrames();
     const maxBound = Math.max(0, total - 1);
-    const cur = getCurrentFrame();
+    let cur = getCurrentFrame();
 
     if (newSpeed > 0 && cur >= maxBound) {
+      cur = 0;
+      PlayheadController.getInstance().seek(0, true);
       options.onScrub(0);
     }
 
@@ -65,13 +67,14 @@ export function createShuttleEngine(options: UseShuttleEngineOptions): UseShuttl
     PlayheadController.getInstance().setIsPlaying(newSpeed !== 0);
 
     if (newSpeed === 0) {
-      const snapped = snapToDiscreteFrame(getCurrentFrame());
+      const snapped = snapToDiscreteFrame(cur);
+      PlayheadController.getInstance().seek(snapped, true);
       options.onScrub(snapped);
       WebAudioEngine.getInstance().stopPlayback();
     } else {
       WebAudioEngine.getInstance().setShuttleSpeed(
         newSpeed,
-        getCurrentFrame(),
+        cur,
         getFps(),
         getIrState()
       );
@@ -105,8 +108,10 @@ export function createShuttleEngine(options: UseShuttleEngineOptions): UseShuttl
       setSpeed(0);
     }
     const maxFrame = Math.max(0, getTotalFrames());
-    const target = snapToDiscreteFrame(getCurrentFrame() + delta);
+    const current = getCurrentFrame();
+    const target = snapToDiscreteFrame(current + delta);
     const clamped = Math.max(0, Math.min(maxFrame, target));
+    PlayheadController.getInstance().seek(clamped, true);
     options.onScrub(clamped);
     WebAudioEngine.getInstance().playScrubFeedback(clamped, getFps(), getIrState());
   };
@@ -135,7 +140,6 @@ export function createShuttleEngine(options: UseShuttleEngineOptions): UseShuttl
 
     let rafId: number;
     let lastTime = performance.now();
-    let lastUiSyncTime = performance.now();
 
     const tick = (now: number) => {
       let targetFrame: number;
@@ -177,11 +181,6 @@ export function createShuttleEngine(options: UseShuttleEngineOptions): UseShuttl
 
       // Advance high-frequency render subscribers (Canvas & Needle) on EVERY RAF frame at full 60 FPS
       PlayheadController.getInstance().seek(discreteFrame, false, rawFractionalFrame);
-
-      if (now - lastUiSyncTime >= 250) {
-        lastUiSyncTime = now;
-        options.onScrub(discreteFrame);
-      }
 
       rafId = requestAnimationFrame(tick);
     };

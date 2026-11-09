@@ -40,6 +40,10 @@ export class PlayheadController {
     return this.currentFrame;
   };
 
+  public getFractionalFrame = (): number => {
+    return this.currentFractionalFrame;
+  };
+
   public getIsPlaying = (): boolean => {
     return this.isPlaying;
   };

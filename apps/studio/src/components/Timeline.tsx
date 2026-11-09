@@ -366,9 +366,7 @@ export function Timeline(props: TimelineProps) {
           <div
             ref={setPlayheadNeedleRef}
             class="absolute top-7 bottom-0 z-30 pointer-events-none will-change-transform flex flex-col items-center left-0"
-            style={{
-              transform: `translate3d(${208 + currentFrame() * pixelsPerFrame()}px, 0, 0)`,
-            }}
+            style="transform: translate3d(208px, 0, 0);"
           >
             <div class="w-2.5 h-2.5 bg-rose-500 rotate-45 -mt-1 shadow-xs" />
             <div class="w-0.5 flex-1 bg-rose-500/80" />
