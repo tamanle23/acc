@@ -142,3 +142,4 @@
 | 476 | [Enforce Zero Junk Code and Engineering Hygiene Rules](./476_enforce_zero_junk_code_and_engineering_hygiene_rules.md) | Completed |
 | 477 | [Fix Sidecar Worker Single Warmup Dispatch & Passive Barrier](./477_fix_sidecar_worker_single_warmup_dispatch.md) | Completed |
 | 478 | [Establish 100% Isomorphic and WinterTC Compliant Architecture in @acc/effect-engines](./478_fully_isomorphic_effect_engines.md) | Completed |
+| 479 | [Unified Decoupled Audio Mixing and Hardware Rate Negotiation](./479_unified_audio_mixing_and_hardware_rate_negotiation.md) | Completed |

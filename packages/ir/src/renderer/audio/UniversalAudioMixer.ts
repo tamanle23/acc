@@ -1,6 +1,6 @@
 import { ProceduralAudioSynthesizer } from './ProceduralAudioSynthesizer';
 import { DynamicAudioDuckingEngine } from './DynamicAudioDuckingEngine';
-import type { IAudioSourceProvider } from './AudioSourceAdapter';
+import { DecodedPcmSource, type IAudioSourceProvider } from './AudioSourceAdapter';
 import type { ResolvedTimeline, ResolvedTrack } from '../../types/VideoIR';
 import { ModifierPluginRegistry, type AudioProcessContext } from '../../plugins/ModifierPluginRegistry';
 import { DeterministicAudioClock } from '../../compiler/DeterministicAudioClock';
@@ -69,10 +69,23 @@ export class UniversalAudioMixer {
   public releaseMs = 300;
   public sampleRate = 44100;
   private clips: AudioMixerClip[] = [];
+  private timelineDuckingEnvelope: Float32Array | null = null;
+  private timelineDuckingRate = 1000; // 1 ms resolution (1000 Hz)
+  private lastTimeline: ResolvedTimeline | null = null;
+  private lastResolver?: (assetId: string, src?: string) => IAudioSourceProvider | undefined;
 
   constructor(clips: AudioMixerClip[] = [], sampleRate = 44100) {
     this.clips = clips;
     this.sampleRate = sampleRate;
+  }
+
+  public setSampleRate(sampleRate: number): void {
+    if (this.sampleRate !== sampleRate) {
+      this.sampleRate = sampleRate;
+      if (this.lastTimeline) {
+        this.rebuildDuckingProfile(this.lastTimeline);
+      }
+    }
   }
 
   public setClips(clips: AudioMixerClip[]): void {
@@ -85,6 +98,71 @@ export class UniversalAudioMixer {
 
   public getClips(): AudioMixerClip[] {
     return this.clips;
+  }
+
+  /**
+   * Evaluates or interpolates the pre-computed timeline dynamic ducking gain multiplier at timeSec.
+   */
+  public getDuckingFactorAtTime(timeSec: number): number {
+    if (!this.timelineDuckingEnvelope || this.timelineDuckingEnvelope.length === 0) {
+      return 1.0;
+    }
+    const samplePos = timeSec * this.timelineDuckingRate;
+    const idx = Math.floor(samplePos);
+    if (idx < 0) return 1.0;
+    if (idx >= this.timelineDuckingEnvelope.length - 1) {
+      return this.timelineDuckingEnvelope[this.timelineDuckingEnvelope.length - 1] ?? 1.0;
+    }
+    const frac = samplePos - idx;
+    return this.timelineDuckingEnvelope[idx] * (1 - frac) + this.timelineDuckingEnvelope[idx + 1] * frac;
+  }
+
+  /**
+   * Pre-calculates a continuous timeline-wide sidechain ducking curve at 1000 Hz (1ms resolution).
+   * Guarantees identical, flutter-free ducking across arbitrary slice boundaries.
+   */
+  public rebuildDuckingProfile(timeline?: ResolvedTimeline): void {
+    const tl = timeline || this.lastTimeline;
+    if (!tl) {
+      this.timelineDuckingEnvelope = null;
+      return;
+    }
+
+    const fps = tl.meta?.globalFps || 30;
+    const totalSec = tl.durationSeconds || (tl.totalFrames ? tl.totalFrames / fps : 10);
+    const totalEnvSamples = Math.max(1, Math.ceil(totalSec * this.timelineDuckingRate));
+    const voicePcm = new Float32Array(totalEnvSamples);
+
+    let hasVoice = false;
+    for (const clip of this.clips) {
+      if (clip.type === 'voice' || clip.modifiers?.some((m) => m.type === 'sfx/dynamic_ducking')) {
+        hasVoice = true;
+        const startIdx = Math.max(0, Math.floor(clip.startTimeSec * this.timelineDuckingRate));
+        const endIdx = Math.min(
+          totalEnvSamples,
+          Math.ceil((clip.startTimeSec + clip.durationSec) * this.timelineDuckingRate)
+        );
+        for (let i = startIdx; i < endIdx; i++) {
+          voicePcm[i] = Math.max(voicePcm[i], 0.25);
+        }
+      }
+    }
+
+    if (!hasVoice) {
+      this.timelineDuckingEnvelope = null;
+      return;
+    }
+
+    const attenuationDb = this.duckingFactor > 1e-4 ? 20 * Math.log10(this.duckingFactor) : -60;
+    this.timelineDuckingEnvelope = DynamicAudioDuckingEngine.generateEnvelope(voicePcm, totalEnvSamples, {
+      sampleRate: this.timelineDuckingRate,
+      channels: 1,
+      attenuationDb,
+      thresholdDb: -36.0,
+      attackMs: this.attackMs,
+      holdMs: 100,
+      releaseMs: this.releaseMs,
+    });
   }
 
   /**
@@ -124,7 +202,7 @@ export class UniversalAudioMixer {
         const startSec = (seq.startFrame ?? 0) / Math.max(1, fps);
         const durationSec = (seq.durationFrames || 30) / Math.max(1, fps);
 
-        let clipVolume = 0.8;
+        let clipVolume = typeof (seq as any).volume === 'number' ? (seq as any).volume : 1.0;
         let clipPan = 0.0;
 
         if (seq.modifiers) {
@@ -186,7 +264,10 @@ export class UniversalAudioMixer {
       this.duckingFactor = 0.25;
     }
 
+    this.lastTimeline = timeline;
+    this.lastResolver = audioSourceResolver;
     this.setClips(clips);
+    this.rebuildDuckingProfile(timeline);
   }
 
   /**
@@ -219,19 +300,21 @@ export class UniversalAudioMixer {
       const clipStart = clip.startTimeSec;
       const clipEnd = clipStart + clip.durationSec;
 
-      // Check time overlap
-      if (clipEnd <= sliceStart || clipStart >= sliceEnd) {
+      // Check time overlap between slice and clip
+      const overlapStart = Math.max(sliceStart, clipStart);
+      const overlapEnd = Math.min(sliceEnd, clipEnd);
+      if (overlapEnd <= overlapStart) {
         continue;
       }
 
-      // Compute clip-relative time offset to ensure the asset plays from its beginning
-      const clipRelativeOffsetSec = Math.max(0, sliceStart - clipStart);
+      const offsetFromClipStart = overlapStart - clipStart;
+      const overlapDuration = overlapEnd - overlapStart;
 
-      // Generate or sample raw audio for this clip
-      const { left: rawL, right: rawR } = this.sampleClipAudio(clip, clipRelativeOffsetSec, durationSec);
+      // Generate or sample raw audio for this clip's overlapping section
+      const { left: rawL, right: rawR } = this.sampleClipAudio(clip, offsetFromClipStart, overlapDuration);
 
       // Process clip-level modifier plugins
-      this.applyClipModifiers(clip, rawL, rawR, clipRelativeOffsetSec, durationSec);
+      this.applyClipModifiers(clip, rawL, rawR, offsetFromClipStart, overlapDuration);
 
       // Apply base clip volume and pan if not overridden by modifiers
       const clipVolume = clip.volume ?? 1.0;
@@ -240,33 +323,37 @@ export class UniversalAudioMixer {
       const gainL = Math.cos(panAngle) * clipVolume;
       const gainR = Math.sin(panAngle) * clipVolume;
 
-      for (let i = 0; i < numSamples; i++) {
-        const t = sliceStart + i / this.sampleRate;
-        if (t >= clipStart && t < clipEnd) {
-          // Calculate intra-slice sample offset relative to clip start
-          const intraClipSampleIdx = Math.floor((t - sliceStart) * this.sampleRate);
-          const sampleL = (rawL[intraClipSampleIdx] ?? 0) * gainL;
-          const sampleR = (rawR[intraClipSampleIdx] ?? 0) * gainR;
+      const outStartIdx = Math.floor((overlapStart - sliceStart) * this.sampleRate);
+      const overlapSamples = Math.floor(overlapDuration * this.sampleRate);
 
-          if (clip.type === 'voice') {
-            voiceLeft[i] += sampleL;
-            voiceRight[i] += sampleR;
-            hasVoice = true;
-          } else if (clip.type === 'sfx') {
-            sfxLeft[i] += sampleL;
-            sfxRight[i] += sampleR;
-          } else {
-            bgmLeft[i] += sampleL;
-            bgmRight[i] += sampleR;
-          }
+      for (let j = 0; j < overlapSamples; j++) {
+        const outIdx = outStartIdx + j;
+        if (outIdx >= numSamples) break;
+
+        const sampleL = (rawL[j] ?? 0) * gainL;
+        const sampleR = (rawR[j] ?? 0) * gainR;
+
+        if (clip.type === 'voice') {
+          voiceLeft[outIdx] += sampleL;
+          voiceRight[outIdx] += sampleR;
+          hasVoice = true;
+        } else if (clip.type === 'sfx') {
+          sfxLeft[outIdx] += sampleL;
+          sfxRight[outIdx] += sampleR;
+        } else {
+          bgmLeft[outIdx] += sampleL;
+          bgmRight[outIdx] += sampleR;
         }
       }
     }
 
     // 2. Master Bus Dynamic Ducking:
-    // Generate sidechain envelope from voice dialogue energy
+    // If a timeline-wide envelope was built (via syncFromTimeline), use smooth global lookup.
+    // Otherwise fallback to local slice envelope calculation.
     let duckingEnvelope: Float32Array | null = null;
-    if (hasVoice) {
+    const useGlobalDucking = this.timelineDuckingEnvelope !== null;
+
+    if (!useGlobalDucking && hasVoice) {
       // Calculate mono energy of voice for ducking analysis
       const voiceMono = new Float32Array(numSamples);
       for (let i = 0; i < numSamples; i++) {
@@ -288,7 +375,14 @@ export class UniversalAudioMixer {
 
     // 3. Sum Track Buses into Master Bus with Ducking
     for (let i = 0; i < numSamples; i++) {
-      const bgmFactor = duckingEnvelope ? duckingEnvelope[i] : 1.0;
+      let bgmFactor = 1.0;
+      if (useGlobalDucking) {
+        const t = sliceStart + i / this.sampleRate;
+        bgmFactor = this.getDuckingFactorAtTime(t);
+      } else if (duckingEnvelope) {
+        bgmFactor = duckingEnvelope[i];
+      }
+
       masterLeft[i] = voiceLeft[i] + sfxLeft[i] + bgmLeft[i] * bgmFactor;
       masterRight[i] = voiceRight[i] + sfxRight[i] + bgmRight[i] * bgmFactor;
 
@@ -408,242 +502,174 @@ export class UniversalAudioMixer {
   }
 
   /**
+   * Evaluates DSP for any arbitrary time slice with guaranteed global envelope continuity.
+   * Alias of mixStereo matching unified Option 2 specification.
+   */
+  public mixSlice(timeOffsetSec: number, durationSec: number): AudioMixResult {
+    return this.mixStereo(timeOffsetSec, durationSec);
+  }
+
+  /**
+   * Asynchronously streams timeline audio in discrete time chunks (e.g. 2.0s).
+   * Yields interleaved Float32 DecoupledAudioMixResult instances with bounded memory.
+   */
+  public async *mixTimelineStream(
+    timeline: ResolvedTimeline,
+    chunkSizeSec = 2.0,
+    options?: DecoupledAudioMixOptions
+  ): AsyncGenerator<DecoupledAudioMixResult> {
+    await this.preloadTimelineAudio(timeline, options);
+    const fps = timeline.meta?.globalFps || 30;
+    const totalDurationSec = timeline.durationSeconds || (timeline.totalFrames ? timeline.totalFrames / fps : 0);
+    const totalSamples = DeterministicAudioClock.totalSamplesForFrames(
+      timeline.totalFrames,
+      this.sampleRate,
+      fps
+    );
+
+    let timeSec = 0;
+    let sampleOffset = 0;
+
+    while (timeSec < totalDurationSec && sampleOffset < totalSamples) {
+      const remainingSec = totalDurationSec - timeSec;
+      const chunkDuration = Math.min(chunkSizeSec, remainingSec);
+      const slice = this.mixStereo(timeSec, chunkDuration);
+      const chunkSampleCount = slice.left.length;
+
+      const interleaved = new Float32Array(chunkSampleCount * 2);
+      for (let i = 0; i < chunkSampleCount; i++) {
+        interleaved[i * 2] = slice.left[i];
+        interleaved[i * 2 + 1] = slice.right[i];
+      }
+
+      yield {
+        totalSamples: chunkSampleCount,
+        sampleRate: this.sampleRate,
+        channels: 2,
+        durationSeconds: chunkDuration,
+        buffer: interleaved,
+        channelData: [slice.left, slice.right],
+      };
+
+      timeSec += chunkDuration;
+      sampleOffset += chunkSampleCount;
+    }
+  }
+
+  /**
+   * Conforms to WinterTC (ECMA-429) WHATWG Streams.
+   * Yields a continuous byte stream containing a standard RIFF/WAVE header followed by 16-bit PCM chunks.
+   */
+  public toReadableWavStream(
+    timeline: ResolvedTimeline,
+    chunkSizeSec = 2.0,
+    options?: DecoupledAudioMixOptions
+  ): ReadableStream<Uint8Array> {
+    const self = this;
+    let streamIter: AsyncIterator<DecoupledAudioMixResult> | null = null;
+    let headerSent = false;
+    const fps = timeline.meta?.globalFps || 30;
+    const totalSamples = DeterministicAudioClock.totalSamplesForFrames(
+      timeline.totalFrames,
+      this.sampleRate,
+      fps
+    );
+
+    return new ReadableStream<Uint8Array>({
+      async start() {
+        self.syncFromTimeline(timeline);
+        streamIter = self.mixTimelineStream(timeline, chunkSizeSec, options)[Symbol.asyncIterator]();
+      },
+      async pull(controller) {
+        if (!headerSent) {
+          controller.enqueue(UniversalAudioMixer.createWavHeader(totalSamples, 2, self.sampleRate));
+          headerSent = true;
+          return;
+        }
+        if (!streamIter) {
+          controller.close();
+          return;
+        }
+        const next = await streamIter.next();
+        if (next.done) {
+          controller.close();
+        } else if (next.value) {
+          controller.enqueue(UniversalAudioMixer.encodePcmTo16Bit(next.value.buffer));
+        }
+      },
+    });
+  }
+
+  /**
+   * Pre-loads and decodes timeline audio assets into DecodedPcmSource instances on clips.
+   * Enables identical DSP evaluation between offline master exports and interactive slices.
+   */
+  public async preloadTimelineAudio(
+    timeline: ResolvedTimeline,
+    options: DecoupledAudioMixOptions = {}
+  ): Promise<void> {
+    const baseDir = options.baseDir || '.';
+    this.syncFromTimeline(timeline, this.lastResolver);
+
+    const assets = (timeline as any).assets || (timeline as any).doc?.assets || {};
+    for (const clip of this.clips) {
+      if (clip.audioSource && clip.audioSource.isReady()) {
+        continue;
+      }
+      if (clip.assetId && assets[clip.assetId]) {
+        const assetSrc = assets[clip.assetId].src;
+        const resolvedPath = resolveAssetPath(baseDir, assetSrc);
+        const decoded = await this.decodeAsset(resolvedPath);
+        if (decoded) {
+          const totalSamples = decoded.totalSamplesPerChannel;
+          const left = new Float32Array(totalSamples);
+          const right = new Float32Array(totalSamples);
+          const channels = decoded.channels;
+          for (let s = 0; s < totalSamples; s++) {
+            left[s] = decoded.data[s * channels];
+            right[s] = channels > 1 ? decoded.data[s * channels + 1] : left[s];
+          }
+          clip.audioSource = new DecodedPcmSource({
+            channels: [left, right],
+            sourceSampleRate: decoded.sampleRate,
+            sourceTrimStartSec: 0,
+          });
+        }
+      }
+    }
+  }
+
+  /**
    * Concurrently mixes an entire ResolvedTimeline into a single contiguous interleaved PCM audio stream.
-   * Unifies timeline-level offline mixing with sample-accurate ducking, BGM loops, and spatial pan.
+   * Leverages mixTimelineStream for guaranteed parity with chunked and interactive preview audio.
    */
   public async mixTimeline(
     timeline: ResolvedTimeline,
     options: DecoupledAudioMixOptions = {}
   ): Promise<DecoupledAudioMixResult> {
+    const fps = timeline.meta?.globalFps || 30;
     const totalSamples = DeterministicAudioClock.totalSamplesForFrames(
       timeline.totalFrames,
       this.sampleRate,
-      timeline.meta.globalFps
+      fps
     );
     const channels = 2;
-    const baseDir = options.baseDir || '.';
-
-    // Master bus (Float32 interleaved stereo)
     const masterBuffer = new Float32Array(totalSamples * channels);
-    // Dedicated voiceover bus for sidechain ducking analysis
-    const voiceBuffer = new Float32Array(totalSamples * channels);
+    let sampleOffset = 0;
 
-    // Collect all audio sequences across all tracks
-    interface ResolvedAudioClip {
-      track: ResolvedTrack;
-      seq: ResolvedSequence;
-      startSample: number;
-      durationSamples: number;
-      endSample: number;
-      volume: number;
-      pan: number;
-      duckingModifier?: ModifierNode;
-      isDuckable: boolean;
-    }
-
-    const allClips: ResolvedAudioClip[] = [];
-    const targetBuses = new Set<string>();
-
-    // 1. First pass: Identify all ducking targets and gather all audio clips
-    for (const track of timeline.tracks.values()) {
-      if (track.type !== 'audio') continue;
-
-      const trackDucking = track.modifiers?.find((m) => m.type === 'sfx/dynamic_ducking');
-      if (trackDucking && (trackDucking.params as any)?.targetBus) {
-        targetBuses.add((trackDucking.params as any).targetBus);
+    for await (const chunk of this.mixTimelineStream(timeline, 2.0, options)) {
+      const copyLen = Math.min(chunk.buffer.length, masterBuffer.length - sampleOffset * channels);
+      if (copyLen > 0) {
+        masterBuffer.set(chunk.buffer.subarray(0, copyLen), sampleOffset * channels);
+        sampleOffset += chunk.totalSamples;
       }
-
-      for (const seq of track.sequences) {
-        const seqDucking = seq.modifiers?.find((m) => m.type === 'sfx/dynamic_ducking');
-        if (seqDucking && (seqDucking.params as any)?.targetBus) {
-          targetBuses.add((seqDucking.params as any).targetBus);
-        }
-
-        const startSample = Math.round(
-          (seq.startFrame * this.sampleRate) / timeline.meta.globalFps
-        );
-        const durationSamples = Math.round(
-          (seq.durationFrames * this.sampleRate) / timeline.meta.globalFps
-        );
-        const endSample = Math.min(totalSamples, startSample + durationSamples);
-
-        let clipVolume = (seq as any).volume ?? 1.0;
-        let clipPan = (seq as any).spatialPan ?? 0.0;
-
-        if (seq.modifiers) {
-          for (const mod of seq.modifiers) {
-            if (mod.type === 'audio/volume' && mod.params) {
-              const p = mod.params as any;
-              if (typeof p.volume === 'number') clipVolume = p.volume;
-            }
-            if (mod.type === 'audio/pan' && mod.params) {
-              const p = mod.params as any;
-              if (typeof p.stereoPan === 'number') clipPan = p.stereoPan;
-              else if (typeof p.pan === 'number') clipPan = p.pan;
-            }
-          }
-        }
-
-        allClips.push({
-          track,
-          seq,
-          startSample,
-          durationSamples,
-          endSample,
-          volume: clipVolume,
-          pan: clipPan,
-          duckingModifier: seqDucking || trackDucking,
-          isDuckable: false, // determined below
-        });
-      }
-    }
-
-    // Mark clips belonging to targetBuses as duckable
-    for (const clip of allClips) {
-      if (targetBuses.has(clip.track.id)) {
-        clip.isDuckable = true;
-      }
-    }
-
-    // 2. Separate into Control/Direct clips vs Duckable clips
-    const controlClips: ResolvedAudioClip[] = [];
-    const duckableClips: ResolvedAudioClip[] = [];
-
-    for (const clip of allClips) {
-      if (clip.isDuckable) {
-        duckableClips.push(clip);
-      } else {
-        controlClips.push(clip);
-      }
-    }
-
-    // --- PHASE 1: Render Control & Non-Ducked Audio to Master Bus and Voice Buffer ---
-    for (const clip of controlClips) {
-      const { seq, startSample, endSample, volume, pan, duckingModifier } = clip;
-      const clampedPan = Math.max(-1.0, Math.min(1.0, pan));
-      const panAngle = ((clampedPan + 1.0) * Math.PI) / 4.0;
-      const panLeftGain = Math.cos(panAngle) * volume;
-      const panRightGain = Math.sin(panAngle) * volume;
-
-      let decoded: DecodedAudioPCM | null = null;
-      if (seq.assetId && timeline.assets && timeline.assets[seq.assetId]) {
-        const assetSrc = timeline.assets[seq.assetId].src;
-        const resolvedPath = resolveAssetPath(baseDir, assetSrc);
-        decoded = await this.decodeAsset(resolvedPath);
-      }
-
-      if (decoded) {
-        const srcData = decoded.data;
-        const totalSrcSamples = decoded.totalSamplesPerChannel;
-
-        for (let s = startSample; s < endSample; s++) {
-          const srcIdx = s - startSample;
-          if (srcIdx >= totalSrcSamples) break;
-
-          const outIdx = s * channels;
-          const inIdx = srcIdx * channels;
-          const left = srcData[inIdx] * panLeftGain;
-          const right = srcData[inIdx + 1] * panRightGain;
-
-          // If this clip is a control source (has duckingModifier), feed voiceBuffer detector
-          if (duckingModifier) {
-            voiceBuffer[outIdx] += left;
-            voiceBuffer[outIdx + 1] += right;
-          }
-
-          masterBuffer[outIdx] += left;
-          masterBuffer[outIdx + 1] += right;
-        }
-      }
-    }
-
-    // --- PHASE 2: Dynamic Sidechain Envelope Calculation ---
-    let duckingEnvelope: Float32Array | null = null;
-    if (targetBuses.size > 0) {
-      // Find ducking params from any active ducking modifier
-      const activeDuckingMod = allClips.find((c) => c.duckingModifier)?.duckingModifier;
-      const dParams = (activeDuckingMod?.params as any) || {};
-
-      duckingEnvelope = DynamicAudioDuckingEngine.generateEnvelope(voiceBuffer, totalSamples, {
-        sampleRate: this.sampleRate,
-        channels,
-        attenuationDb: typeof dParams.attenuationDb === 'number'
-          ? dParams.attenuationDb
-          : (typeof dParams.duckVolume === 'number' ? 20 * Math.log10(dParams.duckVolume) : -18.0),
-        thresholdDb: typeof dParams.threshold === 'number' ? dParams.threshold : -36.0,
-        attackMs: dParams.attackMs ?? 15,
-        holdMs: dParams.holdMs ?? 100,
-        releaseMs: dParams.releaseMs ?? 300,
-      });
-    }
-
-    // --- PHASE 3: Render Duckable Clips with Envelope Modulation to Master Bus ---
-    for (const clip of duckableClips) {
-      const { seq, startSample, endSample, volume, pan } = clip;
-      const clampedPan = Math.max(-1.0, Math.min(1.0, pan));
-      const panAngle = ((clampedPan + 1.0) * Math.PI) / 4.0;
-      const panLeftGain = Math.cos(panAngle) * volume;
-      const panRightGain = Math.sin(panAngle) * volume;
-
-      const fadeInSamples = Math.round(1.5 * this.sampleRate);
-      const fadeOutSamples = Math.round(2.0 * this.sampleRate);
-
-      let decoded: DecodedAudioPCM | null = null;
-      if (seq.assetId && timeline.assets && timeline.assets[seq.assetId]) {
-        const assetSrc = timeline.assets[seq.assetId].src;
-        const resolvedPath = resolveAssetPath(baseDir, assetSrc);
-        decoded = await this.decodeAsset(resolvedPath);
-      }
-
-      if (decoded) {
-        const srcData = decoded.data;
-        const totalSrcSamples = decoded.totalSamplesPerChannel;
-
-        for (let s = startSample; s < endSample; s++) {
-          const loopSampleIdx = (s - startSample) % totalSrcSamples;
-          const inIdx = loopSampleIdx * channels;
-
-          let fadeGain = 1.0;
-          const tFromStart = s - startSample;
-          const tFromEnd = endSample - s;
-          if (tFromStart < fadeInSamples) {
-            fadeGain = Math.sin((Math.PI * tFromStart) / (2 * fadeInSamples));
-          } else if (tFromEnd < fadeOutSamples) {
-            fadeGain = Math.sin((Math.PI * tFromEnd) / (2 * fadeOutSamples));
-          }
-
-          const duckMultiplier = duckingEnvelope ? duckingEnvelope[s] : 1.0;
-          const currentGain = fadeGain * duckMultiplier;
-          const outIdx = s * channels;
-
-          masterBuffer[outIdx] += srcData[inIdx] * panLeftGain * currentGain;
-          masterBuffer[outIdx + 1] += srcData[inIdx + 1] * panRightGain * currentGain;
-        }
-      } else {
-        // Fallback procedural bed if asset is unresolved
-        const clipDurationSec = (endSample - startSample) / this.sampleRate;
-        const synthBuffer = ProceduralAudioSynthesizer.synthBGM(0, clipDurationSec, this.sampleRate);
-        for (let s = startSample; s < endSample; s++) {
-          const outIdx = s * channels;
-          const duckMultiplier = duckingEnvelope ? duckingEnvelope[s] : 1.0;
-          const synthSample = synthBuffer[s - startSample] || 0;
-          const currentGain = duckMultiplier * volume;
-          masterBuffer[outIdx] += synthSample * panLeftGain * currentGain;
-          masterBuffer[outIdx + 1] += synthSample * panRightGain * currentGain;
-        }
-      }
-    }
-
-    // --- PHASE 5: Tanh Soft-Clipping Master Bus Brickwall Limiter ---
-    for (let i = 0; i < masterBuffer.length; i++) {
-      masterBuffer[i] = Math.tanh(masterBuffer[i]);
     }
 
     return {
       totalSamples,
       sampleRate: this.sampleRate,
       channels,
-      durationSeconds: timeline.durationSeconds,
+      durationSeconds: timeline.durationSeconds || (timeline.totalFrames / fps),
       buffer: masterBuffer,
     };
   }
@@ -690,23 +716,16 @@ export class UniversalAudioMixer {
   }
 
   /**
-   * Encodes a DecoupledAudioMixResult into a valid 16-bit stereo PCM WAV file on disk.
+   * Generates a standard 44-byte RIFF/WAVE header for 16-bit PCM stereo/mono audio.
    */
-  /**
-   * Pure isomorphic in-memory WAV encoder.
-   * Converts Float32Array PCM stereo mixdown to standard RIFF 16-bit PCM WAV byte buffer.
-   */
-  public static encodeToWav(mixResult: DecoupledAudioMixResult): Uint8Array {
-    const totalFrames = mixResult.totalSamples;
-    const channels = mixResult.channels;
-    const sampleRate = mixResult.sampleRate;
+  public static createWavHeader(totalSamples: number, channels: number, sampleRate: number): Uint8Array {
     const bytesPerSample = 2; // 16-bit
     const blockAlign = channels * bytesPerSample;
     const byteRate = sampleRate * blockAlign;
-    const dataSize = totalFrames * blockAlign;
+    const dataSize = totalSamples * blockAlign;
     const totalBufferSize = 44 + dataSize;
 
-    const buffer = new Uint8Array(totalBufferSize);
+    const buffer = new Uint8Array(44);
     const view = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
 
     // RIFF chunk descriptor
@@ -728,19 +747,44 @@ export class UniversalAudioMixer {
     buffer.set([0x64, 0x61, 0x74, 0x61], 36); // 'data'
     view.setUint32(40, dataSize, true);
 
-    let byteOffset = 44;
-    const floatSamples = mixResult.buffer;
-    const len = floatSamples.length;
+    return buffer;
+  }
 
+  /**
+   * Converts Float32Array PCM samples into 16-bit signed integer little-endian byte array.
+   */
+  public static encodePcmTo16Bit(floatSamples: Float32Array): Uint8Array {
+    const len = floatSamples.length;
+    const pcmChunk = new Uint8Array(len * 2);
+    const chunkView = new DataView(pcmChunk.buffer, pcmChunk.byteOffset, pcmChunk.byteLength);
+
+    let bOffset = 0;
     for (let i = 0; i < len; i++) {
       let s = floatSamples[i];
       if (s > 1.0) s = 1.0;
       else if (s < -1.0) s = -1.0;
       const int16 = s < 0 ? Math.round(s * 32768) : Math.round(s * 32767);
-      view.setInt16(byteOffset, int16, true);
-      byteOffset += 2;
+      chunkView.setInt16(bOffset, int16, true);
+      bOffset += 2;
     }
 
+    return pcmChunk;
+  }
+
+  /**
+   * Pure isomorphic in-memory WAV encoder.
+   * Converts Float32Array PCM stereo mixdown to standard RIFF 16-bit PCM WAV byte buffer.
+   */
+  public static encodeToWav(mixResult: DecoupledAudioMixResult): Uint8Array {
+    const header = UniversalAudioMixer.createWavHeader(
+      mixResult.totalSamples,
+      mixResult.channels,
+      mixResult.sampleRate
+    );
+    const data = UniversalAudioMixer.encodePcmTo16Bit(mixResult.buffer);
+    const buffer = new Uint8Array(header.byteLength + data.byteLength);
+    buffer.set(header, 0);
+    buffer.set(data, header.byteLength);
     return buffer;
   }
 
@@ -760,24 +804,7 @@ export class UniversalAudioMixer {
     const totalBufferSize = 44 + dataSize;
 
     // 1. Generate standard 44-byte RIFF/WAVE header
-    const headerBuffer = new Uint8Array(44);
-    const headerView = new DataView(headerBuffer.buffer, headerBuffer.byteOffset, headerBuffer.byteLength);
-
-    headerBuffer.set([0x52, 0x49, 0x46, 0x46], 0); // 'RIFF'
-    headerView.setUint32(4, totalBufferSize - 8, true);
-    headerBuffer.set([0x57, 0x41, 0x56, 0x45], 8); // 'WAVE'
-
-    headerBuffer.set([0x66, 0x6d, 0x74, 0x20], 12); // 'fmt '
-    headerView.setUint32(16, 16, true);
-    headerView.setUint16(20, 1, true); // PCM format
-    headerView.setUint16(22, channels, true);
-    headerView.setUint32(24, sampleRate, true);
-    headerView.setUint32(28, byteRate, true);
-    headerView.setUint16(32, blockAlign, true);
-    headerView.setUint16(34, 16, true); // 16-bit
-
-    headerBuffer.set([0x64, 0x61, 0x74, 0x61], 36); // 'data'
-    headerView.setUint32(40, dataSize, true);
+    const headerBuffer = UniversalAudioMixer.createWavHeader(totalFrames, channels, sampleRate);
 
     const cache = ContentCacheRegistry.namespace(CacheNamespace.Audio);
     const metadata = {
@@ -801,19 +828,9 @@ export class UniversalAudioMixer {
         let sampleOffset = 0;
         while (sampleOffset < totalSampleCount) {
           const chunkLen = Math.min(chunkSize, totalSampleCount - sampleOffset);
-          const pcmChunk = new Uint8Array(chunkLen * 2);
-          const chunkView = new DataView(pcmChunk.buffer, pcmChunk.byteOffset, pcmChunk.byteLength);
-
-          let bOffset = 0;
-          for (let i = 0; i < chunkLen; i++) {
-            let s = floatSamples[sampleOffset + i];
-            if (s > 1.0) s = 1.0;
-            else if (s < -1.0) s = -1.0;
-            const int16 = s < 0 ? Math.round(s * 32768) : Math.round(s * 32767);
-            chunkView.setInt16(bOffset, int16, true);
-            bOffset += 2;
-          }
-
+          const pcmChunk = UniversalAudioMixer.encodePcmTo16Bit(
+            floatSamples.subarray(sampleOffset, sampleOffset + chunkLen)
+          );
           await writer.write(pcmChunk);
           sampleOffset += chunkLen;
         }
@@ -834,19 +851,9 @@ export class UniversalAudioMixer {
         let sampleOffset = 0;
         while (sampleOffset < totalSampleCount) {
           const chunkLen = Math.min(chunkSize, totalSampleCount - sampleOffset);
-          const pcmChunk = new Uint8Array(chunkLen * 2);
-          const chunkView = new DataView(pcmChunk.buffer, pcmChunk.byteOffset, pcmChunk.byteLength);
-
-          let bOffset = 0;
-          for (let i = 0; i < chunkLen; i++) {
-            let s = floatSamples[sampleOffset + i];
-            if (s > 1.0) s = 1.0;
-            else if (s < -1.0) s = -1.0;
-            const int16 = s < 0 ? Math.round(s * 32768) : Math.round(s * 32767);
-            chunkView.setInt16(bOffset, int16, true);
-            bOffset += 2;
-          }
-
+          const pcmChunk = UniversalAudioMixer.encodePcmTo16Bit(
+            floatSamples.subarray(sampleOffset, sampleOffset + chunkLen)
+          );
           controller.enqueue(pcmChunk);
           sampleOffset += chunkLen;
         }

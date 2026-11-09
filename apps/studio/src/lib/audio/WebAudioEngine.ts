@@ -76,6 +76,10 @@ export class WebAudioEngine {
   public attachPreviewEngine(engine: IRPreviewEngine): void {
     this.previewEngine = engine;
     this.mixer = engine.getAudioMixer();
+    if (this.ctx) {
+      this.mixer.setSampleRate(this.ctx.sampleRate);
+      this.previewEngine.setAudioSampleRate(this.ctx.sampleRate);
+    }
   }
 
   public getMixer(): UniversalAudioMixer {
@@ -87,7 +91,14 @@ export class WebAudioEngine {
       const win = window as Window & { webkitAudioContext?: typeof AudioContext };
       const AudioCtx = window.AudioContext || win.webkitAudioContext;
       if (AudioCtx) {
-        this.ctx = new AudioCtx({ sampleRate: 44100 });
+        // Auto-negotiate with hardware audio device native sample rate (e.g. 48000 or 44100)
+        this.ctx = new AudioCtx();
+        const hardwareRate = this.ctx.sampleRate || 48000;
+        this.mixer.setSampleRate(hardwareRate);
+        if (this.previewEngine) {
+          this.previewEngine.setAudioSampleRate(hardwareRate);
+        }
+
         this.masterGain = this.ctx.createGain();
         this.masterGain.gain.setValueAtTime(0.8, this.ctx.currentTime);
 
@@ -191,6 +202,12 @@ export class WebAudioEngine {
       this.stopPlayback();
 
       this.syncFromIR(irState, fps);
+      if (this.mixer.sampleRate !== this.ctx.sampleRate) {
+        this.mixer.setSampleRate(this.ctx.sampleRate);
+        if (this.previewEngine) {
+          this.previewEngine.setAudioSampleRate(this.ctx.sampleRate);
+        }
+      }
       const totalFrames = irState?.timeline?.totalFrames || 300;
       const startSec = currentFrame / Math.max(1, fps);
       const remainingSec = Math.max(0.1, (totalFrames - currentFrame) / Math.max(1, fps));
