@@ -1,3 +1,5 @@
+import type { ICanvasContext2D } from '@acc/core-isomorphic';
+
 export interface ColorGradingParams {
   lutPath?: string;
   lut?: string;       // named preset key (e.g. 'cool_steel', 'bleach_bypass')
@@ -13,7 +15,7 @@ export interface ColorGradingParams {
 export interface IColorGradingStrategy {
   readonly id: string;
   generateFFmpegFilter(params: ColorGradingParams): string;
-  applyCanvasTransform(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, params: ColorGradingParams): void;
+  applyCanvasTransform(ctx: ICanvasContext2D, params: ColorGradingParams): void;
 }
 
 export class ColorGradingEngine implements IColorGradingStrategy {
@@ -39,17 +41,17 @@ export class ColorGradingEngine implements IColorGradingStrategy {
   }
 
   public applyCanvasTransform(
-    ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+    ctx: ICanvasContext2D,
     params: ColorGradingParams
   ): void {
-    if (typeof (ctx as CanvasRenderingContext2D).filter !== 'string') return;
+    if (typeof (ctx as any).filter !== 'string') return;
 
     const contrastPct = Math.round((params.contrast ?? 1.0) * 100);
     const saturatePct = Math.round((params.saturation ?? 1.0) * 100);
     const brightnessPct = Math.round((1.0 + (params.exposure ?? 0.0)) * 100);
 
     const filterString = `contrast(${contrastPct}%) saturate(${saturatePct}%) brightness(${brightnessPct}%)`;
-    const typedCtx = ctx as CanvasRenderingContext2D;
+    const typedCtx = ctx as any;
     typedCtx.filter = typedCtx.filter && typedCtx.filter !== 'none'
       ? `${typedCtx.filter} ${filterString}`
       : filterString;

@@ -26,7 +26,7 @@ export class GrabCutFallbackStrategy implements ISegmentationStrategy, IIsomorph
   }
 
   public async segment(
-    imageBufferOrInput: Buffer | Uint8Array | VisionImageInput,
+    imageBufferOrInput: Uint8Array | ArrayBuffer | Buffer | VisionImageInput,
     options?: SegmentationOptions | IsomorphicSegOptions
   ): Promise<SegmentationResult & Partial<IsomorphicSegResult>> {
     let input: VisionImageInput;
@@ -39,7 +39,9 @@ export class GrabCutFallbackStrategy implements ISegmentationStrategy, IIsomorph
     ) {
       input = imageBufferOrInput as VisionImageInput;
     } else {
-      const bytes = imageBufferOrInput as Uint8Array;
+      const bytes = imageBufferOrInput instanceof Uint8Array
+        ? imageBufferOrInput
+        : new Uint8Array(imageBufferOrInput as ArrayBuffer);
       const { CanvasAssetLoader } = await import('@acc/core-isomorphic');
       const loaded = await CanvasAssetLoader.loadImage(bytes);
       input = {
@@ -71,16 +73,21 @@ export class GrabCutFallbackStrategy implements ISegmentationStrategy, IIsomorph
       }
       alphaCtx.putImageData(alphaImgData, 0, 0);
 
-      const { CanvasAssetLoader } = await import('@acc/core-isomorphic');
-      const original = await CanvasAssetLoader.loadImage(input.canvas || input.data);
-
       const finalCtx = finalCanvas.getContext('2d');
-      finalCtx.drawImage(original, 0, 0);
+      if (input.canvas) {
+        finalCtx.drawImage(input.canvas, 0, 0);
+      } else {
+        const { CanvasAssetLoader } = await import('@acc/core-isomorphic');
+        const original = await CanvasAssetLoader.loadImage(input.data);
+        finalCtx.drawImage(original, 0, 0);
+      }
       finalCtx.globalCompositeOperation = 'destination-in';
       finalCtx.drawImage(alphaCanvas, 0, 0);
 
-      const maskRgbaBuffer = finalCanvas.toBuffer('image/png') as Buffer;
-      const maskAlphaBuffer = alphaCanvas.toBuffer('image/png') as Buffer;
+      const rawRgba = finalCanvas.toBuffer('image/png');
+      const maskRgbaBuffer = rawRgba instanceof Uint8Array ? rawRgba : new Uint8Array(rawRgba);
+      const rawAlpha = alphaCanvas.toBuffer('image/png');
+      const maskAlphaBuffer = rawAlpha instanceof Uint8Array ? rawAlpha : new Uint8Array(rawAlpha);
 
       return {
         maskRgbaBuffer,

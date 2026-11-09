@@ -33,11 +33,17 @@ export class DepthAnythingV2SmallStrategy implements IDepthEstimationStrategy, I
     return this.initPromise;
   }
 
-  public async estimateDepth(imageBufferOrInput: Buffer | VisionImageInput, options?: DepthOptions): Promise<any> {
+  public async estimateDepth(
+    imageBufferOrInput: Uint8Array | ArrayBuffer | Buffer | VisionImageInput,
+    options?: DepthOptions
+  ): Promise<DepthResult> {
     try {
       await this.init();
 
-      const imageBytes = (imageBufferOrInput as any).data || imageBufferOrInput;
+      const imageBytes = (imageBufferOrInput as any).data ||
+        (imageBufferOrInput instanceof Uint8Array
+          ? imageBufferOrInput
+          : new Uint8Array(imageBufferOrInput as ArrayBuffer));
       const rawImage = await this.rawImageClass.fromBlob(new Blob([imageBytes]));
       const output = await this.depthPipeline(rawImage);
 
@@ -66,9 +72,12 @@ export class DepthAnythingV2SmallStrategy implements IDepthEstimationStrategy, I
 
       depthCtx.putImageData(imgData, 0, 0);
 
+      const rawDepthBuf = depthCanvas.toBuffer('image/png');
+      const depth16Buffer = rawDepthBuf instanceof Uint8Array ? rawDepthBuf : new Uint8Array(rawDepthBuf);
+
       const [minD, maxD] = options?.normalizeRange ?? [0.5, 8.5];
       return {
-        depth16Buffer: depthCanvas.toBuffer('image/png'),
+        depth16Buffer,
         depth16Data,
         width: w,
         height: h,
@@ -82,14 +91,17 @@ export class DepthAnythingV2SmallStrategy implements IDepthEstimationStrategy, I
       const input: VisionImageInput = (imageBufferOrInput as any).data
         ? (imageBufferOrInput as VisionImageInput)
         : {
-            data: new Uint8Array(imageBufferOrInput as Buffer),
+            data: imageBufferOrInput instanceof Uint8Array
+              ? imageBufferOrInput
+              : new Uint8Array(imageBufferOrInput as any),
             width: (imageBufferOrInput as any).width || 800,
             height: (imageBufferOrInput as any).height || 600,
           };
       const res = await this.fallbackStrategy.estimateDepth(input, options);
+      const fallbackBuf = res.depthCanvas ? (res.depthCanvas as any).toBuffer('image/png') : new Uint8Array(0);
       return {
         ...res,
-        depth16Buffer: res.depthCanvas ? (res.depthCanvas as any).toBuffer('image/png') : Buffer.alloc(0),
+        depth16Buffer: fallbackBuf instanceof Uint8Array ? fallbackBuf : new Uint8Array(fallbackBuf),
       };
     }
   }

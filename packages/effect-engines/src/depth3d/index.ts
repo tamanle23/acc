@@ -6,6 +6,7 @@ import {
   fastChecksum,
   MediaEngineRegistry,
   AssetProtocolRegistry,
+  UniversalLogger as Logger,
   type ICanvasInstance,
   type IMediaFrameSink,
   VisionEngineRegistry,
@@ -86,6 +87,7 @@ function resolvePath(baseDir: string, relativeOrAbsolute: string): string {
  * Coordinates transparently through ContentCacheRegistry and AssetProtocolRegistry.
  */
 async function loadAssetBytes(assetPathOrUri: string): Promise<Uint8Array | null> {
+  // 1. In-memory ContentCacheRegistry
   const cache = ContentCacheRegistry.namespace(CacheNamespace.Assets);
   if (await cache.has(assetPathOrUri)) {
     const blob = await cache.get(assetPathOrUri);
@@ -95,12 +97,35 @@ async function loadAssetBytes(assetPathOrUri: string): Promise<Uint8Array | null
     }
   }
 
+  // 2. AssetProtocolRegistry (protocol URIs, custom schemes, OPFS, disk files)
+  if (AssetProtocolRegistry.getInstance().has(assetPathOrUri)) {
+    try {
+      const blob = AssetProtocolRegistry.getInstance().resolve(assetPathOrUri);
+      if (blob) {
+        const ab = await blob.arrayBuffer();
+        return new Uint8Array(ab);
+      }
+    } catch {}
+  }
+
+  // 3. Web-standard fetch for HTTP/HTTPS/blob/data URLs
+  if (typeof fetch === 'function' && /^(https?|blob|data):/i.test(assetPathOrUri)) {
+    try {
+      const res = await fetch(assetPathOrUri);
+      if (res.ok) {
+        const ab = await res.arrayBuffer();
+        return new Uint8Array(ab);
+      }
+    } catch {}
+  }
+
   return null;
 }
 
 export async function checkExists(p: string): Promise<boolean> {
   const cache = ContentCacheRegistry.namespace(CacheNamespace.Assets);
   if (await cache.has(p)) return true;
+  if (AssetProtocolRegistry.getInstance().has(p)) return true;
   try {
     const blob = AssetProtocolRegistry.getInstance().resolve(p);
     const ab = await blob.arrayBuffer();
@@ -462,6 +487,9 @@ export async function resolveSubjectCutout(
 
     // 3. Fallback to active/fallback segmentation strategy
     const segRes = await (segStrat as any).segment(imgBuffer);
+    if (segRes?.maskCanvas) {
+      return { subjectImg: segRes.maskCanvas, subjectBBox: segRes.boundingBox };
+    }
     const maskBuffer = (segRes as any)?.maskRgbaBuffer || (segRes as any)?.maskAlphaData;
     if (maskBuffer) {
       await cache.set(cacheKey, maskBuffer, { mimeType: 'image/png' });
@@ -470,7 +498,8 @@ export async function resolveSubjectCutout(
     }
 
     return { subjectImg: null, subjectBBox: null };
-  } catch {
+  } catch (err: any) {
+    Logger.debug('resolveSubjectCutout', `Cutout resolution skipped: ${err?.message || err}`);
     return { subjectImg: null, subjectBBox: null };
   }
 }
@@ -542,14 +571,21 @@ export async function resolveDepthMapData(
   if (!loadedDepth) {
     try {
       const depthRes = await (depthStrat as any).estimateDepth(imgBuffer);
-      const depthBuffer = (depthRes as any)?.depth16Buffer || (depthRes as any)?.depth16Data;
-      if (depthBuffer && depthBuffer.length > 0) {
-        await cache.set(cacheKey, depthBuffer, { mimeType: 'image/png' });
-        const dm = await CanvasAssetLoader.loadImage(depthBuffer);
-        drawImageCover(dCtx, dm, 0, 0, targetWidth, targetHeight);
+      if (depthRes?.depthCanvas) {
+        drawImageCover(dCtx, depthRes.depthCanvas, 0, 0, targetWidth, targetHeight);
         loadedDepth = true;
+      } else {
+        const depthBuffer = (depthRes as any)?.depth16Buffer || (depthRes as any)?.depth16Data;
+        if (depthBuffer && depthBuffer.length > 0) {
+          await cache.set(cacheKey, depthBuffer, { mimeType: 'image/png' });
+          const dm = await CanvasAssetLoader.loadImage(depthBuffer);
+          drawImageCover(dCtx, dm, 0, 0, targetWidth, targetHeight);
+          loadedDepth = true;
+        }
       }
-    } catch { }
+    } catch (err: any) {
+      Logger.debug('resolveDepthMapData', `Dynamic depth estimation skipped: ${err?.message || err}`);
+    }
   }
 
   if (!loadedDepth) {

@@ -141,3 +141,4 @@
 | 475 | [Fix Audio Hardware Reference Clock Leap Causing Replay Auto-Stop](./475_fix_audio_hardware_clock_leap_causing_replay_auto_stop.md) | Completed |
 | 476 | [Enforce Zero Junk Code and Engineering Hygiene Rules](./476_enforce_zero_junk_code_and_engineering_hygiene_rules.md) | Completed |
 | 477 | [Fix Sidecar Worker Single Warmup Dispatch & Passive Barrier](./477_fix_sidecar_worker_single_warmup_dispatch.md) | Completed |
+| 478 | [Establish 100% Isomorphic and WinterTC Compliant Architecture in @acc/effect-engines](./478_fully_isomorphic_effect_engines.md) | Completed |

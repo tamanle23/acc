@@ -43,12 +43,15 @@ export class Sam2TinyStrategy implements ISegmentationStrategy, IIsomorphicSegme
   }
 
   public async segment(
-    imageBufferOrInput: Buffer | Uint8Array | VisionImageInput,
+    imageBufferOrInput: Uint8Array | ArrayBuffer | Buffer | VisionImageInput,
     options?: SegmentationOptions | IsomorphicSegOptions
   ): Promise<SegmentationResult & Partial<IsomorphicSegResult>> {
     await this.init();
 
-    const imageBytes = (imageBufferOrInput as any).data || imageBufferOrInput;
+    const imageBytes = (imageBufferOrInput as any).data ||
+      (imageBufferOrInput instanceof Uint8Array
+        ? imageBufferOrInput
+        : new Uint8Array(imageBufferOrInput as ArrayBuffer));
     const rawImage = await this.rawImageClass.fromBlob(new Blob([imageBytes]));
     const width = rawImage.width;
     const height = rawImage.height;
@@ -118,7 +121,7 @@ export class Sam2TinyStrategy implements ISegmentationStrategy, IIsomorphicSegme
     }
 
     const { rgbaBuffer, alphaBuffer, bbox } = await createCutoutRgba(
-      Buffer.isBuffer(imageBytes) ? imageBytes : Buffer.from(imageBytes),
+      imageBytes,
       uint8Mask,
       maskW,
       maskH,
