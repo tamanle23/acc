@@ -4,6 +4,7 @@ import { IRPreviewEngine } from '@acc/studio/renderer';
 import { PartialVFXPlugin } from '../packages/ir/src/plugins/vfx/PartialVFXPlugin';
 import { HologramHUDPlugin } from '../packages/ir/src/plugins/overlay/HologramHUDPlugin';
 import { WebAudioEngine } from '../apps/studio/src/lib/audio/WebAudioEngine';
+import { AudioAssetCache } from '../apps/studio/src/lib/audio/AudioAssetCache';
 import { IRStateManager } from '../apps/studio/src/lib/ir/irState';
 
 describe('Studio IRPreviewEngine & UniversalAudioMixer Deep Wiring', () => {
@@ -12,6 +13,13 @@ describe('Studio IRPreviewEngine & UniversalAudioMixer Deep Wiring', () => {
   beforeEach(async () => {
     manager = IRStateManager.getInstance();
     await manager.switchTemplate('scifi');
+
+    const pcm = new Float32Array(44100).map((_, i) => Math.sin(i * 0.1) * 0.5);
+    AudioAssetCache.getInstance().setDecodedMock('asset-voice-pilot', {
+      channels: [pcm, pcm],
+      sampleRate: 44100,
+      durationSec: 10.0,
+    });
   });
 
   describe('IRPreviewEngine & Partial VFX Subsystems', () => {

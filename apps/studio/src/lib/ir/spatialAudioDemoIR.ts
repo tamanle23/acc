@@ -29,7 +29,7 @@ export const spatialAudioDemoIR: VideoIRDocument = {
       type: 'image',
     },
     'asset-drone-loop': {
-      src: 'https://actions.google.com/sounds/v1/science_fiction/deep_hum.ogg',
+      src: 'https://actions.google.com/sounds/v1/science_fiction/forboding_resonance.ogg',
       type: 'audio',
     },
     'asset-lead-synth': {

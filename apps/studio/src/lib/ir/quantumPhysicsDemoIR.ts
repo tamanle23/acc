@@ -29,7 +29,7 @@ export const quantumPhysicsDemoIR: VideoIRDocument = {
       type: 'image',
     },
     'asset-resonance-audio': {
-      src: 'https://actions.google.com/sounds/v1/science_fiction/scifi_engine_shut_down.ogg',
+      src: 'https://actions.google.com/sounds/v1/science_fiction/sci_fi_vortex.ogg',
       type: 'audio',
     },
     'asset-subharmonic-drone': {

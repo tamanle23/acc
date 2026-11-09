@@ -19,6 +19,10 @@ export class AudioAssetCache {
   private cache = new Map<string, DecodedAudioData>();
   private inFlight = new Map<string, Promise<DecodedAudioData | null>>();
   private subscribers = new Set<() => void>();
+  private failedAssets = new Map<string, number>();
+
+  // Cooldown interval before retrying a failed or 404 audio asset (prevents infinite fetch loop)
+  private readonly FAILED_RETRY_INTERVAL_MS = 60_000;
 
   // Strict LRU budget to prevent uncompressed Float32Array PCM heap blowups
   private readonly MAX_CACHE_ENTRIES = 4;
@@ -56,14 +60,35 @@ export class AudioAssetCache {
   }
 
   private getAudioContext(): AudioContext | null {
-    if (!this.audioContext && typeof window !== 'undefined') {
-      const win = window as Window & { webkitAudioContext?: typeof AudioContext };
-      const AudioCtx = window.AudioContext || win.webkitAudioContext;
+    if (!this.audioContext) {
+      const AudioCtx =
+        (typeof window !== 'undefined' ? (window.AudioContext || (window as any).webkitAudioContext) : undefined) ||
+        (typeof globalThis !== 'undefined' ? (globalThis as any).AudioContext : undefined);
       if (AudioCtx) {
-        this.audioContext = new AudioCtx({ sampleRate: 44100 });
+        try {
+          this.audioContext = new AudioCtx({ sampleRate: 44100 });
+        } catch {}
       }
     }
     return this.audioContext;
+  }
+
+  private isFailed(key: string): boolean {
+    const timestamp = this.failedAssets.get(key);
+    if (!timestamp) return false;
+    if (Date.now() - timestamp < this.FAILED_RETRY_INTERVAL_MS) {
+      return true;
+    }
+    this.failedAssets.delete(key);
+    return false;
+  }
+
+  private markFailed(assetId: string, src?: string): void {
+    const now = Date.now();
+    this.failedAssets.set(assetId, now);
+    if (src) {
+      this.failedAssets.set(src, now);
+    }
   }
 
   /**
@@ -78,6 +103,10 @@ export class AudioAssetCache {
       this.cache.delete(assetId);
       this.cache.set(assetId, existing);
       return existing;
+    }
+
+    if (this.isFailed(assetId) || (src && this.isFailed(src))) {
+      return null;
     }
 
     if (src && !this.inFlight.has(assetId)) {
@@ -97,6 +126,10 @@ export class AudioAssetCache {
       this.cache.delete(assetId);
       this.cache.set(assetId, existing);
       return existing;
+    }
+
+    if (this.isFailed(assetId) || this.isFailed(src)) {
+      return null;
     }
 
     if (this.inFlight.has(assetId)) {
@@ -151,11 +184,14 @@ export class AudioAssetCache {
         this.evictToFit(assetId, byteSize);
         this.cache.set(assetId, decoded);
         this.currentPcmBytes += byteSize;
+        this.failedAssets.delete(assetId);
+        this.failedAssets.delete(src);
         this.inFlight.delete(assetId);
         this.notify();
         return decoded;
       } catch (err) {
         console.warn(`[AudioAssetCache] Failed to decode audio asset "${assetId}":`, err);
+        this.markFailed(assetId, src);
         this.inFlight.delete(assetId);
         return null;
       }
@@ -171,7 +207,13 @@ export class AudioAssetCache {
   public preloadAssets(assets: Record<string, { src: string; type: string }>): void {
     if (!assets) return;
     for (const [assetId, assetDef] of Object.entries(assets)) {
-      if (assetDef.type === 'audio' && assetDef.src && !this.cache.has(assetId)) {
+      if (
+        assetDef.type === 'audio' &&
+        assetDef.src &&
+        !this.cache.has(assetId) &&
+        !this.isFailed(assetId) &&
+        !this.isFailed(assetDef.src)
+      ) {
         this.fetchAndDecode(assetId, assetDef.src);
       }
     }
@@ -181,6 +223,7 @@ export class AudioAssetCache {
    * Stores manually synthesized or mock decoded PCM (primarily for unit tests and headless environments).
    */
   public setDecodedMock(assetId: string, data: DecodedAudioData): void {
+    this.failedAssets.delete(assetId);
     const byteSize =
       data.byteSize || data.channels.reduce((acc, ch) => acc + ch.byteLength, 0);
     this.evictToFit(assetId, byteSize);
@@ -220,6 +263,7 @@ export class AudioAssetCache {
   public clear(): void {
     this.cache.clear();
     this.inFlight.clear();
+    this.failedAssets.clear();
     this.currentPcmBytes = 0;
   }
 

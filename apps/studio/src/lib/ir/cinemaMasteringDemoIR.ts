@@ -39,7 +39,7 @@ export const cinemaMasteringDemoIR: VideoIRDocument = {
       type: 'audio',
     },
     'asset-orchestral-bgm': {
-      src: 'https://actions.google.com/sounds/v1/science_fiction/deep_hum.ogg',
+      src: 'https://actions.google.com/sounds/v1/science_fiction/forboding_resonance.ogg',
       type: 'audio',
     },
   },

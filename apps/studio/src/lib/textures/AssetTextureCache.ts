@@ -23,7 +23,11 @@ export class AssetTextureCache implements Disposable {
   private dataUrlCache = new Map<string, string>();
   private placeholderCache = new Map<string, HTMLCanvasElement>();
   private inFlightResolutions = new Set<string>();
+  private failedUrls = new Map<string, number>();
   private subscribers = new Set<() => void>();
+
+  // Cooldown interval before retrying a failed or 404 image asset (prevents infinite fetch loop)
+  private readonly FAILED_RETRY_INTERVAL_MS = 60_000;
 
   private readonly MAX_DIRECT_ENTRIES = 16;
   private readonly MAX_IMAGE_LRU = 4;
@@ -40,10 +44,25 @@ export class AssetTextureCache implements Disposable {
     return AssetTextureCache.instance;
   }
 
+  private isFailed(key: string): boolean {
+    const timestamp = this.failedUrls.get(key);
+    if (!timestamp) return false;
+    if (Date.now() - timestamp < this.FAILED_RETRY_INTERVAL_MS) {
+      return true;
+    }
+    this.failedUrls.delete(key);
+    return false;
+  }
+
+  private markFailed(key: string): void {
+    this.failedUrls.set(key, Date.now());
+  }
+
   /**
    * Register or cache a visual texture directly (IPreviewTextureProvider contract).
    */
   public set(assetId: string, texture: any): void {
+    this.failedUrls.delete(assetId);
     if (AssetTextureCache.directStorage.size >= this.MAX_DIRECT_ENTRIES && !AssetTextureCache.directStorage.has(assetId)) {
       const oldestKey = AssetTextureCache.directStorage.keys().next().value;
       if (oldestKey !== undefined) {
@@ -180,6 +199,7 @@ export class AssetTextureCache implements Disposable {
     this.dataUrlCache.clear();
     this.placeholderCache.clear();
     this.inFlightResolutions.clear();
+    this.failedUrls.clear();
   }
 
   public [Symbol.dispose](): void {
@@ -241,6 +261,9 @@ export class AssetTextureCache implements Disposable {
 
       if (!blob && typeof fetch === 'function' && src && !src.startsWith('blob:')) {
         const res = await fetch(src);
+        if (!res.ok) {
+          throw new Error(`HTTP fetch failed with status ${res.status}: ${src}`);
+        }
         blob = await res.blob();
         try {
           const cache = ContentCacheRegistry.namespace(CacheNamespace.Assets);
@@ -252,6 +275,8 @@ export class AssetTextureCache implements Disposable {
         if (typeof createImageBitmap === 'function') {
           const bmp = await createImageBitmap(blob);
           this.setHotImage(src, bmp);
+          this.failedUrls.delete(src);
+          this.failedUrls.delete(assetId);
           this.notify();
           return;
         } else if (typeof Image !== 'undefined' && typeof URL !== 'undefined') {
@@ -260,17 +285,25 @@ export class AssetTextureCache implements Disposable {
           img.crossOrigin = 'anonymous';
           img.onload = () => {
             this.setHotImage(src, img, objectUrl);
+            this.failedUrls.delete(src);
+            this.failedUrls.delete(assetId);
             this.notify();
           };
           img.onerror = () => {
             URL.revokeObjectURL(objectUrl);
+            this.markFailed(src);
+            this.markFailed(assetId);
           };
           img.src = objectUrl;
           return;
         }
       }
+      this.markFailed(src);
+      this.markFailed(assetId);
     } catch (err) {
       console.warn(`[AssetTextureCache] Failed async resolve for ${assetId}:`, err);
+      this.markFailed(src);
+      this.markFailed(assetId);
     }
   }
 
@@ -295,6 +328,18 @@ export class AssetTextureCache implements Disposable {
         height: h,
         isReady: true,
         type: assetType,
+      };
+    }
+
+    // Fast-path: if asset has recently failed (e.g. 404 or corrupt decoding), avoid re-fetching in a loop
+    if (this.isFailed(assetId) || (src && this.isFailed(src))) {
+      const phCanvas = this.renderMissingAssetPlaceholder(assetId, assetType);
+      return {
+        source: phCanvas,
+        width: phCanvas.width,
+        height: phCanvas.height,
+        isReady: true,
+        type: assetType === 'video' ? 'video' : 'placeholder',
       };
     }
 
