@@ -53,14 +53,16 @@ export function createShuttleEngine(options: UseShuttleEngineOptions): UseShuttl
   const getIrState = () => resolveVal(options.irState);
 
   const setSpeed = (newSpeed: ShuttleSpeed) => {
-    const total = getTotalFrames();
+    const total = getTotalFrames() || 300;
     const maxBound = Math.max(0, total - 1);
     let cur = getCurrentFrame();
 
     if (newSpeed > 0 && cur >= maxBound) {
       cur = 0;
       PlayheadController.getInstance().seek(0, true);
-      options.onScrub(0);
+    } else if (newSpeed < 0 && cur <= 0) {
+      cur = maxBound;
+      PlayheadController.getInstance().seek(maxBound, true);
     }
 
     setSpeedState(newSpeed);
@@ -121,9 +123,16 @@ export function createShuttleEngine(options: UseShuttleEngineOptions): UseShuttl
     const currentSpeed = speed();
     if (currentSpeed === 0) return;
 
-    const initialFrame = untrack(getCurrentFrame);
-    const initialFps = untrack(getFps);
-    const initialTotalFrames = untrack(getTotalFrames);
+    const initialTotalFrames = untrack(getTotalFrames) || 300;
+    const initialFps = untrack(getFps) || 30;
+    const maxBound = Math.max(0, initialTotalFrames - 1);
+    const rawFrame = untrack(getCurrentFrame);
+    // Defense-in-depth: If starting forward playback while parked at or past max bound, wrap cleanly to 0
+    const initialFrame = currentSpeed > 0 && rawFrame >= maxBound ? 0 : rawFrame;
+
+    if (initialFrame !== rawFrame) {
+      PlayheadController.getInstance().seek(initialFrame, true);
+    }
 
     const clock = new DeterministicTimelineClock({
       fps: initialFps,
@@ -165,13 +174,11 @@ export function createShuttleEngine(options: UseShuttleEngineOptions): UseShuttl
       if (targetFrame >= endFrame && currentSpeed > 0) {
         const discreteFrame = snapToDiscreteFrame(endFrame);
         PlayheadController.getInstance().seek(discreteFrame, true);
-        options.onScrub(discreteFrame);
         setSpeed(0);
         return;
       } else if (targetFrame <= 0 && currentSpeed < 0) {
         const discreteFrame = 0;
         PlayheadController.getInstance().seek(discreteFrame, true);
-        options.onScrub(discreteFrame);
         setSpeed(0);
         return;
       }
