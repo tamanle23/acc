@@ -159,7 +159,7 @@ export class DeterministicTimelineClock {
   public lockMasterAudio(audioStartSec: number): void {
     this.audioStartSec = audioStartSec;
     this.playbackStartFrame = this.currentFrame;
-    this.needsAudioReanchor = false;
+    this.needsAudioReanchor = audioStartSec <= 0;
     this.mode = 'audio_master';
   }
 
@@ -185,13 +185,18 @@ export class DeterministicTimelineClock {
     let targetFrame = this.currentFrame;
 
     if (this.mode === 'audio_master') {
-      if (this.needsAudioReanchor && timeOrDeltaSec !== undefined) {
+      if ((this.needsAudioReanchor || this.audioStartSec <= 0) && timeOrDeltaSec !== undefined) {
         this.audioStartSec = timeOrDeltaSec;
         this.needsAudioReanchor = false;
       }
       const audioNow = timeOrDeltaSec ?? this.audioStartSec;
-      const audioElapsed = Math.max(0, audioNow - this.audioStartSec);
-      const deltaFrames = audioElapsed * this.fps * this.speed;
+      // Guard against stale audio reference clock drift: if elapsed time exceeds 0.5s on initial frame, reanchor
+      let audioElapsed = audioNow - this.audioStartSec;
+      if (audioElapsed < 0 || (this.currentFrame === this.playbackStartFrame && audioElapsed > 0.5)) {
+        this.audioStartSec = audioNow;
+        audioElapsed = 0;
+      }
+      const deltaFrames = Math.max(0, audioElapsed) * this.fps * this.speed;
       targetFrame = this.playbackStartFrame + deltaFrames;
     } else if (this.mode === 'monotonic_worker') {
       const delta = timeOrDeltaSec ?? (1 / (this.fps * Math.abs(this.speed || 1)));

@@ -322,6 +322,7 @@ export class WebAudioEngine {
       } catch { }
     }
     this.activeSources.clear();
+    this.playbackStartAudioTime = 0;
     this.scheduledAudioEndTime = 0;
     this.nextTimelineSecToSynthesize = 0;
     this.streamWorklet.reset();

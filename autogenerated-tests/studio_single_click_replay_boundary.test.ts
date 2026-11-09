@@ -94,14 +94,12 @@ describe('Studio Single-Click Replay & Boundary Wrap Suite', () => {
       const endFrame = totalFrames - 1;
 
       let scrubCalledCount = 0;
-      let lastScrubbedFrame = -1;
       const shuttle = createShuttleEngine({
         fps: 30,
         totalFrames,
         currentFrame: 0,
-        onScrub: (f) => {
+        onScrub: () => {
           scrubCalledCount++;
-          lastScrubbedFrame = f;
         },
         enableKeybindings: false,
       });
@@ -115,8 +113,8 @@ describe('Studio Single-Click Replay & Boundary Wrap Suite', () => {
 
       expect(shuttle.speed).toBe(0);
       expect(shuttle.isPlaying).toBe(false);
+      expect(controller.getFrame()).toBe(endFrame);
       expect(scrubCalledCount).toBe(1);
-      expect(lastScrubbedFrame).toBe(endFrame);
 
       dispose();
     });
@@ -168,5 +166,33 @@ describe('Studio Single-Click Replay & Boundary Wrap Suite', () => {
 
       dispose();
     });
+  });
+
+  it('TC-82-06: DeterministicTimelineClock re-anchors stale audio reference clock drift (>0.5s) on initial tick', () => {
+    const clock = new DeterministicTimelineClock({
+      fps: 30,
+      totalFrames: 400,
+      mode: 'audio_master',
+    });
+
+    clock.play(0, 1);
+    // Simulate stale audioStartSec from a previous playback session (e.g., 10.0s ago)
+    const staleAudioStart = 10.0;
+    clock.lockMasterAudio(staleAudioStart);
+
+    // After sitting paused, AudioContext time is now 25.0s (15s difference)
+    const currentAudioTime = 25.0;
+    const firstTickFrame = clock.tick(currentAudioTime);
+
+    // Initial frame drift guard MUST reanchor audioStartSec to 25.0 and advance 0 frames on tick 1
+    // (rather than leaping 15s * 30fps = 450 frames and immediately hitting max boundary)
+    expect(firstTickFrame).toBe(0);
+    expect(clock.getFrame()).toBe(0);
+    expect(clock.getState().isPlaying).toBe(true);
+
+    // Subsequent tick 16ms later advances smoothly from frame 0
+    const nextTickFrame = clock.tick(currentAudioTime + 0.033);
+    expect(nextTickFrame).toBeCloseTo(0.99, 1);
+    expect(clock.getFrame()).toBe(1);
   });
 });

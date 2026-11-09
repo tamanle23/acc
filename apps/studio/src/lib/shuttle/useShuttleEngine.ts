@@ -65,7 +65,6 @@ export function createShuttleEngine(options: UseShuttleEngineOptions): UseShuttl
       PlayheadController.getInstance().seek(maxBound, true);
     }
 
-    setSpeedState(newSpeed);
     PlayheadController.getInstance().setIsPlaying(newSpeed !== 0);
 
     if (newSpeed === 0) {
@@ -81,6 +80,8 @@ export function createShuttleEngine(options: UseShuttleEngineOptions): UseShuttl
         getIrState()
       );
     }
+
+    setSpeedState(newSpeed);
   };
 
   const shuttleForward = () => {
