@@ -32,7 +32,7 @@
       '["USER"]'::jsonb AS roles,
       COALESCE(EXTRACT(EPOCH FROM u.createddate) * 1000, 0)::bigint AS created_at_epoch_ms, 
       COALESCE(EXTRACT(EPOCH FROM u.lastupdateddate) * 1000, 0)::bigint AS updated_at_epoch_ms
-    FROM unipost_user u
+    FROM unipost_identity_user u
     WHERE LOWER(u.email) = LOWER(#{email})
       AND (u.deleteddate IS NULL)
     LIMIT 1
@@ -49,7 +49,7 @@
       '["USER"]'::jsonb AS roles,
       COALESCE(EXTRACT(EPOCH FROM u.createddate) * 1000, 0)::bigint AS created_at_epoch_ms, 
       COALESCE(EXTRACT(EPOCH FROM u.lastupdateddate) * 1000, 0)::bigint AS updated_at_epoch_ms
-    FROM unipost_user u
+    FROM unipost_identity_user u
     WHERE u.uid = #{id}
       AND (u.deleteddate IS NULL)
     LIMIT 1
@@ -66,7 +66,7 @@
       '["USER"]'::jsonb AS roles,
       COALESCE(EXTRACT(EPOCH FROM u.createddate) * 1000, 0)::bigint AS created_at_epoch_ms, 
       COALESCE(EXTRACT(EPOCH FROM u.lastupdateddate) * 1000, 0)::bigint AS updated_at_epoch_ms
-    FROM unipost_user u
+    FROM unipost_identity_user u
     WHERE LOWER(u.username) = LOWER(#{username})
       AND (u.deleteddate IS NULL)
     LIMIT 1
@@ -74,20 +74,20 @@
 
   <select id="countByEmail" resultType="int">
     SELECT COUNT(1)
-    FROM unipost_user u
+    FROM unipost_identity_user u
     WHERE LOWER(u.email) = LOWER(#{email})
       AND (u.deleteddate IS NULL)
   </select>
 
   <select id="countByUsername" resultType="int">
     SELECT COUNT(1)
-    FROM unipost_user u
+    FROM unipost_identity_user u
     WHERE LOWER(u.username) = LOWER(#{username})
       AND (u.deleteddate IS NULL)
   </select>
 
   <insert id="upsertUser">
-    INSERT INTO unipost_user (
+    INSERT INTO unipost_identity_user (
       uid, mode, username, email, password, status, createddate, lastupdateddate
     ) VALUES (
       #{id.value}, 
@@ -106,7 +106,7 @@
   </insert>
 
   <update id="updateStatus">
-    UPDATE unipost_user
+    UPDATE unipost_identity_user
     SET status = CASE 
           WHEN #{status} = 'ACTIVE' THEN 1
           WHEN #{status} = 'DISABLED' THEN 2

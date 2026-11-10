@@ -59,6 +59,26 @@ public final class TaskDefinitionAggregate extends AggregateRoot<TaskDefId> {
         this.updatedAtEpochMs = updatedAtEpochMs;
     }
 
+    public TaskDefinitionAggregate(
+        TaskDefId id, String tenantId, String name, Integer version, TaskStatus status,
+        String description, Integer retryCount, Integer retryDelaySeconds, Double backoffRate, Integer timeoutSeconds,
+        Map<String, Object> inputSchema, Map<String, Object> outputSchema, Map<String, Object> executionContract,
+        String changelogNote, Long createdAtEpochMs, Long updatedAtEpochMs
+    ) {
+        this(
+            id, tenantId, name,
+            version != null ? version : 1,
+            status, description,
+            retryCount != null ? retryCount : 0,
+            retryDelaySeconds != null ? retryDelaySeconds : 0,
+            backoffRate != null ? backoffRate : 1.0,
+            timeoutSeconds != null ? timeoutSeconds : 0,
+            inputSchema, outputSchema, executionContract, changelogNote,
+            createdAtEpochMs != null ? createdAtEpochMs : 0L,
+            updatedAtEpochMs != null ? updatedAtEpochMs : 0L
+        );
+    }
+
     /**
      * Mathematical f_version hard-fork invariant:
      * - If latest version is in DRAFT, mutates draft in-place.
@@ -165,4 +185,21 @@ public final class TaskDefinitionAggregate extends AggregateRoot<TaskDefId> {
     public String changelogNote() { return changelogNote; }
     public long createdAtEpochMs() { return createdAtEpochMs; }
     public long updatedAtEpochMs() { return updatedAtEpochMs; }
+
+    // Standard JavaBean accessors for framework and reflection compatibility
+    public String getTenantId() { return tenantId; }
+    public String getName() { return name; }
+    public int getVersion() { return version; }
+    public TaskStatus getStatus() { return status; }
+    public String getDescription() { return description; }
+    public int getRetryCount() { return retryCount; }
+    public int getRetryDelaySeconds() { return retryDelaySeconds; }
+    public double getBackoffRate() { return backoffRate; }
+    public int getTimeoutSeconds() { return timeoutSeconds; }
+    public Map<String, Object> getInputSchema() { return inputSchema; }
+    public Map<String, Object> getOutputSchema() { return outputSchema; }
+    public Map<String, Object> getExecutionContract() { return executionContract; }
+    public String getChangelogNote() { return changelogNote; }
+    public long getCreatedAtEpochMs() { return createdAtEpochMs; }
+    public long getUpdatedAtEpochMs() { return updatedAtEpochMs; }
 }

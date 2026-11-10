@@ -49,6 +49,21 @@ public final class FsObjectAggregate extends AggregateRoot<FileId> {
         this.updatedAtEpochMs = updatedAtEpochMs;
     }
 
+    public FsObjectAggregate(
+        FileId id, String tenantId, String workspaceId, String name, String parentUid,
+        Boolean isDirectory, Long sizeBytes, String contentType, String storagePath,
+        String checksumSha256, Long createdAtEpochMs, Long updatedAtEpochMs
+    ) {
+        this(
+            id, tenantId, workspaceId, name, parentUid,
+            Boolean.TRUE.equals(isDirectory),
+            sizeBytes != null ? sizeBytes : 0L,
+            contentType, storagePath, checksumSha256,
+            createdAtEpochMs != null ? createdAtEpochMs : 0L,
+            updatedAtEpochMs != null ? updatedAtEpochMs : 0L
+        );
+    }
+
     public static FsObjectAggregate createNewFile(
         String tenantId, String workspaceId, String name, String parentUid,
         long sizeBytes, String contentType, String storagePath, String checksumSha256,
@@ -95,4 +110,17 @@ public final class FsObjectAggregate extends AggregateRoot<FileId> {
     public String checksumSha256() { return checksumSha256; }
     public long createdAtEpochMs() { return createdAtEpochMs; }
     public long updatedAtEpochMs() { return updatedAtEpochMs; }
+
+    // Standard JavaBean getters for framework and reflection compatibility
+    public String getTenantId() { return tenantId; }
+    public String getWorkspaceId() { return workspaceId; }
+    public String getName() { return name; }
+    public String getParentUid() { return parentUid; }
+    public boolean getIsDirectory() { return isDirectory; }
+    public long getSizeBytes() { return sizeBytes; }
+    public String getContentType() { return contentType; }
+    public String getStoragePath() { return storagePath; }
+    public String getChecksumSha256() { return checksumSha256; }
+    public long getCreatedAtEpochMs() { return createdAtEpochMs; }
+    public long getUpdatedAtEpochMs() { return updatedAtEpochMs; }
 }

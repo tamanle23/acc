@@ -153,3 +153,4 @@
 | 487 | [Fix Backend Dev Sandbox Startup and Hexagonal Adapters](./487_fix_backend_dev_sandbox_startup_and_hexagonal_adapters.md) | Completed |
 | 488 | [Hexagonal Worker Outbox & Sagas Architecture](./488_hexagonal_worker_outbox_and_sagas_architecture.md) | Completed |
 | 489 | [Spring Modulith Package Encapsulation & Named Interfaces](./489_spring_modulith_package_encapsulation_and_named_interfaces.md) | Completed |
+| 490 | [Tier 3 PostgreSQL Contract Tests & MyBatis Repositories Verification](./490_tier3_postgresql_contract_tests_and_mybatis_verification.md) | Completed |

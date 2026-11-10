@@ -47,6 +47,16 @@ public final class UserAggregate extends AggregateRoot<UserId> {
         this.updatedAtEpochMs = updatedAtEpochMs;
     }
 
+    public UserAggregate(
+        UserId id, String tenantId, String username, String email,
+        String passwordHash, UserStatus status, Set<String> roles,
+        Long createdAtEpochMs, Long updatedAtEpochMs
+    ) {
+        this(id, tenantId, username, email, passwordHash, status, roles,
+             createdAtEpochMs != null ? createdAtEpochMs : 0L,
+             updatedAtEpochMs != null ? updatedAtEpochMs : 0L);
+    }
+
     public static UserAggregate registerNewUser(
         String tenantId, String username, String email, String passwordHash, long nowEpochMs
     ) {
