@@ -88,6 +88,11 @@ export class WebCodecsDecoderPool {
       return true;
     }
 
+    // Negative caching: if reader is in backoff cooldown, skip reacquire to avoid 60fps retry storms
+    if (item.reader.isFailed()) {
+      return false;
+    }
+
     const leasedCount = this.getActiveLeaseCount();
     if (leasedCount >= this.maxHardwareDecoders) {
       const evicted = this.evictLowestPriority(Math.max(item.priorityScore, minPriority));

@@ -47,8 +47,8 @@ export const defaultDemoIR: VideoIRDocument = {
       type: 'image',
     },
     'asset-matrix-core': {
-      src: 'https://media.gettyimages.com/id/1340037487/video/the-matrix-reloaded-cast-interviews.mp4?s=mp4-640x640-gi&k=20&c=QmuoEVN4gNDv1DFmosfSTKNY5_OgW0MB29aWUAQw1nM=',
-      type: 'video',
+      src: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1920&q=80',
+      type: 'image',
     },
     'asset-holo-globe': {
       src: 'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?w=1920&q=80',

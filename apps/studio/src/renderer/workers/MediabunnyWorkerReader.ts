@@ -29,6 +29,8 @@ export class MediabunnyWorkerReader {
   private isInitialized = false;
   private isInitializing = false;
   private initPromise: Promise<boolean> | null = null;
+  private failedAt = 0;
+  private readonly RETRY_COOLDOWN_MS = 30_000;
 
   // Track metadata
   public durationSec = 0;
@@ -53,8 +55,13 @@ export class MediabunnyWorkerReader {
     this.fastScrubThrottleMs = 1000 / (options.fastScrubFps ?? 30);
   }
 
+  public isFailed(): boolean {
+    return this.failedAt > 0 && performance.now() - this.failedAt < this.RETRY_COOLDOWN_MS;
+  }
+
   public async init(): Promise<boolean> {
     if (this.isInitialized) return true;
+    if (this.isFailed()) return false;
     if (this.initPromise) return this.initPromise;
 
     this.isInitializing = true;
@@ -80,6 +87,7 @@ export class MediabunnyWorkerReader {
         this.decoder = new MediabunnyClientVideoDecoder(uri, 0, 0);
         const ok = await this.decoder.open();
         if (!ok) {
+          this.failedAt = performance.now();
           console.warn(`[MediabunnyWorkerReader] Failed to initialize video ${this.src}`);
           this.isInitializing = false;
           return false;
@@ -95,8 +103,10 @@ export class MediabunnyWorkerReader {
         }
         this.isInitialized = true;
         this.isInitializing = false;
+        this.failedAt = 0;
         return true;
       } catch (err) {
+        this.failedAt = performance.now();
         console.warn(`[MediabunnyWorkerReader] Failed to initialize video ${this.src}:`, err);
         this.isInitializing = false;
         return false;
@@ -273,9 +283,11 @@ export class MediabunnyWorkerReader {
 
   /**
    * Reacquires hardware decoder session if evicted.
+   * Returns false immediately if reader is in backoff cooldown to prevent retry storms.
    */
   public async reacquireHardwareDecoder(): Promise<boolean> {
     if (this.isInitialized) return true;
+    if (this.isFailed()) return false;
     this.initPromise = null;
     return this.init();
   }
