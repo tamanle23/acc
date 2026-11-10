@@ -11,6 +11,16 @@
  */
 
 export class PostProcessingShaders {
+  private static scanlineRed: Uint8Array = new Uint8Array(4096);
+  private static scanlineBlue: Uint8Array = new Uint8Array(4096);
+
+  private static ensureScanlineCapacity(width: number): void {
+    if (this.scanlineRed.length < width) {
+      this.scanlineRed = new Uint8Array(Math.max(width, this.scanlineRed.length * 2));
+      this.scanlineBlue = new Uint8Array(Math.max(width, this.scanlineBlue.length * 2));
+    }
+  }
+
   /**
    * Applies chromatic aberration in-place to an RGBA pixel buffer.
    *
@@ -28,12 +38,14 @@ export class PostProcessingShaders {
     const shift = Math.round(offsetPx);
     if (shift <= 0) return;
 
+    this.ensureScanlineCapacity(width);
+    const lineRed = this.scanlineRed;
+    const lineBlue = this.scanlineBlue;
+
     for (let y = 0; y < height; y++) {
       const rowStart = y * width * 4;
 
-      // Temporary scanline copy for red and blue channels to prevent in-place overwrite
-      const lineRed = new Uint8Array(width);
-      const lineBlue = new Uint8Array(width);
+      // Reusable scanline copy for red and blue channels to prevent in-place overwrite
       for (let x = 0; x < width; x++) {
         lineRed[x] = rgba[rowStart + x * 4];
         lineBlue[x] = rgba[rowStart + x * 4 + 2];

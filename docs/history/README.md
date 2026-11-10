@@ -155,3 +155,4 @@
 | 489 | [Spring Modulith Package Encapsulation & Named Interfaces](./489_spring_modulith_package_encapsulation_and_named_interfaces.md) | Completed |
 | 490 | [Tier 3 PostgreSQL Contract Tests & MyBatis Repositories Verification](./490_tier3_postgresql_contract_tests_and_mybatis_verification.md) | Completed |
 | 491 | [Hexagonal Architecture & DDD Migration Final Closeout](./491_hexagonal_architecture_migration_closeout.md) | Completed |
+| 492 | [IR and Effect-Engines Remediation, WinterTC Conformance & Zero-Alloc Hardening](./492_ir_and_effect_engines_remediation_and_parity.md) | Completed |

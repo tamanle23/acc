@@ -29,6 +29,7 @@ export interface SpaceContext {
 export interface TimeSpaceSnapshot<TState = any> {
   phase: string;
   globalTimeSec: number;
+  timeSec?: number;
   localTimeSec: number;
   state: Readonly<TState>;
   geometry: {
@@ -167,13 +168,24 @@ export class TimeSpaceStateMachine<TState = any> {
    */
   public seek(
     frame: number,
-    fps: number = 30,
+    fps: number | { width: number; height: number } = 30,
     seed: number = 1337,
     viewport: { width: number; height: number } = { width: 1920, height: 1080 }
   ): TimeSpaceSnapshot<TState> {
-    const validFps = Math.max(1, fps);
+    let validFps = 30;
+    let actualViewport = viewport;
+    let actualFrame = frame;
+
+    if (typeof fps === 'object' && fps !== null) {
+      // Overload: seek(timeSec, viewport)
+      actualViewport = fps;
+      validFps = 1; // frame is already passed in seconds
+    } else if (typeof fps === 'number') {
+      validFps = Math.max(1, fps);
+    }
+
     const speed = this.config.speedMultiplier ?? 1.0;
-    const globalTimeSec = (Math.max(0, frame) / validFps) * speed;
+    const globalTimeSec = (Math.max(0, actualFrame) / validFps) * speed;
 
     let activePhase = 'default';
     let localTimeSec = globalTimeSec;
@@ -280,6 +292,7 @@ export class TimeSpaceStateMachine<TState = any> {
     const snapshot: TimeSpaceSnapshot<TState> = {
       phase: activePhase,
       globalTimeSec,
+      timeSec: globalTimeSec,
       localTimeSec,
       state: Object.freeze(cleanState),
       geometry,

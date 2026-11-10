@@ -171,9 +171,17 @@ export class IRCanvasCompositor {
       .filter((t) => t.type === 'video')
       .sort((a, b) => (a.groupOrder ?? 0) - (b.groupOrder ?? 0));
 
+    let isRootRestored = false;
+    const restoreRootContext = (): void => {
+      if (!isRootRestored) {
+        canvasCtx.restore();
+        isRootRestored = true;
+      }
+    };
+
     const finalizePostVisualTracks = (): void => {
       // 1. Restore root visual scale so master composite modifiers operate directly on physical buffer pixels
-      canvasCtx.restore();
+      restoreRootContext();
 
       // 3. Master Canvas Composite Modifiers across visual plates
       for (const track of visualTracksList) {
@@ -474,18 +482,25 @@ export class IRCanvasCompositor {
       canvasCtx.save();
       const maybePromise = processTracksFrom(0);
       if (maybePromise instanceof Promise) {
-        return maybePromise.finally(() => {
-          if (ownsFrameScope) {
-            frameScope.dispose();
-          }
-        });
+        return maybePromise
+          .catch((err) => {
+            restoreRootContext();
+            throw err;
+          })
+          .finally(() => {
+            restoreRootContext();
+            if (ownsFrameScope) {
+              frameScope.dispose();
+            }
+          });
       }
+      restoreRootContext();
       if (ownsFrameScope) {
         frameScope.dispose();
       }
       return Promise.resolve();
     } catch (err) {
-      canvasCtx.restore();
+      restoreRootContext();
       if (ownsFrameScope) {
         frameScope.dispose();
       }

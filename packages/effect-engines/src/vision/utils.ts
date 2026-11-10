@@ -104,85 +104,89 @@ export async function createCutoutRgba(
 
   // Mask canvas at mask resolution
   const maskCanvas = UniversalCanvasProvider.acquireScratchCanvas(mW, mH);
-  const maskCtx = maskCanvas.getContext('2d');
-  const maskImgData = maskCtx.createImageData(mW, mH);
+  let fullCanvas: any = null;
+  let alphaCanvas: any = null;
 
-  let minX = mW;
-  let maxX = 0;
-  let minY = mH;
-  let maxY = 0;
-  let fgPixels = 0;
+  try {
+    const maskCtx = maskCanvas.getContext('2d');
+    const maskImgData = maskCtx.createImageData(mW, mH);
 
-  for (let y = 0; y < mH; y++) {
-    for (let x = 0; x < mW; x++) {
-      const idx = y * mW + x;
-      const rawVal = alphaMask[idx];
-      let normVal = typeof rawVal === 'number' && rawVal <= 1.0 ? rawVal : Number(rawVal) / 255.0;
+    let minX = mW;
+    let maxX = 0;
+    let minY = mH;
+    let maxY = 0;
+    let fgPixels = 0;
 
-      // Smoothstep curve for soft edge transition if requested or default
-      if (options?.featherRadius !== 0) {
-        // smoothstep between 0.1 and 0.9
-        const edgeMin = 0.08;
-        const edgeMax = 0.92;
-        const clamped = Math.max(0, Math.min(1, (normVal - edgeMin) / (edgeMax - edgeMin)));
-        normVal = clamped * clamped * (3 - 2 * clamped);
-      }
+    for (let y = 0; y < mH; y++) {
+      for (let x = 0; x < mW; x++) {
+        const idx = y * mW + x;
+        const rawVal = alphaMask[idx];
+        let normVal = typeof rawVal === 'number' && rawVal <= 1.0 ? rawVal : Number(rawVal) / 255.0;
 
-      const alpha = Math.max(0, Math.min(255, Math.round(normVal * 255)));
-      const pos = idx * 4;
+        // Smoothstep curve for soft edge transition if requested or default
+        if (options?.featherRadius !== 0) {
+          // smoothstep between 0.1 and 0.9
+          const edgeMin = 0.08;
+          const edgeMax = 0.92;
+          const clamped = Math.max(0, Math.min(1, (normVal - edgeMin) / (edgeMax - edgeMin)));
+          normVal = clamped * clamped * (3 - 2 * clamped);
+        }
 
-      maskImgData.data[pos] = 255;
-      maskImgData.data[pos + 1] = 255;
-      maskImgData.data[pos + 2] = 255;
-      maskImgData.data[pos + 3] = alpha;
+        const alpha = Math.max(0, Math.min(255, Math.round(normVal * 255)));
+        const pos = idx * 4;
 
-      if (alpha > 30) {
-        fgPixels++;
-        if (x < minX) minX = x;
-        if (x > maxX) maxX = x;
-        if (y < minY) minY = y;
-        if (y > maxY) maxY = y;
+        maskImgData.data[pos] = 255;
+        maskImgData.data[pos + 1] = 255;
+        maskImgData.data[pos + 2] = 255;
+        maskImgData.data[pos + 3] = alpha;
+
+        if (alpha > 30) {
+          fgPixels++;
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
       }
     }
+
+    maskCtx.putImageData(maskImgData, 0, 0);
+
+    // Full resolution RGBA canvas
+    fullCanvas = UniversalCanvasProvider.acquireScratchCanvas(origW, origH);
+    const fullCtx = fullCanvas.getContext('2d');
+
+    // Draw original
+    fullCtx.drawImage(original, 0, 0, origW, origH);
+
+    // Apply alpha mask via destination-in
+    fullCtx.globalCompositeOperation = 'destination-in';
+    fullCtx.drawImage(maskCanvas, 0, 0, origW, origH);
+
+    const rawRgba = fullCanvas.toBuffer('image/png');
+    const rgbaBuffer = rawRgba instanceof Uint8Array ? rawRgba : new Uint8Array(rawRgba);
+
+    // Also export alpha mask canvas scaled to original size
+    alphaCanvas = UniversalCanvasProvider.acquireScratchCanvas(origW, origH);
+    const alphaCtx = alphaCanvas.getContext('2d');
+    alphaCtx.drawImage(maskCanvas, 0, 0, origW, origH);
+    const rawAlpha = alphaCanvas.toBuffer('image/png');
+    const alphaBuffer = rawAlpha instanceof Uint8Array ? rawAlpha : new Uint8Array(rawAlpha);
+
+    const bbox: BoundingBox = fgPixels > 0
+      ? {
+          x: minX / mW,
+          y: minY / mH,
+          width: (maxX - minX + 1) / mW,
+          height: (maxY - minY + 1) / mH,
+          confidence: 0.95
+        }
+      : { x: 0.2, y: 0.2, width: 0.6, height: 0.6, confidence: 0.5 };
+
+    return { rgbaBuffer, alphaBuffer, bbox };
+  } finally {
+    if (fullCanvas) UniversalCanvasProvider.releaseScratchCanvas(fullCanvas);
+    if (alphaCanvas) UniversalCanvasProvider.releaseScratchCanvas(alphaCanvas);
+    UniversalCanvasProvider.releaseScratchCanvas(maskCanvas);
   }
-
-  maskCtx.putImageData(maskImgData, 0, 0);
-
-  // Full resolution RGBA canvas
-  const fullCanvas = UniversalCanvasProvider.acquireScratchCanvas(origW, origH);
-  const fullCtx = fullCanvas.getContext('2d');
-
-  // Draw original
-  fullCtx.drawImage(original, 0, 0, origW, origH);
-
-  // Apply alpha mask via destination-in
-  fullCtx.globalCompositeOperation = 'destination-in';
-  fullCtx.drawImage(maskCanvas, 0, 0, origW, origH);
-
-  const rawRgba = fullCanvas.toBuffer('image/png');
-  const rgbaBuffer = rawRgba instanceof Uint8Array ? rawRgba : new Uint8Array(rawRgba);
-
-  // Also export alpha mask canvas scaled to original size
-  const alphaCanvas = UniversalCanvasProvider.acquireScratchCanvas(origW, origH);
-  const alphaCtx = alphaCanvas.getContext('2d');
-  alphaCtx.drawImage(maskCanvas, 0, 0, origW, origH);
-  const rawAlpha = alphaCanvas.toBuffer('image/png');
-  const alphaBuffer = rawAlpha instanceof Uint8Array ? rawAlpha : new Uint8Array(rawAlpha);
-
-  // Release scratch canvases back to pool
-  UniversalCanvasProvider.releaseScratchCanvas(fullCanvas);
-  UniversalCanvasProvider.releaseScratchCanvas(alphaCanvas);
-  UniversalCanvasProvider.releaseScratchCanvas(maskCanvas);
-
-  const bbox: BoundingBox = fgPixels > 0
-    ? {
-        x: minX / mW,
-        y: minY / mH,
-        width: (maxX - minX + 1) / mW,
-        height: (maxY - minY + 1) / mH,
-        confidence: 0.95
-      }
-    : { x: 0.2, y: 0.2, width: 0.6, height: 0.6, confidence: 0.5 };
-
-  return { rgbaBuffer, alphaBuffer, bbox };
 }

@@ -251,8 +251,9 @@ export class CanvasParticleOverlayPlugin implements ModifierPlugin<CanvasParticl
     if (params.shaders) {
       // A. Bloom & Glow
       if (params.shaders.bloom?.enabled) {
+        let uScratch: any = null;
         try {
-          const uScratch = UniversalCanvasProvider.acquireScratchCanvas(width, height);
+          uScratch = UniversalCanvasProvider.acquireScratchCanvas(width, height);
           const scratch = uScratch.getRawCanvas ? uScratch.getRawCanvas() : uScratch;
           const sCtx = uScratch.getContext('2d');
           PostProcessingShaders.applyBloom(
@@ -264,8 +265,11 @@ export class CanvasParticleOverlayPlugin implements ModifierPlugin<CanvasParticl
             params.shaders.bloom.threshold ?? 0.7,
             params.shaders.bloom.intensity ?? 0.5
           );
-          UniversalCanvasProvider.releaseScratchCanvas(uScratch);
-        } catch { }
+        } catch { } finally {
+          if (uScratch) {
+            UniversalCanvasProvider.releaseScratchCanvas(uScratch);
+          }
+        }
       }
 
       // B. Anamorphic Lens Flare

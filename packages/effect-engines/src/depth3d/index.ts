@@ -388,70 +388,72 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
   });
 
   const captionStrategy = new BoundedAcousticCaptionStrategy();
+  const renderer = Depth3DFactory.getRenderer(mode);
 
-  // 4. Render and stream frames via sink
-  for (let frame = 0; frame < totalFrames; frame++) {
-    const progress = frame / totalFrames;
-    const timeSec = frame / fps;
+  try {
+    // 4. Render and stream frames via sink
+    for (let frame = 0; frame < totalFrames; frame++) {
+      const progress = frame / totalFrames;
+      const timeSec = frame / fps;
 
-    ctx.clearRect(0, 0, width, height);
+      ctx.clearRect(0, 0, width, height);
 
-    const renderer = Depth3DFactory.getRenderer(mode);
-    renderer.renderFrame(ctx, {
-      img,
-      subjectImg,
-      subjectBBox,
-      bgImg,
-      srcCanvas,
-      depthLayers,
-      width,
-      height,
-      frame,
-      totalFrames,
-      timeSec,
-      progress,
-      depthConfig,
-      captions: scene.captions,
-      particles,
-      dustParticles,
-    });
-
-    // Draw Canvas Subtitles / Captions isomorphically
-    if (scene.captions && scene.captions.length > 0) {
-      const snapshot: CaptionTrackSnapshot = captionStrategy.evaluate(
-        scene.captions,
-        timeSec,
-        config.settings.captions
-      );
-      drawCanvasCaptionsFromSnapshot(
-        ctx,
-        snapshot,
-        config.settings.captions,
+      renderer.renderFrame(ctx, {
+        img,
+        subjectImg,
+        subjectBBox,
+        bgImg,
+        srcCanvas,
+        depthLayers,
         width,
         height,
-        config.settings.platform as any
-      );
-    }
+        frame,
+        totalFrames,
+        timeSec,
+        progress,
+        depthConfig,
+        captions: scene.captions,
+        particles,
+        dustParticles,
+      });
 
-    // Ingest frame into sink
-    const frameData = canvas.data();
-    await sink.consumeFrame(frame, frameData);
+      // Draw Canvas Subtitles / Captions isomorphically
+      if (scene.captions && scene.captions.length > 0) {
+        const snapshot: CaptionTrackSnapshot = captionStrategy.evaluate(
+          scene.captions,
+          timeSec,
+          config.settings.captions
+        );
+        drawCanvasCaptionsFromSnapshot(
+          ctx,
+          snapshot,
+          config.settings.captions,
+          width,
+          height,
+          config.settings.platform as any
+        );
+      }
 
-    if (frame % 15 === 0) {
-      await new Promise((r) => setTimeout(r, 0));
+      // Ingest frame into sink
+      const frameData = canvas.data();
+      await sink.consumeFrame(frame, frameData);
+
+      if (frame % 15 === 0) {
+        await new Promise((r) => setTimeout(r, 0));
+      }
     }
+  } finally {
+    // Release pre-allocated scratch canvases after rendering completes or aborts
+    try {
+      UniversalCanvasProvider.releaseScratchCanvas(dCanvas);
+      UniversalCanvasProvider.releaseScratchCanvas(sCanvas);
+      if (depthLayers) {
+        if (depthLayers.bg) UniversalCanvasProvider.releaseScratchCanvas(depthLayers.bg);
+        if (depthLayers.mg) UniversalCanvasProvider.releaseScratchCanvas(depthLayers.mg);
+        if (depthLayers.fg) UniversalCanvasProvider.releaseScratchCanvas(depthLayers.fg);
+      }
+    } catch {}
   }
-
-  // Release pre-allocated scratch canvases after rendering completes
-  try {
-    UniversalCanvasProvider.releaseScratchCanvas(dCanvas);
-    UniversalCanvasProvider.releaseScratchCanvas(sCanvas);
-    if (depthLayers) {
-      if (depthLayers.bg) UniversalCanvasProvider.releaseScratchCanvas(depthLayers.bg);
-      if (depthLayers.mg) UniversalCanvasProvider.releaseScratchCanvas(depthLayers.mg);
-      if (depthLayers.fg) UniversalCanvasProvider.releaseScratchCanvas(depthLayers.fg);
-    }
-  } catch {}
 
   await sink.finalize();
   return { path: outputPath, duration: totalDuration };

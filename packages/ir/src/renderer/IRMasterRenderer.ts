@@ -14,6 +14,7 @@ import {
   CacheNamespace,
   NativeResourceManager,
   AssetProtocolRegistry,
+  UniversalLogger,
 } from '@acc/core-isomorphic';
 import type { IVideoDecoder, IMediaEngineStrategy, MediaEngineType, INamespacedCache } from '@acc/core-isomorphic';
 import { IRCanvasCompositor, type IAssetSourceResolver } from './shared/IRCanvasCompositor';
@@ -672,7 +673,9 @@ export class IRMasterRenderer implements Disposable {
             scope: frameScope,
           });
         }
-      } catch { }
+      } catch (err: any) {
+        UniversalLogger.warn('IRMasterRenderer', `Failed to decode video frame at ${mediaTimeSec.toFixed(3)}s for asset "${assetId}": ${err?.message || err}`);
+      }
     }
 
     // 2. Build asset source resolver combining static imageCache and dynamic activeVideoFrames
