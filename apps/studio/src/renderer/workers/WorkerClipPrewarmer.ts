@@ -1,4 +1,4 @@
-import type { ResolvedTimeline, ResolvedSequence } from '@acc/ir';
+import { type ResolvedTimeline, type ResolvedSequence, TemporalCadenceResolver } from '@acc/ir';
 import type { MediabunnyWorkerReader } from './MediabunnyWorkerReader';
 import { PreviewFrameMemoryManager } from './PreviewFrameMemoryManager';
 
@@ -71,17 +71,26 @@ export class WorkerClipPrewarmer {
   private async prewarmSequence(seq: ResolvedSequence, fps: number): Promise<void> {
     if (!seq.assetId) return;
 
-    // Check if already in memory (local frame 0 for sequence asset)
-    const existing = this.memoryManager.get(seq.assetId, 0);
+    const cadence = TemporalCadenceResolver.resolve({
+      timelineFrame: seq.startFrame,
+      timelineFps: fps,
+      sequenceStartFrame: seq.startFrame,
+      trimInSec: seq.trimInSec,
+      speed: seq.speed,
+    });
+    const heroFrame = cadence.sourceFrameIndex;
+
+    // Check if already in memory (hero frame for sequence asset)
+    const existing = this.memoryManager.get(seq.assetId, heroFrame);
     if (existing) return;
 
     const reader = this.readers.get(seq.assetId);
     if (!reader) return;
 
     try {
-      const bmp = await reader.requestFrame(0, fps, false);
+      const bmp = await reader.requestFrame(heroFrame, fps, false);
       if (bmp) {
-        this.memoryManager.set(seq.assetId, 0, bmp);
+        this.memoryManager.set(seq.assetId, heroFrame, bmp);
       }
     } catch {
       // Graceful pre-warm failure

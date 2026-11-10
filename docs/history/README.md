@@ -145,3 +145,4 @@
 | 479 | [Unified Decoupled Audio Mixing and Hardware Rate Negotiation](./479_unified_audio_mixing_and_hardware_rate_negotiation.md) | Completed |
 | 480 | [Fix Audio Export Distortion and Preview Playback Gaps](./480_fix_audio_export_distortion_and_preview_playback_gaps.md) | Completed |
 | 481 | [Unified Media Asset Conformance Engine](./481_media_asset_quality_conformation_engine.md) | Completed |
+| 482 | [Temporal Cadence Preview Worker Integration & Video Decoder Strategy Parity](./482_temporal_cadence_and_video_decoder_parity.md) | Completed |

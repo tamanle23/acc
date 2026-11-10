@@ -13,6 +13,7 @@ import {
   EncodedAudioPacketSource,
   EncodedPacket,
   AudioSampleSink,
+  CanvasSink,
 } from 'mediabunny';
 import { FFAudioMuxer } from '../../ffmpeg-ffi/FFAudioMuxer';
 import {
@@ -21,6 +22,10 @@ import {
   MediaEngineCapabilities,
   IMediaFrameSink,
   IAudioDecoder,
+  IVideoDecoder,
+  ICanvasInstance,
+  ICanvasContext2D,
+  UniversalCanvasProvider,
   DecodedAudioPCM,
   IMediaProbeStrategy,
   IMediaConcatStrategy,
@@ -208,6 +213,100 @@ export class MediabunnyServerChunkPolicy implements IChunkExecutionPolicy {
 }
 
 /**
+ * MediabunnyVideoDecoder:
+ * Decodes video files frame-by-frame or via random-access seeking leveraging mediabunny.CanvasSink.
+ * Provides 100% strategy parity with FFIVideoDecoder for server/node runtimes.
+ */
+export class MediabunnyVideoDecoder implements IVideoDecoder {
+  private input: Input | null = null;
+  private canvasSink: CanvasSink | null = null;
+  private canvas: ICanvasInstance | null = null;
+  private ctx: ICanvasContext2D | null = null;
+  private isOpened = false;
+  private currentTimestampSec = 0;
+  private fps = 30;
+  public readonly width: number;
+  public readonly height: number;
+  public duration: number = 0;
+
+  constructor(private videoPath: string, targetWidth: number, targetHeight: number) {
+    this.width = targetWidth;
+    this.height = targetHeight;
+  }
+
+  public async open(): Promise<boolean> {
+    if (this.isOpened) return true;
+    if (!fs.existsSync(this.videoPath)) {
+      return false;
+    }
+
+    try {
+      this.input = new Input({
+        formats: ALL_FORMATS,
+        source: new FilePathSource(this.videoPath),
+      });
+
+      this.duration = await this.input.computeDuration();
+      const videoTrack = await this.input.getPrimaryVideoTrack();
+      if (!videoTrack) {
+        return false;
+      }
+
+      this.canvasSink = new CanvasSink(videoTrack, { poolSize: 2 });
+      this.canvas = UniversalCanvasProvider.createCanvas(this.width, this.height);
+      this.ctx = this.canvas.getContext('2d');
+      this.isOpened = true;
+      this.currentTimestampSec = 0;
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  public async seekTimestamp(targetSeconds: number): Promise<ICanvasInstance | null> {
+    if (!this.isOpened || !this.canvasSink || !this.canvas || !this.ctx) return null;
+    this.currentTimestampSec = Math.max(0, targetSeconds);
+    return this.renderFrameAtSec(this.currentTimestampSec);
+  }
+
+  public async readNextFrame(): Promise<ICanvasInstance | null> {
+    if (!this.isOpened || !this.canvasSink || !this.canvas || !this.ctx) return null;
+    const frame = await this.renderFrameAtSec(this.currentTimestampSec);
+    this.currentTimestampSec += 1 / this.fps;
+    return frame;
+  }
+
+  private async renderFrameAtSec(sec: number): Promise<ICanvasInstance | null> {
+    if (!this.canvasSink || !this.ctx || !this.canvas) return null;
+    try {
+      const wrappedCanvas = await this.canvasSink.getCanvas(sec);
+      if (!wrappedCanvas) return null;
+      const raw = typeof wrappedCanvas.getRawCanvas === 'function'
+        ? wrappedCanvas.getRawCanvas()
+        : wrappedCanvas.canvas || wrappedCanvas;
+
+      this.ctx.clearRect(0, 0, this.width, this.height);
+      this.ctx.drawImage(raw, 0, 0, this.width, this.height);
+      return this.canvas;
+    } catch {
+      return null;
+    }
+  }
+
+  public close(): void {
+    if (!this.isOpened) return;
+    try {
+      if (this.canvasSink && typeof (this.canvasSink as any).close === 'function') {
+        (this.canvasSink as any).close();
+      }
+    } catch { }
+    this.canvasSink = null;
+    this.input = null;
+    this.isOpened = false;
+  }
+}
+
+/**
  * Mediabunny Server Media Engine Strategy.
  * Utilizes pure TypeScript demuxing/muxing combined with NodeAV server-side codecs.
  */
@@ -235,6 +334,11 @@ export class MediabunnyServerStrategy implements IMediaEngineStrategy {
       const msg = err instanceof Error ? err.message : String(err);
       throw new MediaEngineError(this.id, `Failed to initialize server codecs: ${msg}`);
     }
+  }
+
+  public createVideoDecoder(filePath: string, targetWidth: number, targetHeight: number): IVideoDecoder {
+    this.validatePrerequisites();
+    return new MediabunnyVideoDecoder(filePath, targetWidth, targetHeight);
   }
 
   public createVideoSink(options?: SinkInitMetadata): IMediaFrameSink {
