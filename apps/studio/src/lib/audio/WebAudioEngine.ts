@@ -76,6 +76,10 @@ export class WebAudioEngine {
   public attachPreviewEngine(engine: IRPreviewEngine): void {
     this.previewEngine = engine;
     this.mixer = engine.getAudioMixer();
+    if (this.ctx) {
+      this.mixer.setSampleRate(this.ctx.sampleRate);
+      this.previewEngine.setAudioSampleRate(this.ctx.sampleRate);
+    }
   }
 
   public getMixer(): UniversalAudioMixer {
@@ -87,7 +91,14 @@ export class WebAudioEngine {
       const win = window as Window & { webkitAudioContext?: typeof AudioContext };
       const AudioCtx = window.AudioContext || win.webkitAudioContext;
       if (AudioCtx) {
-        this.ctx = new AudioCtx({ sampleRate: 44100 });
+        // Auto-negotiate with hardware audio device native sample rate (e.g. 48000 or 44100)
+        this.ctx = new AudioCtx();
+        const hardwareRate = this.ctx.sampleRate || 48000;
+        this.mixer.setSampleRate(hardwareRate);
+        if (this.previewEngine) {
+          this.previewEngine.setAudioSampleRate(hardwareRate);
+        }
+
         this.masterGain = this.ctx.createGain();
         this.masterGain.gain.setValueAtTime(0.8, this.ctx.currentTime);
 
@@ -137,12 +148,12 @@ export class WebAudioEngine {
     this.lastFps = fps;
 
     if (preload && irState.timeline) {
-      // Lazy lookahead: Preload audio/video assets for sequences starting within 10 seconds or active
+      // Lazy lookahead: Preload audio assets for sequences starting within 6 seconds (~2.1MB per track) or active
       const proximateAssetIds = new Set<string>();
       for (const track of irState.timeline.tracks.values()) {
-        if (track.type === 'audio' || track.type === 'video') {
+        if (track.type === 'audio') {
           for (const seq of track.sequences) {
-            if (seq.assetId && (seq.startFrame <= (fps * 10) || seq.startFrame === 0)) {
+            if (seq.assetId && (seq.startFrame <= (fps * 6) || seq.startFrame === 0)) {
               proximateAssetIds.add(seq.assetId);
             }
           }
@@ -151,7 +162,7 @@ export class WebAudioEngine {
       const assets = irState.timeline.assets || irState.doc?.assets || {};
       const filteredAssets: Record<string, { src: string; type: string }> = {};
       for (const id of proximateAssetIds) {
-        if (assets[id] && (assets[id].type === 'audio' || assets[id].type === 'video')) {
+        if (assets[id] && assets[id].type === 'audio') {
           filteredAssets[id] = assets[id];
         }
       }
@@ -191,6 +202,12 @@ export class WebAudioEngine {
       this.stopPlayback();
 
       this.syncFromIR(irState, fps);
+      if (this.mixer.sampleRate !== this.ctx.sampleRate) {
+        this.mixer.setSampleRate(this.ctx.sampleRate);
+        if (this.previewEngine) {
+          this.previewEngine.setAudioSampleRate(this.ctx.sampleRate);
+        }
+      }
       const totalFrames = irState?.timeline?.totalFrames || 300;
       const startSec = currentFrame / Math.max(1, fps);
       const remainingSec = Math.max(0.1, (totalFrames - currentFrame) / Math.max(1, fps));
@@ -322,6 +339,7 @@ export class WebAudioEngine {
       } catch { }
     }
     this.activeSources.clear();
+    this.playbackStartAudioTime = 0;
     this.scheduledAudioEndTime = 0;
     this.nextTimelineSecToSynthesize = 0;
     this.streamWorklet.reset();

@@ -31,7 +31,7 @@ describe('WebAudioEngine Chunked Synthesis & Worklet RingBuffer Suite', () => {
     streamWorklet.pushChunk(chunk.left, chunk.right);
 
     const ringBuffer = streamWorklet.getRingBuffer();
-    expect(ringBuffer.getAvailable()).toBe(44100 * 2);
+    expect(ringBuffer.getAvailableRead()).toBe(44100 * 2);
 
     // Read 128-sample blocks (AudioWorklet quantum)
     const outL = new Float32Array(128);
@@ -39,6 +39,6 @@ describe('WebAudioEngine Chunked Synthesis & Worklet RingBuffer Suite', () => {
 
     const ok = streamWorklet.processBlock(outL, outR);
     expect(ok).toBe(true);
-    expect(ringBuffer.getAvailable()).toBe(44100 * 2 - 128);
+    expect(ringBuffer.getAvailableRead()).toBe(44100 * 2 - 128);
   });
 });

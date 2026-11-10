@@ -1,80 +1,98 @@
-import { useState, useCallback } from 'react';
+import { createSignal } from 'solid-js';
 
 export type ZoomLevel = 'fit' | 0.5 | 1.0 | 2.0;
 
 export interface ViewportPanZoomState {
   zoomLevel: ZoomLevel;
+  zoomLevelSignal: () => ZoomLevel;
   setZoomLevel: (zoom: ZoomLevel) => void;
   panOffset: { x: number; y: number };
+  panOffsetSignal: () => { x: number; y: number };
   setPanOffset: (offset: { x: number; y: number } | ((prev: { x: number; y: number }) => { x: number; y: number })) => void;
   isPanToolActive: boolean;
+  isPanToolActiveSignal: () => boolean;
   setIsPanToolActive: (active: boolean | ((prev: boolean) => boolean)) => void;
   isSpacePressed: boolean;
+  isSpacePressedSignal: () => boolean;
   setIsSpacePressed: (pressed: boolean) => void;
   isPanning: boolean;
+  isPanningSignal: () => boolean;
   setIsPanning: (panning: boolean) => void;
   panStart: { x: number; y: number };
+  panStartSignal: () => { x: number; y: number };
   setPanStart: (start: { x: number; y: number }) => void;
-  handleMouseDownPan: (e: React.MouseEvent) => void;
-  handleMouseMovePan: (e: React.MouseEvent) => boolean;
+  handleMouseDownPan: (e: MouseEvent) => void;
+  handleMouseMovePan: (e: MouseEvent) => boolean;
   handleMouseUpPan: () => void;
   resetPanZoom: () => void;
 }
 
 export function useViewportPanZoom(): ViewportPanZoomState {
-  const [zoomLevel, setZoomLevel] = useState<ZoomLevel>('fit');
-  const [panOffset, setPanOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [isPanToolActive, setIsPanToolActive] = useState(false);
-  const [isSpacePressed, setIsSpacePressed] = useState(false);
-  const [isPanning, setIsPanning] = useState(false);
-  const [panStart, setPanStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [zoomLevel, setZoomLevel] = createSignal<ZoomLevel>('fit');
+  const [panOffset, setPanOffset] = createSignal<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [isPanToolActive, setIsPanToolActive] = createSignal(false);
+  const [isSpacePressed, setIsSpacePressed] = createSignal(false);
+  const [isPanning, setIsPanning] = createSignal(false);
+  const [panStart, setPanStart] = createSignal<{ x: number; y: number }>({ x: 0, y: 0 });
 
-  const handleMouseDownPan = useCallback(
-    (e: React.MouseEvent) => {
-      if (isSpacePressed || isPanToolActive || e.button === 1) {
-        e.preventDefault();
-        setIsPanning(true);
-        setPanStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y });
-      }
-    },
-    [isSpacePressed, isPanToolActive, panOffset]
-  );
+  const handleMouseDownPan = (e: MouseEvent) => {
+    if (isSpacePressed() || isPanToolActive() || e.button === 1) {
+      e.preventDefault();
+      setIsPanning(true);
+      setPanStart({ x: e.clientX - panOffset().x, y: e.clientY - panOffset().y });
+    }
+  };
 
-  const handleMouseMovePan = useCallback(
-    (e: React.MouseEvent): boolean => {
-      if (isPanning) {
-        setPanOffset({
-          x: e.clientX - panStart.x,
-          y: e.clientY - panStart.y,
-        });
-        return true;
-      }
-      return false;
-    },
-    [isPanning, panStart]
-  );
+  const handleMouseMovePan = (e: MouseEvent): boolean => {
+    if (isPanning()) {
+      setPanOffset({
+        x: e.clientX - panStart().x,
+        y: e.clientY - panStart().y,
+      });
+      return true;
+    }
+    return false;
+  };
 
-  const handleMouseUpPan = useCallback(() => {
+  const handleMouseUpPan = () => {
     setIsPanning(false);
-  }, []);
+  };
 
-  const resetPanZoom = useCallback(() => {
+  const resetPanZoom = () => {
     setZoomLevel('fit');
     setPanOffset({ x: 0, y: 0 });
-  }, []);
+  };
 
   return {
-    zoomLevel,
+    get zoomLevel() {
+      return zoomLevel();
+    },
+    zoomLevelSignal: zoomLevel,
     setZoomLevel,
-    panOffset,
+    get panOffset() {
+      return panOffset();
+    },
+    panOffsetSignal: panOffset,
     setPanOffset,
-    isPanToolActive,
+    get isPanToolActive() {
+      return isPanToolActive();
+    },
+    isPanToolActiveSignal: isPanToolActive,
     setIsPanToolActive,
-    isSpacePressed,
+    get isSpacePressed() {
+      return isSpacePressed();
+    },
+    isSpacePressedSignal: isSpacePressed,
     setIsSpacePressed,
-    isPanning,
+    get isPanning() {
+      return isPanning();
+    },
+    isPanningSignal: isPanning,
     setIsPanning,
-    panStart,
+    get panStart() {
+      return panStart();
+    },
+    panStartSignal: panStart,
     setPanStart,
     handleMouseDownPan,
     handleMouseMovePan,

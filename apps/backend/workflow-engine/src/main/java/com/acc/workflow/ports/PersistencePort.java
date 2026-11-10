@@ -119,7 +119,30 @@ public interface PersistencePort {
 
     List<com.acc.workflow.core.model.WorkflowDefinitionRecord> listDefinitionVersions(String tenantId, String workflowKey);
 
+    /**
+     * Lists every persisted definition version for a tenant (all workflow keys), ordered by key then version.
+     * Used to rehydrate the definition catalog after a restart. Defaults to empty for adapters without durable storage.
+     */
+    default List<com.acc.workflow.core.model.WorkflowDefinitionRecord> listTenantDefinitionVersions(String tenantId) {
+        return List.of();
+    }
+
     void updateDefinitionStatus(String tenantId, String workflowKey, int version, com.acc.workflow.core.model.WorkflowVersionStatus status, Long publishedAtMs, String publishedBy);
+
+    // Task Definition Versioning & Ledger
+    void saveTaskDefinition(com.acc.workflow.core.model.TaskDefinitionRecord record);
+
+    Optional<com.acc.workflow.core.model.TaskDefinitionRecord> getTaskDefinition(String tenantId, String name, int version);
+
+    Optional<com.acc.workflow.core.model.TaskDefinitionRecord> getLatestActiveTaskDefinition(String tenantId, String name);
+
+    List<com.acc.workflow.core.model.TaskDefinitionRecord> listTaskDefinitions(String tenantId);
+
+    List<com.acc.workflow.core.model.TaskDefinitionRecord> listTaskDefinitionVersions(String tenantId, String name);
+
+    void updateTaskDefinitionStatus(String tenantId, String name, int version, com.acc.workflow.core.model.WorkflowVersionStatus status, Long publishedAtMs, String publishedBy);
+
+    boolean deleteTaskDefinition(String tenantId, String name, int version);
 
     // In-flight Execution Hot Migration
     void updateWorkflowDefinitionSnapshot(String workflowId, int newVersion, WorkflowDefinition newDefinitionSnapshot, long nowEpochMs);

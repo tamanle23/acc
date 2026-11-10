@@ -1,4 +1,4 @@
-import type React from 'react';
+import type { JSX } from 'solid-js';
 import { StudioColorGradingInspector } from './StudioColorGradingInspector';
 
 export interface CustomModifierInspectorProps {
@@ -7,7 +7,7 @@ export interface CustomModifierInspectorProps {
   disabled?: boolean;
 }
 
-export type CustomModifierInspectorComponent = React.ComponentType<CustomModifierInspectorProps>;
+export type CustomModifierInspectorComponent = (props: CustomModifierInspectorProps) => JSX.Element;
 
 const customModifierInspectors = new Map<string, CustomModifierInspectorComponent>();
 

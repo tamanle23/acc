@@ -51,14 +51,37 @@ public final class EndWorkflowStrategy implements NodeEvaluatorStrategy {
             }
         }
 
-        // 2. Resolve output mappings from inputParameters
+        // 2. Resolve output mappings from inputParameters (if defined, strictly use them; otherwise fall back to outputPayload)
         Map<String, Object> resolvedOutput = new LinkedHashMap<>();
-        if (snapshot.outputPayload() != null) {
-            resolvedOutput.putAll(snapshot.outputPayload());
-        }
         if (taskDef.inputParameters() != null && !taskDef.inputParameters().isEmpty()) {
             Map<String, Object> resolved = resolver.resolve(taskDef.inputParameters(), snapshot);
             resolvedOutput.putAll(resolved);
+        } else if (snapshot.outputPayload() != null) {
+            resolvedOutput.putAll(snapshot.outputPayload());
+        }
+
+        // 3. Strict Exit Gate: Validate resolved output against outputSchema if defined
+        if (taskDef.outputSchema() != null && !taskDef.outputSchema().isEmpty()) {
+            com.acc.workflow.core.schema.WorkflowSchemaValidator validator = new com.acc.workflow.core.schema.WorkflowSchemaValidator();
+            List<com.acc.workflow.core.schema.WorkflowSchemaValidator.ValidationError> validationErrors = validator.validate(resolvedOutput, taskDef.outputSchema());
+            if (!validationErrors.isEmpty()) {
+                String errorMsg = "Workflow output violates outputSchema: " + validationErrors.get(0).message();
+                List<EngineCommand> failCmds = List.of(
+                    new EngineCommand.UpdateTaskStatus(
+                        snapshot.workflowId() + "_" + refName,
+                        refName,
+                        TaskStatus.FAILED,
+                        resolvedOutput,
+                        errorMsg
+                    ),
+                    new EngineCommand.TransitionWorkflow(
+                        WorkflowStatus.FAILED,
+                        resolvedOutput,
+                        errorMsg
+                    )
+                );
+                return NodeEvaluationResult.failed(failCmds, errorMsg);
+            }
         }
 
         List<EngineCommand> commands = new ArrayList<>();

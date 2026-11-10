@@ -83,8 +83,10 @@ export interface WorkflowDefinitionIR {
   version: number;
   name: string;
   description?: string;
+  inputSchema?: Record<string, any>;
+  outputSchema?: Record<string, any>;
   tasks: any[];
-  layoutMetadata?: Record<string, { x: number; y: number }>;
+  layoutMetadata?: Record<string, { x: number; y: number; isPermanent?: boolean; isStartNode?: boolean; isEndNode?: boolean }>;
   status?: 'ACTIVE' | 'DISABLED';
   updatedAt?: string;
   tenantId?: string;
@@ -114,13 +116,223 @@ export interface WorkflowExecution {
 
 const DEFAULT_DEFINITIONS: WorkflowDefinitionIR[] = [
   {
+    workflowKey: 'order-fulfillment-pipeline',
+    name: 'Order Fulfillment & Logistics Pipeline',
+    version: 1,
+    description: 'Production demonstration: validates order compliance, checks inventory allocation, captures payment settlement, and books courier air freight.',
+    status: 'ACTIVE',
+    updatedAt: 'Just now',
+    inputSchema: {
+      $schema: 'http://json-schema.org/draft-07/schema#',
+      type: 'object',
+      required: ['orderId', 'sku', 'quantity', 'amount', 'customerEmail'],
+      properties: {
+        orderId: { type: 'string', description: 'Target order identifier' },
+        sku: { type: 'string', description: 'Stock Keeping Unit code' },
+        quantity: { type: 'integer', description: 'Requested item count' },
+        amount: { type: 'number', description: 'Total order monetary amount' },
+        customerEmail: { type: 'string', description: 'Customer notification email' },
+      },
+      additionalProperties: false,
+    },
+    outputSchema: {
+      $schema: 'http://json-schema.org/draft-07/schema#',
+      type: 'object',
+      required: ['fulfillmentStatus', 'orderId', 'reservationCode', 'transactionId', 'trackingNumber'],
+      properties: {
+        fulfillmentStatus: { type: 'string' },
+        orderId: { type: 'string' },
+        reservationCode: { type: 'string' },
+        transactionId: { type: 'string' },
+        trackingNumber: { type: 'string' },
+      },
+      additionalProperties: false,
+    },
+    tasks: [
+      {
+        taskReferenceName: 'workflow_start',
+        taskType: 'START_WORKFLOW',
+        outputSchema: {
+          $schema: 'http://json-schema.org/draft-07/schema#',
+          type: 'object',
+          properties: {
+            orderId: { type: 'string' },
+            sku: { type: 'string' },
+            quantity: { type: 'integer' },
+            amount: { type: 'number' },
+            customerEmail: { type: 'string' },
+          },
+        },
+      },
+      {
+        taskReferenceName: 'validateOrder',
+        taskType: 'SIMPLE',
+        domain: 'default',
+        inputParameters: { orderId: '${workflow.input.orderId}' },
+        inputSchema: {
+          type: 'object',
+          required: ['orderId'],
+          properties: { orderId: { type: 'string', description: 'Target order identifier' } },
+        },
+        outputSchema: {
+          type: 'object',
+          properties: { valid: { type: 'boolean' }, riskScore: { type: 'integer' } },
+        },
+      },
+      {
+        taskReferenceName: 'checkInventory',
+        taskType: 'SIMPLE',
+        domain: 'default',
+        inputParameters: {
+          orderId: '${workflow.input.orderId}',
+          sku: '${workflow.input.sku}',
+          quantity: '${workflow.input.quantity}',
+        },
+        inputSchema: {
+          type: 'object',
+          required: ['orderId', 'sku', 'quantity'],
+          properties: {
+            orderId: { type: 'string' },
+            sku: { type: 'string' },
+            quantity: { type: 'integer' },
+          },
+        },
+        outputSchema: {
+          type: 'object',
+          properties: {
+            inStock: { type: 'boolean' },
+            warehouseId: { type: 'string' },
+            reservationCode: { type: 'string' },
+          },
+        },
+        compensateHandlerRef: 'cancelInventoryReservation',
+      },
+      {
+        taskReferenceName: 'chargePayment',
+        taskType: 'SIMPLE',
+        domain: 'default',
+        inputParameters: {
+          orderId: '${workflow.input.orderId}',
+          amount: '${workflow.input.amount}',
+        },
+        inputSchema: {
+          type: 'object',
+          required: ['orderId', 'amount'],
+          properties: {
+            orderId: { type: 'string' },
+            amount: { type: 'number' },
+          },
+        },
+        outputSchema: {
+          type: 'object',
+          properties: {
+            charged: { type: 'boolean' },
+            transactionId: { type: 'string' },
+          },
+        },
+      },
+      {
+        taskReferenceName: 'expressCourier',
+        taskType: 'SIMPLE',
+        domain: 'default',
+        inputParameters: { orderId: '${workflow.input.orderId}' },
+        inputSchema: {
+          type: 'object',
+          required: ['orderId'],
+          properties: { orderId: { type: 'string' } },
+        },
+        outputSchema: {
+          type: 'object',
+          properties: {
+            carrier: { type: 'string' },
+            trackingNumber: { type: 'string' },
+          },
+        },
+        compensateHandlerRef: 'cancelCourierBooking',
+      },
+      {
+        taskReferenceName: 'workflow_end',
+        taskType: 'END_WORKFLOW',
+        inputParameters: {
+          fulfillmentStatus: 'COMPLETED',
+          orderId: '${workflow.input.orderId}',
+          reservationCode: '${checkInventory.output.reservationCode}',
+          transactionId: '${chargePayment.output.transactionId}',
+          trackingNumber: '${expressCourier.output.trackingNumber}',
+        },
+        outputSchema: {
+          $schema: 'http://json-schema.org/draft-07/schema#',
+          type: 'object',
+          required: ['fulfillmentStatus', 'orderId', 'reservationCode', 'transactionId', 'trackingNumber'],
+          properties: {
+            fulfillmentStatus: { type: 'string' },
+            orderId: { type: 'string' },
+            reservationCode: { type: 'string' },
+            transactionId: { type: 'string' },
+            trackingNumber: { type: 'string' },
+          },
+          additionalProperties: false,
+        },
+      },
+    ],
+    layoutMetadata: {
+      workflow_start: { x: 60, y: 200 },
+      validateOrder: { x: 260, y: 200 },
+      checkInventory: { x: 480, y: 200 },
+      chargePayment: { x: 700, y: 200 },
+      expressCourier: { x: 920, y: 200 },
+      workflow_end: { x: 1140, y: 200 },
+    },
+  },
+  {
     workflowKey: 'order-fulfillment-v1',
     name: 'Order Fulfillment Pipeline',
     version: 1,
     description: 'Multi-stage e-commerce order routing, automated warehouse allocation, and postal delivery.',
     status: 'ACTIVE',
     updatedAt: '2 hours ago',
+    inputSchema: {
+      $schema: 'http://json-schema.org/draft-07/schema#',
+      type: 'object',
+      required: ['orderId', 'sku', 'quantity', 'speed'],
+      properties: {
+        orderId: { type: 'string' },
+        sku: { type: 'string' },
+        quantity: { type: 'integer' },
+        speed: { type: 'string' },
+        postalCode: { type: 'string' },
+      },
+      additionalProperties: false,
+    },
+    outputSchema: {
+      $schema: 'http://json-schema.org/draft-07/schema#',
+      type: 'object',
+      required: ['fulfillmentStatus', 'orderId', 'warehouseId'],
+      properties: {
+        fulfillmentStatus: { type: 'string' },
+        orderId: { type: 'string' },
+        warehouseId: { type: 'string' },
+        carrier: { type: 'string' },
+        trackingNumber: { type: 'string' },
+      },
+      additionalProperties: false,
+    },
     tasks: [
+      {
+        taskReferenceName: 'workflow_start',
+        taskType: 'START_WORKFLOW',
+        outputSchema: {
+          $schema: 'http://json-schema.org/draft-07/schema#',
+          type: 'object',
+          properties: {
+            orderId: { type: 'string' },
+            sku: { type: 'string' },
+            quantity: { type: 'integer' },
+            speed: { type: 'string' },
+            postalCode: { type: 'string' },
+          },
+        },
+      },
       {
         taskReferenceName: 'checkInventory',
         taskType: 'SIMPLE',
@@ -130,11 +342,29 @@ const DEFAULT_DEFINITIONS: WorkflowDefinitionIR[] = [
         retryDelaySeconds: 2,
         backoffRate: 2.0,
         inputParameters: { orderId: '${workflow.input.orderId}' },
+        inputSchema: {
+          type: 'object',
+          required: ['orderId'],
+          properties: { orderId: { type: 'string' } },
+        },
+        outputSchema: {
+          type: 'object',
+          properties: { inStock: { type: 'boolean' }, warehouseId: { type: 'string' } },
+        },
       },
       {
         taskReferenceName: 'routeShipping',
         taskType: 'SWITCH',
         condition: '${workflow.input.speed}',
+        inputSchema: {
+          type: 'object',
+          required: ['condition'],
+          properties: { condition: { type: 'string' } },
+        },
+        outputSchema: {
+          type: 'object',
+          properties: { selectedCase: { type: 'string' } },
+        },
         decisionCases: {
           EXPRESS: ['expressCourier'],
           STANDARD: ['groundPostal'],
@@ -148,6 +378,15 @@ const DEFAULT_DEFINITIONS: WorkflowDefinitionIR[] = [
         timeoutSeconds: 30,
         retryCount: 3,
         inputParameters: { trackingNumber: '${checkInventory.output.trackingNumber}' },
+        inputSchema: {
+          type: 'object',
+          required: ['trackingNumber'],
+          properties: { trackingNumber: { type: 'string' } },
+        },
+        outputSchema: {
+          type: 'object',
+          properties: { carrier: { type: 'string' }, trackingNumber: { type: 'string' } },
+        },
         compensateHandlerRef: 'cancelCourierBooking',
       },
       {
@@ -157,13 +396,48 @@ const DEFAULT_DEFINITIONS: WorkflowDefinitionIR[] = [
         timeoutSeconds: 30,
         retryCount: 2,
         inputParameters: { postalCode: '${workflow.input.postalCode}' },
+        inputSchema: {
+          type: 'object',
+          required: ['postalCode'],
+          properties: { postalCode: { type: 'string' } },
+        },
+        outputSchema: {
+          type: 'object',
+          properties: { carrier: { type: 'string' }, trackingNumber: { type: 'string' } },
+        },
+      },
+      {
+        taskReferenceName: 'workflow_end',
+        taskType: 'END_WORKFLOW',
+        inputParameters: {
+          fulfillmentStatus: 'COMPLETED',
+          orderId: '${workflow.input.orderId}',
+          warehouseId: '${checkInventory.output.warehouseId}',
+          carrier: '${expressCourier.output.carrier}',
+          trackingNumber: '${expressCourier.output.trackingNumber}',
+        },
+        outputSchema: {
+          $schema: 'http://json-schema.org/draft-07/schema#',
+          type: 'object',
+          required: ['fulfillmentStatus', 'orderId', 'warehouseId'],
+          properties: {
+            fulfillmentStatus: { type: 'string' },
+            orderId: { type: 'string' },
+            warehouseId: { type: 'string' },
+            carrier: { type: 'string' },
+            trackingNumber: { type: 'string' },
+          },
+          additionalProperties: false,
+        },
       },
     ],
     layoutMetadata: {
-      checkInventory: { x: 50, y: 150 },
-      routeShipping: { x: 340, y: 150 },
-      expressCourier: { x: 620, y: 70 },
-      groundPostal: { x: 620, y: 230 },
+      workflow_start: { x: 50, y: 150 },
+      checkInventory: { x: 260, y: 150 },
+      routeShipping: { x: 500, y: 150 },
+      expressCourier: { x: 740, y: 70 },
+      groundPostal: { x: 740, y: 230 },
+      workflow_end: { x: 980, y: 150 },
     },
   },
   {
@@ -912,6 +1186,741 @@ export const workflowSandboxRepo = new WorkflowSandboxRepository();
 // Backward compatibility alias for tasks
 export const tasksSandboxRepo = workflowExecutionsSandboxRepo;
 
+export interface TaskDefinitionRecordIR {
+  taskDefId: string;
+  tenantId: string;
+  name: string;
+  version: number;
+  status: 'DRAFT' | 'ACTIVE' | 'DEPRECATED' | 'ARCHIVED';
+  description?: string;
+  retryCount?: number;
+  retryDelaySeconds?: number;
+  backoffRate?: number;
+  timeoutSeconds?: number;
+  inputSchema?: Record<string, unknown>;
+  outputSchema?: Record<string, unknown>;
+  changelogNote?: string;
+  publishedAtMs?: number;
+  publishedBy?: string;
+  createdAtMs: number;
+  updatedAtMs: number;
+  createdBy?: string;
+  isBuiltIn?: boolean;
+}
+
+export const DEFAULT_TASK_DEFINITIONS: TaskDefinitionRecordIR[] = [
+  {
+    taskDefId: 'system:validateOrder:v1',
+    tenantId: 'system',
+    name: 'validateOrder',
+    version: 1,
+    status: 'ACTIVE',
+    description: 'Executes KYC, sanctions screening, and velocity fraud heuristics on incoming order.',
+    retryCount: 3,
+    retryDelaySeconds: 2,
+    backoffRate: 2.0,
+    timeoutSeconds: 30,
+    inputSchema: {
+      type: 'object',
+      required: ['orderId'],
+      properties: {
+        orderId: { type: 'string' },
+        orderValue: { type: 'number' },
+        customerTier: { type: 'string' },
+      },
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        valid: { type: 'boolean' },
+        riskScore: { type: 'number' },
+        checkedAt: { type: 'string' },
+      },
+    },
+    changelogNote: 'Initial canonical validateOrder specification',
+    publishedAtMs: Date.now() - 86400000,
+    publishedBy: 'SYSTEM',
+    createdAtMs: Date.now() - 86400000,
+    updatedAtMs: Date.now() - 86400000,
+    createdBy: 'SYSTEM',
+  },
+  {
+    taskDefId: 'system:checkInventory:v1',
+    tenantId: 'system',
+    name: 'checkInventory',
+    version: 1,
+    status: 'ACTIVE',
+    description: 'Verifies stock levels in warehouse and reserves allocation lease.',
+    retryCount: 3,
+    retryDelaySeconds: 2,
+    backoffRate: 2.0,
+    timeoutSeconds: 30,
+    inputSchema: {
+      type: 'object',
+      required: ['sku', 'quantity'],
+      properties: {
+        sku: { type: 'string' },
+        quantity: { type: 'number' },
+        warehouseZone: { type: 'string' },
+      },
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        inStock: { type: 'boolean' },
+        warehouseId: { type: 'string' },
+        reservationCode: { type: 'string' },
+      },
+    },
+    changelogNote: 'Initial canonical checkInventory specification',
+    publishedAtMs: Date.now() - 86400000,
+    publishedBy: 'SYSTEM',
+    createdAtMs: Date.now() - 86400000,
+    updatedAtMs: Date.now() - 86400000,
+    createdBy: 'SYSTEM',
+  },
+  {
+    taskDefId: 'system:chargePayment:v1',
+    tenantId: 'system',
+    name: 'chargePayment',
+    version: 1,
+    status: 'ACTIVE',
+    description: 'Captures authorized funds across primary payment gateway with idempotency key.',
+    retryCount: 3,
+    retryDelaySeconds: 2,
+    backoffRate: 2.0,
+    timeoutSeconds: 30,
+    inputSchema: {
+      type: 'object',
+      required: ['orderId', 'amount'],
+      properties: {
+        orderId: { type: 'string' },
+        amount: { type: 'number' },
+        currency: { type: 'string' },
+      },
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        charged: { type: 'boolean' },
+        transactionId: { type: 'string' },
+        settledAt: { type: 'string' },
+      },
+    },
+    changelogNote: 'Initial canonical chargePayment specification',
+    publishedAtMs: Date.now() - 86400000,
+    publishedBy: 'SYSTEM',
+    createdAtMs: Date.now() - 86400000,
+    updatedAtMs: Date.now() - 86400000,
+    createdBy: 'SYSTEM',
+  },
+  {
+    taskDefId: 'system:expressCourier:v1',
+    tenantId: 'system',
+    name: 'expressCourier',
+    version: 1,
+    status: 'ACTIVE',
+    description: 'Books priority overnight air freight label and tracking number.',
+    retryCount: 3,
+    retryDelaySeconds: 2,
+    backoffRate: 2.0,
+    timeoutSeconds: 30,
+    inputSchema: {
+      type: 'object',
+      required: ['orderId'],
+      properties: {
+        orderId: { type: 'string' },
+        destinationZone: { type: 'string' },
+      },
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        carrier: { type: 'string' },
+        trackingNumber: { type: 'string' },
+        estimatedDeliveryHours: { type: 'number' },
+      },
+    },
+    changelogNote: 'Initial canonical expressCourier specification',
+    publishedAtMs: Date.now() - 86400000,
+    publishedBy: 'SYSTEM',
+    createdAtMs: Date.now() - 86400000,
+    updatedAtMs: Date.now() - 86400000,
+    createdBy: 'SYSTEM',
+  },
+  {
+    taskDefId: 'system:groundPostal:v1',
+    tenantId: 'system',
+    name: 'groundPostal',
+    version: 1,
+    status: 'ACTIVE',
+    description: 'Books economical ground parcel fulfillment route.',
+    retryCount: 3,
+    retryDelaySeconds: 2,
+    backoffRate: 2.0,
+    timeoutSeconds: 30,
+    inputSchema: {
+      type: 'object',
+      required: ['orderId'],
+      properties: {
+        orderId: { type: 'string' },
+        postalCode: { type: 'string' },
+      },
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        carrier: { type: 'string' },
+        trackingNumber: { type: 'string' },
+        estimatedDeliveryDays: { type: 'number' },
+      },
+    },
+    changelogNote: 'Initial canonical groundPostal specification',
+    publishedAtMs: Date.now() - 86400000,
+    publishedBy: 'SYSTEM',
+    createdAtMs: Date.now() - 86400000,
+    updatedAtMs: Date.now() - 86400000,
+    createdBy: 'SYSTEM',
+  },
+  {
+    taskDefId: 'system:cancelCourierBooking:v1',
+    tenantId: 'system',
+    name: 'cancelCourierBooking',
+    version: 1,
+    status: 'ACTIVE',
+    description: 'Revokes active carrier label and releases reserved manifest capacity.',
+    retryCount: 3,
+    retryDelaySeconds: 2,
+    backoffRate: 2.0,
+    timeoutSeconds: 30,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        orderId: { type: 'string' },
+        trackingNumber: { type: 'string' },
+      },
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        cancelled: { type: 'boolean' },
+        refundReference: { type: 'string' },
+      },
+    },
+    changelogNote: 'Initial canonical cancelCourierBooking specification',
+    publishedAtMs: Date.now() - 86400000,
+    publishedBy: 'SYSTEM',
+    createdAtMs: Date.now() - 86400000,
+    updatedAtMs: Date.now() - 86400000,
+    createdBy: 'SYSTEM',
+  },
+  {
+    taskDefId: 'system:publishCmsArticle:v1',
+    tenantId: 'system',
+    name: 'publishCmsArticle',
+    version: 1,
+    status: 'ACTIVE',
+    description: 'Promotes reviewed content revision to live CDN edge cache.',
+    retryCount: 3,
+    retryDelaySeconds: 2,
+    backoffRate: 2.0,
+    timeoutSeconds: 30,
+    inputSchema: {
+      type: 'object',
+      required: ['articleId'],
+      properties: {
+        articleId: { type: 'string' },
+        slug: { type: 'string' },
+        channel: { type: 'string' },
+      },
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        published: { type: 'boolean' },
+        cdnUrl: { type: 'string' },
+        publishedAt: { type: 'string' },
+      },
+    },
+    changelogNote: 'Initial canonical publishCmsArticle specification',
+    publishedAtMs: Date.now() - 86400000,
+    publishedBy: 'SYSTEM',
+    createdAtMs: Date.now() - 86400000,
+    updatedAtMs: Date.now() - 86400000,
+    createdBy: 'SYSTEM',
+  },
+];
+
+export class WorkflowTaskDefinitionsSandboxRepository {
+  private tenantTaskDefs: Map<string, Map<string, TaskDefinitionRecordIR>> = new Map();
+
+  constructor() {
+    this.reset();
+    sandboxResetRegistry.register(() => this.reset());
+  }
+
+  private getActiveTenantId(): string {
+    return defaultSandboxStore.getState().activeTenantId || 'tenant-acme';
+  }
+
+  private getTenantMap(tenantId?: string): Map<string, TaskDefinitionRecordIR> {
+    const tid = tenantId || this.getActiveTenantId();
+    if (!this.tenantTaskDefs.has(tid)) {
+      const map = new Map<string, TaskDefinitionRecordIR>();
+      DEFAULT_TASK_DEFINITIONS.forEach((def) => {
+        map.set(`${def.name}:v${def.version}`, { ...JSON.parse(JSON.stringify(def)), tenantId: tid });
+      });
+      this.tenantTaskDefs.set(tid, map);
+    }
+    return this.tenantTaskDefs.get(tid)!;
+  }
+
+  public reset(): void {
+    this.tenantTaskDefs.clear();
+    const seedTenants = ['SYSTEM', 'tenant-acme', 'tenant-us-east-1', 'tenant-eu-central-1', 'tenant-us-west-2'];
+    seedTenants.forEach((tid) => {
+      const map = new Map<string, TaskDefinitionRecordIR>();
+      DEFAULT_TASK_DEFINITIONS.forEach((def) => {
+        map.set(`${def.name}:v${def.version}`, { ...JSON.parse(JSON.stringify(def)), tenantId: tid });
+      });
+      this.tenantTaskDefs.set(tid, map);
+    });
+  }
+
+  public listLatest(tenantId?: string): TaskDefinitionRecordIR[] {
+    const map = this.getTenantMap(tenantId);
+    const latestByName = new Map<string, TaskDefinitionRecordIR>();
+
+    // 1. Built-in platform system contracts
+    for (const b of getBuiltinTaskDefinitions()) {
+      latestByName.set(b.name, b);
+    }
+
+    // 2. Custom/Tenant task definitions (can override or supplement)
+    for (const record of map.values()) {
+      const existing = latestByName.get(record.name);
+      if (!existing || record.version >= existing.version) {
+        latestByName.set(record.name, record);
+      }
+    }
+    return Array.from(latestByName.values());
+  }
+
+  public listVersions(name: string, tenantId?: string): TaskDefinitionRecordIR[] {
+    const map = this.getTenantMap(tenantId);
+    const versions = Array.from(map.values())
+      .filter((r) => r.name === name)
+      .sort((a, b) => a.version - b.version);
+    if (versions.length === 0) {
+      const builtin = getBuiltinTaskDefinitions().find((b) => b.name === name);
+      if (builtin) return [builtin];
+    }
+    return versions;
+  }
+
+  public resolve(name: string, version?: number, tenantId?: string): TaskDefinitionRecordIR | undefined {
+    const map = this.getTenantMap(tenantId);
+    if (version !== undefined && version > 0) {
+      const found = map.get(`${name}:v${version}`);
+      if (found) return found;
+      if (version === 1) {
+        return getBuiltinTaskDefinitions().find((b) => b.name === name);
+      }
+      return undefined;
+    }
+    const all = this.listVersions(name, tenantId);
+    const active = all.filter((r) => r.status === 'ACTIVE');
+    if (active.length > 0) {
+      return active[active.length - 1];
+    }
+    if (all.length > 0) return all[all.length - 1];
+    return getBuiltinTaskDefinitions().find((b) => b.name === name);
+  }
+
+  public createOrForkDraft(data: Partial<TaskDefinitionRecordIR>, tenantId?: string): TaskDefinitionRecordIR {
+    const tid = tenantId || this.getActiveTenantId();
+    const map = this.getTenantMap(tid);
+    const name = data.name || 'customTask';
+    const existing = this.listVersions(name, tid);
+    let nextVersion = 1;
+    if (existing.length > 0) {
+      const maxVer = Math.max(...existing.map((e) => e.version));
+      const latest = existing.find((e) => e.version === maxVer);
+      if (latest && latest.status === 'DRAFT') {
+        nextVersion = maxVer;
+      } else {
+        nextVersion = maxVer + 1;
+      }
+    }
+    const now = Date.now();
+    const record: TaskDefinitionRecordIR = {
+      taskDefId: `${tid}:${name}:v${nextVersion}`,
+      tenantId: tid,
+      name,
+      version: nextVersion,
+      status: 'DRAFT',
+      description: data.description || '',
+      retryCount: data.retryCount ?? 3,
+      retryDelaySeconds: data.retryDelaySeconds ?? 2,
+      backoffRate: data.backoffRate ?? 2.0,
+      timeoutSeconds: data.timeoutSeconds ?? 30,
+      inputSchema: data.inputSchema || { type: 'object', properties: {} },
+      outputSchema: data.outputSchema || { type: 'object', properties: {} },
+      changelogNote: data.changelogNote || 'Draft revision created in sandbox',
+      createdAtMs: now,
+      updatedAtMs: now,
+      createdBy: 'SANDBOX_USER',
+    };
+    map.set(`${name}:v${nextVersion}`, record);
+    return record;
+  }
+
+  public publishVersion(name: string, version: number, tenantId?: string): TaskDefinitionRecordIR | undefined {
+    const tid = tenantId || this.getActiveTenantId();
+    const map = this.getTenantMap(tid);
+    const target = map.get(`${name}:v${version}`);
+    if (!target) return undefined;
+    const now = Date.now();
+
+    // Deprecate other active versions
+    for (const rec of map.values()) {
+      if (rec.name === name && rec.version !== version && rec.status === 'ACTIVE') {
+        rec.status = 'DEPRECATED';
+        rec.updatedAtMs = now;
+      }
+    }
+
+    target.status = 'ACTIVE';
+    target.publishedAtMs = now;
+    target.publishedBy = 'SANDBOX_USER';
+    target.updatedAtMs = now;
+    return target;
+  }
+
+  public deleteDraftVersion(name: string, version: number, tenantId?: string): boolean {
+    const builtin = getBuiltinTaskDefinitions().find((b) => b.name === name);
+    if (builtin && version === 1) return false;
+    const tid = tenantId || this.getActiveTenantId();
+    const map = this.getTenantMap(tid);
+    const target = map.get(`${name}:v${version}`);
+    if (!target || target.status !== 'DRAFT') return false;
+    return map.delete(`${name}:v${version}`);
+  }
+}
+
+export const workflowTaskDefinitionsSandboxRepo = new WorkflowTaskDefinitionsSandboxRepository();
+
+export interface TaskTypeContractIR {
+  taskType: string;
+  category: 'BOUNDARY' | 'SYSTEM' | 'WORKER';
+  description: string;
+  inputSchema: Record<string, unknown>;
+  outputSchema: Record<string, unknown>;
+  parameterDescriptors: Array<Record<string, unknown>>;
+}
+
+export const SANDBOX_TASK_CONTRACTS: TaskTypeContractIR[] = [
+  {
+    taskType: 'START_WORKFLOW',
+    category: 'BOUNDARY',
+    description: 'Canonical workflow entry boundary. Emits workflow trigger inputs as downstream context.',
+    inputSchema: { type: 'object', properties: {} },
+    outputSchema: { type: 'object', properties: {}, description: 'Mirrors workflow trigger payload' },
+    parameterDescriptors: [],
+  },
+  {
+    taskType: 'END_WORKFLOW',
+    category: 'BOUNDARY',
+    description: 'Canonical workflow exit boundary. Evaluates terminal output mappings and enforces workflow outputSchema.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        status: { type: 'string', description: 'Terminal workflow status', default: 'COMPLETED' },
+        payload: { type: 'object', description: 'Explicit mapped terminal output payload' },
+      },
+    },
+    outputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    parameterDescriptors: [
+      { key: 'status', label: 'Workflow Status', type: 'string', required: true, defaultValue: 'COMPLETED' },
+      { key: 'payload', label: 'Result Payload', type: 'object', required: false },
+    ],
+  },
+  {
+    taskType: 'HTTP',
+    category: 'SYSTEM',
+    description: 'Executes synchronous REST HTTP/HTTPS requests with configurable methods, headers, and timeouts.',
+    inputSchema: {
+      type: 'object',
+      required: ['url', 'method'],
+      properties: {
+        url: { type: 'string', description: 'Destination HTTP/HTTPS URL endpoint' },
+        method: { type: 'string', enum: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD'], default: 'GET' },
+        headers: { type: 'object', description: 'Optional HTTP request headers' },
+        body: { type: 'object', description: 'Optional HTTP request payload' },
+        timeoutMs: { type: 'integer', default: 5000 },
+      },
+    },
+    outputSchema: {
+      type: 'object',
+      required: ['statusCode'],
+      properties: {
+        statusCode: { type: 'integer', description: 'HTTP response status code' },
+        body: { type: 'object', description: 'Decoded JSON response payload' },
+        headers: { type: 'object', description: 'Response headers map' },
+        durationMs: { type: 'integer', description: 'Execution roundtrip time in ms' },
+      },
+    },
+    parameterDescriptors: [
+      { key: 'url', label: 'Endpoint URL', type: 'string', required: true, exampleValue: 'https://api.example.com/v1/resource' },
+      { key: 'method', label: 'HTTP Method', type: 'string', required: true, defaultValue: 'GET' },
+      { key: 'headers', label: 'Request Headers', type: 'object', required: false },
+      { key: 'body', label: 'Request Body', type: 'object', required: false },
+      { key: 'timeoutMs', label: 'Timeout (ms)', type: 'number', required: false, defaultValue: 5000 },
+    ],
+  },
+  {
+    taskType: 'LLM_CHAT_COMPLETE',
+    category: 'SYSTEM',
+    description: 'Invokes large language model inference (Gemini, Claude, GPT) with deterministic temperature and token accounting.',
+    inputSchema: {
+      type: 'object',
+      required: ['prompt'],
+      properties: {
+        prompt: { type: 'string', description: 'Primary user message or prompt text' },
+        model: { type: 'string', default: 'gemini-1.5-pro' },
+        temperature: { type: 'number', default: 0.7 },
+        systemPrompt: { type: 'string' },
+      },
+    },
+    outputSchema: {
+      type: 'object',
+      required: ['responseText'],
+      properties: {
+        responseText: { type: 'string', description: 'Generated assistant response text' },
+        tokenUsage: { type: 'object' },
+      },
+    },
+    parameterDescriptors: [
+      { key: 'prompt', label: 'Prompt Text', type: 'string', required: true },
+      { key: 'model', label: 'Model Name', type: 'string', required: false, defaultValue: 'gemini-1.5-pro' },
+      { key: 'temperature', label: 'Temperature', type: 'number', required: false, defaultValue: 0.7 },
+      { key: 'systemPrompt', label: 'System Prompt', type: 'string', required: false },
+    ],
+  },
+  {
+    taskType: 'JSON_JQ_TRANSFORM',
+    category: 'SYSTEM',
+    description: 'Applies in-memory JQ expressions for deterministic JSON filtering, plucking, and structural projection.',
+    inputSchema: {
+      type: 'object',
+      required: ['queryExpression'],
+      properties: {
+        queryExpression: { type: 'string' },
+        input: { type: 'object' },
+      },
+    },
+    outputSchema: {
+      type: 'object',
+      required: ['result'],
+      properties: { result: { description: 'Transformed output projection' } },
+    },
+    parameterDescriptors: [
+      { key: 'queryExpression', label: 'JQ Query Expression', type: 'string', required: true },
+      { key: 'input', label: 'Target Input Object', type: 'object', required: false },
+    ],
+  },
+  {
+    taskType: 'SWITCH',
+    category: 'SYSTEM',
+    description: 'Evaluates conditional branch expressions and routes execution to matching decision branches.',
+    inputSchema: {
+      type: 'object',
+      required: ['evaluatorType', 'expression'],
+      properties: {
+        evaluatorType: { type: 'string', enum: ['value-param', 'javascript', 'spel'], default: 'value-param' },
+        expression: { type: 'string' },
+        value: { description: 'Direct value parameter' },
+      },
+    },
+    outputSchema: {
+      type: 'object',
+      required: ['selectedCase'],
+      properties: { selectedCase: { type: 'string' } },
+    },
+    parameterDescriptors: [
+      { key: 'evaluatorType', label: 'Evaluator Type', type: 'string', required: true, defaultValue: 'value-param' },
+      { key: 'expression', label: 'Decision Expression', type: 'string', required: true },
+      { key: 'value', label: 'Evaluation Value', type: 'string', required: false },
+    ],
+  },
+  {
+    taskType: 'WAIT',
+    category: 'SYSTEM',
+    description: 'Pauses execution for a specified duration or until a target timestamp is reached.',
+    inputSchema: {
+      type: 'object',
+      properties: { duration: { type: 'string' }, until: { type: 'string' } },
+    },
+    outputSchema: {
+      type: 'object',
+      properties: { waitedMs: { type: 'integer' } },
+    },
+    parameterDescriptors: [
+      { key: 'duration', label: 'Duration', type: 'string', required: false },
+      { key: 'until', label: 'Wait Until (ISO)', type: 'string', required: false },
+    ],
+  },
+  {
+    taskType: 'SUB_WORKFLOW',
+    category: 'SYSTEM',
+    description: 'Spawns and monitors an isolated child workflow execution.',
+    inputSchema: {
+      type: 'object',
+      required: ['subWorkflowKey'],
+      properties: {
+        subWorkflowKey: { type: 'string' },
+        subWorkflowVersion: { type: 'integer', default: 1 },
+        workflowInput: { type: 'object' },
+      },
+    },
+    outputSchema: {
+      type: 'object',
+      properties: { subWorkflowId: { type: 'string' }, subWorkflowOutput: { type: 'object' } },
+    },
+    parameterDescriptors: [
+      { key: 'subWorkflowKey', label: 'Sub-Workflow Key', type: 'string', required: true },
+      { key: 'subWorkflowVersion', label: 'Version', type: 'number', required: false, defaultValue: 1 },
+      { key: 'workflowInput', label: 'Child Input Payload', type: 'object', required: false },
+    ],
+  },
+  {
+    taskType: 'SIMPLE',
+    category: 'WORKER',
+    description: 'Domain worker task executed asynchronously by worker fleet pollers.',
+    inputSchema: { type: 'object', properties: {}, additionalProperties: true },
+    outputSchema: { type: 'object', properties: { result: { type: 'object' } }, additionalProperties: true },
+    parameterDescriptors: [],
+  },
+  {
+    taskType: 'validateOrder',
+    category: 'WORKER',
+    description: 'Evaluates fraud risk, customer KYC status, and credit limits.',
+    inputSchema: {
+      type: 'object',
+      required: ['orderId'],
+      properties: { orderId: { type: 'string', description: 'Target order identifier' } },
+    },
+    outputSchema: {
+      type: 'object',
+      properties: { valid: { type: 'boolean' }, riskScore: { type: 'integer' } },
+    },
+    parameterDescriptors: [
+      { key: 'orderId', label: 'Order ID', type: 'string', required: true },
+    ],
+  },
+  {
+    taskType: 'checkInventory',
+    category: 'WORKER',
+    description: 'Verifies SKU availability and allocates warehouse reservation slot.',
+    inputSchema: {
+      type: 'object',
+      required: ['orderId', 'sku', 'quantity'],
+      properties: {
+        orderId: { type: 'string' },
+        sku: { type: 'string' },
+        quantity: { type: 'integer' },
+      },
+    },
+    outputSchema: {
+      type: 'object',
+      properties: { inStock: { type: 'boolean' }, warehouseId: { type: 'string' }, reservationCode: { type: 'string' } },
+    },
+    parameterDescriptors: [
+      { key: 'orderId', label: 'Order ID', type: 'string', required: true },
+      { key: 'sku', label: 'SKU Code', type: 'string', required: true },
+      { key: 'quantity', label: 'Quantity', type: 'number', required: true },
+    ],
+  },
+  {
+    taskType: 'chargePayment',
+    category: 'WORKER',
+    description: 'Processes credit card or gateway payment capture with idempotency.',
+    inputSchema: {
+      type: 'object',
+      required: ['orderId', 'amount'],
+      properties: { orderId: { type: 'string' }, amount: { type: 'number' } },
+    },
+    outputSchema: {
+      type: 'object',
+      properties: { charged: { type: 'boolean' }, transactionId: { type: 'string' } },
+    },
+    parameterDescriptors: [
+      { key: 'orderId', label: 'Order ID', type: 'string', required: true },
+      { key: 'amount', label: 'Amount', type: 'number', required: true },
+    ],
+  },
+  {
+    taskType: 'expressCourier',
+    category: 'WORKER',
+    description: 'Books priority overnight air freight label and tracking number.',
+    inputSchema: {
+      type: 'object',
+      required: ['orderId'],
+      properties: { orderId: { type: 'string' } },
+    },
+    outputSchema: {
+      type: 'object',
+      properties: { carrier: { type: 'string' }, trackingNumber: { type: 'string' } },
+    },
+    parameterDescriptors: [
+      { key: 'orderId', label: 'Order ID', type: 'string', required: true },
+    ],
+  },
+  {
+    taskType: 'groundPostal',
+    category: 'WORKER',
+    description: 'Books economical ground parcel fulfillment route.',
+    inputSchema: {
+      type: 'object',
+      required: ['orderId'],
+      properties: { orderId: { type: 'string' } },
+    },
+    outputSchema: {
+      type: 'object',
+      properties: { carrier: { type: 'string' }, trackingNumber: { type: 'string' } },
+    },
+    parameterDescriptors: [
+      { key: 'orderId', label: 'Order ID', type: 'string', required: true },
+    ],
+  },
+];
+
+export function getBuiltinTaskDefinitions(): TaskDefinitionRecordIR[] {
+  return SANDBOX_TASK_CONTRACTS
+    .filter((c) => c.taskType.toUpperCase() !== 'SIMPLE')
+    .map((c) => ({
+    taskDefId: `system:${c.taskType.toLowerCase()}:v1`,
+    tenantId: 'SYSTEM',
+    name: c.taskType,
+    version: 1,
+    status: 'ACTIVE' as const,
+    description: c.description,
+    retryCount: c.taskType === 'HTTP' ? 3 : 0,
+    retryDelaySeconds: c.taskType === 'HTTP' ? 2 : 0,
+    backoffRate: c.taskType === 'HTTP' ? 2.0 : 1.0,
+    timeoutSeconds: c.taskType === 'HTTP' ? 30 : 60,
+    inputSchema: c.inputSchema,
+    outputSchema: c.outputSchema,
+    changelogNote: 'Canonical built-in platform contract',
+    isBuiltIn: true,
+    publishedAtMs: 0,
+    publishedBy: 'SYSTEM',
+    createdAtMs: 0,
+    updatedAtMs: 0,
+    createdBy: 'SYSTEM',
+  }));
+}
+
 export const workflowSandboxHandler: SandboxRouteHandler = {
   id: 'workflow-sandbox-handler',
   name: 'Workflow Orchestration Sandbox Simulator',
@@ -919,13 +1928,141 @@ export const workflowSandboxHandler: SandboxRouteHandler = {
   priority: 95,
   matcher: (ctx) => {
     const cleanPath = ctx.pathname.replace(/^\/(api\/v1|api\/api|api|v1)/, '');
-    return cleanPath.startsWith('/workflow') || cleanPath.startsWith('/workflow-executions');
+    return cleanPath.startsWith('/workflow') || cleanPath.startsWith('/workflow-executions') || cleanPath.startsWith('/tasks');
   },
   handler: (req: SandboxRequest, context): SandboxResponse => {
     const method = req.method.toUpperCase();
     const { pathname } = context;
     const cleanPath = pathname.replace(/^\/(api\/v1|api\/api|api|v1)/, '');
     const tenantId = (req.headers?.['x-tenant-id'] as string) || defaultSandboxStore.getState().activeTenantId || 'tenant-acme';
+
+    // -1. Task Contracts Catalog: /tasks/contracts
+    if (cleanPath === '/tasks/contracts' || cleanPath === '/tasks/contracts/') {
+      if (method === 'GET') {
+        const dynamicDefs = workflowTaskDefinitionsSandboxRepo.listLatest(tenantId);
+        const dynamicContracts: TaskTypeContractIR[] = dynamicDefs.map((def) => ({
+          taskType: def.name,
+          category: 'WORKER',
+          description: def.description || `Task definition ${def.name}`,
+          inputSchema: def.inputSchema || {},
+          outputSchema: def.outputSchema || {},
+          parameterDescriptors: Object.entries((def.inputSchema?.properties as Record<string, any>) || {}).map(([key, val]) => ({
+            key,
+            label: key,
+            type: val.type || 'string',
+            required: ((def.inputSchema?.required as string[]) || []).includes(key),
+          })),
+        }));
+        const combined = [...SANDBOX_TASK_CONTRACTS];
+        for (const dc of dynamicContracts) {
+          if (!combined.some((c) => c.taskType.toLowerCase() === dc.taskType.toLowerCase())) {
+            combined.push(dc);
+          }
+        }
+        return {
+          status: 200,
+          data: combined,
+        };
+      }
+    }
+    const taskContractMatch = cleanPath.match(/^\/tasks\/contracts\/([^/]+)$/);
+    if (taskContractMatch) {
+      const type = taskContractMatch[1].toUpperCase();
+      const found = SANDBOX_TASK_CONTRACTS.find((c) => c.taskType.toUpperCase() === type);
+      if (found) {
+        return { status: 200, data: found };
+      }
+      const dynFound = workflowTaskDefinitionsSandboxRepo.resolve(taskContractMatch[1], undefined, tenantId);
+      if (dynFound) {
+        return {
+          status: 200,
+          data: {
+            taskType: dynFound.name,
+            category: 'WORKER',
+            description: dynFound.description || `Task definition ${dynFound.name}`,
+            inputSchema: dynFound.inputSchema || {},
+            outputSchema: dynFound.outputSchema || {},
+            parameterDescriptors: Object.entries((dynFound.inputSchema?.properties as Record<string, any>) || {}).map(([key, val]) => ({
+              key,
+              label: key,
+              type: val.type || 'string',
+              required: ((dynFound.inputSchema?.required as string[]) || []).includes(key),
+            })),
+          },
+        };
+      }
+      return { status: 404, data: { error: `Task contract ${type} not found` } };
+    }
+
+    // 0.2 Workflow Task Definitions Catalog: /workflow/task-definitions
+    if (
+      cleanPath === '/workflow/task-definitions' ||
+      cleanPath === '/workflow/task-definitions/' ||
+      cleanPath === '/workflow/task-definitions/draft'
+    ) {
+      if (method === 'GET') {
+        return {
+          status: 200,
+          data: workflowTaskDefinitionsSandboxRepo.listLatest(tenantId),
+        };
+      }
+      if (method === 'POST') {
+        const body = (req.data || {}) as Partial<TaskDefinitionRecordIR>;
+        if (!body.name) {
+          return { status: 400, data: { error: 'Task definition name is required' } };
+        }
+        const created = workflowTaskDefinitionsSandboxRepo.createOrForkDraft(body, tenantId);
+        return { status: 201, data: created };
+      }
+    }
+
+    // 0.3 Task Definition Version Operations: /workflow/task-definitions/{name}/versions/{version}/publish
+    const taskDefPublishMatch = cleanPath.match(/^\/workflow\/task-definitions\/([^/]+)\/versions\/(\d+)\/publish$/);
+    if (taskDefPublishMatch && method === 'POST') {
+      const name = taskDefPublishMatch[1];
+      const version = parseInt(taskDefPublishMatch[2], 10);
+      const published = workflowTaskDefinitionsSandboxRepo.publishVersion(name, version, tenantId);
+      if (published) {
+        return { status: 200, data: published };
+      }
+      return { status: 404, data: { error: `Task definition ${name} v${version} not found` } };
+    }
+
+    // 0.4 Task Definition Versions List: /workflow/task-definitions/{name}/versions
+    const taskDefVersionsMatch = cleanPath.match(/^\/workflow\/task-definitions\/([^/]+)\/versions$/);
+    if (taskDefVersionsMatch && method === 'GET') {
+      const name = taskDefVersionsMatch[1];
+      return {
+        status: 200,
+        data: workflowTaskDefinitionsSandboxRepo.listVersions(name, tenantId),
+      };
+    }
+
+    // 0.5 Single Version Operations: /workflow/task-definitions/{name}/versions/{version}
+    const taskDefSingleVersionMatch = cleanPath.match(/^\/workflow\/task-definitions\/([^/]+)\/versions\/(\d+)$/);
+    if (taskDefSingleVersionMatch) {
+      const name = taskDefSingleVersionMatch[1];
+      const version = parseInt(taskDefSingleVersionMatch[2], 10);
+      if (method === 'GET') {
+        const found = workflowTaskDefinitionsSandboxRepo.resolve(name, version, tenantId);
+        if (found) return { status: 200, data: found };
+        return { status: 404, data: { error: `Task definition ${name} v${version} not found` } };
+      }
+      if (method === 'DELETE') {
+        const deleted = workflowTaskDefinitionsSandboxRepo.deleteDraftVersion(name, version, tenantId);
+        if (deleted) return { status: 204, data: null };
+        return { status: 400, data: { error: `Cannot delete non-draft or non-existent task definition ${name} v${version}` } };
+      }
+    }
+
+    // 0.6 Single Task Definition (Latest Active): /workflow/task-definitions/{name}
+    const taskDefNameMatch = cleanPath.match(/^\/workflow\/task-definitions\/([^/]+)$/);
+    if (taskDefNameMatch && method === 'GET') {
+      const name = taskDefNameMatch[1];
+      const found = workflowTaskDefinitionsSandboxRepo.resolve(name, undefined, tenantId);
+      if (found) return { status: 200, data: found };
+      return { status: 404, data: { error: `Task definition ${name} not found` } };
+    }
 
     // 0. Workflow Definitions Catalog: /workflow/definitions
     if (cleanPath === '/workflow/definitions' || cleanPath === '/workflow/definitions/') {

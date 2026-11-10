@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { createSignal, createEffect, onCleanup, untrack } from 'solid-js';
 import {
   type ShuttleSpeed,
   getNextShuttleSpeed,
@@ -11,11 +11,11 @@ import { PlayheadController } from '../playhead/PlayheadController';
 import type { IRState } from '../ir/irState';
 
 export interface UseShuttleEngineOptions {
-  currentFrame: number;
-  totalFrames: number;
-  fps: number;
+  currentFrame: number | (() => number);
+  totalFrames: number | (() => number);
+  fps: number | (() => number);
   onScrub: (frame: number) => void;
-  irState?: IRState | null;
+  irState?: IRState | (() => IRState | null) | null;
   enableKeybindings?: boolean;
 }
 
@@ -31,115 +31,117 @@ export interface UseShuttleEngineReturn {
   isAudioMuted: boolean;
 }
 
+function resolveVal<T>(val: T | (() => T)): T {
+  return typeof val === 'function' ? (val as () => T)() : val;
+}
+
 /**
- * useShuttleEngine:
- * Frame-Accurate J-K-L Shuttle Engine with Discrete Frame Snapping and Audio Hardware Clock Sync.
+ * createShuttleEngine / useShuttleEngine:
+ * Frame-Accurate J-K-L Shuttle Engine with Discrete Frame Snapping and Audio Hardware Clock Sync for SolidJS.
  * J = reverse [-1x, -2x, -4x, -8x]
  * K = stop [0x]
  * L = forward [1x, 2x, 4x, 8x]
  * Arrow Left/Right = discrete 1-frame jump
  */
-export function useShuttleEngine({
-  currentFrame,
-  totalFrames,
-  fps,
-  onScrub,
-  irState,
-  enableKeybindings = true,
-}: UseShuttleEngineOptions): UseShuttleEngineReturn {
-  const [speed, setSpeedState] = useState<ShuttleSpeed>(0);
-  const speedRef = useRef<ShuttleSpeed>(speed);
-  speedRef.current = speed;
+export function createShuttleEngine(options: UseShuttleEngineOptions): UseShuttleEngineReturn {
+  const [speed, setSpeedState] = createSignal<ShuttleSpeed>(0);
+  let isKDown = false;
 
-  const currentFrameRef = useRef(currentFrame);
-  currentFrameRef.current = currentFrame;
+  const getCurrentFrame = () => PlayheadController.getInstance().getFrame();
+  const getTotalFrames = () => resolveVal(options.totalFrames);
+  const getFps = () => resolveVal(options.fps);
+  const getIrState = () => resolveVal(options.irState);
 
-  const totalFramesRef = useRef(totalFrames);
-  totalFramesRef.current = totalFrames;
+  const setSpeed = (newSpeed: ShuttleSpeed) => {
+    const total = getTotalFrames() || 300;
+    const maxBound = Math.max(0, total - 1);
+    let cur = getCurrentFrame();
 
-  const fpsRef = useRef(fps);
-  fpsRef.current = fps;
-
-  const irStateRef = useRef(irState);
-  irStateRef.current = irState;
-
-  const onScrubRef = useRef(onScrub);
-  onScrubRef.current = onScrub;
-
-  const setSpeed = useCallback((newSpeed: ShuttleSpeed) => {
-    // If parked at or past end of timeline and attempting forward playback, restart from frame 0
-    const maxBound = Math.max(0, totalFramesRef.current - 1);
-    if (newSpeed > 0 && currentFrameRef.current >= maxBound) {
-      currentFrameRef.current = 0;
-      onScrubRef.current(0);
+    if (newSpeed > 0 && cur >= maxBound) {
+      cur = 0;
+      PlayheadController.getInstance().seek(0, true);
+    } else if (newSpeed < 0 && cur <= 0) {
+      cur = maxBound;
+      PlayheadController.getInstance().seek(maxBound, true);
     }
 
-    setSpeedState(newSpeed);
-    speedRef.current = newSpeed;
+    PlayheadController.getInstance().setIsPlaying(newSpeed !== 0);
 
     if (newSpeed === 0) {
-      // Discrete stop: Snap playhead to exact integer frame
-      const snapped = snapToDiscreteFrame(currentFrameRef.current);
-      currentFrameRef.current = snapped;
-      onScrubRef.current(snapped);
+      const snapped = snapToDiscreteFrame(cur);
+      PlayheadController.getInstance().seek(snapped, true);
+      options.onScrub(snapped);
       WebAudioEngine.getInstance().stopPlayback();
     } else {
       WebAudioEngine.getInstance().setShuttleSpeed(
         newSpeed,
-        currentFrameRef.current,
-        fpsRef.current,
-        irStateRef.current
+        cur,
+        getFps(),
+        getIrState()
       );
     }
-  }, []);
 
-  const shuttleForward = useCallback(() => {
-    const next = getNextShuttleSpeed(speedRef.current, 'forward');
+    setSpeedState(newSpeed);
+  };
+
+  const shuttleForward = () => {
+    const next = getNextShuttleSpeed(speed(), 'forward');
     setSpeed(next);
-  }, [setSpeed]);
+  };
 
-  const shuttleReverse = useCallback(() => {
-    const next = getNextShuttleSpeed(speedRef.current, 'reverse');
+  const shuttleReverse = () => {
+    const next = getNextShuttleSpeed(speed(), 'reverse');
     setSpeed(next);
-  }, [setSpeed]);
+  };
 
-  const shuttleStop = useCallback(() => {
+  const shuttleStop = () => {
     setSpeed(0);
-  }, [setSpeed]);
+  };
 
-  const togglePlay = useCallback(() => {
-    if (speedRef.current !== 0) {
+  const togglePlay = () => {
+    if (speed() !== 0) {
       setSpeed(0);
     } else {
       setSpeed(1);
     }
-  }, [setSpeed]);
+  };
 
-  const stepFrame = useCallback((delta: number) => {
-    // Discrete frame jump: halt shuttle and jump exact integer frames
-    if (speedRef.current !== 0) {
+  const stepFrame = (delta: number) => {
+    if (speed() !== 0) {
       setSpeed(0);
     }
-    const maxFrame = Math.max(0, totalFramesRef.current);
-    const target = snapToDiscreteFrame(currentFrameRef.current + delta);
+    const maxFrame = Math.max(0, getTotalFrames());
+    const current = getCurrentFrame();
+    const target = snapToDiscreteFrame(current + delta);
     const clamped = Math.max(0, Math.min(maxFrame, target));
-    currentFrameRef.current = clamped;
-    onScrubRef.current(clamped);
-    WebAudioEngine.getInstance().playScrubFeedback(clamped, fpsRef.current, irStateRef.current);
-  }, [setSpeed]);
+    PlayheadController.getInstance().seek(clamped, true);
+    options.onScrub(clamped);
+    WebAudioEngine.getInstance().playScrubFeedback(clamped, getFps(), getIrState());
+  };
 
-  // Deterministic Time-Based Frame Advancement Engine (DeterministicTimelineClock)
-  useEffect(() => {
-    if (speed === 0) return;
+  // Deterministic Time-Based Frame Advancement Engine
+  createEffect(() => {
+    const currentSpeed = speed();
+    if (currentSpeed === 0) return;
+
+    const initialTotalFrames = untrack(getTotalFrames) || 300;
+    const initialFps = untrack(getFps) || 30;
+    const maxBound = Math.max(0, initialTotalFrames - 1);
+    const rawFrame = untrack(getCurrentFrame);
+    // Defense-in-depth: If starting forward playback while parked at or past max bound, wrap cleanly to 0
+    const initialFrame = currentSpeed > 0 && rawFrame >= maxBound ? 0 : rawFrame;
+
+    if (initialFrame !== rawFrame) {
+      PlayheadController.getInstance().seek(initialFrame, true);
+    }
 
     const clock = new DeterministicTimelineClock({
-      fps: fpsRef.current,
-      totalFrames: totalFramesRef.current,
-      mode: speed === 1 && !shouldMuteAudio(speed) ? 'audio_master' : 'monotonic_worker',
+      fps: initialFps,
+      totalFrames: initialTotalFrames,
+      mode: currentSpeed === 1 && !shouldMuteAudio(currentSpeed) ? 'audio_master' : 'monotonic_worker',
     });
 
-    const currentSpeed = speedRef.current;
-    clock.play(currentFrameRef.current, currentSpeed);
+    clock.play(initialFrame, currentSpeed);
 
     if (clock.getSyncMode() === 'audio_master') {
       const audioStart = WebAudioEngine.getInstance().getPlaybackStartAudioTime();
@@ -148,10 +150,11 @@ export function useShuttleEngine({
 
     let rafId: number;
     let lastTime = performance.now();
-    let lastUiSyncTime = performance.now();
 
     const tick = (now: number) => {
       let targetFrame: number;
+      const deltaSec = Math.max(0, (now - lastTime) / 1000);
+      lastTime = now;
 
       if (
         clock.getSyncMode() === 'audio_master' &&
@@ -161,60 +164,45 @@ export function useShuttleEngine({
         const audioNow = WebAudioEngine.getInstance().getAudioCurrentTime();
         targetFrame = clock.tick(audioNow);
       } else {
-        const deltaSec = (now - lastTime) / 1000;
+        if (clock.getSyncMode() === 'audio_master') {
+          clock.setSyncMode('monotonic_worker');
+        }
         targetFrame = clock.tick(deltaSec);
       }
-      lastTime = now;
 
-      const total = totalFramesRef.current || 300;
+      const total = getTotalFrames() || 300;
       const endFrame = Math.max(0, total - 1);
       if (targetFrame >= endFrame && currentSpeed > 0) {
         const discreteFrame = snapToDiscreteFrame(endFrame);
-        currentFrameRef.current = discreteFrame;
         PlayheadController.getInstance().seek(discreteFrame, true);
-        onScrubRef.current(discreteFrame);
         setSpeed(0);
         return;
       } else if (targetFrame <= 0 && currentSpeed < 0) {
         const discreteFrame = 0;
-        currentFrameRef.current = discreteFrame;
         PlayheadController.getInstance().seek(discreteFrame, true);
-        onScrubRef.current(discreteFrame);
         setSpeed(0);
         return;
       }
 
       const rawFractionalFrame = targetFrame;
       const discreteFrame = snapToDiscreteFrame(rawFractionalFrame);
-      currentFrameRef.current = discreteFrame;
 
       // Advance high-frequency render subscribers (Canvas & Needle) on EVERY RAF frame at full 60 FPS
       PlayheadController.getInstance().seek(discreteFrame, false, rawFractionalFrame);
-
-      // Throttle React state update to ~4 Hz (every 250ms) during continuous playback,
-      // preventing continuous 60 Hz React reconciliation overhead
-      if (now - lastUiSyncTime >= 250) {
-        lastUiSyncTime = now;
-        onScrubRef.current(discreteFrame);
-      }
 
       rafId = requestAnimationFrame(tick);
     };
 
     rafId = requestAnimationFrame(tick);
 
-    return () => {
+    onCleanup(() => {
       cancelAnimationFrame(rafId);
       clock.pause();
-    };
-  }, [speed]);
+    });
+  });
 
-  const isKDownRef = useRef(false);
-
-  // J-K-L and Arrow Keybindings with repeat debouncing
-  useEffect(() => {
-    if (!enableKeybindings || typeof window === 'undefined') return;
-
+  // J-K-L and Arrow Keybindings
+  if (options.enableKeybindings !== false && typeof window !== 'undefined') {
     let lastArrowStepTime = 0;
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -229,7 +217,7 @@ export function useShuttleEngine({
       switch (e.code) {
         case 'KeyJ':
           e.preventDefault();
-          if (isKDownRef.current) {
+          if (isKDown) {
             stepFrame(-1);
           } else {
             shuttleReverse();
@@ -237,12 +225,12 @@ export function useShuttleEngine({
           break;
         case 'KeyK':
           e.preventDefault();
-          isKDownRef.current = true;
+          isKDown = true;
           shuttleStop();
           break;
         case 'KeyL':
           e.preventDefault();
-          if (isKDownRef.current) {
+          if (isKDown) {
             stepFrame(1);
           } else {
             shuttleForward();
@@ -256,8 +244,6 @@ export function useShuttleEngine({
         case 'ArrowRight': {
           e.preventDefault();
           const now = performance.now();
-          // First keypress is always immediate (zero lag).
-          // Repeated keydown events (holding arrow key) throttled to 35ms (~28 Hz) to match display rate
           if (e.repeat && now - lastArrowStepTime < 35) {
             return;
           }
@@ -271,27 +257,39 @@ export function useShuttleEngine({
 
     const handleKeyUp = (e: KeyboardEvent) => {
       if (e.code === 'KeyK') {
-        isKDownRef.current = false;
+        isKDown = false;
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
-    return () => {
+    onCleanup(() => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
-    };
-  }, [enableKeybindings, shuttleReverse, shuttleStop, shuttleForward, togglePlay, stepFrame]);
+    });
+  }
 
-  return {
-    speed,
-    isPlaying: speed !== 0,
+  // Provide both property and function accessors for max flexibility
+  const res: UseShuttleEngineReturn = {
+    get speed() {
+      return speed();
+    },
+    get isPlaying() {
+      return speed() !== 0;
+    },
     shuttleForward,
     shuttleReverse,
     shuttleStop,
     togglePlay,
     stepFrame,
     setSpeed,
-    isAudioMuted: shouldMuteAudio(speed),
+    get isAudioMuted() {
+      return shouldMuteAudio(speed());
+    },
   };
+
+  return res;
 }
+
+// Backward-compatible alias
+export const useShuttleEngine = createShuttleEngine;

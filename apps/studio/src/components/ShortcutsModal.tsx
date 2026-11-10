@@ -1,5 +1,5 @@
-import React from 'react';
-import { Keyboard, X } from 'lucide-react';
+import { For } from 'solid-js';
+import { Keyboard, X } from 'lucide-solid';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -43,51 +43,52 @@ const SHORTCUT_GROUPS = [
   },
 ];
 
-export function ShortcutsModal({ open, onOpenChange }: ShortcutsModalProps) {
+export function ShortcutsModal(props: ShortcutsModalProps) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl glass-panel border border-glass-border p-6 rounded-2xl shadow-2xl backdrop-blur-2xl">
-        <DialogHeader className="flex flex-row items-center justify-between pb-3 border-b border-glass-border">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg glass-badge-accent flex items-center justify-center">
-              <Keyboard className="w-4 h-4" />
+    <Dialog open={props.open} onOpenChange={props.onOpenChange}>
+      <DialogContent class="max-w-xl glass-panel border border-glass-border p-6 rounded-2xl shadow-2xl backdrop-blur-2xl">
+        <DialogHeader class="flex flex-row items-center justify-between pb-3 border-b border-glass-border">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg glass-badge-accent flex items-center justify-center">
+              <Keyboard class="w-4 h-4" />
             </div>
             <div>
-              <DialogTitle className="text-base font-bold text-foreground">Keyboard Shortcuts</DialogTitle>
-              <p className="text-xs text-muted-foreground">Universal hotkeys for enterprise NLE workflow</p>
+              <DialogTitle class="text-base font-bold text-foreground">Keyboard Shortcuts</DialogTitle>
+              <p class="text-xs text-muted-foreground">Universal hotkeys for enterprise NLE workflow</p>
             </div>
           </div>
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => onOpenChange(false)}
-            className="h-7 w-7 rounded-full text-muted-foreground hover:text-foreground"
+            onClick={() => props.onOpenChange(false)}
+            class="h-7 w-7 rounded-full text-muted-foreground hover:text-foreground"
           >
-            <X className="w-4 h-4" />
+            <X class="w-4 h-4" />
           </Button>
         </DialogHeader>
 
-        <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto pr-1">
-          {SHORTCUT_GROUPS.map((group) => (
-            <div key={group.category} className="space-y-2">
-              <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider font-mono">
-                {group.category}
-              </h3>
-              <div className="space-y-1.5">
-                {group.shortcuts.map((sc) => (
-                  <div
-                    key={sc.key}
-                    className="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-md bg-muted/40 border border-glass-border hover:border-accent-theme/40 transition-colors"
-                  >
-                    <span className="text-muted-foreground">{sc.description}</span>
-                    <Badge variant="outline" className="font-mono text-[11px] bg-glass-surface border-glass-border text-foreground px-1.5 py-0.5">
-                      {sc.key}
-                    </Badge>
-                  </div>
-                ))}
+        <div class="space-y-4 py-4 max-h-[60vh] overflow-y-auto pr-1">
+          <For each={SHORTCUT_GROUPS}>
+            {(group) => (
+              <div class="space-y-2">
+                <h3 class="text-xs font-semibold text-foreground uppercase tracking-wider font-mono">
+                  {group.category}
+                </h3>
+                <div class="space-y-1.5">
+                  <For each={group.shortcuts}>
+                    {(sc) => (
+                      <div class="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-md bg-muted/40 border border-glass-border hover:border-accent-theme/40 transition-colors">
+                        <span class="text-muted-foreground">{sc.description}</span>
+                        <Badge variant="outline" class="font-mono text-[11px] bg-glass-surface border-glass-border text-foreground px-1.5 py-0.5">
+                          {sc.key}
+                        </Badge>
+                      </div>
+                    )}
+                  </For>
+                </div>
               </div>
-            </div>
-          ))}
+            )}
+          </For>
         </div>
       </DialogContent>
     </Dialog>

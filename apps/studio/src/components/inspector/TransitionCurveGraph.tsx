@@ -1,6 +1,5 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { GSAP_EASING_PRESETS, type EasingPreset } from '../EasingCurveSelector';
-
+import { createSignal, createEffect, onCleanup, Show, For } from 'solid-js';
+import { GSAP_EASING_PRESETS } from '../EasingCurveSelector';
 import { parseCubicBezier } from '@acc/ir';
 
 // --- Types ---
@@ -66,8 +65,6 @@ function buildBezierPath(p1: BezierPoint, p2: BezierPoint, width: number, height
   return pts.join(' ');
 }
 
-// --- Props ---
-
 export interface TransitionCurveGraphProps {
   /** Currently selected GSAP easing preset ID */
   easingId?: string;
@@ -85,244 +82,312 @@ const BASE_WIDTH = 280;
 
 /**
  * TransitionCurveGraph — Interactive cubic Bézier curve visualizer.
- *
- * Renders the selected easing as a full-size, interactive SVG graph with:
- * - Two draggable control points (P1 and P2)
- * - Grid guide lines and axis labels
- * - Animated scrubber ball showing timing at playback
- * - Preset display synced with EasingCurveSelector.tsx
  */
-export const TransitionCurveGraph: React.FC<TransitionCurveGraphProps> = ({
-  easingId = 'power2.out',
-  height = 160,
-  onCurveChange,
-  showScrubber = true,
-}) => {
-  const [bezier, setBezier] = useState<CubicBezier>(() => getDefaultBezier(easingId));
-  const [dragging, setDragging] = useState<'p1' | 'p2' | null>(null);
-  const [scrubT, setScrubT] = useState(0);
-  const svgRef = useRef<SVGSVGElement | null>(null);
-  const animRef = useRef<number | null>(null);
-  const startTimeRef = useRef<number | null>(null);
+export function TransitionCurveGraph(props: TransitionCurveGraphProps) {
+  const easingId = () => props.easingId ?? 'power2.out';
+  const height = () => props.height ?? 160;
+  const showScrubber = () => props.showScrubber ?? true;
+
+  const [bezier, setBezier] = createSignal<CubicBezier>(getDefaultBezier(easingId()));
+  const [dragging, setDragging] = createSignal<'p1' | 'p2' | null>(null);
+  const [scrubT, setScrubT] = createSignal(0);
+
+  let svgRef: SVGSVGElement | undefined;
+  let animRef: number | null = null;
+  let startTimeRef: number | null = null;
   const ANIM_DURATION = 1400; // ms
 
   // Sync bezier when easingId changes externally
-  useEffect(() => {
-    setBezier(getDefaultBezier(easingId));
-  }, [easingId]);
+  createEffect(() => {
+    setBezier(getDefaultBezier(easingId()));
+  });
 
   // Animate scrubber ball
-  useEffect(() => {
-    if (!showScrubber) return;
+  createEffect(() => {
+    if (!showScrubber()) return;
     const animate = (ts: number) => {
-      if (startTimeRef.current === null) startTimeRef.current = ts;
-      const elapsed = (ts - startTimeRef.current) % ANIM_DURATION;
+      if (startTimeRef === null) startTimeRef = ts;
+      const elapsed = (ts - startTimeRef) % ANIM_DURATION;
       setScrubT(elapsed / ANIM_DURATION);
-      animRef.current = requestAnimationFrame(animate);
+      animRef = requestAnimationFrame(animate);
     };
-    animRef.current = requestAnimationFrame(animate);
-    return () => {
-      if (animRef.current !== null) cancelAnimationFrame(animRef.current);
-      startTimeRef.current = null;
-    };
-  }, [showScrubber, easingId]);
+    animRef = requestAnimationFrame(animate);
+    onCleanup(() => {
+      if (animRef !== null) cancelAnimationFrame(animRef);
+      startTimeRef = null;
+    });
+  });
 
-  const toSvgCoords = useCallback((norm: BezierPoint) => ({
+  const toSvgCoords = (norm: BezierPoint) => ({
     x: PADDING + norm.x * (BASE_WIDTH - 2 * PADDING),
-    y: PADDING + (1 - norm.y) * (height - 2 * PADDING),
-  }), [height]);
+    y: PADDING + (1 - norm.y) * (height() - 2 * PADDING),
+  });
 
-  const fromSvgCoords = useCallback((svgX: number, svgY: number): BezierPoint => ({
+  const fromSvgCoords = (svgX: number, svgY: number): BezierPoint => ({
     x: Math.max(0, Math.min(1, (svgX - PADDING) / (BASE_WIDTH - 2 * PADDING))),
-    y: (1 - (svgY - PADDING) / (height - 2 * PADDING)),
-  }), [height]);
+    y: 1 - (svgY - PADDING) / (height() - 2 * PADDING),
+  });
 
-  const getSvgPoint = useCallback((e: React.PointerEvent<SVGSVGElement>): BezierPoint | null => {
-    const svg = svgRef.current;
+  const getSvgPoint = (e: PointerEvent): BezierPoint | null => {
+    const svg = svgRef;
     if (!svg) return null;
     const rect = svg.getBoundingClientRect();
     const scaleX = BASE_WIDTH / rect.width;
-    const scaleY = height / rect.height;
+    const scaleY = height() / rect.height;
     return fromSvgCoords((e.clientX - rect.left) * scaleX, (e.clientY - rect.top) * scaleY);
-  }, [fromSvgCoords, height]);
+  };
 
-  const handlePointerDown = (point: 'p1' | 'p2') => (e: React.PointerEvent<SVGCircleElement>) => {
+  const handlePointerDown = (point: 'p1' | 'p2') => (e: PointerEvent) => {
     e.preventDefault();
     e.stopPropagation();
     (e.target as SVGCircleElement).setPointerCapture(e.pointerId);
     setDragging(point);
   };
 
-  const handleSvgPointerMove = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
-    if (!dragging) return;
+  const handleSvgPointerMove = (e: PointerEvent) => {
+    const dragTarget = dragging();
+    if (!dragTarget) return;
     const pt = getSvgPoint(e);
     if (!pt) return;
-    const next = { ...bezier, [dragging]: pt };
+    const cur = bezier();
+    const next = { ...cur, [dragTarget]: pt };
     setBezier(next);
-    onCurveChange?.(next.p1, next.p2);
-  }, [dragging, bezier, getSvgPoint, onCurveChange]);
+    props.onCurveChange?.(next.p1, next.p2);
+  };
 
-  const handleSvgPointerUp = useCallback(() => {
+  const handleSvgPointerUp = () => {
     setDragging(null);
-  }, []);
+  };
 
   // Build curve path
-  const curvePath = buildBezierPath(bezier.p1, bezier.p2, BASE_WIDTH, height, PADDING);
+  const curvePath = () => buildBezierPath(bezier().p1, bezier().p2, BASE_WIDTH, height(), PADDING);
 
   // Handle positions
-  const p1svg = toSvgCoords(bezier.p1);
-  const p2svg = toSvgCoords(bezier.p2);
+  const p1svg = () => toSvgCoords(bezier().p1);
+  const p2svg = () => toSvgCoords(bezier().p2);
 
   // Scrubber position along curve
-  const scrubBx = cubicBezierY(scrubT, bezier.p1.x, bezier.p2.x);
-  const scrubBy = cubicBezierY(scrubT, bezier.p1.y, bezier.p2.y);
-  const scrubPos = toSvgCoords({ x: scrubBx, y: scrubBy });
+  const scrubPos = () => {
+    const t = scrubT();
+    const b = bezier();
+    const bx = cubicBezierY(t, b.p1.x, b.p2.x);
+    const by = cubicBezierY(t, b.p1.y, b.p2.y);
+    return toSvgCoords({ x: bx, y: by });
+  };
 
   // Grid lines
   const gridLines = [0.25, 0.5, 0.75];
-
-  const preset = GSAP_EASING_PRESETS.find(p => p.id === easingId);
+  const preset = () => GSAP_EASING_PRESETS.find((p) => p.id === easingId());
 
   return (
-    <div className="flex flex-col gap-2 w-full">
+    <div class="flex flex-col gap-2 w-full">
       {/* Header */}
-      <div className="flex items-center justify-between text-[10px] font-mono">
-        <span className="text-muted-foreground uppercase tracking-wider">Bezier Curve</span>
-        <span className="text-accent-theme font-semibold">{preset?.name ?? easingId}</span>
+      <div class="flex items-center justify-between text-[10px] font-mono">
+        <span class="text-muted-foreground uppercase tracking-wider">Bezier Curve</span>
+        <span class="text-accent-theme font-semibold">{preset()?.name ?? easingId()}</span>
       </div>
 
       {/* SVG Graph Container */}
       <div
-        className="relative w-full rounded-xl border border-glass-border bg-background/70 overflow-hidden"
-        style={{ height }}
+        class="relative w-full rounded-xl border border-glass-border bg-background/70 overflow-hidden"
+        style={{ height: `${height()}px` }}
       >
         {/* Subtle dot grid background */}
         <div
-          className="absolute inset-0 opacity-10"
+          class="absolute inset-0 opacity-10"
           style={{
-            backgroundImage: 'radial-gradient(circle, var(--accent-primary) 1px, transparent 1px)',
-            backgroundSize: '16px 16px',
+            'background-image': 'radial-gradient(circle, var(--accent-primary) 1px, transparent 1px)',
+            'background-size': '16px 16px',
           }}
         />
 
         <svg
           ref={svgRef}
-          viewBox={`0 0 ${BASE_WIDTH} ${height}`}
-          className="w-full h-full touch-none block"
+          viewBox={`0 0 ${BASE_WIDTH} ${height()}`}
+          class="w-full h-full touch-none block"
           preserveAspectRatio="none"
           onPointerMove={handleSvgPointerMove}
           onPointerUp={handleSvgPointerUp}
           onPointerLeave={handleSvgPointerUp}
-          style={{ cursor: dragging ? 'grabbing' : 'default' }}
+          style={{ cursor: dragging() ? 'grabbing' : 'default' }}
         >
           {/* Grid lines */}
-          {gridLines.map(v => {
-            const xPos = PADDING + v * (BASE_WIDTH - 2 * PADDING);
-            const yPos = PADDING + v * (height - 2 * PADDING);
-            return (
-              <g key={v}>
-                <line x1={xPos} y1={PADDING} x2={xPos} y2={height - PADDING}
-                  stroke="currentColor" strokeWidth="0.5" strokeDasharray="3,3"
-                  className="text-muted-foreground/20" />
-                <line x1={PADDING} y1={yPos} x2={BASE_WIDTH - PADDING} y2={yPos}
-                  stroke="currentColor" strokeWidth="0.5" strokeDasharray="3,3"
-                  className="text-muted-foreground/20" />
-              </g>
-            );
-          })}
+          <For each={gridLines}>
+            {(v) => {
+              const xPos = PADDING + v * (BASE_WIDTH - 2 * PADDING);
+              const yPos = PADDING + v * (height() - 2 * PADDING);
+              return (
+                <g>
+                  <line
+                    x1={xPos}
+                    y1={PADDING}
+                    x2={xPos}
+                    y2={height() - PADDING}
+                    stroke="currentColor"
+                    stroke-width="0.5"
+                    stroke-dasharray="3,3"
+                    class="text-muted-foreground/20"
+                  />
+                  <line
+                    x1={PADDING}
+                    y1={yPos}
+                    x2={BASE_WIDTH - PADDING}
+                    y2={yPos}
+                    stroke="currentColor"
+                    stroke-width="0.5"
+                    stroke-dasharray="3,3"
+                    class="text-muted-foreground/20"
+                  />
+                </g>
+              );
+            }}
+          </For>
 
           {/* Axes */}
-          <line x1={PADDING} y1={PADDING} x2={PADDING} y2={height - PADDING}
-            stroke="currentColor" strokeWidth="1" className="text-muted-foreground/40" />
-          <line x1={PADDING} y1={height - PADDING} x2={BASE_WIDTH - PADDING} y2={height - PADDING}
-            stroke="currentColor" strokeWidth="1" className="text-muted-foreground/40" />
+          <line
+            x1={PADDING}
+            y1={PADDING}
+            x2={PADDING}
+            y2={height() - PADDING}
+            stroke="currentColor"
+            stroke-width="1"
+            class="text-muted-foreground/40"
+          />
+          <line
+            x1={PADDING}
+            y1={height() - PADDING}
+            x2={BASE_WIDTH - PADDING}
+            y2={height() - PADDING}
+            stroke="currentColor"
+            stroke-width="1"
+            class="text-muted-foreground/40"
+          />
 
           {/* Diagonal reference line */}
-          <line x1={PADDING} y1={height - PADDING} x2={BASE_WIDTH - PADDING} y2={PADDING}
-            stroke="currentColor" strokeWidth="1" strokeDasharray="4,4"
-            className="text-muted-foreground/25" />
+          <line
+            x1={PADDING}
+            y1={height() - PADDING}
+            x2={BASE_WIDTH - PADDING}
+            y2={PADDING}
+            stroke="currentColor"
+            stroke-width="1"
+            stroke-dasharray="4,4"
+            class="text-muted-foreground/25"
+          />
 
           {/* Handle stems */}
           <line
-            x1={PADDING} y1={height - PADDING}
-            x2={p1svg.x} y2={p1svg.y}
-            stroke="var(--accent-primary)" strokeWidth="1" opacity="0.5"
+            x1={PADDING}
+            y1={height() - PADDING}
+            x2={p1svg().x}
+            y2={p1svg().y}
+            stroke="var(--accent-primary)"
+            stroke-width="1"
+            opacity="0.5"
           />
           <line
-            x1={BASE_WIDTH - PADDING} y1={PADDING}
-            x2={p2svg.x} y2={p2svg.y}
-            stroke="var(--accent-primary)" strokeWidth="1" opacity="0.5"
+            x1={BASE_WIDTH - PADDING}
+            y1={PADDING}
+            x2={p2svg().x}
+            y2={p2svg().y}
+            stroke="var(--accent-primary)"
+            stroke-width="1"
+            opacity="0.5"
           />
 
           {/* Bezier curve */}
           <path
-            d={curvePath}
+            d={curvePath()}
             fill="none"
             stroke="var(--accent-primary)"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
             style={{ filter: 'drop-shadow(0 0 5px var(--accent-glow))' }}
           />
 
           {/* Area fill under curve */}
           <path
-            d={`${curvePath} L ${BASE_WIDTH - PADDING} ${height - PADDING} L ${PADDING} ${height - PADDING} Z`}
+            d={`${curvePath()} L ${BASE_WIDTH - PADDING} ${height() - PADDING} L ${PADDING} ${height() - PADDING} Z`}
             fill="var(--accent-primary)"
             opacity="0.06"
           />
 
           {/* Start & end fixed points */}
-          <circle cx={PADDING} cy={height - PADDING} r="4" fill="var(--accent-primary)" opacity="0.7" />
+          <circle cx={PADDING} cy={height() - PADDING} r="4" fill="var(--accent-primary)" opacity="0.7" />
           <circle cx={BASE_WIDTH - PADDING} cy={PADDING} r="4" fill="var(--accent-primary)" opacity="0.7" />
 
           {/* Control point P1 (draggable) */}
           <circle
-            cx={p1svg.x} cy={p1svg.y} r={HANDLE_RADIUS}
-            fill="var(--accent-primary)" stroke="white" strokeWidth="1.5"
+            cx={p1svg().x}
+            cy={p1svg().y}
+            r={HANDLE_RADIUS}
+            fill="var(--accent-primary)"
+            stroke="white"
+            stroke-width="1.5"
             style={{ cursor: 'grab', filter: 'drop-shadow(0 0 3px var(--accent-glow))' }}
             onPointerDown={handlePointerDown('p1')}
           />
-          <text x={p1svg.x + 8} y={p1svg.y - 4} fontSize="8" fill="var(--accent-primary)" opacity="0.8" fontFamily="monospace">
+          <text
+            x={p1svg().x + 8}
+            y={p1svg().y - 4}
+            font-size="8"
+            fill="var(--accent-primary)"
+            opacity="0.8"
+            font-family="monospace"
+          >
             P1
           </text>
 
           {/* Control point P2 (draggable) */}
           <circle
-            cx={p2svg.x} cy={p2svg.y} r={HANDLE_RADIUS}
-            fill="var(--accent-primary)" stroke="white" strokeWidth="1.5"
+            cx={p2svg().x}
+            cy={p2svg().y}
+            r={HANDLE_RADIUS}
+            fill="var(--accent-primary)"
+            stroke="white"
+            stroke-width="1.5"
             style={{ cursor: 'grab', filter: 'drop-shadow(0 0 3px var(--accent-glow))' }}
             onPointerDown={handlePointerDown('p2')}
           />
-          <text x={p2svg.x + 8} y={p2svg.y - 4} fontSize="8" fill="var(--accent-primary)" opacity="0.8" fontFamily="monospace">
+          <text
+            x={p2svg().x + 8}
+            y={p2svg().y - 4}
+            font-size="8"
+            fill="var(--accent-primary)"
+            opacity="0.8"
+            font-family="monospace"
+          >
             P2
           </text>
 
           {/* Animated scrubber ball */}
-          {showScrubber && (
+          <Show when={showScrubber()}>
             <circle
-              cx={scrubPos.x} cy={scrubPos.y} r="5"
+              cx={scrubPos().x}
+              cy={scrubPos().y}
+              r="5"
               fill="white"
               style={{ filter: 'drop-shadow(0 0 4px var(--accent-glow))' }}
             />
-          )}
+          </Show>
         </svg>
       </div>
 
       {/* Bezier values readout */}
-      <div className="flex items-center justify-between text-[9px] font-mono text-muted-foreground px-1">
+      <div class="flex items-center justify-between text-[9px] font-mono text-muted-foreground px-1">
         <span>
-          P1: ({bezier.p1.x.toFixed(2)}, {bezier.p1.y.toFixed(2)})
+          P1: ({bezier().p1.x.toFixed(2)}, {bezier().p1.y.toFixed(2)})
         </span>
         <span>
-          P2: ({bezier.p2.x.toFixed(2)}, {bezier.p2.y.toFixed(2)})
+          P2: ({bezier().p2.x.toFixed(2)}, {bezier().p2.y.toFixed(2)})
         </span>
       </div>
 
       {/* Hint */}
-      <p className="text-[9px] text-muted-foreground/60 text-center leading-tight">
+      <p class="text-[9px] text-muted-foreground/60 text-center leading-tight">
         Drag P1 &amp; P2 to customize • Values sync with GSAP preset
       </p>
     </div>
   );
-};
+}

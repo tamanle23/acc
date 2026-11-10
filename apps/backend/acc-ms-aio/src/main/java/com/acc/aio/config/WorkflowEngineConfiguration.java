@@ -4,6 +4,7 @@ import com.acc.workflow.adapters.storage.InMemoryPersistenceAdapter;
 import com.acc.workflow.adapters.storage.PostgresJdbcPersistenceAdapter;
 import com.acc.workflow.adapters.storage.SqliteJdbcPersistenceAdapter;
 import com.acc.workflow.application.AuditLedgerService;
+import com.acc.workflow.application.TaskDefinitionRegistry;
 import com.acc.workflow.application.WorkflowDefinitionRegistry;
 import com.acc.workflow.application.WorkflowEngineService;
 import com.acc.workflow.core.decider.PureDecider;
@@ -126,5 +127,11 @@ public class WorkflowEngineConfiguration {
     @ConditionalOnMissingBean(WorkflowDefinitionRegistry.class)
     public WorkflowDefinitionRegistry workflowDefinitionRegistry(PersistencePort persistencePort) {
         return new WorkflowDefinitionRegistry(persistencePort);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(TaskDefinitionRegistry.class)
+    public TaskDefinitionRegistry taskDefinitionRegistry(PersistencePort persistencePort) {
+        return new TaskDefinitionRegistry(persistencePort);
     }
 }

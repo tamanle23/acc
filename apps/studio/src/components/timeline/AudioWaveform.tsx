@@ -1,4 +1,3 @@
-import React from 'react';
 import { WaveSurferWaveform } from './WaveSurferWaveform';
 
 export interface AudioWaveformProps {
@@ -15,24 +14,16 @@ export interface AudioWaveformProps {
  * AudioWaveform:
  * Uses WaveSurferWaveform (wavesurfer.js) with peak caching for audio visualization.
  */
-export function AudioWaveform({
-  id,
-  durationFrames,
-  width,
-  height,
-  color = 'rgba(255, 255, 255, 0.45)',
-  audioUrl,
-  fps = 30,
-}: AudioWaveformProps) {
+export function AudioWaveform(props: AudioWaveformProps) {
   return (
     <WaveSurferWaveform
-      id={id}
-      durationFrames={durationFrames}
-      width={width}
-      height={height}
-      color={color}
-      audioUrl={audioUrl}
-      fps={fps}
+      id={props.id}
+      durationFrames={props.durationFrames}
+      width={props.width}
+      height={props.height}
+      color={props.color ?? 'rgba(255, 255, 255, 0.45)'}
+      audioUrl={props.audioUrl}
+      fps={props.fps ?? 30}
     />
   );
 }

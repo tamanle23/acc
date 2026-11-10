@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Check, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
+import { createSignal, Show, For } from 'solid-js';
+import { Check, Sparkles, ChevronDown, ChevronUp } from 'lucide-solid';
 import { TransitionCurveGraph } from './inspector/TransitionCurveGraph';
 
 export interface EasingPreset {
@@ -67,157 +67,159 @@ export interface EasingCurveSelectorProps {
   onChange: (easingId: string) => void;
 }
 
-export function EasingCurveSelector({
-  value = 'power2.out',
-  onChange,
-}: EasingCurveSelectorProps) {
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
-  const [showGraph, setShowGraph] = useState(false);
+export function EasingCurveSelector(props: EasingCurveSelectorProps) {
+  const [hoveredId, setHoveredId] = createSignal<string | null>(null);
+  const [showGraph, setShowGraph] = createSignal(false);
+
+  const currentValue = () => props.value ?? 'power2.out';
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between text-xs font-mono">
-        <span className="text-foreground/90 font-semibold flex items-center gap-1.5">
-          <Sparkles className="w-3.5 h-3.5 text-accent-theme" />
+    <div class="space-y-2">
+      <div class="flex items-center justify-between text-xs font-mono">
+        <span class="text-foreground/90 font-semibold flex items-center gap-1.5">
+          <Sparkles class="w-3.5 h-3.5 text-accent-theme" />
           GSAP Motion Curve
         </span>
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] text-accent-theme font-mono font-bold uppercase">
-            {value}
+        <div class="flex items-center gap-2">
+          <span class="text-[10px] text-accent-theme font-mono font-bold uppercase">
+            {currentValue()}
           </span>
           {/* Toggle expanded Bezier curve graph */}
           <button
             type="button"
-            onClick={() => setShowGraph(v => !v)}
-            className="flex items-center gap-0.5 text-[9px] text-muted-foreground hover:text-accent-theme transition-colors"
-            aria-label={showGraph ? 'Hide curve graph' : 'Show curve graph'}
+            onClick={() => setShowGraph((v) => !v)}
+            class="flex items-center gap-0.5 text-[9px] text-muted-foreground hover:text-accent-theme transition-colors cursor-pointer"
+            aria-label={showGraph() ? 'Hide curve graph' : 'Show curve graph'}
           >
-            {showGraph ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            <Show when={showGraph()} fallback={<ChevronDown class="w-3 h-3" />}>
+              <ChevronUp class="w-3 h-3" />
+            </Show>
             Graph
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        {GSAP_EASING_PRESETS.map((preset) => {
-          const isSelected = value === preset.id;
-          const isHovered = hoveredId === preset.id;
+      <div class="grid grid-cols-2 gap-2">
+        <For each={GSAP_EASING_PRESETS}>
+          {(preset) => {
+            const isSelected = () => currentValue() === preset.id;
+            const isHovered = () => hoveredId() === preset.id;
 
-          return (
-            <button
-              key={preset.id}
-              type="button"
-              onClick={() => onChange(preset.id)}
-              onMouseEnter={() => setHoveredId(preset.id)}
-              onMouseLeave={() => setHoveredId(null)}
-              className={`relative p-2 rounded-xl border text-left transition-all duration-200 cursor-pointer overflow-hidden group ${
-                isSelected
-                  ? 'border-accent-theme bg-accent-theme/10 shadow-accent-glow'
-                  : 'border-glass-border bg-glass-surface hover:border-accent-theme/40 hover:-translate-y-0.5 hover:shadow-md'
-              }`}
-            >
-              {/* Top label & badge */}
-              <div className="flex items-center justify-between mb-1.5">
-                <span
-                  className={`text-[11px] font-semibold truncate ${
-                    isSelected ? 'text-accent-theme font-bold' : 'text-foreground/90'
-                  }`}
-                >
-                  {preset.name}
-                </span>
-                <span
-                  className={`text-[8px] font-mono px-1 py-0.2 rounded uppercase ${
-                    isSelected
-                      ? 'bg-accent-theme text-primary-foreground font-bold'
-                      : 'bg-muted/60 text-muted-foreground'
-                  }`}
-                >
-                  {preset.badge}
-                </span>
-              </div>
+            return (
+              <button
+                type="button"
+                onClick={() => props.onChange(preset.id)}
+                onMouseEnter={() => setHoveredId(preset.id)}
+                onMouseLeave={() => setHoveredId(null)}
+                class={`relative p-2 rounded-xl border text-left transition-all duration-200 cursor-pointer overflow-hidden group ${
+                  isSelected()
+                    ? 'border-accent-theme bg-accent-theme/10 shadow-accent-glow'
+                    : 'border-glass-border bg-glass-surface hover:border-accent-theme/40 hover:-translate-y-0.5 hover:shadow-md'
+                }`}
+              >
+                {/* Top label & badge */}
+                <div class="flex items-center justify-between mb-1.5">
+                  <span
+                    class={`text-[11px] font-semibold truncate ${
+                      isSelected() ? 'text-accent-theme font-bold' : 'text-foreground/90'
+                    }`}
+                  >
+                    {preset.name}
+                  </span>
+                  <span
+                    class={`text-[8px] font-mono px-1 py-0.2 rounded uppercase ${
+                      isSelected()
+                        ? 'bg-accent-theme text-primary-foreground font-bold'
+                        : 'bg-muted/60 text-muted-foreground'
+                    }`}
+                  >
+                    {preset.badge}
+                  </span>
+                </div>
 
-              {/* SVG Curve Preview */}
-              <div className="relative h-12 w-full bg-background/70 rounded-lg p-1 border border-glass-border flex items-center justify-center overflow-hidden">
-                {/* Background grid lines */}
-                <div className="absolute inset-0 opacity-20 bg-[radial-gradient(var(--accent-primary)_1px,transparent_1px)] [background-size:8px_8px]" />
+                {/* SVG Curve Preview */}
+                <div class="relative h-12 w-full bg-background/70 rounded-lg p-1 border border-glass-border flex items-center justify-center overflow-hidden">
+                  {/* Background grid lines */}
+                  <div class="absolute inset-0 opacity-20 bg-[radial-gradient(var(--accent-primary)_1px,transparent_1px)] [background-size:8px_8px]" />
 
-                <svg
-                  viewBox="-5 -15 110 70"
-                  className="w-full h-full overflow-visible"
-                >
-                  {/* Subtle baseline and peak guideline */}
-                  <line
-                    x1="0"
-                    y1="45"
-                    x2="100"
-                    y2="45"
-                    stroke="currentColor"
-                    className="text-muted-foreground/30"
-                    strokeDasharray="2,2"
-                    strokeWidth="0.8"
-                  />
-                  <line
-                    x1="0"
-                    y1="5"
-                    x2="100"
-                    y2="5"
-                    stroke="currentColor"
-                    className="text-muted-foreground/30"
-                    strokeDasharray="2,2"
-                    strokeWidth="0.8"
-                  />
+                  <svg
+                    viewBox="-5 -15 110 70"
+                    class="w-full h-full overflow-visible"
+                  >
+                    {/* Subtle baseline and peak guideline */}
+                    <line
+                      x1="0"
+                      y1="45"
+                      x2="100"
+                      y2="45"
+                      stroke="currentColor"
+                      class="text-muted-foreground/30"
+                      stroke-dasharray="2,2"
+                      stroke-width="0.8"
+                    />
+                    <line
+                      x1="0"
+                      y1="5"
+                      x2="100"
+                      y2="5"
+                      stroke="currentColor"
+                      class="text-muted-foreground/30"
+                      stroke-dasharray="2,2"
+                      stroke-width="0.8"
+                    />
 
-                  {/* Curve Path */}
-                  <path
-                    d={preset.path}
-                    fill="none"
-                    stroke={isSelected || isHovered ? 'var(--accent-primary)' : 'currentColor'}
-                    strokeWidth={isSelected ? '2.5' : '1.8'}
-                    strokeLinecap="round"
-                    className={`transition-colors duration-200 ${isSelected || isHovered ? '' : 'text-muted-foreground/70'}`}
-                    style={{
-                      filter: isSelected
-                        ? 'drop-shadow(0 0 4px var(--accent-glow))'
-                        : undefined,
-                    }}
-                  />
-
-                  {/* Animated Traveling Ball on Hover or Selected */}
-                  {(isSelected || isHovered) && (
-                    <circle
-                      r="3.5"
-                      fill="var(--accent-primary)"
-                      className="shadow-sm"
+                    {/* Curve Path */}
+                    <path
+                      d={preset.path}
+                      fill="none"
+                      stroke={isSelected() || isHovered() ? 'var(--accent-primary)' : 'currentColor'}
+                      stroke-width={isSelected() ? '2.5' : '1.8'}
+                      stroke-linecap="round"
+                      class={`transition-colors duration-200 ${isSelected() || isHovered() ? '' : 'text-muted-foreground/70'}`}
                       style={{
-                        offsetPath: `path('${preset.path}')`,
-                        animation: 'travelCurve 1.4s infinite cubic-bezier(0.4, 0, 0.2, 1)',
+                        filter: isSelected()
+                          ? 'drop-shadow(0 0 4px var(--accent-glow))'
+                          : undefined,
                       }}
                     />
-                  )}
-                </svg>
-              </div>
 
-              {/* Description footnote */}
-              <p className="text-[9px] text-muted-foreground mt-1 line-clamp-1 leading-tight">
-                {preset.description}
-              </p>
-
-              {/* Active Selection Checkmark Badge */}
-              {isSelected && (
-                <div className="absolute bottom-1.5 right-1.5 w-3.5 h-3.5 bg-accent-theme text-primary-foreground rounded-full flex items-center justify-center shadow-xs">
-                  <Check className="w-2.5 h-2.5 stroke-[3]" />
+                    {/* Animated Traveling Ball on Hover or Selected */}
+                    <Show when={isSelected() || isHovered()}>
+                      <circle
+                        r="3.5"
+                        fill="var(--accent-primary)"
+                        class="shadow-sm"
+                        style={{
+                          "offset-path": `path('${preset.path}')`,
+                          animation: 'travelCurve 1.4s infinite cubic-bezier(0.4, 0, 0.2, 1)',
+                        }}
+                      />
+                    </Show>
+                  </svg>
                 </div>
-              )}
-            </button>
-          );
-        })}
+
+                {/* Description footnote */}
+                <p class="text-[9px] text-muted-foreground mt-1 line-clamp-1 leading-tight">
+                  {preset.description}
+                </p>
+
+                {/* Active Selection Checkmark Badge */}
+                <Show when={isSelected()}>
+                  <div class="absolute bottom-1.5 right-1.5 w-3.5 h-3.5 bg-accent-theme text-primary-foreground rounded-full flex items-center justify-center shadow-xs">
+                    <Check class="w-2.5 h-2.5 stroke-[3]" />
+                  </div>
+                </Show>
+              </button>
+            );
+          }}
+        </For>
       </div>
 
       {/* Expanded interactive Bezier curve graph */}
-      {showGraph && (
-        <div className="mt-2 w-full">
+      <Show when={showGraph()}>
+        <div class="mt-2 w-full">
           <TransitionCurveGraph
-            easingId={value}
+            easingId={currentValue()}
             height={160}
             showScrubber
             onCurveChange={(p1, p2) => {
@@ -225,11 +227,11 @@ export function EasingCurveSelector({
               const y1 = p1.y.toFixed(2);
               const x2 = p2.x.toFixed(2);
               const y2 = p2.y.toFixed(2);
-              onChange(`cubic-bezier(${x1}, ${y1}, ${x2}, ${y2})`);
+              props.onChange(`cubic-bezier(${x1}, ${y1}, ${x2}, ${y2})`);
             }}
           />
         </div>
-      )}
+      </Show>
     </div>
   );
 }

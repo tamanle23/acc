@@ -29,6 +29,8 @@ CREATE TABLE IF NOT EXISTS task_executions (
   error_details TEXT,
   task_logs JSONB,
   response_timeout_ms BIGINT NOT NULL DEFAULT 30000,
+  task_def_name VARCHAR(128),
+  task_def_version INT,
   created_at_ms BIGINT NOT NULL,
   updated_at_ms BIGINT NOT NULL
 );
@@ -119,3 +121,30 @@ CREATE TABLE IF NOT EXISTS workflow_audit_log (
 );
 
 CREATE INDEX IF NOT EXISTS idx_audit_workflow ON workflow_audit_log(workflow_id, sequence_num ASC);
+
+-- 7. Standalone Versioned Task Definitions Ledger
+CREATE TABLE IF NOT EXISTS workflow_task_definitions (
+  task_def_id VARCHAR(128) PRIMARY KEY,
+  tenant_id VARCHAR(64) NOT NULL DEFAULT 'system',
+  name VARCHAR(128) NOT NULL,
+  version INT NOT NULL,
+  status VARCHAR(32) NOT NULL DEFAULT 'DRAFT',
+  description TEXT,
+  retry_count INT NOT NULL DEFAULT 3,
+  retry_delay_seconds INT NOT NULL DEFAULT 2,
+  backoff_rate DOUBLE PRECISION NOT NULL DEFAULT 2.0,
+  timeout_seconds INT NOT NULL DEFAULT 30,
+  input_schema JSONB,
+  output_schema JSONB,
+  changelog_note TEXT,
+  published_at_ms BIGINT,
+  published_by VARCHAR(128),
+  created_at_ms BIGINT NOT NULL,
+  updated_at_ms BIGINT NOT NULL,
+  created_by VARCHAR(128) DEFAULT 'SYSTEM',
+  CONSTRAINT uq_workflow_task_def_version UNIQUE (tenant_id, name, version)
+);
+
+CREATE INDEX IF NOT EXISTS idx_workflow_task_defs_lookup 
+  ON workflow_task_definitions(tenant_id, name, version DESC);
+

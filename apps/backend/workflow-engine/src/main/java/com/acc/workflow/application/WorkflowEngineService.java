@@ -137,7 +137,25 @@ public class WorkflowEngineService {
             } else {
                 // Task is completed or failed
                 TaskStatus nextStatus = completed ? TaskStatus.COMPLETED : TaskStatus.FAILED;
-                persistencePort.updateTaskExecution(taskId, nextStatus, output, error, nowEpochMs);
+                String effectiveError = error;
+
+                if (completed && definition != null) {
+                    TaskDefinition matchedTask = definition.tasks().stream()
+                        .filter(t -> t.taskReferenceName().equals(existing.taskReferenceName()))
+                        .findFirst()
+                        .orElse(null);
+
+                    if (matchedTask != null && matchedTask.outputSchema() != null && !matchedTask.outputSchema().isEmpty()) {
+                        com.acc.workflow.core.schema.WorkflowSchemaValidator validator = new com.acc.workflow.core.schema.WorkflowSchemaValidator();
+                        List<com.acc.workflow.core.schema.WorkflowSchemaValidator.ValidationError> errors = validator.validate(output, matchedTask.outputSchema());
+                        if (!errors.isEmpty()) {
+                            nextStatus = TaskStatus.FAILED;
+                            effectiveError = "Task output payload violates outputSchema: " + errors.get(0).message();
+                        }
+                    }
+                }
+
+                persistencePort.updateTaskExecution(taskId, nextStatus, output, effectiveError, nowEpochMs);
                 persistencePort.removeQueueTask(taskId);
 
                 // Run decider for next iteration

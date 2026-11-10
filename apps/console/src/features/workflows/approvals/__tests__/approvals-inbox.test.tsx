@@ -5,35 +5,45 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ApprovalsInbox } from '../approvals-inbox';
 import { approvalTaskMockStore } from '@/core/sandbox';
 import { useSandboxStore } from '@/core/sandbox/store/sandbox-store';
+import { FetchEventSource } from '@/core/sse/fetch-sse';
 
-class MockEventSource {
-  public static instances: MockEventSource[] = [];
-  public url: string;
-  public onopen: (() => void) | null = null;
-  public onerror: (() => void) | null = null;
-  public close = vi.fn();
-  private listeners: Map<string, Array<(e: unknown) => void>> = new Map();
+vi.mock('@/core/sse/fetch-sse', () => {
+  class MockFetchEventSource {
+    public static instances: MockFetchEventSource[] = [];
+    public url: string;
+    public options: any;
+    public onopen: (() => void) | null = null;
+    public onerror: (() => void) | null = null;
+    public close = vi.fn();
+    private listeners: Map<string, Array<(e: unknown) => void>> = new Map();
 
-  constructor(url: string) {
-    this.url = url;
-    MockEventSource.instances.push(this);
-    setTimeout(() => {
-      if (this.onopen) this.onopen();
-    }, 5);
-  }
-
-  addEventListener(type: string, listener: (e: unknown) => void) {
-    if (!this.listeners.has(type)) {
-      this.listeners.set(type, []);
+    constructor(url: string, options: any = {}) {
+      this.url = url;
+      this.options = options;
+      MockFetchEventSource.instances.push(this);
+      setTimeout(() => {
+        if (this.onopen) this.onopen();
+      }, 5);
     }
-    this.listeners.get(type)!.push(listener);
+
+    addEventListener(type: string, listener: (e: unknown) => void) {
+      if (!this.listeners.has(type)) {
+        this.listeners.set(type, []);
+      }
+      this.listeners.get(type)!.push(listener);
+    }
+
+    emit(type: string, data: unknown) {
+      const list = this.listeners.get(type) || [];
+      list.forEach((cb) => cb({ type, data: JSON.stringify(data) }));
+    }
   }
 
-  emit(type: string, data: unknown) {
-    const list = this.listeners.get(type) || [];
-    list.forEach((cb) => cb({ data: JSON.stringify(data) }));
-  }
-}
+  return {
+    FetchEventSource: MockFetchEventSource,
+    createFetchEventSource: (url: string, options: any) => new MockFetchEventSource(url, options),
+  };
+});
 
 describe('ApprovalsInbox Component', () => {
   let queryClient: QueryClient;
@@ -44,11 +54,7 @@ describe('ApprovalsInbox Component', () => {
     queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
-    MockEventSource.instances = [];
-    (globalThis as unknown as { EventSource: unknown }).EventSource = MockEventSource;
-    if (typeof window !== 'undefined') {
-      (window as unknown as { EventSource: unknown }).EventSource = MockEventSource;
-    }
+    (FetchEventSource as any).instances = [];
   });
 
   afterEach(() => {
@@ -125,8 +131,8 @@ describe('ApprovalsInbox Component', () => {
       </QueryClientProvider>
     );
 
-    expect(MockEventSource.instances.length).toBeGreaterThanOrEqual(1);
-    const sse = MockEventSource.instances[0];
+    expect((FetchEventSource as any).instances.length).toBeGreaterThanOrEqual(1);
+    const sse = (FetchEventSource as any).instances[0];
 
     // Trigger mock incoming SSE message
     act(() => {
@@ -150,8 +156,8 @@ describe('ApprovalsInbox Component', () => {
       </QueryClientProvider>
     );
 
-    expect(MockEventSource.instances.length).toBe(1);
-    const sse = MockEventSource.instances[0];
+    expect((FetchEventSource as any).instances.length).toBe(1);
+    const sse = (FetchEventSource as any).instances[0];
 
     // Simulate connection error
     act(() => {
@@ -165,7 +171,7 @@ describe('ApprovalsInbox Component', () => {
       vi.advanceTimersByTime(5000);
     });
 
-    expect(MockEventSource.instances.length).toBe(2);
+    expect((FetchEventSource as any).instances.length).toBe(2);
     vi.useRealTimers();
   });
 });

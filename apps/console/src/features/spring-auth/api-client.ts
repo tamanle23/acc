@@ -6,6 +6,7 @@ import { enableSandboxMockEngine } from './sandbox/mock-engine';
 import { useMetadataUiStore } from '../metadata/store/use-metadata-ui-store';
 import { useSandboxStore, DEFAULT_SANDBOX_PERSONAS } from '../../core/sandbox/store/sandbox-store';
 import { getRequiredClearanceText } from '@/components/auth/permission-guard';
+import { isBackendEnvelopeFailure, extractEnvelopeErrorMessage } from '@/core/utils/error-extractor';
 
 export const springApiClient = axios.create({
   baseURL: '/api',
@@ -212,10 +213,38 @@ springApiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// 2. Response Interceptor: Catch 401 & Silent Refresh Loop
+// 2. Response Interceptor: Catch Non-Success Envelopes & Silent Refresh Loop
 springApiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Detect Spring Boot ResponseWrapper envelopes returning status FAIL or ERROR (even on HTTP 200)
+    if (isBackendEnvelopeFailure(response.data)) {
+      const errMsg = extractEnvelopeErrorMessage(response.data) || `Request failed with status: ${response.data.status}`;
+      const firstCode = Array.isArray(response.data?.errors) && response.data.errors[0]?.code
+        ? response.data.errors[0].code
+        : (String(response.data?.status).toUpperCase() === 'FAIL' ? 'ERR_BUSINESS_FAIL' : 'ERR_SERVER_ERROR');
+
+      return Promise.reject(
+        new axios.AxiosError(
+          errMsg,
+          firstCode,
+          response.config,
+          response.request,
+          response
+        )
+      );
+    }
+    return response;
+  },
   async (error) => {
+    // If Axios error has response.data with backend envelope error message, enrich error.message
+    // Only override if error.code is not a client-side preflight gate error
+    if (error?.code !== 'ERR_CLIENT_AUTH_PREFLIGHT' && axios.isAxiosError(error) && error.response?.data) {
+      const backendMsg = extractEnvelopeErrorMessage(error.response.data);
+      if (backendMsg) {
+        error.message = backendMsg;
+      }
+    }
+
     const originalRequest = error.config;
 
     if (

@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { springApiClient } from '@/features/spring-auth/api-client';
+import { useSandboxStore } from '@/core/sandbox/store/sandbox-store';
+import { useMetadataUiStore } from '@/features/metadata/store/use-metadata-ui-store';
 import type { WorkflowIR } from '../components/studio';
 import type { WorkflowDefinitionSummary, WorkflowExecutionSnapshot } from '@acc/client';
 import type { ApprovalTask } from '@/core/sandbox/handlers/approvals-sandbox-handler';
@@ -11,13 +13,22 @@ export type { WorkflowDefinitionSummary, WorkflowExecutionSnapshot, ApprovalTask
 
 // 1. Fetch Workflow Definitions
 export const useWorkflowDefinitions = () => {
+  const sandboxEnabled = useSandboxStore((s) => s.enabled);
+  const sandboxTenantId = useSandboxStore((s) => s.activeTenantId);
+  const metadataTenantId = useMetadataUiStore((s) => s.activeTenantId);
+  const effectiveTenantId = (sandboxEnabled ? sandboxTenantId : metadataTenantId) || sandboxTenantId || 'tenant-acme';
+
   return useQuery({
-    queryKey: ['workflows', 'definitions'],
+    queryKey: ['workflows', 'definitions', effectiveTenantId, sandboxEnabled],
     queryFn: async (): Promise<WorkflowDefinitionSummary[]> => {
       try {
         const res = await springApiClient.get('/v1/workflow/definitions');
         if (res.status === 200) {
-          const list = Array.isArray(res.data) ? res.data : res.data?.data || [];
+          const list = Array.isArray(res.data)
+            ? res.data
+            : Array.isArray(res.data?.body)
+              ? res.data.body
+              : res.data?.data || [];
           return list;
         }
         return [];
@@ -26,7 +37,8 @@ export const useWorkflowDefinitions = () => {
         return [];
       }
     },
-    staleTime: 60 * 1000,
+    staleTime: 30 * 1000,
+    refetchOnMount: 'always',
   });
 };
 

@@ -45,13 +45,16 @@ export class DptLargeStrategy implements IDepthEstimationStrategy, IIsomorphicDe
   }
 
   public async estimateDepth(
-    imageBufferOrInput: Buffer | Uint8Array | VisionImageInput,
+    imageBufferOrInput: Uint8Array | ArrayBuffer | Buffer | VisionImageInput,
     options?: DepthOptions | IsomorphicDepthOptions
   ): Promise<DepthResult & Partial<IsomorphicDepthResult>> {
     try {
       await this.init();
 
-      const imageBytes = (imageBufferOrInput as any).data || imageBufferOrInput;
+      const imageBytes = (imageBufferOrInput as any).data ||
+        (imageBufferOrInput instanceof Uint8Array
+          ? imageBufferOrInput
+          : new Uint8Array(imageBufferOrInput as ArrayBuffer));
       const rawImage = await this.rawImageClass.fromBlob(new Blob([imageBytes]));
       const origW = rawImage.width;
       const origH = rawImage.height;
@@ -96,7 +99,8 @@ export class DptLargeStrategy implements IDepthEstimationStrategy, IIsomorphicDe
       fullCtx.drawImage(depthCanvas, 0, 0, origW, origH);
 
       const [minD, maxD] = options?.normalizeRange ?? [0.5, 8.5];
-      const depth16Buffer = fullCanvas.toBuffer('image/png') as Buffer;
+      const rawBuf = fullCanvas.toBuffer('image/png');
+      const depth16Buffer = rawBuf instanceof Uint8Array ? rawBuf : new Uint8Array(rawBuf);
 
       return {
         depth16Buffer,

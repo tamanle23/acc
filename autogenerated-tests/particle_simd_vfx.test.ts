@@ -6,7 +6,7 @@ import {
 } from '../packages/effect-engines/src/overlay-effects/simulators/SIMDParticleComputeEngine';
 import { PostProcessingShaders } from '../packages/effect-engines/src/overlay-effects/simulators/PostProcessingShaders';
 import { UniversalCanvasProvider } from '@acc/core-isomorphic';
-import { bootstrapNode } from '@acc/core';
+import { bootstrapNode } from '../packages/core/src/bootstrap';
 import { CanvasParticleOverlayPlugin } from '../packages/ir/src/plugins/overlay/CanvasParticleOverlayPlugin';
 
 describe('Phase 3: Hardware-Accelerated Shader & Particle VFX Pipeline', () => {

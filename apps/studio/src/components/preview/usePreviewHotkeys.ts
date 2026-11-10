@@ -1,24 +1,17 @@
-import { useEffect } from 'react';
+import { onMount, onCleanup } from 'solid-js';
 import { IRStateManager } from '../../lib/ir/irState';
 
 export interface UsePreviewHotkeysOptions {
-  selectedSeqId: string | null;
-  editingCue: { sequenceId: string; cueIndex: number; text: string } | null;
+  selectedSeqId: () => string | null;
+  editingCue: () => { sequenceId: string; cueIndex: number; text: string } | null;
   setEditingCue: (cue: { sequenceId: string; cueIndex: number; text: string } | null) => void;
-  isSpacePressed: boolean;
+  isSpacePressed: () => boolean;
   setIsSpacePressed: (pressed: boolean) => void;
   setVisionPassMode: (fn: (prev: 'composite' | 'depth' | 'normals' | 'alpha') => 'composite' | 'depth' | 'normals' | 'alpha') => void;
 }
 
-export function usePreviewHotkeys({
-  selectedSeqId,
-  editingCue,
-  setEditingCue,
-  isSpacePressed,
-  setIsSpacePressed,
-  setVisionPassMode,
-}: UsePreviewHotkeysOptions) {
-  useEffect(() => {
+export function usePreviewHotkeys(options: UsePreviewHotkeysOptions) {
+  onMount(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
       if (
@@ -31,14 +24,14 @@ export function usePreviewHotkeys({
       }
 
       if (e.code === 'Space') {
-        if (!isSpacePressed) {
-          setIsSpacePressed(true);
+        if (!options.isSpacePressed()) {
+          options.setIsSpacePressed(true);
         }
       }
 
       if (e.shiftKey && e.key.toUpperCase() === 'V') {
         e.preventDefault();
-        setVisionPassMode((prev) => {
+        options.setVisionPassMode((prev) => {
           if (prev === 'composite') return 'depth';
           if (prev === 'depth') return 'normals';
           if (prev === 'normals') return 'alpha';
@@ -47,23 +40,25 @@ export function usePreviewHotkeys({
       }
 
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
-        if (selectedSeqId) {
+        const id = options.selectedSeqId();
+        if (id) {
           e.preventDefault();
-          IRStateManager.getInstance().duplicateSequence(selectedSeqId);
+          IRStateManager.getInstance().duplicateSequence(id);
         }
       }
 
       if (e.key === 'Delete' || e.key === 'Backspace') {
-        if (selectedSeqId && !editingCue) {
+        const id = options.selectedSeqId();
+        if (id && !options.editingCue()) {
           e.preventDefault();
-          IRStateManager.getInstance().deleteSequence(selectedSeqId);
+          IRStateManager.getInstance().deleteSequence(id);
         }
       }
 
       if (e.key === 'Escape') {
-        if (editingCue) {
-          setEditingCue(null);
-        } else if (selectedSeqId) {
+        if (options.editingCue()) {
+          options.setEditingCue(null);
+        } else if (options.selectedSeqId()) {
           IRStateManager.getInstance().setSelectedSequenceId(null);
         }
       }
@@ -71,15 +66,15 @@ export function usePreviewHotkeys({
 
     const handleKeyUp = (e: KeyboardEvent) => {
       if (e.code === 'Space') {
-        setIsSpacePressed(false);
+        options.setIsSpacePressed(false);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
-    return () => {
+    onCleanup(() => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
-    };
-  }, [selectedSeqId, editingCue, isSpacePressed, setEditingCue, setIsSpacePressed, setVisionPassMode]);
+    });
+  });
 }

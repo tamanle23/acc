@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { createSignal, createEffect, createMemo, Show } from 'solid-js';
 import {
   Dialog,
   DialogContent,
@@ -14,15 +14,9 @@ import {
   RefreshCw,
   Trash2,
   Plus,
-  Layers,
-  Database,
-  Sparkles,
-  AlertTriangle,
-  FolderPlus,
-  CheckCircle2,
   X,
-} from 'lucide-react';
-import { toast } from 'sonner';
+} from 'lucide-solid';
+import { toast } from '../../ui/sonner';
 import {
   OpfsCacheStrategy,
   formatOpfsBytes,
@@ -30,6 +24,7 @@ import {
   type OpfsStorageEstimate,
 } from '@acc/core-web';
 import { ContentCacheRegistry, ContentCacheStrategyId } from '@acc/core-isomorphic';
+import { IRStateManager } from '../../../lib/ir/irState';
 import { OpfsTree } from './OpfsTree';
 import { OpfsFilePreview } from './OpfsFilePreview';
 import type { OpfsFileDetails } from './types';
@@ -39,9 +34,9 @@ export interface OpfsDebuggerModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export function OpfsExplorerModal({ open, onOpenChange }: OpfsDebuggerModalProps) {
+export function OpfsExplorerModal(props: OpfsDebuggerModalProps) {
   // Obtain or instantiate OpfsCacheStrategy
-  const strategy = useMemo(() => {
+  const strategy = (() => {
     try {
       if (ContentCacheRegistry.hasStrategy(ContentCacheStrategyId.Opfs)) {
         const found = ContentCacheRegistry.getStrategy(ContentCacheStrategyId.Opfs);
@@ -51,120 +46,131 @@ export function OpfsExplorerModal({ open, onOpenChange }: OpfsDebuggerModalProps
       }
     } catch { }
     return new OpfsCacheStrategy();
-  }, []);
+  })();
 
-  const [isSupported, setIsSupported] = useState<boolean>(true);
-  const [quota, setQuota] = useState<OpfsStorageEstimate | null>(null);
-  const [tree, setTree] = useState<OpfsTreeNode | null>(null);
-  const [selectedNode, setSelectedNode] = useState<OpfsTreeNode | null>(null);
-  const [fileDetails, setFileDetails] = useState<OpfsFileDetails | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-  const [isPurging, setIsPurging] = useState<boolean>(false);
-  const [showNewFileDialog, setShowNewFileDialog] = useState<boolean>(false);
-  const [newFileName, setNewFileName] = useState<string>('sample-debug.json');
-  const [newFileContent, setNewFileContent] = useState<string>(
+  const [isSupported, setIsSupported] = createSignal<boolean>(true);
+  const [quota, setQuota] = createSignal<OpfsStorageEstimate | null>(null);
+  const [tree, setTree] = createSignal<OpfsTreeNode | null>(null);
+  const [selectedNode, setSelectedNode] = createSignal<OpfsTreeNode | null>(null);
+  const [fileDetails, setFileDetails] = createSignal<OpfsFileDetails | null>(null);
+  const [isRefreshing, setIsRefreshing] = createSignal<boolean>(false);
+  const [isPurging, setIsPurging] = createSignal<boolean>(false);
+  const [showNewFileDialog, setShowNewFileDialog] = createSignal<boolean>(false);
+  const [newFileName, setNewFileName] = createSignal<string>('sample-debug.json');
+  const [newFileContent, setNewFileContent] = createSignal<string>(
     JSON.stringify({ timestamp: Date.now(), purpose: 'OPFS debug verification' }, null, 2)
   );
 
+  // Load file details when a node is selected
+  const loadFileDetails = async (node: OpfsTreeNode) => {
+    setSelectedNode(node);
+    if (node.kind === 'directory') {
+      setFileDetails(null);
+      return;
+    }
+
+    setFileDetails({
+      node,
+      blob: null,
+      text: null,
+      companionMeta: node.metadata || null,
+      isLoading: true,
+      error: null,
+    });
+
+    try {
+      const blob = await strategy.readEntryBlob(node.path || node.name);
+      if (!blob) {
+        setFileDetails((prev) =>
+          prev ? { ...prev, isLoading: false, error: 'File handle inaccessible' } : null
+        );
+        return;
+      }
+
+      let text: string | null = null;
+      const mime = node.mimeType || blob.type || '';
+      const isTextual =
+        mime.startsWith('text/') ||
+        mime === 'application/json' ||
+        node.name.endsWith('.json') ||
+        node.name.endsWith('.meta.json') ||
+        node.name.endsWith('.txt');
+
+      // Only read text for textual formats, sliced to at most 1 MB to prevent heap freeze
+      if (isTextual) {
+        try {
+          const maxTextBytes = 1024 * 1024;
+          const textSlice = blob.slice(0, maxTextBytes);
+          text = await textSlice.text();
+          if (blob.size > maxTextBytes) {
+            text += `\n\n--- [TRUNCATED] Showing first 1 MB of ${formatOpfsBytes(blob.size)} ---`;
+          }
+        } catch { }
+      }
+
+      setFileDetails({
+        node,
+        blob,
+        text,
+        companionMeta: node.metadata || null,
+        isLoading: false,
+        error: null,
+      });
+    } catch (err: any) {
+      setFileDetails((prev) =>
+        prev
+          ? { ...prev, isLoading: false, error: err?.message || 'Error reading file' }
+          : null
+      );
+    }
+  };
+
   // Load Tree and Quota
-  const refreshData = useCallback(async () => {
+  const refreshData = async () => {
     setIsRefreshing(true);
     try {
       const supported = strategy.isSupported();
       setIsSupported(supported);
 
-      const [treeData, quotaData] = await Promise.all([
+      let [treeData, quotaData] = await Promise.all([
         strategy.inspectTree(),
         strategy.getStorageEstimate(),
       ]);
+
+      // Seed active VideoIR project snapshot into OPFS if directory is completely empty on first inspection
+      if (supported && (!treeData.children || treeData.children.length === 0)) {
+        try {
+          const irJson = IRStateManager.getInstance().exportJSON();
+          await strategy.set('project/active_video_ir.json', irJson, {
+            mimeType: 'application/json',
+          });
+          [treeData, quotaData] = await Promise.all([
+            strategy.inspectTree(),
+            strategy.getStorageEstimate(),
+          ]);
+        } catch { }
+      }
 
       setTree(treeData);
       setQuota(quotaData);
 
       // If a file was selected, re-read it
-      if (selectedNode && selectedNode.kind === 'file') {
-        await loadFileDetails(selectedNode);
+      const currentSelected = selectedNode();
+      if (currentSelected && currentSelected.kind === 'file') {
+        await loadFileDetails(currentSelected);
       }
-    } catch (err: unknown) {
+    } catch {
       toast.error('Failed to inspect OPFS tree');
     } finally {
       setIsRefreshing(false);
     }
-  }, [strategy, selectedNode]);
+  };
 
-  // Load file details when a node is selected
-  const loadFileDetails = useCallback(
-    async (node: OpfsTreeNode) => {
-      setSelectedNode(node);
-      if (node.kind === 'directory') {
-        setFileDetails(null);
-        return;
-      }
-
-      setFileDetails({
-        node,
-        blob: null,
-        text: null,
-        companionMeta: node.metadata || null,
-        isLoading: true,
-        error: null,
-      });
-
-      try {
-        const blob = await strategy.readEntryBlob(node.path || node.name);
-        if (!blob) {
-          setFileDetails((prev) =>
-            prev ? { ...prev, isLoading: false, error: 'File handle inaccessible' } : null
-          );
-          return;
-        }
-
-        let text: string | null = null;
-        const mime = node.mimeType || blob.type || '';
-        const isTextual =
-          mime.startsWith('text/') ||
-          mime === 'application/json' ||
-          node.name.endsWith('.json') ||
-          node.name.endsWith('.meta.json') ||
-          node.name.endsWith('.txt');
-
-        // Only read text for textual formats, sliced to at most 1 MB to prevent heap freeze
-        if (isTextual) {
-          try {
-            const maxTextBytes = 1024 * 1024;
-            const textSlice = blob.slice(0, maxTextBytes);
-            text = await textSlice.text();
-            if (blob.size > maxTextBytes) {
-              text += `\n\n--- [TRUNCATED] Showing first 1 MB of ${formatOpfsBytes(blob.size)} ---`;
-            }
-          } catch { }
-        }
-
-        setFileDetails({
-          node,
-          blob,
-          text,
-          companionMeta: node.metadata || null,
-          isLoading: false,
-          error: null,
-        });
-      } catch (err: any) {
-        setFileDetails((prev) =>
-          prev
-            ? { ...prev, isLoading: false, error: err?.message || 'Error reading file' }
-            : null
-        );
-      }
-    },
-    [strategy]
-  );
-
-  useEffect(() => {
-    if (open) {
+  createEffect(() => {
+    if (props.open) {
       refreshData();
     }
-  }, [open, refreshData]);
+  });
 
   // Purge entire OPFS cache
   const handlePurge = async () => {
@@ -189,7 +195,7 @@ export function OpfsExplorerModal({ open, onOpenChange }: OpfsDebuggerModalProps
       const ok = await strategy.removeCustomEntry(fileName, isDirectory);
       if (ok) {
         toast.success(`Removed ${fileName}`);
-        if (selectedNode?.name === fileName) {
+        if (selectedNode()?.name === fileName) {
           setSelectedNode(null);
           setFileDetails(null);
         }
@@ -204,10 +210,11 @@ export function OpfsExplorerModal({ open, onOpenChange }: OpfsDebuggerModalProps
 
   // Create test file
   const handleCreateTestFile = async () => {
-    if (!newFileName.trim()) return;
+    const name = newFileName().trim();
+    if (!name) return;
     try {
-      await strategy.writeCustomFile(newFileName.trim(), newFileContent, 'application/json');
-      toast.success(`Created file ${newFileName.trim()}`);
+      await strategy.writeCustomFile(name, newFileContent(), 'application/json');
+      toast.success(`Created file ${name}`);
       setShowNewFileDialog(false);
       await refreshData();
     } catch (err: any) {
@@ -216,61 +223,66 @@ export function OpfsExplorerModal({ open, onOpenChange }: OpfsDebuggerModalProps
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-6xl max-w-7xl w-[95vw] h-[88vh] glass-panel text-foreground border-[var(--glass-border)] p-0 rounded-2xl shadow-2xl backdrop-blur-2xl flex flex-col overflow-hidden">
+    <Dialog open={props.open} onOpenChange={props.onOpenChange}>
+      <DialogContent class="sm:max-w-6xl max-w-7xl w-[95vw] h-[88vh] glass-panel text-foreground border-[var(--glass-border)] p-0 rounded-2xl shadow-2xl backdrop-blur-2xl flex flex-col overflow-hidden">
         {/* Header */}
-        <DialogHeader className="p-4 border-b border-[var(--glass-border)] shrink-0 flex flex-row items-center justify-between px-5 py-3 gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-accent-theme/15 border border-accent-theme/30 flex items-center justify-center text-accent-theme shadow-xs">
-              <HardDrive className="w-5 h-5" />
+        <DialogHeader class="p-4 border-b border-[var(--glass-border)] shrink-0 flex flex-row items-center justify-between px-5 py-3 gap-4">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-accent-theme/15 border border-accent-theme/30 flex items-center justify-center text-accent-theme shadow-xs">
+              <HardDrive class="w-5 h-5" />
             </div>
             <div>
-              <DialogTitle className="text-base font-bold text-foreground flex items-center gap-2">
+              <DialogTitle class="text-base font-bold text-foreground flex items-center gap-2">
                 File Explorer
                 <Badge
                   variant="outline"
-                  className={`text-[10px] font-mono ${isSupported
-                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                    : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                    }`}
+                  class={`text-[10px] font-mono ${
+                    isSupported()
+                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                      : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                  }`}
                 >
-                  {isSupported ? 'OPFS Active' : 'IndexedDB Fallback'}
+                  {isSupported() ? 'OPFS Active' : 'IndexedDB Fallback'}
                 </Badge>
               </DialogTitle>
-              <DialogDescription className="text-xs text-muted-foreground font-mono mt-0.5">
-                Directory: <span className="text-foreground font-semibold">{strategy.getDirectoryName()}</span>
-                {tree && (
-                  <span>
-                    {' '}• Total: <span className="text-cyan-400">{formatOpfsBytes(tree.sizeBytes)}</span>
-                  </span>
-                )}
+              <DialogDescription class="text-xs text-muted-foreground font-mono mt-0.5">
+                Directory: <span class="text-foreground font-semibold">{strategy.getDirectoryName()}</span>
+                <Show when={tree()}>
+                  {(t) => (
+                    <span>
+                      {' '}• Total: <span class="text-cyan-400">{formatOpfsBytes(t().sizeBytes)}</span>
+                    </span>
+                  )}
+                </Show>
               </DialogDescription>
             </div>
           </div>
           {/* Quota Progress & Action Controls */}
-          <div className="flex items-center gap-2">
-            {quota && (
-              <div className="hidden md:flex flex-col items-end text-[11px] font-mono mr-2">
-                <div className="text-muted-foreground">
-                  Storage Quota: <span className="text-foreground font-semibold">{quota.formattedUsage}</span> / {quota.formattedQuota}
+          <div class="flex items-center gap-2">
+            <Show when={quota()}>
+              {(q) => (
+                <div class="hidden md:flex flex-col items-end text-[11px] font-mono mr-2">
+                  <div class="text-muted-foreground">
+                    Storage Quota: <span class="text-foreground font-semibold">{q().formattedUsage}</span> / {q().formattedQuota}
+                  </div>
+                  <div class="w-36 h-1.5 bg-muted/60 rounded-full overflow-hidden mt-1 border border-border/40">
+                    <div
+                      class="h-full bg-accent-theme transition-all duration-500"
+                      style={{ width: `${Math.max(1, Math.min(100, q().usagePercent))}%` }}
+                    />
+                  </div>
                 </div>
-                <div className="w-36 h-1.5 bg-muted/60 rounded-full overflow-hidden mt-1 border border-border/40">
-                  <div
-                    className="h-full bg-accent-theme transition-all duration-500"
-                    style={{ width: `${Math.max(1, Math.min(100, quota.usagePercent))}%` }}
-                  />
-                </div>
-              </div>
-            )}
+              )}
+            </Show>
 
             <Button
               variant="outline"
               size="sm"
               onClick={refreshData}
-              disabled={isRefreshing}
-              className="h-8 text-xs gap-1.5 border-border/60 hover:bg-muted"
+              disabled={isRefreshing()}
+              class="h-8 text-xs gap-1.5 border-border/60 hover:bg-muted"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <RefreshCw class={`w-3.5 h-3.5 ${isRefreshing() ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
 
@@ -278,9 +290,9 @@ export function OpfsExplorerModal({ open, onOpenChange }: OpfsDebuggerModalProps
               variant="outline"
               size="sm"
               onClick={() => setShowNewFileDialog(true)}
-              className="h-8 text-xs gap-1.5 border-border/60 hover:bg-muted text-accent-theme"
+              class="h-8 text-xs gap-1.5 border-border/60 hover:bg-muted text-accent-theme"
             >
-              <Plus className="w-3.5 h-3.5" />
+              <Plus class="w-3.5 h-3.5" />
               Write Test File
             </Button>
 
@@ -288,107 +300,107 @@ export function OpfsExplorerModal({ open, onOpenChange }: OpfsDebuggerModalProps
               variant="outline"
               size="sm"
               onClick={handlePurge}
-              disabled={isPurging}
-              className="h-8 text-xs gap-1.5 border-rose-500/30 text-rose-400 hover:bg-rose-500/10 hover:text-rose-300"
+              disabled={isPurging()}
+              class="h-8 text-xs gap-1.5 border-rose-500/30 text-rose-400 hover:bg-rose-500/10 hover:text-rose-300"
             >
-              <Trash2 className="w-3.5 h-3.5" />
+              <Trash2 class="w-3.5 h-3.5" />
               Purge Cache
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => onOpenChange(false)}
-              className="h-7 w-7 rounded-full text-muted-foreground hover:text-foreground"
+              onClick={() => props.onOpenChange(false)}
+              class="h-7 w-7 rounded-full text-muted-foreground hover:text-foreground"
             >
-              <X className="w-4 h-4" />
+              <X class="w-4 h-4" />
             </Button>
           </div>
         </DialogHeader>
 
         {/* Split Explorer Body */}
-        <div className="flex-1 flex overflow-hidden">
+        <div class="flex-1 flex overflow-hidden">
           {/* Left Tree Explorer (340px) */}
-          <div className="w-80 shrink-0 h-full">
+          <div class="w-80 shrink-0 h-full">
             <OpfsTree
-              rootNode={tree}
-              selectedPath={selectedNode?.path || null}
+              rootNode={tree()}
+              selectedPath={selectedNode()?.path || null}
               onSelectNode={loadFileDetails}
               onDeleteNode={(name, isDir) => handleDeleteFile(name, isDir)}
             />
           </div>
 
           {/* Right Live Preview / Inspector */}
-          <div className="flex-1 h-full bg-background/30">
+          <div class="flex-1 h-full bg-background/30">
             <OpfsFilePreview
-              details={fileDetails}
+              details={fileDetails()}
               onDeleteFile={(name) => handleDeleteFile(name, false)}
             />
           </div>
         </div>
 
         {/* Modal Footer */}
-        <DialogFooter className="p-3 border-t border-[var(--glass-border)] bg-muted/20 shrink-0 flex items-center justify-between">
-          <div className="text-[11px] text-muted-foreground font-mono flex items-center gap-2">
+        <DialogFooter class="p-3 border-t border-[var(--glass-border)] bg-muted/20 shrink-0 flex items-center justify-between">
+          <div class="text-[11px] text-muted-foreground font-mono flex items-center gap-2">
             <span>Disk-backed zero-heap streaming storage</span>
             <span>•</span>
-            <span className="text-accent-theme font-medium">Ctrl+Shift+O</span> to toggle
+            <span class="text-accent-theme font-medium">Ctrl+Shift+O</span> to toggle
           </div>
           <Button
             variant="accent"
             size="sm"
-            onClick={() => onOpenChange(false)}
-            className="px-5 cursor-pointer text-xs h-8"
+            onClick={() => props.onOpenChange(false)}
+            class="px-5 cursor-pointer text-xs h-8"
           >
             Close
           </Button>
         </DialogFooter>
 
         {/* New Test File Modal Dialog */}
-        {showNewFileDialog && (
-          <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 z-50">
-            <div className="w-full max-w-lg glass-panel p-6 rounded-2xl border border-[var(--glass-border)] shadow-2xl flex flex-col gap-4">
-              <div className="flex items-center justify-between border-b border-border/40 pb-3">
-                <div className="flex items-center gap-2 text-foreground font-semibold text-sm">
-                  <Plus className="w-4 h-4 text-accent-theme" />
+        <Show when={showNewFileDialog()}>
+          <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 z-50">
+            <div class="w-full max-w-lg glass-panel p-6 rounded-2xl border border-[var(--glass-border)] shadow-2xl flex flex-col gap-4">
+              <div class="flex items-center justify-between border-b border-border/40 pb-3">
+                <div class="flex items-center gap-2 text-foreground font-semibold text-sm">
+                  <Plus class="w-4 h-4 text-accent-theme" />
                   Write Test File to OPFS
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowNewFileDialog(false)}
-                  className="text-muted-foreground hover:text-foreground"
+                  class="text-muted-foreground hover:text-foreground"
                 >
-                  <X className="w-4 h-4" />
+                  <X class="w-4 h-4" />
                 </button>
               </div>
 
-              <div className="flex flex-col gap-3 font-mono text-xs">
+              <div class="flex flex-col gap-3 font-mono text-xs">
                 <div>
-                  <label className="text-muted-foreground block text-[10px] mb-1">File Name</label>
+                  <label class="text-muted-foreground block text-[10px] mb-1">File Name</label>
                   <input
                     type="text"
-                    value={newFileName}
-                    onChange={(e) => setNewFileName(e.target.value)}
-                    className="w-full h-8 px-3 rounded-lg bg-slate-900 border border-slate-700 text-foreground"
+                    value={newFileName()}
+                    onInput={(e: InputEvent & { currentTarget: HTMLInputElement }) => setNewFileName(e.currentTarget.value)}
+                    class="w-full h-8 px-3 rounded-lg bg-slate-900 border border-slate-700 text-foreground"
                   />
                 </div>
 
                 <div>
-                  <label className="text-muted-foreground block text-[10px] mb-1">Content (UTF-8)</label>
+                  <label class="text-muted-foreground block text-[10px] mb-1">Content (UTF-8)</label>
                   <textarea
                     rows={6}
-                    value={newFileContent}
-                    onChange={(e) => setNewFileContent(e.target.value)}
-                    className="w-full p-3 rounded-lg bg-slate-900 border border-slate-700 text-foreground leading-relaxed font-mono"
+                    value={newFileContent()}
+                    onInput={(e: InputEvent & { currentTarget: HTMLTextAreaElement }) => setNewFileContent(e.currentTarget.value)}
+                    class="w-full p-3 rounded-lg bg-slate-900 border border-slate-700 text-foreground leading-relaxed font-mono"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/40">
+              <div class="flex items-center justify-end gap-2 pt-2 border-t border-border/40">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowNewFileDialog(false)}
-                  className="text-xs h-8"
+                  class="text-xs h-8"
                 >
                   Cancel
                 </Button>
@@ -396,14 +408,14 @@ export function OpfsExplorerModal({ open, onOpenChange }: OpfsDebuggerModalProps
                   variant="accent"
                   size="sm"
                   onClick={handleCreateTestFile}
-                  className="text-xs h-8"
+                  class="text-xs h-8"
                 >
                   Write to OPFS
                 </Button>
               </div>
             </div>
           </div>
-        )}
+        </Show>
       </DialogContent>
     </Dialog>
   );

@@ -120,3 +120,17 @@ export function formatJsonPath(path: JsonPath): string {
     return idx === 0 ? String(segment) : `${acc}.${segment}`;
   }, '');
 }
+
+import type { ValidationResult } from '@acc/ir';
+
+export interface IRDiagnosticsReport {
+  parseError: string | null;
+  schemaValidation: ValidationResult;
+  trackCount: number;
+  sequenceCount: number;
+  assetCount: number;
+  modifierCount: number;
+  unregisteredModifiers: string[];
+  danglingAnchors: Array<{ sequenceId: string; referenceId: string }>;
+  missingAssets: Array<{ sequenceId: string; assetId: string }>;
+}

@@ -1,84 +1,66 @@
-import React from 'react';
+import type { JSX } from 'solid-js';
 import type { TransformHandleType } from '../../lib/gizmo';
 
 export interface TransformHandleProps {
   handleType: TransformHandleType;
   isLocked: boolean;
-  className: string;
+  class?: string;
+  className?: string;
   title: string;
-  onPointerDown?: (e: React.PointerEvent) => void;
-  onPointerMove?: (e: React.PointerEvent) => void;
-  onPointerUp?: (e: React.PointerEvent) => void;
-  onPointerCancel?: (e: React.PointerEvent) => void;
-  children?: React.ReactNode;
+  onPointerDown?: (e: PointerEvent) => void;
+  onPointerMove?: (e: PointerEvent) => void;
+  onPointerUp?: (e: PointerEvent) => void;
+  onPointerCancel?: (e: PointerEvent) => void;
+  children?: JSX.Element;
 }
 
-export function TransformHandle({
-  handleType: _handleType,
-  isLocked,
-  className,
-  title,
-  onPointerDown,
-  onPointerMove,
-  onPointerUp,
-  onPointerCancel,
-  children,
-}: TransformHandleProps) {
+export function TransformHandle(props: TransformHandleProps) {
   return (
     <div
       onPointerDown={(e) => {
-        if (isLocked) return;
-        onPointerDown?.(e);
+        if (props.isLocked) return;
+        props.onPointerDown?.(e);
       }}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerCancel={onPointerCancel}
-      className={className}
-      title={title}
+      onPointerMove={props.onPointerMove}
+      onPointerUp={props.onPointerUp}
+      onPointerCancel={props.onPointerCancel}
+      class={props.class || props.className}
+      title={props.title}
       onClick={(e) => e.stopPropagation()}
     >
-      {children}
+      {props.children}
     </div>
   );
 }
 
 export interface TransformBodyDraggableProps {
-  children: React.ReactNode;
+  children?: JSX.Element;
   isLocked: boolean;
-  style: React.CSSProperties;
-  className: string;
-  onDoubleClick: () => void;
-  onPointerDown?: (e: React.PointerEvent) => void;
-  onPointerMove?: (e: React.PointerEvent) => void;
-  onPointerUp?: (e: React.PointerEvent) => void;
-  onPointerCancel?: (e: React.PointerEvent) => void;
+  style?: JSX.CSSProperties | string;
+  class?: string;
+  className?: string;
+  onDoubleClick?: () => void;
+  onPointerDown?: (e: PointerEvent) => void;
+  onPointerMove?: (e: PointerEvent) => void;
+  onPointerUp?: (e: PointerEvent) => void;
+  onPointerCancel?: (e: PointerEvent) => void;
 }
 
-export function TransformBodyDraggable({
-  children,
-  isLocked,
-  style,
-  className,
-  onDoubleClick,
-  onPointerDown,
-  onPointerMove,
-  onPointerUp,
-  onPointerCancel,
-}: TransformBodyDraggableProps) {
+export function TransformBodyDraggable(props: TransformBodyDraggableProps) {
   return (
     <div
       onPointerDown={(e) => {
-        if (isLocked) return;
-        onPointerDown?.(e);
+        if (props.isLocked) return;
+        props.onPointerDown?.(e);
       }}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerCancel={onPointerCancel}
-      onDoubleClick={onDoubleClick}
-      style={style}
-      className={className}
+      onPointerMove={props.onPointerMove}
+      onPointerUp={props.onPointerUp}
+      onPointerCancel={props.onPointerCancel}
+      onDblClick={props.onDoubleClick}
+      style={props.style}
+      class={props.class || props.className}
     >
-      {children}
+      {props.children}
     </div>
   );
 }

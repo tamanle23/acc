@@ -23,7 +23,7 @@ export const cyberAudioVisualizerDemoIR: VideoIRDocument = {
       type: 'audio',
     },
     'asset-bass-pulse': {
-      src: 'https://actions.google.com/sounds/v1/science_fiction/scifi_engine_shut_down.ogg',
+      src: 'https://actions.google.com/sounds/v1/science_fiction/sci_fi_vortex.ogg',
       type: 'audio',
     },
   },

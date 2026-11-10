@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react';
+import { createSignal, createEffect, onCleanup, untrack } from 'solid-js';
 import { withTargetCanvasSize, type AssetDefinition, type ResolvedSequence, type ResolvedTimeline } from '@acc/ir';
 import {
   createPreviewRenderStrategy,
@@ -10,9 +10,16 @@ import { AssetTextureCache } from '../../lib/textures/AssetTextureCache';
 import { StudioBootController } from '../../lib/boot/StudioBootController';
 import type { WorkerRenderOptions } from '../../renderer/workers/PreviewWorkerBridge';
 
+function resolveCanvas(ref: any): HTMLCanvasElement | null {
+  if (!ref) return null;
+  if (typeof ref === 'function') return ref();
+  if ('current' in ref) return ref.current;
+  return ref;
+}
+
 export interface UseViewportRenderStrategyOptions {
-  canvasRef: React.RefObject<HTMLCanvasElement | null>;
-  overlayCanvasRef: React.RefObject<HTMLCanvasElement | null>;
+  canvasRef: any;
+  overlayCanvasRef: any;
   timeline: ResolvedTimeline | null;
   assetsMap: Record<string, AssetDefinition>;
   width: number;
@@ -28,61 +35,41 @@ export interface UseViewportRenderStrategyOptions {
   activeSeqs: ResolvedSequence[];
 }
 
-export function useViewportRenderStrategy({
-  canvasRef,
-  overlayCanvasRef,
-  timeline,
-  assetsMap,
-  width,
-  height,
-  timelineWidth,
-  timelineHeight,
-  fps,
-  totalFrames,
-  currentFrame,
-  isPlaying,
-  clearColor,
-  debugMode = 'none',
-  activeSeqs,
-}: UseViewportRenderStrategyOptions) {
-  const strategyRef = useRef<IPreviewRenderStrategy | null>(null);
-  const [isReady, setIsReady] = useState(false);
-  const [assetTick, setAssetTick] = useState(0);
-
-  // Initialize strategy singleton instance
-  if (!strategyRef.current) {
-    strategyRef.current = createPreviewRenderStrategy();
-  }
+export function useViewportRenderStrategy(options: UseViewportRenderStrategyOptions) {
+  let strategy: IPreviewRenderStrategy | null = createPreviewRenderStrategy();
+  const [isReady, setIsReady] = createSignal(false);
+  const [assetTick, setAssetTick] = createSignal(0);
 
   // Subscribe to AssetTextureCache readiness
-  useEffect(() => {
-    return AssetTextureCache.getInstance().subscribe(() => {
-      setAssetTick((t) => t + 1);
-    });
-  }, []);
+  const unsubTexture = AssetTextureCache.getInstance().subscribe(() => {
+    setAssetTick((t) => t + 1);
+  });
+  onCleanup(unsubTexture);
 
   // Strategy canvas mount & timeline configuration lifecycle
-  useEffect(() => {
-    if (!timeline) return;
+  createEffect(() => {
+    const timeline = options.timeline;
+    if (!timeline || !strategy) return;
 
-    const baseCanvas = canvasRef.current;
-    const overlayCanvas = overlayCanvasRef.current;
-    const strategy = strategyRef.current;
-    if (!strategy) return;
+    const baseCanvas = resolveCanvas(options.canvasRef);
+    const overlayCanvas = resolveCanvas(options.overlayCanvasRef);
 
     if (baseCanvas && strategy.id === 'main-thread') {
-      baseCanvas.width = width;
-      baseCanvas.height = height;
+      baseCanvas.width = options.width;
+      baseCanvas.height = options.height;
     }
     if (overlayCanvas) {
-      overlayCanvas.width = timelineWidth || width;
-      overlayCanvas.height = timelineHeight || height;
+      // Downscale overlay canvas backing store to match active viewport virtual resolution (e.g. 960x540)
+      if (overlayCanvas.width !== options.width || overlayCanvas.height !== options.height) {
+        overlayCanvas.width = options.width;
+        overlayCanvas.height = options.height;
+      }
     }
 
-    const targetTimeline = withTargetCanvasSize(timeline, width, height);
+    const targetTimeline = withTargetCanvasSize(timeline, options.width, options.height);
 
-    strategy.resize(width, height);
-    strategy.updateTimeline(targetTimeline, totalFrames, fps, assetsMap);
+    strategy.resize(options.width, options.height);
+    strategy.updateTimeline(targetTimeline, options.totalFrames, options.fps, options.assetsMap);
 
     if (baseCanvas && !strategy.isReady) {
       const initialized = strategy.init(baseCanvas);
@@ -95,90 +82,111 @@ export function useViewportRenderStrategy({
       }
     }
 
-    PreviewWorkerCoordinator.getInstance().preflightTimeline(targetTimeline, {
-      prioritizedFrame: currentFrame,
-    });
+    // Run preflight only when the project timeline structure changes,
+    // avoiding aggressive background tasks on every single playhead tick.
+    const lastPreflightTimeline = (useViewportRenderStrategy as any)._lastPreflight;
+    if (lastPreflightTimeline !== targetTimeline) {
+      (useViewportRenderStrategy as any)._lastPreflight = targetTimeline;
+      const initialFrame = untrack(() => options.currentFrame);
+      PreviewWorkerCoordinator.getInstance().preflightTimeline(targetTimeline, {
+        prioritizedFrame: initialFrame,
+      });
+    }
+  });
 
-    const unsubWarmed = PreviewWorkerCoordinator.getInstance().onModifierWarmed(() => {
-      setAssetTick((t) => t + 1);
-      strategyRef.current?.renderFrame(currentFrame);
-    });
-
-    return () => {
-      unsubWarmed();
-    };
-  }, [timeline, assetsMap, width, height, fps, totalFrames]);
+  const unsubWarmed = PreviewWorkerCoordinator.getInstance().onModifierWarmed(() => {
+    setAssetTick((t) => t + 1);
+    if (!options.isPlaying) {
+      strategy?.renderFrame(untrack(() => options.currentFrame));
+    }
+  });
+  onCleanup(unsubWarmed);
 
   // Teardown strategy on unmount
-  useEffect(() => {
-    return () => {
-      strategyRef.current?.dispose();
-      strategyRef.current = null;
-    };
-  }, []);
+  onCleanup(() => {
+    strategy?.dispose();
+    strategy = null;
+  });
 
   // Frame render pass
-  useEffect(() => {
-    const strategy = strategyRef.current;
+  createEffect(() => {
     if (!strategy) return;
 
-    if (isPlaying) {
+    // Depend on reactive ticks/dimensions and readiness
+    assetTick();
+    isReady();
+    const frame = options.currentFrame;
+    const playing = options.isPlaying;
+    const fps = options.fps;
+    const clearColor = options.clearColor;
+    const debugMode = options.debugMode || 'none';
+    const activeSeqs = options.activeSeqs;
+    const assetsMap = options.assetsMap;
+
+    if (!strategy.isReady) return;
+
+    if (playing) {
       // During active playback, frame rendering is driven exclusively by high-frequency playhead ticks.
-      // Do not dispatch stale async frame render calls from React reconciliation.
       return;
     }
 
     const renderOptions: WorkerRenderOptions = {
-      lod: isPlaying ? 0.5 : 1.0,
-      isScrubbing: !isPlaying,
-      isPlaying,
+      lod: playing ? 0.5 : 1.0,
+      isScrubbing: !playing,
+      isPlaying: playing,
       clearColor,
       debugMode,
     };
 
     strategy
-      .syncTextures(activeSeqs, assetsMap, currentFrame, fps)
+      .syncTextures(activeSeqs, assetsMap, frame, fps)
       .then(() => {
-        strategy.renderFrame(currentFrame, renderOptions);
+        strategy?.renderFrame(frame, renderOptions);
       })
       .catch(() => {
-        strategy.renderFrame(currentFrame, renderOptions);
+        strategy?.renderFrame(frame, renderOptions);
       });
-  }, [currentFrame, fps, isPlaying, clearColor, debugMode, activeSeqs, assetsMap, assetTick, width, height]);
+  });
 
-  // High-frequency subscription for smooth 60fps playhead animation without React rerenders
-  const lastDispatchedFrameRef = useRef(-1);
-  useEffect(() => {
-    return PlayheadController.getInstance().subscribeHighFrequency((frame, playing) => {
-      const strategy = strategyRef.current;
-      if (strategy && strategy.isReady) {
-        if (playing && frame === lastDispatchedFrameRef.current) return;
-        lastDispatchedFrameRef.current = playing ? frame : -1;
-        strategy.renderFrame(frame, {
-          lod: playing ? 0.5 : 1.0,
-          isScrubbing: !playing,
-          isPlaying: playing,
-        });
-      }
-    });
-  }, []);
+  // High-frequency subscription for smooth 60fps playhead animation without Solid rerenders
+  let lastDispatchedFrame = -1;
+  const unsubPlayhead = PlayheadController.getInstance().subscribeHighFrequency((frame, playing) => {
+    if (strategy && strategy.isReady) {
+      if (playing && frame === lastDispatchedFrame) return;
+      lastDispatchedFrame = playing ? frame : -1;
+      strategy.renderFrame(frame, {
+        lod: playing ? 0.5 : 1.0,
+        isScrubbing: !playing,
+        isPlaying: playing,
+      });
+    }
+  });
+  onCleanup(unsubPlayhead);
 
   // Subscribe to real hardware frame render completions to feed live telemetry
-  useEffect(() => {
-    const strategy = strategyRef.current;
-    if (!strategy?.onFrameRendered) return;
-    return strategy.onFrameRendered((frame, latencyMs) => {
+  createEffect(() => {
+    if (!isReady() || !strategy?.onFrameRendered) return;
+    const unsub = strategy.onFrameRendered((frame, latencyMs) => {
       PlayheadController.getInstance().recordFrameRendered(frame, latencyMs);
     });
-  }, [isReady]);
+    onCleanup(unsub);
+  });
 
   return {
-    strategy: strategyRef.current,
-    previewEngine: strategyRef.current?.getEngine?.() ?? null,
-    isReady,
-    assetTick,
-    renderFrame: (frame: number, options?: WorkerRenderOptions) => {
-      strategyRef.current?.renderFrame(frame, options);
+    strategy,
+    get previewEngine() {
+      return strategy?.getEngine?.() ?? null;
+    },
+    get isReady() {
+      return isReady();
+    },
+    isReadySignal: isReady,
+    get assetTick() {
+      return assetTick();
+    },
+    assetTickSignal: assetTick,
+    renderFrame: (frame: number, renderOpts?: WorkerRenderOptions) => {
+      strategy?.renderFrame(frame, renderOpts);
     },
   };
 }

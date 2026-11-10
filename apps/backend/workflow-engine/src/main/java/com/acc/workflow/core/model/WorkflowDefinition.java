@@ -15,9 +15,33 @@ public record WorkflowDefinition(
     String name,
     String description,
     Integer timeoutSeconds,
+    Map<String, Object> inputSchema,
+    Map<String, Object> outputSchema,
     List<TaskDefinition> tasks,
     Map<String, Object> layoutMetadata
 ) {
+    public static Map<String, Object> defaultDraft7Schema() {
+        return Map.of(
+            "$schema", "http://json-schema.org/draft-07/schema#",
+            "type", "object",
+            "properties", Collections.emptyMap(),
+            "required", Collections.emptyList(),
+            "additionalProperties", false
+        );
+    }
+
+    public WorkflowDefinition(
+        String workflowKey,
+        Integer version,
+        String name,
+        String description,
+        Integer timeoutSeconds,
+        List<TaskDefinition> tasks,
+        Map<String, Object> layoutMetadata
+    ) {
+        this(workflowKey, version, name, description, timeoutSeconds, defaultDraft7Schema(), defaultDraft7Schema(), tasks, layoutMetadata);
+    }
+
     public WorkflowDefinition {
         if (workflowKey == null || workflowKey.isBlank()) {
             throw new IllegalArgumentException("workflowKey is required");
@@ -30,6 +54,16 @@ public record WorkflowDefinition(
         }
         if (timeoutSeconds == null || timeoutSeconds <= 0) {
             timeoutSeconds = 3600;
+        }
+        if (inputSchema == null || inputSchema.isEmpty()) {
+            inputSchema = defaultDraft7Schema();
+        } else {
+            inputSchema = Collections.unmodifiableMap(inputSchema);
+        }
+        if (outputSchema == null || outputSchema.isEmpty()) {
+            outputSchema = defaultDraft7Schema();
+        } else {
+            outputSchema = Collections.unmodifiableMap(outputSchema);
         }
         tasks = tasks != null ? Collections.unmodifiableList(tasks) : Collections.emptyList();
         layoutMetadata = layoutMetadata != null ? Collections.unmodifiableMap(layoutMetadata) : Collections.emptyMap();
@@ -57,6 +91,8 @@ public record WorkflowDefinition(
             name != null && !name.isBlank() ? name : workflowKey,
             description,
             3600,
+            defaultDraft7Schema(),
+            defaultDraft7Schema(),
             List.of(startTask, endTask),
             layout
         );
@@ -72,6 +108,8 @@ public record WorkflowDefinition(
         private String name;
         private String description;
         private int timeoutSeconds = 3600;
+        private Map<String, Object> inputSchema = defaultDraft7Schema();
+        private Map<String, Object> outputSchema = defaultDraft7Schema();
         private List<TaskDefinition> tasks = Collections.emptyList();
         private Map<String, Object> layoutMetadata = Collections.emptyMap();
 
@@ -99,6 +137,16 @@ public record WorkflowDefinition(
             return this;
         }
 
+        public Builder inputSchema(Map<String, Object> inputSchema) {
+            this.inputSchema = inputSchema != null ? inputSchema : defaultDraft7Schema();
+            return this;
+        }
+
+        public Builder outputSchema(Map<String, Object> outputSchema) {
+            this.outputSchema = outputSchema != null ? outputSchema : defaultDraft7Schema();
+            return this;
+        }
+
         public Builder tasks(List<TaskDefinition> tasks) {
             this.tasks = tasks;
             return this;
@@ -120,7 +168,7 @@ public record WorkflowDefinition(
         }
 
         public WorkflowDefinition build() {
-            return new WorkflowDefinition(workflowKey, version, name, description, timeoutSeconds, tasks, layoutMetadata);
+            return new WorkflowDefinition(workflowKey, version, name, description, timeoutSeconds, inputSchema, outputSchema, tasks, layoutMetadata);
         }
     }
 }

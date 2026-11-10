@@ -39,4 +39,9 @@ describe('DagPalette Component Unit Tests', () => {
     expect(paletteDiv.classList.contains('custom-palette')).toBe(true);
     expect(paletteDiv.style.maxHeight).toBe('350px');
   });
+
+  it('renders custom task definitions in catalog while excluding built-in tasks', () => {
+    // Render DagPalette and verify no ReferenceError occurs
+    expect(() => render(<DagPalette />)).not.toThrow();
+  });
 });

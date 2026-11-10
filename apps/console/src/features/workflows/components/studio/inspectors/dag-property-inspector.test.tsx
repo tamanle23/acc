@@ -111,7 +111,7 @@ describe('DagPropertyInspector Drawer', () => {
 
     expect(screen.getByText('Workflow Start')).toBeDefined();
     expect(screen.getByText('Pure Conventional Start Node')).toBeDefined();
-    expect(screen.getByText('Workflow Input Parameters & Default Schema')).toBeDefined();
+    expect(screen.getByText('Trigger Input Schema (Draft 7)')).toBeDefined();
     // Worker and Policy tabs should not exist on pure start node
     expect(screen.queryByText('Bind to Registered SIMPLE Worker')).toBeNull();
     expect(screen.queryByText('Policies')).toBeNull();
@@ -152,5 +152,210 @@ describe('DagPropertyInspector Drawer', () => {
     // Worker and Policy tabs should not exist on pure end node
     expect(screen.queryByText('Bind to Registered SIMPLE Worker')).toBeNull();
     expect(screen.queryByText('Policies')).toBeNull();
+  });
+
+  it('runs isolated sandbox step test in Data tab payloads view', () => {
+    const nodeData: DagNodeData = {
+      taskReferenceName: 'sendConfirmation',
+      taskType: 'SIMPLE',
+      label: 'Send Confirmation',
+      inputParameters: {
+        orderId: '${workflow.input.orderId}',
+      },
+      mockOutputPayload: {
+        sent: true,
+        messageId: 'msg-9921',
+      },
+    };
+
+    renderWithClient(
+      <DagPropertyInspector
+        nodeId="node-send"
+        nodeData={nodeData}
+        open={true}
+        onOpenChange={vi.fn()}
+        onUpdateNodeData={vi.fn()}
+        availableTaskRefs={['start', 'sendConfirmation']}
+        defaultTab="params"
+      />
+    );
+
+    // Switch to Payloads sub-tab
+    fireEvent.click(screen.getByTestId('dag-inspector-tab-payloads'));
+
+    const testStepBtn = screen.getByTestId('property-inspector-test-step-btn');
+    expect(testStepBtn).toBeDefined();
+
+    fireEvent.click(testStepBtn);
+
+    const resultBox = screen.getByTestId('property-inspector-step-test-result');
+    expect(resultBox).toBeDefined();
+    expect(resultBox.textContent).toContain('COMPLETED');
+    expect(resultBox.textContent).toContain('msg-9921');
+  });
+
+  it('infers Draft 7 input schema on Start Node when clicking infer button', () => {
+    const handleUpdate = vi.fn();
+    const startNodeData: DagNodeData = {
+      taskReferenceName: 'workflow_start',
+      taskType: 'START_WORKFLOW',
+      label: 'Workflow Start',
+      isStartNode: true,
+      inputParameters: {
+        orderId: 'ORD-101',
+        amount: 250,
+      },
+    };
+
+    renderWithClient(
+      <DagPropertyInspector
+        nodeId="start-node"
+        nodeData={startNodeData}
+        open={true}
+        onOpenChange={vi.fn()}
+        onUpdateNodeData={handleUpdate}
+        availableTaskRefs={['workflow_start']}
+      />
+    );
+
+    const inferBtn = screen.getByTestId('start-infer-schema-btn');
+    expect(inferBtn).toBeDefined();
+    fireEvent.click(inferBtn);
+
+    expect(handleUpdate).toHaveBeenCalledWith(
+      'start-node',
+      expect.objectContaining({
+        declaredOutputSchema: expect.objectContaining({
+          type: 'object',
+          properties: expect.objectContaining({
+            orderId: { type: 'string' },
+            amount: { type: 'integer' },
+          }),
+          required: ['orderId', 'amount'],
+          additionalProperties: false,
+        }),
+      })
+    );
+  });
+
+  it('infers Draft 7 output schema on End Node when clicking infer button', () => {
+    const handleUpdate = vi.fn();
+    const endNodeData: DagNodeData = {
+      taskReferenceName: 'workflow_end',
+      taskType: 'END_WORKFLOW',
+      label: 'Workflow End',
+      isEndNode: true,
+      inputParameters: {
+        status: '${task.output.status}',
+        total: 100,
+      },
+    };
+
+    renderWithClient(
+      <DagPropertyInspector
+        nodeId="end-node"
+        nodeData={endNodeData}
+        open={true}
+        onOpenChange={vi.fn()}
+        onUpdateNodeData={handleUpdate}
+        availableTaskRefs={['task', 'workflow_end']}
+      />
+    );
+
+    const inferBtn = screen.getByTestId('end-infer-schema-btn');
+    expect(inferBtn).toBeDefined();
+    fireEvent.click(inferBtn);
+
+    expect(handleUpdate).toHaveBeenCalledWith(
+      'end-node',
+      expect.objectContaining({
+        declaredOutputSchema: expect.objectContaining({
+          type: 'object',
+          properties: expect.objectContaining({
+            status: { type: 'string' },
+            total: { type: 'integer' },
+          }),
+          required: ['status', 'total'],
+          additionalProperties: false,
+        }),
+      })
+    );
+  });
+
+  it('renders Task Definition banner and upgrade trigger when taskDefName is present', () => {
+    const handleUpgrade = vi.fn();
+    const customTaskData: DagNodeData = {
+      taskReferenceName: 'validateOrderTask',
+      taskType: 'SIMPLE',
+      taskDefName: 'validateOrder',
+      taskDefVersion: 1,
+      latestTaskDefVersion: 2,
+      onUpgradeTaskDef: handleUpgrade,
+      label: 'Validate Order',
+    };
+
+    renderWithClient(
+      <DagPropertyInspector
+        nodeId="node-validate"
+        nodeData={customTaskData}
+        open={true}
+        onOpenChange={vi.fn()}
+        onUpdateNodeData={vi.fn()}
+        availableTaskRefs={['validateOrderTask']}
+      />
+    );
+
+    expect(screen.getByTestId('task-def-banner')).toBeDefined();
+    expect(screen.getByText('Task Definition: validateOrder')).toBeDefined();
+    expect(screen.getByText('v1')).toBeDefined();
+    expect(screen.getByText(/Newer version/)).toBeDefined();
+
+    const upgradeBtn = screen.getByTestId('upgrade-task-def-btn');
+    fireEvent.click(upgradeBtn);
+    expect(handleUpgrade).toHaveBeenCalledWith('validateOrderTask');
+  });
+
+  it('renders dynamic contract parameter inputs and updates node input parameters', () => {
+    const handleUpdate = vi.fn();
+    const customTaskData: DagNodeData = {
+      taskReferenceName: 'validateOrderTask',
+      taskType: 'SIMPLE',
+      taskDefName: 'validateOrder',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          orderId: { type: 'string', description: 'Unique order identifier' },
+          customerId: { type: 'string', description: 'Target customer ID' },
+        },
+        required: ['orderId'],
+      },
+      inputParameters: {},
+    };
+
+    renderWithClient(
+      <DagPropertyInspector
+        nodeId="node-validate"
+        nodeData={customTaskData}
+        open={true}
+        defaultTab="params"
+        onOpenChange={vi.fn()}
+        onUpdateNodeData={handleUpdate}
+        availableTaskRefs={['validateOrderTask']}
+      />
+    );
+
+    expect(screen.getByText('Contract Parameters Form')).toBeDefined();
+    const orderInput = screen.getByTestId('schema-param-input-orderId');
+    expect(orderInput).toBeDefined();
+
+    fireEvent.change(orderInput, { target: { value: 'ORD-999' } });
+    expect(handleUpdate).toHaveBeenCalledWith(
+      'node-validate',
+      expect.objectContaining({
+        inputParameters: expect.objectContaining({
+          orderId: 'ORD-999',
+        }),
+      })
+    );
   });
 });

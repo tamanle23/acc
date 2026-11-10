@@ -22,13 +22,13 @@ export interface PriorityEvaluationContext {
 /**
  * WebCodecsDecoderPool:
  * Centralized hardware video decoder lease pool for WebCodecs.
- * Enforces a strict ceiling (default <= 8) on concurrent hardware VideoDecoder instances
+ * Enforces a strict ceiling (default <= 4) on concurrent hardware VideoDecoder instances
  * to prevent browser GPU driver quota crashes (QuotaExceededError) across multi-track timelines.
  * Implements playhead proximity priority scoring, idle eviction, and automatic quota recovery.
  */
 export class WebCodecsDecoderPool {
   private static instance: WebCodecsDecoderPool | null = null;
-  private maxHardwareDecoders: number = 8;
+  private maxHardwareDecoders: number = 4;
   private pool = new Map<string, DecoderPoolItem>();
 
   public static getInstance(): WebCodecsDecoderPool {

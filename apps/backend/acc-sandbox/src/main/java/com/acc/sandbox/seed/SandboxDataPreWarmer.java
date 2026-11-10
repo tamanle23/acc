@@ -29,19 +29,22 @@ public class SandboxDataPreWarmer implements ApplicationListener<ApplicationRead
     private final ObjectProvider<TenantProvisioningService> tenantProvisioningServiceProvider;
     private final ObjectProvider<CmsDataScaffoldingGenerator> cmsDataScaffoldingGeneratorProvider;
     private final ObjectProvider<SandboxUserSeeder> userSeederProvider;
+    private final ObjectProvider<SandboxWorkflowSeeder> workflowSeederProvider;
 
     public SandboxDataPreWarmer(
             SandboxProperties properties,
             ObjectProvider<TenantBillingRepository> billingRepositoryProvider,
             ObjectProvider<TenantProvisioningService> tenantProvisioningServiceProvider,
             ObjectProvider<CmsDataScaffoldingGenerator> cmsDataScaffoldingGeneratorProvider,
-            ObjectProvider<SandboxUserSeeder> userSeederProvider
+            ObjectProvider<SandboxUserSeeder> userSeederProvider,
+            ObjectProvider<SandboxWorkflowSeeder> workflowSeederProvider
     ) {
         this.properties = properties;
         this.billingRepositoryProvider = billingRepositoryProvider;
         this.tenantProvisioningServiceProvider = tenantProvisioningServiceProvider;
         this.cmsDataScaffoldingGeneratorProvider = cmsDataScaffoldingGeneratorProvider;
         this.userSeederProvider = userSeederProvider;
+        this.workflowSeederProvider = workflowSeederProvider;
     }
 
     @Override
@@ -108,6 +111,16 @@ public class SandboxDataPreWarmer implements ApplicationListener<ApplicationRead
                 cmsGenerator.scaffoldCmsDataIfMissing();
             } catch (Exception e) {
                 log.error("[SANDBOX-SEED] Failed to scaffold high-volume CMS dataset: {}", e.getMessage(), e);
+            }
+        }
+
+        // 4. Pre-warm Sample Workflow Definitions
+        SandboxWorkflowSeeder workflowSeeder = workflowSeederProvider.getIfAvailable();
+        if (workflowSeeder != null) {
+            try {
+                workflowSeeder.seedSampleWorkflowsIfMissing();
+            } catch (Exception e) {
+                log.warn("[SANDBOX-SEED] Could not pre-warm demonstration workflow definitions: {}", e.getMessage(), e);
             }
         }
 

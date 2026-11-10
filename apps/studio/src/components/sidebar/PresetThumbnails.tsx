@@ -1,4 +1,4 @@
-import React from 'react';
+import { createMemo, For, Show } from 'solid-js';
 import {
   Type,
   Square,
@@ -14,40 +14,40 @@ import {
   Film,
   Radio,
   Play,
-} from 'lucide-react';
+} from 'lucide-solid';
 import type { StagingPreset } from '../../lib/library/stagingPresets';
 
 export function renderPresetIcon(iconName: string) {
   switch (iconName) {
     case 'Type':
-      return <Type className="w-3.5 h-3.5 text-accent-theme" />;
+      return <Type class="w-3.5 h-3.5 text-accent-theme" />;
     case 'Square':
-      return <Square className="w-3.5 h-3.5 text-accent-theme" />;
+      return <Square class="w-3.5 h-3.5 text-accent-theme" />;
     case 'Circle':
-      return <Circle className="w-3.5 h-3.5 text-accent-theme" />;
+      return <Circle class="w-3.5 h-3.5 text-accent-theme" />;
     case 'ArrowUpRight':
-      return <ArrowUpRight className="w-3.5 h-3.5 text-rose-500" />;
+      return <ArrowUpRight class="w-3.5 h-3.5 text-rose-500" />;
     case 'Eye':
-      return <Eye className="w-3.5 h-3.5 text-sky-400" />;
+      return <Eye class="w-3.5 h-3.5 text-sky-400" />;
     case 'Sun':
-      return <Sun className="w-3.5 h-3.5 text-amber-400" />;
+      return <Sun class="w-3.5 h-3.5 text-amber-400" />;
     case 'Zap':
-      return <Zap className="w-3.5 h-3.5 text-amber-400" />;
+      return <Zap class="w-3.5 h-3.5 text-amber-400" />;
     case 'Volume2':
-      return <Volume2 className="w-3.5 h-3.5 text-rose-400" />;
+      return <Volume2 class="w-3.5 h-3.5 text-rose-400" />;
     case 'Music':
-      return <Music className="w-3.5 h-3.5 text-emerald-400" />;
+      return <Music class="w-3.5 h-3.5 text-emerald-400" />;
     case 'Video':
-      return <Video className="w-3.5 h-3.5 text-blue-500" />;
+      return <Video class="w-3.5 h-3.5 text-blue-500" />;
     case 'Film':
-      return <Film className="w-3.5 h-3.5 text-accent-theme" />;
+      return <Film class="w-3.5 h-3.5 text-accent-theme" />;
     case 'Radio':
-      return <Radio className="w-3.5 h-3.5 text-amber-500" />;
+      return <Radio class="w-3.5 h-3.5 text-amber-500" />;
     case 'Play':
-      return <Play className="w-3.5 h-3.5 text-accent-theme" />;
+      return <Play class="w-3.5 h-3.5 text-accent-theme" />;
     case 'Sparkles':
     default:
-      return <Sparkles className="w-3.5 h-3.5 text-accent-theme" />;
+      return <Sparkles class="w-3.5 h-3.5 text-accent-theme" />;
   }
 }
 
@@ -69,36 +69,37 @@ interface ShapeModifierParams {
   };
 }
 
-export function ShapePresetThumbnail({ preset }: { preset: StagingPreset }) {
-  const seq = React.useMemo(() => preset.createSequence({ startFrame: 0 }), [preset]);
-  const shapeMod = seq.modifiers?.find((m) => m.type === 'shape/draw' || m.type === 'shape/vector');
-  const params = (shapeMod?.params || {}) as ShapeModifierParams;
-  const geom: string = params.geometry || params.shapeType || 'rect';
+export function ShapePresetThumbnail(props: { preset: StagingPreset }) {
+  const seq = createMemo(() => props.preset.createSequence({ startFrame: 0 }));
+  const shapeMod = () => seq().modifiers?.find((m) => m.type === 'shape/draw' || m.type === 'shape/vector');
+  const params = () => ((shapeMod()?.params || {}) as ShapeModifierParams);
+  const geom = () => params().geometry || params().shapeType || 'rect';
 
-  const strokeColor = params.strokeColor || '#818cf8';
-  const fillColor = params.fillColor || (params.gradient ? undefined : 'rgba(99, 102, 241, 0.2)');
-  const strokeWidth = params.strokeWidth ? Math.min(Math.max(params.strokeWidth, 1.5), 3) : 2;
-  const strokeDasharray = params.strokeDash
-    ? params.strokeDash.join(' ')
-    : params.isDashed
-      ? '4 3'
-      : undefined;
+  const strokeColor = () => params().strokeColor || '#818cf8';
+  const fillColor = () => params().fillColor || (params().gradient ? undefined : 'rgba(99, 102, 241, 0.2)');
+  const strokeWidth = () => (params().strokeWidth ? Math.min(Math.max(params().strokeWidth!, 1.5), 3) : 2);
+  const strokeDasharray = () =>
+    params().strokeDash
+      ? params().strokeDash!.join(' ')
+      : params().isDashed
+        ? '4 3'
+        : undefined;
 
-  const gradientId = `grad-${preset.id}`;
-  const gradient = params.gradient;
+  const gradientId = () => `grad-${props.preset.id}`;
+  const gradient = () => params().gradient;
 
   const renderVector = () => {
-    switch (geom) {
+    switch (geom()) {
       case 'circle':
         return (
           <circle
             cx="100"
             cy="40"
             r="28"
-            fill={gradient ? `url(#${gradientId})` : fillColor}
-            stroke={strokeColor}
-            strokeWidth={strokeWidth}
-            strokeDasharray={strokeDasharray}
+            fill={gradient() ? `url(#${gradientId()})` : fillColor()}
+            stroke={strokeColor()}
+            stroke-width={strokeWidth()}
+            stroke-dasharray={strokeDasharray()}
           />
         );
 
@@ -110,10 +111,10 @@ export function ShapePresetThumbnail({ preset }: { preset: StagingPreset }) {
             width="130"
             height="36"
             rx="18"
-            fill={gradient ? `url(#${gradientId})` : fillColor}
-            stroke={strokeColor}
-            strokeWidth={strokeWidth}
-            strokeDasharray={strokeDasharray}
+            fill={gradient() ? `url(#${gradientId()})` : fillColor()}
+            stroke={strokeColor()}
+            stroke-width={strokeWidth()}
+            stroke-dasharray={strokeDasharray()}
           />
         );
 
@@ -125,11 +126,11 @@ export function ShapePresetThumbnail({ preset }: { preset: StagingPreset }) {
             y="12"
             width="140"
             height="56"
-            rx={Math.min(params.cornerRadius ?? params.radius ?? 8, 16)}
-            fill={gradient ? `url(#${gradientId})` : fillColor}
-            stroke={strokeColor}
-            strokeWidth={strokeWidth}
-            strokeDasharray={strokeDasharray}
+            rx={Math.min(params().cornerRadius ?? params().radius ?? 8, 16)}
+            fill={gradient() ? `url(#${gradientId()})` : fillColor()}
+            stroke={strokeColor()}
+            stroke-width={strokeWidth()}
+            stroke-dasharray={strokeDasharray()}
           />
         );
 
@@ -137,16 +138,16 @@ export function ShapePresetThumbnail({ preset }: { preset: StagingPreset }) {
         return (
           <polygon
             points="100,14 145,66 55,66"
-            fill={gradient ? `url(#${gradientId})` : fillColor}
-            stroke={strokeColor}
-            strokeWidth={strokeWidth}
+            fill={gradient() ? `url(#${gradientId()})` : fillColor()}
+            stroke={strokeColor()}
+            stroke-width={strokeWidth()}
           />
         );
 
       case 'star': {
-        const points = params.points ?? 5;
+        const points = params().points ?? 5;
         const outerR = 26;
-        const innerR = outerR * (params.innerRadiusRatio ?? 0.45);
+        const innerR = outerR * (params().innerRadiusRatio ?? 0.45);
         const pts: string[] = [];
         for (let i = 0; i < points * 2; i++) {
           const r = i % 2 === 0 ? outerR : innerR;
@@ -158,9 +159,9 @@ export function ShapePresetThumbnail({ preset }: { preset: StagingPreset }) {
         return (
           <polygon
             points={pts.join(' ')}
-            fill={gradient ? `url(#${gradientId})` : fillColor}
-            stroke={strokeColor}
-            strokeWidth={strokeWidth}
+            fill={gradient() ? `url(#${gradientId()})` : fillColor()}
+            stroke={strokeColor()}
+            stroke-width={strokeWidth()}
           />
         );
       }
@@ -177,9 +178,9 @@ export function ShapePresetThumbnail({ preset }: { preset: StagingPreset }) {
         return (
           <polygon
             points={pts.join(' ')}
-            fill={gradient ? `url(#${gradientId})` : fillColor}
-            stroke={strokeColor}
-            strokeWidth={strokeWidth}
+            fill={gradient() ? `url(#${gradientId()})` : fillColor()}
+            stroke={strokeColor()}
+            stroke-width={strokeWidth()}
           />
         );
       }
@@ -188,9 +189,9 @@ export function ShapePresetThumbnail({ preset }: { preset: StagingPreset }) {
         return (
           <path
             d="M93,16 L107,16 L107,33 L124,33 L124,47 L107,47 L107,64 L93,64 L93,47 L76,47 L76,33 L93,33 Z"
-            fill={gradient ? `url(#${gradientId})` : fillColor}
-            stroke={strokeColor}
-            strokeWidth={strokeWidth}
+            fill={gradient() ? `url(#${gradientId()})` : fillColor()}
+            stroke={strokeColor()}
+            stroke-width={strokeWidth()}
           />
         );
 
@@ -203,8 +204,8 @@ export function ShapePresetThumbnail({ preset }: { preset: StagingPreset }) {
             height="56"
             rx="6"
             fill="none"
-            stroke={strokeColor}
-            strokeWidth={Math.max(strokeWidth, 3)}
+            stroke={strokeColor()}
+            stroke-width={Math.max(strokeWidth(), 3)}
           />
         );
 
@@ -213,10 +214,10 @@ export function ShapePresetThumbnail({ preset }: { preset: StagingPreset }) {
           <path
             d="M80,55 L115,25 M115,25 L115,45 M115,25 L95,25"
             fill="none"
-            stroke={strokeColor}
-            strokeWidth={3}
-            strokeLinecap="round"
-            strokeLinejoin="round"
+            stroke={strokeColor()}
+            stroke-width="3"
+            stroke-linecap="round"
+            stroke-linejoin="round"
           />
         );
 
@@ -229,49 +230,54 @@ export function ShapePresetThumbnail({ preset }: { preset: StagingPreset }) {
             width="140"
             height="52"
             rx="4"
-            fill={gradient ? `url(#${gradientId})` : fillColor}
-            stroke={strokeColor}
-            strokeWidth={strokeWidth}
-            strokeDasharray={strokeDasharray}
+            fill={gradient() ? `url(#${gradientId()})` : fillColor()}
+            stroke={strokeColor()}
+            stroke-width={strokeWidth()}
+            stroke-dasharray={strokeDasharray()}
           />
         );
     }
   };
 
   return (
-    <div className="relative w-full h-20 mb-2 rounded-lg overflow-hidden border border-border/40 bg-card/60 pointer-events-none group-hover:border-accent-theme/50 group-hover:bg-card/80 transition-all flex items-center justify-center">
-      <div className="absolute inset-0 opacity-20 bg-[radial-gradient(var(--accent-primary)_1px,transparent_1px)] [background-size:12px_12px]" />
-      <svg viewBox="0 0 200 80" className="w-full h-full relative z-10 drop-shadow-sm">
-        {gradient && (
+    <div class="relative w-full h-20 mb-2 rounded-lg overflow-hidden border border-border/40 bg-card/60 pointer-events-none group-hover:border-accent-theme/50 group-hover:bg-card/80 transition-all flex items-center justify-center">
+      <div class="absolute inset-0 opacity-20 bg-[radial-gradient(var(--accent-primary)_1px,transparent_1px)] [background-size:12px_12px]" />
+      <svg viewBox="0 0 200 80" class="w-full h-full relative z-10 drop-shadow-sm">
+        <Show when={gradient()}>
           <defs>
-            {gradient.type === 'radial' ? (
-              <radialGradient id={gradientId} cx="50%" cy="50%" r="50%">
-                {gradient.colors.map((c: string, idx: number) => (
-                  <stop
-                    key={idx}
-                    offset={`${(idx / (gradient.colors.length - 1)) * 100}%`}
-                    stopColor={c}
-                  />
-                ))}
+            <Show
+              when={gradient()?.type === 'radial'}
+              fallback={
+                <linearGradient id={gradientId()} x1="0%" y1="0%" x2="100%" y2="100%">
+                  <For each={gradient()?.colors || []}>
+                    {(c, idx) => (
+                      <stop
+                        offset={`${(idx() / (gradient()!.colors.length - 1)) * 100}%`}
+                        stop-color={c}
+                      />
+                    )}
+                  </For>
+                </linearGradient>
+              }
+            >
+              <radialGradient id={gradientId()} cx="50%" cy="50%" r="50%">
+                <For each={gradient()?.colors || []}>
+                  {(c, idx) => (
+                    <stop
+                      offset={`${(idx() / (gradient()!.colors.length - 1)) * 100}%`}
+                      stop-color={c}
+                    />
+                  )}
+                </For>
               </radialGradient>
-            ) : (
-              <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
-                {gradient.colors.map((c: string, idx: number) => (
-                  <stop
-                    key={idx}
-                    offset={`${(idx / (gradient.colors.length - 1)) * 100}%`}
-                    stopColor={c}
-                  />
-                ))}
-              </linearGradient>
-            )}
+            </Show>
           </defs>
-        )}
+        </Show>
         {renderVector()}
       </svg>
-      <div className="absolute bottom-1 right-1.5 z-20">
-        <span className="text-[8px] font-mono uppercase tracking-wider text-muted-foreground/80 bg-background/70 px-1 rounded border border-border/30">
-          {geom.replace('_', ' ')}
+      <div class="absolute bottom-1 right-1.5 z-20">
+        <span class="text-[8px] font-mono uppercase tracking-wider text-muted-foreground/80 bg-background/70 px-1 rounded border border-border/30">
+          {geom().replace('_', ' ')}
         </span>
       </div>
     </div>
@@ -291,61 +297,67 @@ interface TextStyleModifierParams {
   shadowBlur?: number;
 }
 
-export function TypographyPresetThumbnail({ preset }: { preset: StagingPreset }) {
-  const seq = React.useMemo(() => preset.createSequence({ startFrame: 0 }), [preset]);
-  const textMod = seq.modifiers?.find(
-    (m) => m.type === 'text/draw' || m.type === 'text/overlay' || m.type === 'timed_text/style' || m.type === 'text/style'
-  );
-  const params = (textMod?.params || {}) as TextStyleModifierParams & { text?: string };
+export function TypographyPresetThumbnail(props: { preset: StagingPreset }) {
+  const seq = createMemo(() => props.preset.createSequence({ startFrame: 0 }));
+  const textMod = () =>
+    seq().modifiers?.find(
+      (m) =>
+        (m.type as string) === 'text/draw' ||
+        (m.type as string) === 'text/overlay' ||
+        m.type === 'timed_text/style' ||
+        (m.type as string) === 'text/style'
+    );
+  const params = () => ((textMod()?.params || {}) as TextStyleModifierParams & { text?: string });
 
-  const cueText = params.text || seq.cues?.[0]?.text || preset.name;
-  const fontFamily = params.fontFamily || 'Inter, system-ui, sans-serif';
-  const fontWeight = params.fontWeight || 700;
-  const textColor = params.textColor || '#ffffff';
-  const strokeColor = params.strokeColor;
-  const strokeWidth = params.strokeWidth;
-  const glowColor = params.glowColor;
-  const glowBlur = params.glowBlur ?? 8;
-  const letterSpacing = params.letterSpacing ? `${params.letterSpacing}px` : 'normal';
+  const cueText = () => params().text || seq().cues?.[0]?.text || props.preset.name;
+  const fontFamily = () => params().fontFamily || 'Inter, system-ui, sans-serif';
+  const fontWeight = () => params().fontWeight || 700;
+  const textColor = () => params().textColor || '#ffffff';
+  const strokeColor = () => params().strokeColor;
+  const strokeWidth = () => params().strokeWidth;
+  const glowColor = () => params().glowColor;
+  const glowBlur = () => params().glowBlur ?? 8;
+  const letterSpacing = () => (params().letterSpacing ? `${params().letterSpacing}px` : 'normal');
 
-  const textShadowParts: string[] = [];
-  if (glowColor) {
-    textShadowParts.push(`0 0 ${glowBlur}px ${glowColor}`);
-    textShadowParts.push(`0 0 ${glowBlur * 2}px ${glowColor}`);
-  }
-  if (params.shadowColor) {
-    textShadowParts.push(`0 2px ${params.shadowBlur ?? 4}px ${params.shadowColor}`);
-  }
-  const textShadow =
-    textShadowParts.length > 0 ? textShadowParts.join(', ') : '0 2px 8px rgba(0,0,0,0.5)';
+  const textShadow = () => {
+    const textShadowParts: string[] = [];
+    if (glowColor()) {
+      textShadowParts.push(`0 0 ${glowBlur()}px ${glowColor()}`);
+      textShadowParts.push(`0 0 ${glowBlur() * 2}px ${glowColor()}`);
+    }
+    if (params().shadowColor) {
+      textShadowParts.push(`0 2px ${params().shadowBlur ?? 4}px ${params().shadowColor}`);
+    }
+    return textShadowParts.length > 0 ? textShadowParts.join(', ') : '0 2px 8px rgba(0,0,0,0.5)';
+  };
 
-  const webkitTextStroke =
-    strokeColor && strokeWidth ? `${strokeWidth}px ${strokeColor}` : undefined;
+  const webkitTextStroke = () =>
+    strokeColor() && strokeWidth() ? `${strokeWidth()}px ${strokeColor()}` : undefined;
 
   return (
-    <div className="relative w-full h-20 mb-2 rounded-lg overflow-hidden border border-border/40 bg-card/60 pointer-events-none group-hover:border-accent-theme/50 group-hover:bg-card/80 transition-all flex items-center justify-center p-2">
-      <div className="absolute inset-0 opacity-15 bg-[linear-gradient(to_right,var(--accent-primary)_1px,transparent_1px),linear-gradient(to_bottom,var(--accent-primary)_1px,transparent_1px)] bg-[size:16px_16px]" />
+    <div class="relative w-full h-20 mb-2 rounded-lg overflow-hidden border border-border/40 bg-card/60 pointer-events-none group-hover:border-accent-theme/50 group-hover:bg-card/80 transition-all flex items-center justify-center p-2">
+      <div class="absolute inset-0 opacity-15 bg-[linear-gradient(to_right,var(--accent-primary)_1px,transparent_1px),linear-gradient(to_bottom,var(--accent-primary)_1px,transparent_1px)] bg-[size:16px_16px]" />
 
-      <div className="relative z-10 text-center px-2 w-full flex flex-col items-center justify-center overflow-hidden">
+      <div class="relative z-10 text-center px-2 w-full flex flex-col items-center justify-center overflow-hidden">
         <span
-          className="truncate max-w-full leading-tight select-none font-bold"
+          class="truncate max-w-full leading-tight select-none font-bold"
           style={{
-            fontFamily,
-            fontWeight,
-            color: textColor,
-            textShadow,
-            WebkitTextStroke: webkitTextStroke,
-            letterSpacing,
-            fontSize: '15px',
+            "font-family": fontFamily(),
+            "font-weight": fontWeight(),
+            color: textColor(),
+            "text-shadow": textShadow(),
+            "-webkit-text-stroke": webkitTextStroke(),
+            "letter-spacing": letterSpacing(),
+            "font-size": '15px',
           }}
         >
-          {cueText}
+          {cueText()}
         </span>
       </div>
 
-      <div className="absolute bottom-1 right-1.5 z-20">
-        <span className="text-[8px] font-mono text-muted-foreground/80 bg-background/80 px-1 rounded border border-border/30">
-          {fontFamily.split(',')[0].replace(/['"]/g, '')}
+      <div class="absolute bottom-1 right-1.5 z-20">
+        <span class="text-[8px] font-mono text-muted-foreground/80 bg-background/80 px-1 rounded border border-border/30">
+          {fontFamily().split(',')[0].replace(/['"]/g, '')}
         </span>
       </div>
     </div>

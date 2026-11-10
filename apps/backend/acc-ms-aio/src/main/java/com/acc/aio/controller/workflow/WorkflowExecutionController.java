@@ -95,6 +95,21 @@ public class WorkflowExecutionController {
             ));
         }
 
+        // Strict Trigger Gate: Validate trigger payload against workflow inputSchema
+        if (def.inputSchema() != null && !def.inputSchema().isEmpty()) {
+            com.acc.workflow.core.schema.WorkflowSchemaValidator schemaValidator = new com.acc.workflow.core.schema.WorkflowSchemaValidator();
+            List<com.acc.workflow.core.schema.WorkflowSchemaValidator.ValidationError> inputErrors =
+                schemaValidator.validate(request.input() != null ? request.input() : Map.of(), def.inputSchema());
+            if (!inputErrors.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                    "status", "FAIL",
+                    "error", "WORKFLOW_INPUT_VALIDATION_FAILED",
+                    "message", "Trigger payload violates workflow inputSchema: " + inputErrors.get(0).message(),
+                    "errors", inputErrors
+                ));
+            }
+        }
+
         String executionId = "wf-exec-" + UUID.randomUUID().toString().substring(0, 8);
         long now = System.currentTimeMillis();
 

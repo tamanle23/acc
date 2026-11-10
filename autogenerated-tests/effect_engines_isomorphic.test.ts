@@ -8,7 +8,7 @@ import {
   drawFrameBreakerFrame,
 } from '../packages/effect-engines/src';
 import { UniversalCanvasProvider } from '@acc/core-isomorphic';
-import { NapiCanvasAdapter } from '@acc/core';
+import { NapiCanvasAdapter } from '../packages/core/src/native/canvas/NapiCanvasAdapter';
 
 describe('Phase 4: Pure Isomorphic Effect Engines Suite (@acc/effect-engines)', () => {
   beforeEach(() => {

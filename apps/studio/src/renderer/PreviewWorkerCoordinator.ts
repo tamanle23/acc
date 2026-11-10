@@ -5,8 +5,12 @@ import {
   type ResolvedTimeline,
   type ResolvedSequence,
   type ResolvedTrack,
+  type ModifierNode,
 } from '@acc/ir';
+
+declare const WorkerGlobalScope: any;
 import { UniversalLogger as Logger } from '@acc/core-isomorphic';
+import { PreviewWorkerBridge } from './workers/PreviewWorkerBridge';
 import type {
   ExecuteModifierPayload,
   WorkerMessage,
@@ -26,9 +30,11 @@ export interface SidecarPreflightOptions {
 
 export class PreviewWorkerCoordinator {
   private static instance: PreviewWorkerCoordinator | null = null;
+  private bridge: PreviewWorkerBridge | null = null;
   private worker: Worker | null = null;
   private inProcessRegistry: ModifierPluginRegistry | null = null;
   private isWarmedUp = false;
+  private isWarmingUp = false;
   private isProcessing = false;
   private activeTasks = new Map<
     string,
@@ -81,25 +87,34 @@ export class PreviewWorkerCoordinator {
 
     if (typeof window !== 'undefined' && typeof document !== 'undefined' && typeof Worker !== 'undefined') {
       try {
-        this.worker = customWorkerUrl
-          ? new Worker(customWorkerUrl, { type: 'module' })
-          : new Worker(
-            new URL('./workers/preview.worker.ts', import.meta.url),
-            { type: 'module' }
-          );
+        if (customWorkerUrl) {
+          this.worker = new Worker(customWorkerUrl, { type: 'module' });
+          this.worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
+            this.handleWorkerMessage(event.data);
+          };
+        } else {
+          // Re-use the unified single preview worker from PreviewWorkerBridge
+          // to eliminate secondary duplicate worker allocation (~500MB RAM saving).
+          this.bridge = PreviewWorkerBridge.getInstance();
+          this.worker = this.bridge.getWorker();
+          this.bridge.addMessageListener((event: MessageEvent) => {
+            if (event.data && typeof event.data === 'object' && 'type' in event.data) {
+              this.handleWorkerMessage(event.data as WorkerResponse);
+            }
+          });
+        }
 
-        this.worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
-          this.handleWorkerMessage(event.data);
-        };
+        if (this.worker) {
+          this.worker.onerror = (err) => {
+            Logger.warn('PreviewWorkerCoordinator', `Sidecar worker encountered an error: ${err.message || err}`);
+            this.isProcessing = false;
+            this.notifyWarmupResolvers(false);
+            this.drainNext();
+          };
+        }
 
-        this.worker.onerror = (err) => {
-          Logger.warn('PreviewWorkerCoordinator', `Sidecar worker encountered an error: ${err.message || err}`);
-          this.isProcessing = false;
-          this.notifyWarmupResolvers(false);
-          this.drainNext();
-        };
-
-        this.scheduleWarmup();
+        // Sole driver: initiate warmup immediately upon worker creation
+        this.warmup();
         return;
       } catch (err: any) {
         Logger.warn(
@@ -119,9 +134,14 @@ export class PreviewWorkerCoordinator {
     return this.isWarmedUp;
   }
 
+  public getIsWarmingUp(): boolean {
+    return this.isWarmingUp;
+  }
+
   /**
    * Returns a promise that resolves when the sidecar worker has completed its WARMUP task.
    * If the worker is already warmed up, resolves immediately.
+   * Pure passive barrier: does not dispatch warmup requests itself.
    * Includes a timeout fallback (default: 4000ms) to ensure startup never hangs.
    */
   public waitForWarmup(timeoutMs = 4000): Promise<boolean> {
@@ -131,9 +151,6 @@ export class PreviewWorkerCoordinator {
     if (!this.worker) {
       return Promise.resolve(true);
     }
-
-    // Explicitly trigger warmup immediately rather than waiting for idle callback
-    this.warmup();
 
     return new Promise<boolean>((resolve) => {
       let timer: ReturnType<typeof setTimeout> | null = null;
@@ -163,36 +180,26 @@ export class PreviewWorkerCoordinator {
   }
 
   public warmup(): void {
-    if (this.worker && !this.isWarmedUp) {
-      this.worker.postMessage({ type: 'WARMUP' } satisfies WorkerMessage);
+    if (this.isWarmedUp || this.isWarmingUp) {
+      return;
     }
-  }
-
-  private scheduleWarmup(): void {
-    if (typeof window === 'undefined' || !this.worker) return;
-    if (typeof window.requestIdleCallback === 'function') {
-      window.requestIdleCallback(
-        () => {
-          if (this.worker && !this.isWarmedUp) {
-            this.worker.postMessage({ type: 'WARMUP' } satisfies WorkerMessage);
-          }
-        },
-        { timeout: 1000 }
-      );
-    } else {
-      setTimeout(() => {
-        if (this.worker && !this.isWarmedUp) {
-          this.worker.postMessage({ type: 'WARMUP' } satisfies WorkerMessage);
-        }
-      }, 100);
+    if (this.worker) {
+      this.isWarmingUp = true;
+      this.worker.postMessage({ type: 'WARMUP' } satisfies WorkerMessage);
     }
   }
 
   private handleWorkerMessage(msg: WorkerResponse): void {
     switch (msg.type) {
       case 'WARMED_UP': {
+        const alreadyWarmed = this.isWarmedUp;
+        this.isWarmingUp = false;
         this.isWarmedUp = true;
-        Logger.info('PreviewWorkerCoordinator.ts', 'Sidecar worker successfully warmed up.');
+        if (alreadyWarmed) {
+          Logger.warn('PreviewWorkerCoordinator.ts', 'Duplicate WARMED_UP response received from sidecar worker.');
+        } else {
+          Logger.info('PreviewWorkerCoordinator.ts', 'Sidecar worker successfully warmed up.');
+        }
         this.notifyWarmupResolvers(true);
         break;
       }
@@ -384,7 +391,7 @@ export class PreviewWorkerCoordinator {
                 targetType: 'track',
                 targetId: track.id,
                 targetEntity: track,
-                modifier: { type: mod.type, params: mod.params || {} },
+                modifier: { type: mod.type, params: mod.params || {} } as ModifierNode,
                 fps,
                 canvas,
               },
@@ -430,10 +437,10 @@ export class PreviewWorkerCoordinator {
                 modifier: {
                   type: mod.type,
                   params: {
-                    ...mod.params,
-                    imagePath: mod.params?.imagePath || effectiveImagePath,
+                    ...(mod.params as Record<string, unknown>),
+                    imagePath: (mod.params as Record<string, unknown>)?.imagePath || effectiveImagePath,
                   },
-                },
+                } as ModifierNode,
                 assets,
                 fps,
                 canvas,

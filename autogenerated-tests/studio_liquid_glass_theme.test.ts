@@ -5,7 +5,7 @@ import {
   DEFAULT_THEME_PREFERENCES,
   THEME_STORAGE_KEY,
   type ThemePreferences,
-} from '../apps/studio/src/lib/theme/ThemeProvider';
+} from '../apps/studio/src/lib/theme/themePresets';
 
 describe('Studio Liquid Glass Theme System & Design Tokens', () => {
   describe('Theme Tokens & CSS Specification Integrity', () => {
@@ -202,7 +202,8 @@ describe('Studio Liquid Glass Theme System & Design Tokens', () => {
       // ViewportCanvasLayer submodule: studio-canvas must be strictly isolated from outside theme
       expect(allPreviewCode).toContain('id="studio-canvas"');
       expect(allPreviewCode).toContain('isolate rounded-xl overflow-hidden');
-      expect(allPreviewCode).toContain('backgroundColor: \'#000000\'');
+      // SolidJS style objects require kebab-case CSS property names
+      expect(allPreviewCode).toContain('\'background-color\': \'#000000\'');
 
       // SubtitlesOverlay submodule: subtitles must follow video styling, NOT outer glass-panel
       expect(allPreviewCode).toContain('bg-black/80 text-white');

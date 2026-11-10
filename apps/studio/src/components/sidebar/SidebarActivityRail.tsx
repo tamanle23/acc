@@ -1,4 +1,4 @@
-import React from 'react';
+import { For, Show, type Component } from 'solid-js';
 import {
   Folder,
   Type,
@@ -9,7 +9,7 @@ import {
   Music,
   ChevronLeft,
   ChevronRight,
-} from 'lucide-react';
+} from 'lucide-solid';
 import { Button } from '../ui/button';
 import type { LeftNavTab } from '../LeftSidebar';
 import type { PresetCategory } from '../../lib/library/stagingPresets';
@@ -26,7 +26,7 @@ const NAV_ITEMS: Array<{
   id: LeftNavTab;
   category?: PresetCategory;
   title: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: Component<{ class?: string }>;
   dividerAfter?: boolean;
 }> = [
   {
@@ -73,59 +73,59 @@ const NAV_ITEMS: Array<{
   },
 ];
 
-export const SidebarActivityRail: React.FC<SidebarActivityRailProps> = ({
-  isOpen,
-  onToggle,
-  activeNav,
-  setActiveNav,
-  onSelectCategory,
-}) => {
+export function SidebarActivityRail(props: SidebarActivityRailProps) {
   return (
-    <aside className="w-12 glass-panel border-r border-border/50 flex flex-col items-center py-3 justify-between shadow-glass z-20">
-      <div className="flex flex-col items-center gap-2">
-        {NAV_ITEMS.map((item) => {
-          const Icon = item.icon;
-          const isActive = activeNav === item.id && isOpen;
-          return (
-            <React.Fragment key={item.id}>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => {
-                  if (activeNav === item.id && isOpen) {
-                    onToggle();
-                  } else {
-                    setActiveNav(item.id);
-                    if (item.category) {
-                      onSelectCategory(item.category);
+    <aside class="w-12 glass-panel border-r border-border/50 flex flex-col items-center py-3 justify-between shadow-glass z-20">
+      <div class="flex flex-col items-center gap-2">
+        <For each={NAV_ITEMS}>
+          {(item) => {
+            const Icon = item.icon;
+            const isActive = () => props.activeNav === item.id && props.isOpen;
+            return (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    if (props.activeNav === item.id && props.isOpen) {
+                      props.onToggle();
+                    } else {
+                      props.setActiveNav(item.id);
+                      if (item.category) {
+                        props.onSelectCategory(item.category);
+                      }
+                      if (!props.isOpen) props.onToggle();
                     }
-                    if (!isOpen) onToggle();
-                  }
-                }}
-                className={`w-9 h-9 rounded-lg transition-colors ${
-                  isActive
-                    ? 'bg-accent-theme/20 text-accent-theme border border-accent-theme/40 shadow-xs'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                }`}
-                title={item.title}
-              >
-                <Icon className="w-4 h-4" />
-              </Button>
-              {item.dividerAfter && <div className="w-5 h-[1px] bg-border/40 my-0.5" />}
-            </React.Fragment>
-          );
-        })}
+                  }}
+                  class={`w-9 h-9 rounded-lg transition-colors ${
+                    isActive()
+                      ? 'bg-accent-theme/20 text-accent-theme border border-accent-theme/40 shadow-xs'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                  }`}
+                  title={item.title}
+                >
+                  <Icon class="w-4 h-4" />
+                </Button>
+                <Show when={item.dividerAfter}>
+                  <div class="w-5 h-[1px] bg-border/40 my-0.5" />
+                </Show>
+              </>
+            );
+          }}
+        </For>
       </div>
 
       <Button
         variant="ghost"
         size="icon"
-        onClick={onToggle}
-        className="w-9 h-9 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-        title={isOpen ? 'Collapse Left Drawer ([)' : 'Expand Left Drawer ([)'}
+        onClick={props.onToggle}
+        class="w-9 h-9 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+        title={props.isOpen ? 'Collapse Left Drawer ([)' : 'Expand Left Drawer ([)'}
       >
-        {isOpen ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+        <Show when={props.isOpen} fallback={<ChevronRight class="w-4 h-4" />}>
+          <ChevronLeft class="w-4 h-4" />
+        </Show>
       </Button>
     </aside>
   );
-};
+}

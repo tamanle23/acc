@@ -29,7 +29,7 @@ export const quantumPhysicsDemoIR: VideoIRDocument = {
       type: 'image',
     },
     'asset-resonance-audio': {
-      src: 'https://actions.google.com/sounds/v1/science_fiction/scifi_engine_shut_down.ogg',
+      src: 'https://actions.google.com/sounds/v1/science_fiction/sci_fi_vortex.ogg',
       type: 'audio',
     },
     'asset-subharmonic-drone': {
@@ -320,18 +320,6 @@ export const quantumPhysicsDemoIR: VideoIRDocument = {
               text: 'PARTICLES CONGREGATE ALONG 2D NODAL CURVATURE ZERO-CROSSINGS',
             },
           ],
-          timedTextCues: [
-            {
-              startOffsetMs: 0,
-              endOffsetMs: 1800,
-              text: 'ACOUSTIC LEVITATION & STANDING NODAL WAVES',
-            },
-            {
-              startOffsetMs: 1800,
-              endOffsetMs: 4000,
-              text: 'PARTICLES CONGREGATE ALONG 2D NODAL CURVATURE ZERO-CROSSINGS',
-            },
-          ],
         },
         {
           id: 'seq-caption-part2',
@@ -353,18 +341,6 @@ export const quantumPhysicsDemoIR: VideoIRDocument = {
               text: 'FRACTAL RECURSION IN CONTINUOUS FOUR-DIMENSIONAL PARAMETER SPACE',
             },
           ],
-          timedTextCues: [
-            {
-              startOffsetMs: 0,
-              endOffsetMs: 2000,
-              text: 'DETERMINISTIC CHAOS: CLIFFORD-DE JONG STRANGE ATTRACTORS',
-            },
-            {
-              startOffsetMs: 2000,
-              endOffsetMs: 4000,
-              text: 'FRACTAL RECURSION IN CONTINUOUS FOUR-DIMENSIONAL PARAMETER SPACE',
-            },
-          ],
         },
         {
           id: 'seq-caption-part3',
@@ -375,18 +351,6 @@ export const quantumPhysicsDemoIR: VideoIRDocument = {
             duration: 120,
           },
           cues: [
-            {
-              startOffsetMs: 0,
-              endOffsetMs: 2000,
-              text: 'QUAD-PENDULUM ROTATIONAL HARMONOGRAPH DYNAMICS',
-            },
-            {
-              startOffsetMs: 2000,
-              endOffsetMs: 4000,
-              text: 'DAMPED HARMONIC RESONANCE FORMING ORTHOGONAL EPICYCLES',
-            },
-          ],
-          timedTextCues: [
             {
               startOffsetMs: 0,
               endOffsetMs: 2000,

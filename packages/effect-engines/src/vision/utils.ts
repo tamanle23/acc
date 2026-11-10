@@ -3,10 +3,10 @@ import { UniversalOnnxRuntimeProvider, type HfConfigOptions } from './UniversalO
 
 // Ensure global Hugging Face cache adheres to GLOBAL-STORAGE rule when in Node/Bun environment
 function getGlobalHfCache(): string | undefined {
-  if (typeof process !== 'undefined' && process.versions?.node) {
+  if (typeof process !== 'undefined' && process.versions?.node && typeof (globalThis as any).require === 'function') {
     try {
-      const os = require('os');
-      const path = require('path');
+      const os = (globalThis as any).require('os');
+      const path = (globalThis as any).require('path');
       return path.join(os.homedir(), '.cache', 'huggingface');
     } catch {}
   }
@@ -53,13 +53,13 @@ export async function loadUniversalTransformers(options?: Partial<HfConfigOption
  * Creates an RGBA PNG buffer from an original image buffer and a 1-channel binary/grayscale alpha mask or mask image Buffer.
  */
 export async function createCutoutRgba(
-  originalImageBuffer: Buffer,
-  alphaMaskOrBuffer: Uint8Array | number[] | Float32Array | Buffer,
+  originalImageBuffer: Uint8Array | ArrayBuffer | Buffer,
+  alphaMaskOrBuffer: Uint8Array | number[] | Float32Array | ArrayBuffer | Buffer,
   maskWidth?: number,
   maskHeight?: number,
   options?: { fillHoles?: boolean; featherRadius?: number }
-): Promise<{ rgbaBuffer: Buffer; alphaBuffer: Buffer; bbox: BoundingBox }> {
-  const original = await CanvasAssetLoader.loadImage(originalImageBuffer);
+): Promise<{ rgbaBuffer: Uint8Array; alphaBuffer: Uint8Array; bbox: BoundingBox }> {
+  const original = await CanvasAssetLoader.loadImage(originalImageBuffer as any);
   const origW = original.width;
   const origH = original.height;
 
@@ -67,8 +67,14 @@ export async function createCutoutRgba(
   let mW = maskWidth;
   let mH = maskHeight;
 
-  if (Buffer.isBuffer(alphaMaskOrBuffer) && (!mW || !mH)) {
-    const maskImg = await CanvasAssetLoader.loadImage(alphaMaskOrBuffer);
+  const isEncodedMask =
+    (alphaMaskOrBuffer instanceof Uint8Array ||
+      (typeof Buffer !== 'undefined' && Buffer.isBuffer(alphaMaskOrBuffer)) ||
+      alphaMaskOrBuffer instanceof ArrayBuffer) &&
+    (!mW || !mH);
+
+  if (isEncodedMask) {
+    const maskImg = await CanvasAssetLoader.loadImage(alphaMaskOrBuffer as any);
     mW = maskImg.width;
     mH = maskImg.height;
     const tempCanvas = UniversalCanvasProvider.acquireScratchCanvas(mW, mH);
@@ -153,13 +159,15 @@ export async function createCutoutRgba(
   fullCtx.globalCompositeOperation = 'destination-in';
   fullCtx.drawImage(maskCanvas, 0, 0, origW, origH);
 
-  const rgbaBuffer = fullCanvas.toBuffer('image/png');
+  const rawRgba = fullCanvas.toBuffer('image/png');
+  const rgbaBuffer = rawRgba instanceof Uint8Array ? rawRgba : new Uint8Array(rawRgba);
 
   // Also export alpha mask canvas scaled to original size
   const alphaCanvas = UniversalCanvasProvider.acquireScratchCanvas(origW, origH);
   const alphaCtx = alphaCanvas.getContext('2d');
   alphaCtx.drawImage(maskCanvas, 0, 0, origW, origH);
-  const alphaBuffer = alphaCanvas.toBuffer('image/png');
+  const rawAlpha = alphaCanvas.toBuffer('image/png');
+  const alphaBuffer = rawAlpha instanceof Uint8Array ? rawAlpha : new Uint8Array(rawAlpha);
 
   // Release scratch canvases back to pool
   UniversalCanvasProvider.releaseScratchCanvas(fullCanvas);

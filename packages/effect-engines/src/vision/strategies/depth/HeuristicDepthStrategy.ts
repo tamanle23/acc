@@ -53,9 +53,10 @@ export class HeuristicDepthStrategy implements IDepthEstimationStrategy, IIsomor
     const isoResult = await this.isomorphicStrategy.estimateDepth(input, options);
 
     // Create backward-compatible depth16Buffer
-    let depth16Buffer: Buffer;
+    let depth16Buffer: Uint8Array;
     if (isoResult.depthCanvas) {
-      depth16Buffer = isoResult.depthCanvas.toBuffer('image/png') as Buffer;
+      const raw = isoResult.depthCanvas.toBuffer('image/png');
+      depth16Buffer = raw instanceof Uint8Array ? raw : new Uint8Array(raw);
     } else {
       const depthCanvas = UniversalCanvasProvider.acquireScratchCanvas(isoResult.width, isoResult.height);
       try {
@@ -73,7 +74,8 @@ export class HeuristicDepthStrategy implements IDepthEstimationStrategy, IIsomor
           imgData.data[pos + 3] = 255;
         }
         ctx.putImageData(imgData, 0, 0);
-        depth16Buffer = depthCanvas.toBuffer('image/png') as Buffer;
+        const raw = depthCanvas.toBuffer('image/png');
+        depth16Buffer = raw instanceof Uint8Array ? raw : new Uint8Array(raw);
       } finally {
         UniversalCanvasProvider.releaseScratchCanvas(depthCanvas);
       }

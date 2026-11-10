@@ -1,4 +1,4 @@
-import React from 'react';
+import { Show } from 'solid-js';
 import {
   MousePointer,
   Scissors,
@@ -12,7 +12,7 @@ import {
   ZoomIn,
   ZoomOut,
   Maximize,
-} from 'lucide-react';
+} from 'lucide-solid';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Slider } from '../ui/slider';
@@ -42,181 +42,173 @@ export interface ToolbarProps {
 
 export type TimelineToolbarProps = ToolbarProps;
 
-export function Toolbar({
-  activeTool,
-  onSetActiveTool,
-  isPlaying,
-  onTogglePlay,
-  shuttle,
-  snapEnabled,
-  onSetSnapEnabled,
-  rippleEnabled,
-  onSetRippleEnabled,
-  zoomScale,
-  onSetZoomScale,
-  currentFrame,
-  totalFrames,
-  fps,
-}: ToolbarProps) {
+export function Toolbar(props: ToolbarProps) {
+  const currentSpeed = () =>
+    typeof props.shuttle.speed === 'function'
+      ? (props.shuttle.speed as () => number)()
+      : Number(props.shuttle.speed || 0);
+
   return (
-    <div className="h-11 border-b border-glass-border px-3 sm:px-6 flex items-center justify-between bg-glass-surface/60 backdrop-blur-md gap-2 overflow-hidden select-none shrink-0">
+    <div class="h-11 border-b border-glass-border px-3 sm:px-6 flex items-center justify-between bg-glass-surface/60 backdrop-blur-md gap-2 overflow-hidden select-none shrink-0">
       {/* 1. Left: Editing Tools & Transport Shuttling */}
-      <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+      <div class="flex items-center gap-1 sm:gap-1.5 shrink-0">
         {/* Tool Selector Bar */}
         <Tooltip content="Selection Tool (V)">
           <Button
-            variant={activeTool === 'select' ? 'secondary' : 'ghost'}
+            variant={props.activeTool === 'select' ? 'secondary' : 'ghost'}
             size="icon"
             aria-label="Selection Tool (V)"
-            aria-pressed={activeTool === 'select'}
-            onClick={() => onSetActiveTool('select')}
-            className={`h-7 w-7 transition-colors ${
-              activeTool === 'select'
+            aria-pressed={props.activeTool === 'select'}
+            onClick={() => props.onSetActiveTool('select')}
+            class={`h-7 w-7 transition-colors ${
+              props.activeTool === 'select'
                 ? 'bg-secondary text-secondary-foreground'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            <MousePointer className="w-3.5 h-3.5" />
+            <MousePointer class="w-3.5 h-3.5" />
           </Button>
         </Tooltip>
 
         <Tooltip content="Razor Split Tool (C)">
           <Button
-            variant={activeTool === 'razor' ? 'default' : 'ghost'}
+            variant={props.activeTool === 'razor' ? 'default' : 'ghost'}
             size="icon"
             aria-label="Razor Split Tool (C)"
-            aria-pressed={activeTool === 'razor'}
+            aria-pressed={props.activeTool === 'razor'}
             onClick={() => {
-              onSetActiveTool(activeTool === 'razor' ? 'select' : 'razor');
+              props.onSetActiveTool(props.activeTool === 'razor' ? 'select' : 'razor');
             }}
-            className={`h-7 w-7 transition-colors ${
-              activeTool === 'razor'
+            class={`h-7 w-7 transition-colors ${
+              props.activeTool === 'razor'
                 ? 'bg-accent-theme text-primary-foreground font-semibold shadow-accent-glow'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            <Scissors className="w-3.5 h-3.5" />
+            <Scissors class="w-3.5 h-3.5" />
           </Button>
         </Tooltip>
 
         <Tooltip content="Hand Panning Tool (H)">
           <Button
-            variant={activeTool === 'hand' ? 'secondary' : 'ghost'}
+            variant={props.activeTool === 'hand' ? 'secondary' : 'ghost'}
             size="icon"
             aria-label="Hand Panning Tool (H)"
-            aria-pressed={activeTool === 'hand'}
-            onClick={() => onSetActiveTool('hand')}
-            className={`h-7 w-7 transition-colors ${
-              activeTool === 'hand'
+            aria-pressed={props.activeTool === 'hand'}
+            onClick={() => props.onSetActiveTool('hand')}
+            class={`h-7 w-7 transition-colors ${
+              props.activeTool === 'hand'
                 ? 'bg-secondary text-secondary-foreground'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            <Hand className="w-3.5 h-3.5" />
+            <Hand class="w-3.5 h-3.5" />
           </Button>
         </Tooltip>
 
-        <Separator orientation="vertical" className="h-4 mx-0.5" />
+        <Separator orientation="vertical" class="h-4 mx-0.5" />
 
         {/* J-K-L Shuttle & Transport Controls */}
-        <Tooltip content={`Shuttle Rewind (J): ${shuttle.speed < 0 ? Math.abs(shuttle.speed) + 'x' : '1x'}`}>
+        <Tooltip content={`Shuttle Rewind (J): ${currentSpeed() < 0 ? Math.abs(currentSpeed()) + 'x' : '1x'}`}>
           <Button
             variant="ghost"
             size="icon"
             aria-label="Shuttle Rewind (J)"
-            onClick={shuttle.shuttleReverse}
-            className={`h-7 w-7 transition-colors ${
-              shuttle.speed < 0
+            onClick={props.shuttle.shuttleReverse}
+            class={`h-7 w-7 transition-colors ${
+              currentSpeed() < 0
                 ? 'text-amber-400 bg-amber-500/15'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            <SkipBack className="w-3.5 h-3.5" />
+            <SkipBack class="w-3.5 h-3.5" />
           </Button>
         </Tooltip>
 
-        <Tooltip content={isPlaying ? 'Pause Timeline (K or Space)' : 'Play Timeline (K or Space)'}>
+        <Tooltip content={props.isPlaying ? 'Pause Timeline (K or Space)' : 'Play Timeline (K or Space)'}>
           <Button
             variant="ghost"
             size="icon"
-            aria-label={isPlaying ? 'Pause Timeline' : 'Play Timeline'}
-            aria-pressed={isPlaying}
-            onClick={onTogglePlay}
-            className={`h-7 w-7 transition-colors ${
-              isPlaying
+            aria-label={props.isPlaying ? 'Pause Timeline' : 'Play Timeline'}
+            aria-pressed={props.isPlaying}
+            onClick={props.onTogglePlay}
+            class={`h-7 w-7 transition-colors ${
+              props.isPlaying
                 ? 'text-accent-theme bg-accent-theme/15 font-bold shadow-xs'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+            <Show when={props.isPlaying} fallback={<Play class="w-3.5 h-3.5" />}>
+              <Pause class="w-3.5 h-3.5" />
+            </Show>
           </Button>
         </Tooltip>
 
-        <Tooltip content={`Shuttle Forward (L): ${shuttle.speed > 0 ? shuttle.speed + 'x' : '1x'}`}>
+        <Tooltip content={`Shuttle Forward (L): ${currentSpeed() > 0 ? currentSpeed() + 'x' : '1x'}`}>
           <Button
             variant="ghost"
             size="icon"
             aria-label="Shuttle Forward (L)"
-            onClick={shuttle.shuttleForward}
-            className={`h-7 w-7 transition-colors ${
-              shuttle.speed > 0
+            onClick={props.shuttle.shuttleForward}
+            class={`h-7 w-7 transition-colors ${
+              currentSpeed() > 0
                 ? 'text-emerald-400 bg-emerald-500/15'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            <SkipForward className="w-3.5 h-3.5" />
+            <SkipForward class="w-3.5 h-3.5" />
           </Button>
         </Tooltip>
 
-        <Separator orientation="vertical" className="h-4 mx-0.5" />
+        <Separator orientation="vertical" class="h-4 mx-0.5" />
 
         <Tooltip content="Magnetic Snapping (S)">
           <Toggle
-            pressed={snapEnabled}
-            onPressedChange={onSetSnapEnabled}
+            pressed={props.snapEnabled}
+            onPressedChange={props.onSetSnapEnabled}
             size="sm"
-            className="h-7 px-2 text-[11px] gap-1 data-[state=on]:bg-accent-theme/15 data-[state=on]:text-accent-theme data-[state=on]:border-accent-theme/30 border border-transparent transition-colors"
+            class="h-7 px-2 text-[11px] gap-1 data-[state=on]:bg-accent-theme/15 data-[state=on]:text-accent-theme data-[state=on]:border-accent-theme/30 border border-transparent transition-colors"
           >
-            <Magnet className="w-3 h-3" />
-            <span className="hidden sm:inline">Snap</span>
+            <Magnet class="w-3 h-3" />
+            <span class="hidden sm:inline">Snap</span>
           </Toggle>
         </Tooltip>
 
         <Tooltip content="Ripple Edit Mode (R): Trimming or deleting automatically shifts downstream clips">
           <Toggle
-            pressed={rippleEnabled}
-            onPressedChange={onSetRippleEnabled}
+            pressed={props.rippleEnabled}
+            onPressedChange={props.onSetRippleEnabled}
             size="sm"
-            className="h-7 px-2 text-[11px] gap-1 data-[state=on]:bg-amber-500/20 data-[state=on]:text-amber-400 data-[state=on]:border-amber-500/40 border border-transparent transition-colors"
+            class="h-7 px-2 text-[11px] gap-1 data-[state=on]:bg-amber-500/20 data-[state=on]:text-amber-400 data-[state=on]:border-amber-500/40 border border-transparent transition-colors"
           >
-            <ArrowRightLeft className="w-3 h-3" />
-            <span className="hidden sm:inline">Ripple</span>
+            <ArrowRightLeft class="w-3 h-3" />
+            <span class="hidden sm:inline">Ripple</span>
           </Toggle>
         </Tooltip>
       </div>
 
       {/* 2. Center: Progressive Zoom Stepper & Slider */}
-      <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+      <div class="flex items-center gap-1 sm:gap-1.5 shrink-0">
         <Tooltip content="Zoom Out (-)">
           <Button
             variant="ghost"
             size="icon"
             aria-label="Zoom Out"
-            onClick={() => onSetZoomScale((z) => Math.max(0.1, +(z - 0.2).toFixed(2)))}
-            className="h-6 w-6 text-muted-foreground hover:text-foreground"
+            onClick={() => props.onSetZoomScale((z) => Math.max(0.1, +(z - 0.2).toFixed(2)))}
+            class="h-6 w-6 text-muted-foreground hover:text-foreground"
           >
-            <ZoomOut className="w-3.5 h-3.5" />
+            <ZoomOut class="w-3.5 h-3.5" />
           </Button>
         </Tooltip>
 
-        <div className="hidden md:flex items-center">
+        <div class="hidden md:flex items-center">
           <Slider
             min={0.1}
             max={4.0}
             step={0.05}
-            value={[zoomScale]}
-            onValueChange={(val) => onSetZoomScale(val[0])}
-            className="w-16 lg:w-24 cursor-pointer"
+            value={[props.zoomScale]}
+            onValueChange={(val) => props.onSetZoomScale(val[0])}
+            class="w-16 lg:w-24 cursor-pointer"
           />
         </div>
 
@@ -225,10 +217,10 @@ export function Toolbar({
             variant="ghost"
             size="icon"
             aria-label="Zoom In"
-            onClick={() => onSetZoomScale((z) => Math.min(4.0, +(z + 0.2).toFixed(2)))}
-            className="h-6 w-6 text-muted-foreground hover:text-foreground"
+            onClick={() => props.onSetZoomScale((z) => Math.min(4.0, +(z + 0.2).toFixed(2)))}
+            class="h-6 w-6 text-muted-foreground hover:text-foreground"
           >
-            <ZoomIn className="w-3.5 h-3.5" />
+            <ZoomIn class="w-3.5 h-3.5" />
           </Button>
         </Tooltip>
 
@@ -236,10 +228,10 @@ export function Toolbar({
         <Tooltip content="Current Zoom Level (Click to reset to 100%)">
           <Badge
             variant="outline"
-            onClick={() => onSetZoomScale(1.0)}
-            className="font-mono text-[10px] px-1.5 py-0.5 border-glass-border text-muted-foreground hover:text-foreground hover:border-accent-theme/40 cursor-pointer transition-colors shadow-2xs select-none"
+            onClick={() => props.onSetZoomScale(1.0)}
+            class="font-mono text-[10px] px-1.5 py-0.5 border-glass-border text-muted-foreground hover:text-foreground hover:border-accent-theme/40 cursor-pointer transition-colors shadow-2xs select-none"
           >
-            {Math.round(zoomScale * 100)}%
+            {Math.round(props.zoomScale * 100)}%
           </Badge>
         </Tooltip>
 
@@ -248,41 +240,41 @@ export function Toolbar({
             variant="ghost"
             size="icon"
             aria-label="Zoom to fit 100%"
-            onClick={() => onSetZoomScale(1.0)}
-            className="h-7 w-7 text-muted-foreground hover:text-foreground"
+            onClick={() => props.onSetZoomScale(1.0)}
+            class="h-7 w-7 text-muted-foreground hover:text-foreground"
           >
-            <Maximize className="w-3.5 h-3.5" />
+            <Maximize class="w-3.5 h-3.5" />
           </Button>
         </Tooltip>
       </div>
 
       {/* 3. Right: Master Audio VU Meter & Timecode Readout */}
-      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-        <MasterAudioMeter isPlaying={isPlaying} currentFrame={currentFrame} />
+      <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+        <MasterAudioMeter isPlaying={props.isPlaying} currentFrame={props.currentFrame} />
 
-        <div className="flex items-center gap-1 sm:gap-1.5">
-          {shuttle.speed !== 0 && (
+        <div class="flex items-center gap-1 sm:gap-1.5">
+          <Show when={currentSpeed() !== 0}>
             <Badge
               variant="outline"
-              className="font-mono text-[10px] sm:text-[11px] text-amber-400 border-amber-500/30 bg-amber-500/10 font-semibold shadow-2xs"
+              class="font-mono text-[10px] sm:text-[11px] text-amber-400 border-amber-500/30 bg-amber-500/10 font-semibold shadow-2xs"
             >
-              {shuttle.speed}x
+              {currentSpeed()}x
             </Badge>
-          )}
+          </Show>
           <Badge
             variant="outline"
-            className="font-mono text-[10px] sm:text-[11px] border-glass-border text-foreground bg-glass-surface shadow-2xs font-semibold"
+            class="font-mono text-[10px] sm:text-[11px] border-glass-border text-foreground bg-glass-surface shadow-2xs font-semibold"
           >
-            {RationalTime.fromFrame(currentFrame, fps).toSMPTE(fps)}
-            <span className="opacity-60 hidden lg:inline">
-              {' '}/ {RationalTime.fromFrame(totalFrames, fps).toSMPTE(fps)}
+            {RationalTime.fromFrame(props.currentFrame, props.fps).toSMPTE(props.fps)}
+            <span class="opacity-60 hidden lg:inline">
+              {' '}/ {RationalTime.fromFrame(props.totalFrames, props.fps).toSMPTE(props.fps)}
             </span>
           </Badge>
           <Badge
             variant="outline"
-            className="font-mono text-[10px] sm:text-[11px] text-accent-theme border-accent-theme/30 bg-accent-theme/10 font-semibold shadow-2xs hidden xl:inline-flex"
+            class="font-mono text-[10px] sm:text-[11px] text-accent-theme border-accent-theme/30 bg-accent-theme/10 font-semibold shadow-2xs hidden xl:inline-flex"
           >
-            F {currentFrame} / {totalFrames}
+            F {props.currentFrame} / {props.totalFrames}
           </Badge>
         </div>
       </div>
@@ -290,5 +282,4 @@ export function Toolbar({
   );
 }
 
-// Backward-compatible alias
 export const TimelineToolbar = Toolbar;

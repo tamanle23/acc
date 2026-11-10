@@ -1,5 +1,5 @@
-import { StatelessHashNoise } from '@acc/core-isomorphic';
-import { gsap } from 'gsap';
+import { StatelessHashNoise, type ICanvasContext2D } from '@acc/core-isomorphic';
+import { IsomorphicEasing } from '../utils/IsomorphicEasing';
 
 export interface DeterministicParticleFieldParams {
   type: string;
@@ -30,15 +30,15 @@ class StatelessNoiseAdapter {
  */
 export class DeterministicParticleField {
   private static noise = new StatelessNoiseAdapter();
-  private static easeOut = gsap.parseEase('power2.out');
-  private static easeInOut = gsap.parseEase('sine.inOut');
-  private static easeExp = gsap.parseEase('expo.inOut');
+  private static easeOut = IsomorphicEasing.power2Out;
+  private static easeInOut = IsomorphicEasing.sineInOut;
+  private static easeExp = IsomorphicEasing.expoInOut;
 
   /**
    * Renders the deterministic particle field for frame t onto the canvas.
    */
   public static render(
-    canvasCtx: any,
+    canvasCtx: ICanvasContext2D,
     width: number,
     height: number,
     frame: number,

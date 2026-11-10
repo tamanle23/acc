@@ -608,6 +608,7 @@ export const VFX_PRESETS: StagingPreset[] = [
       modifiers: [
         {
           type: 'vfx/depth3d',
+          target: ['video'],
           params: {
             enabled: true,
             mode: 'parallax_25d',
@@ -637,6 +638,7 @@ export const VFX_PRESETS: StagingPreset[] = [
       modifiers: [
         {
           type: 'vfx/auto_reframe',
+          target: ['video'],
           params: {
             enabled: true,
             targetAspectRatio: '9:16',
@@ -665,6 +667,7 @@ export const VFX_PRESETS: StagingPreset[] = [
       modifiers: [
         {
           type: 'vfx/camera_3d',
+          target: ['video'],
           params: {
             enabled: true,
             fov: 50,

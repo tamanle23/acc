@@ -1,6 +1,14 @@
 import type { Node, Edge } from '@xyflow/react';
 import type { DagNodeData } from '../canvas/dag-node';
 
+export const DEFAULT_DRAFT7_SCHEMA: Record<string, unknown> = {
+  $schema: 'http://json-schema.org/draft-07/schema#',
+  type: 'object',
+  properties: {},
+  required: [],
+  additionalProperties: false,
+};
+
 export const BLANK_WORKFLOW_NODES: Node<DagNodeData>[] = [
   {
     id: 'node-start',
@@ -8,12 +16,13 @@ export const BLANK_WORKFLOW_NODES: Node<DagNodeData>[] = [
     position: { x: 100, y: 200 },
     data: {
       taskReferenceName: 'workflow_start',
-      taskType: 'NOOP',
+      taskType: 'START_WORKFLOW',
       label: 'Workflow Start',
       executionState: 'PENDING',
       isPermanent: true,
       isStartNode: true,
       inputParameters: {},
+      declaredOutputSchema: DEFAULT_DRAFT7_SCHEMA,
     },
   },
   {
@@ -22,12 +31,13 @@ export const BLANK_WORKFLOW_NODES: Node<DagNodeData>[] = [
     position: { x: 500, y: 200 },
     data: {
       taskReferenceName: 'workflow_end',
-      taskType: 'NOOP',
+      taskType: 'END_WORKFLOW',
       label: 'Workflow End',
       executionState: 'PENDING',
       isPermanent: true,
       isEndNode: true,
       inputParameters: {},
+      declaredOutputSchema: DEFAULT_DRAFT7_SCHEMA,
     },
   },
 ];

@@ -72,7 +72,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
       type: 'audio',
     },
     'asset-sub-bass-drop': {
-      src: 'https://actions.google.com/sounds/v1/science_fiction/deep_hum.ogg',
+      src: 'https://actions.google.com/sounds/v1/science_fiction/forboding_resonance.ogg',
       type: 'audio',
     },
     'asset-synth-bgm': {
@@ -104,7 +104,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
       type: 'audio',
     },
     'asset-bgm-tension': {
-      src: 'https://actions.google.com/sounds/v1/science_fiction/deep_hum.ogg',
+      src: 'https://actions.google.com/sounds/v1/science_fiction/forboding_resonance.ogg',
       type: 'audio',
     },
     'asset-bgm-sunset': {
@@ -128,7 +128,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
       type: 'audio',
     },
     'asset-bgm-action': {
-      src: 'https://actions.google.com/sounds/v1/science_fiction/deep_hum.ogg',
+      src: 'https://actions.google.com/sounds/v1/science_fiction/forboding_resonance.ogg',
       type: 'audio',
     },
   },

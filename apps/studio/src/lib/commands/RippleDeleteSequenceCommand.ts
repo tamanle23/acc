@@ -79,7 +79,7 @@ export class RippleDeleteSequenceCommand implements ICommand {
 
     const targetDuration = typeof targetSeq.time.duration === 'number'
       ? targetSeq.time.duration
-      : (targetSeq.time.duration?.frames ?? 0);
+      : ((targetSeq.time.duration as any)?.frames ?? 0);
 
     this.shiftFrames = targetDuration;
 
@@ -87,9 +87,9 @@ export class RippleDeleteSequenceCommand implements ICommand {
     const sequencesToDeleteIds = new Set<string>([this.sequenceId]);
 
     // Check targetSeq modifiers
-    const avLinkMod = targetSeq.modifiers?.find((m) => m.type === 'editorial/av_link');
-    if (avLinkMod?.params?.linkedSequenceId) {
-      sequencesToDeleteIds.add(String(avLinkMod.params.linkedSequenceId));
+    const avLinkMod = targetSeq.modifiers?.find((m) => (m.type as string) === 'editorial/av_link');
+    if ((avLinkMod?.params as any)?.linkedSequenceId) {
+      sequencesToDeleteIds.add(String((avLinkMod?.params as any).linkedSequenceId));
     }
     const targetLinkId = (targetSeq as unknown as { linkId?: string }).linkId;
     if (targetLinkId) {
@@ -105,8 +105,8 @@ export class RippleDeleteSequenceCommand implements ICommand {
     // Check reciprocal links across other tracks
     for (const track of copy.tracks) {
       for (const s of track.sequences) {
-        const link = s.modifiers?.find((m) => m.type === 'editorial/av_link');
-        if (link?.params?.linkedSequenceId === this.sequenceId) {
+        const link = s.modifiers?.find((m) => (m.type as string) === 'editorial/av_link');
+        if ((link?.params as any)?.linkedSequenceId === this.sequenceId) {
           sequencesToDeleteIds.add(s.id);
         }
       }

@@ -14,6 +14,7 @@ import {
   type DagNodeType,
 } from './canvas/dag-node';
 import { DagConditionEdge, type DagConditionEdgeData } from './canvas/dag-condition-edge';
+import { DataLineageEdgeComponent, buildDataLineageEdges } from './canvas/data-lineage-edge';
 import { DagCanvasEmptyState } from './canvas/dag-canvas-empty-state';
 import { DagQuickInsertPopover } from './canvas/dag-quick-insert-popover';
 import { DagSelectionToolbar } from './canvas/dag-selection-toolbar';
@@ -21,6 +22,8 @@ import { DagSelectionToolbar } from './canvas/dag-selection-toolbar';
 import { DagHeaderCommandBar } from './toolbar/dag-header-command-bar';
 import { DagDebuggerSubpill } from './toolbar/dag-debugger-subpill';
 import { DagValidationBanner } from './toolbar/dag-validation-banner';
+import { DagDiagnosticDrawer } from './toolbar/dag-diagnostic-drawer';
+import { DagCanvasSearch } from './toolbar/dag-canvas-search';
 
 import { DagPalette } from './palette/dag-palette';
 import { DagPropertyInspector } from './inspectors/dag-property-inspector';
@@ -45,6 +48,7 @@ import {
   importFromWorkflowIR,
   validateGraphTopology,
 } from './utils/workflow-ir-converter';
+import { lintDagSemantics } from './utils/validation/dag-semantic-linter';
 import {
   BLANK_WORKFLOW_NODES,
   BLANK_WORKFLOW_EDGES,
@@ -54,6 +58,9 @@ import {
 
 import { cn } from '@/lib/utils';
 import { Clock, Radio } from 'lucide-react';
+import { useTaskDefinitions } from '@/features/workflows/api/task-definition-api';
+import { TaskVersionDiffModal } from './modals/task-version-diff-modal';
+import { TaskDefinitionEditorDialog } from '../task-definitions/task-definition-editor-dialog';
 import {
   useWorkflowExecutionStream,
   type WorkflowStreamEvent,
@@ -94,6 +101,7 @@ const nodeTypes = {
 
 const edgeTypes = {
   dagEdge: DagConditionEdge,
+  dataLineage: DataLineageEdgeComponent,
 };
 
 function DagStudioCanvas({
@@ -115,7 +123,12 @@ function DagStudioCanvas({
   const [containerHeight, setContainerHeight] = useState<number>(650);
   const [containerWidth, setContainerWidth] = useState<number>(1200);
 
-  const { screenToFlowPosition } = useReactFlow();
+  const { screenToFlowPosition, setCenter } = useReactFlow();
+
+  const [showDataLineage, setShowDataLineage] = useState<boolean>(false);
+  const [viewDensity, setViewDensity] = useState<'compact' | 'standard' | 'dataFlow'>('standard');
+  const [isDiagnosticsOpen, setIsDiagnosticsOpen] = useState<boolean>(false);
+  const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
 
   // Core DAG state management hook
   const {
@@ -191,6 +204,7 @@ function DagStudioCanvas({
   const [irDialogMode, setIrDialogMode] = useState<'export' | 'import'>('export');
   const [irDialogContent, setIrDialogContent] = useState('');
   const [isDryRunOpen, setIsDryRunOpen] = useState(false);
+  const [isContractsModalOpen, setIsContractsModalOpen] = useState(false);
   const [isSimulationModalOpen, setIsSimulationModalOpen] = useState(false);
   const [activeSimulationExecutionId, setActiveSimulationExecutionId] = useState<string | null>(null);
   const [selectedEdgeData, setSelectedEdgeData] = useState<EdgeConditionModalData | null>(null);
@@ -198,6 +212,33 @@ function DagStudioCanvas({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isVariableWatchOpen, setIsVariableWatchOpen] = useState(false);
   const [breakpoints, setBreakpoints] = useState<string[]>([]);
+  const { data: taskDefs } = useTaskDefinitions();
+  const [upgradeNode, setUpgradeNode] = useState<DagNodeData | null>(null);
+  const [isNewTaskDefOpen, setIsNewTaskDefOpen] = useState(false);
+
+  const handleConfirmUpgrade = useCallback((
+    taskRef: string,
+    targetVersion: number,
+    newSchemas: { inputSchema?: Record<string, unknown>; outputSchema?: Record<string, unknown> }
+  ) => {
+    setNodes((prev) =>
+      prev.map((node) => {
+        if (node.data.taskReferenceName === taskRef) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              taskDefVersion: targetVersion,
+              latestTaskDefVersion: targetVersion,
+              inputSchema: newSchemas.inputSchema || node.data.inputSchema,
+              outputSchema: newSchemas.outputSchema || node.data.outputSchema,
+            },
+          };
+        }
+        return node;
+      })
+    );
+  }, [setNodes]);
 
   // Effective execution ID (either passed via prop or started by live simulation)
   const effectiveExecutionId = executionId || activeSimulationExecutionId;
@@ -276,6 +317,52 @@ function DagStudioCanvas({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isFullscreen]);
+
+  // Ctrl+F / Cmd+F shortcut to open canvas node search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        setIsSearchOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const handleFocusNode = useCallback(
+    (node: Node<DagNodeData>) => {
+      setSelectedNodeId(node.id);
+      setIsInspectorOpen(true);
+      if (setCenter && node.position) {
+        setCenter(node.position.x + 100, node.position.y + 40, { zoom: 1.2, duration: 300 });
+      }
+    },
+    [setSelectedNodeId, setCenter]
+  );
+
+  const handleSelectDiagnosticNode = useCallback(
+    (nodeId: string) => {
+      setSelectedNodeId(nodeId);
+      setIsInspectorOpen(true);
+      const targetNode = nodes.find((n) => n.id === nodeId);
+      if (targetNode && setCenter && targetNode.position) {
+        setCenter(targetNode.position.x + 100, targetNode.position.y + 40, { zoom: 1.2, duration: 300 });
+      }
+    },
+    [nodes, setSelectedNodeId, setCenter]
+  );
+
+  // Compute Static Semantic Pre-Flight Diagnostics (Pillar 5)
+  const diagnosticIssues = useMemo(() => {
+    return lintDagSemantics(nodes, edges);
+  }, [nodes, edges]);
+
+  // Synthesize Data Flow Lineage Edges (Pillar 3)
+  const dataLineageEdges = useMemo(() => {
+    if (!showDataLineage) return [];
+    return buildDataLineageEdges(nodes);
+  }, [showDataLineage, nodes]);
 
   // Load existing workflow definition from backend catalog
   useEffect(() => {
@@ -509,10 +596,17 @@ function DagStudioCanvas({
           )
           : degOut === 0;
 
+      const taskDef = taskDefs?.find((td) => td.name === (n.data.taskDefName || n.data.taskReferenceName));
+      const latestVersion = taskDef?.version;
+
       return {
         ...n,
         data: {
           ...n.data,
+          viewDensity,
+          taskDefVersion: n.data.taskDefVersion ?? (taskDef ? taskDef.version : undefined),
+          latestTaskDefVersion: latestVersion,
+          onUpgradeTaskDef: () => setUpgradeNode(n.data),
           isStartNode: isStart,
           isEndNode: isEnd,
           hasBreakpoint: isExecutionMode ? breakpoints.includes(n.data.taskReferenceName) : false,
@@ -524,7 +618,7 @@ function DagStudioCanvas({
         },
       };
     });
-  }, [nodes, edges, breakpoints, handleToggleBreakpoint, handleInspectTask, isExecutionMode, isReadOnly, handleAddNodeBranch, handleRemoveNodeBranch]);
+  }, [nodes, edges, breakpoints, handleToggleBreakpoint, handleInspectTask, isExecutionMode, isReadOnly, handleAddNodeBranch, handleRemoveNodeBranch, viewDensity, taskDefs]);
 
   // Decorate edges with EdgeExecutionFlowState semantics.
   // DagConditionEdge reads data.executionFlowState and owns all execution-time styling —
@@ -671,6 +765,7 @@ function DagStudioCanvas({
         onValidateDag={handleValidateDag}
         validationErrorsCount={validationErrors.length}
         onDryRun={() => setIsDryRunOpen(true)}
+        onOpenContracts={() => setIsContractsModalOpen(true)}
         onSimulate={() => setIsSimulationModalOpen(true)}
         onExportJson={handleExportJson}
         onOpenImportDialog={handleOpenImportDialog}
@@ -697,6 +792,13 @@ function DagStudioCanvas({
         onCloseExecution={onCloseExecution}
         followLive={followLive}
         onToggleFollowLive={handleToggleFollowLive}
+        showDataLineage={showDataLineage}
+        onToggleDataLineage={() => setShowDataLineage((prev) => !prev)}
+        viewDensity={viewDensity}
+        onChangeViewDensity={setViewDensity}
+        onToggleSearch={() => setIsSearchOpen(true)}
+        onOpenDiagnostics={() => setIsDiagnosticsOpen(true)}
+        diagnosticIssuesCount={diagnosticIssues.length}
       />
 
       {/* 2. Floating Debugger Sub-Pill */}
@@ -762,6 +864,7 @@ function DagStudioCanvas({
             <DagPalette
               defaultCollapsed={containerWidth < 900}
               onInsertNode={isReadOnly ? undefined : handleInsertNode}
+              onCreateNewTaskDef={isReadOnly ? undefined : () => setIsNewTaskDefOpen(true)}
               style={{
                 maxHeight: `${computedMaxHeight}px`,
               }}
@@ -801,7 +904,7 @@ function DagStudioCanvas({
       ) : (
         <DagCanvasContainer
           nodes={decoratedNodes}
-          edges={decoratedEdges}
+          edges={[...decoratedEdges, ...dataLineageEdges]}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           isReadOnly={isReadOnly}
@@ -870,6 +973,8 @@ function DagStudioCanvas({
           availableTaskRefs={availableTaskRefs}
           onAddBranch={handleAddNodeBranch}
           onRemoveBranch={handleRemoveNodeBranch}
+          nodes={nodes}
+          edges={edges}
         />
       )}
 
@@ -966,6 +1071,26 @@ function DagStudioCanvas({
         onApplyImportedJson={handleApplyImportedJson}
         isDryRunOpen={isDryRunOpen}
         onDryRunOpenChange={setIsDryRunOpen}
+        isContractsModalOpen={isContractsModalOpen}
+        onContractsModalOpenChange={setIsContractsModalOpen}
+        onOpenStartNode={() => {
+          const startNode = nodes.find(
+            (n) => n.data?.isStartNode || n.data?.taskType === 'START_WORKFLOW'
+          );
+          if (startNode) {
+            setSelectedNodeId(startNode.id);
+            setIsInspectorOpen(true);
+          }
+        }}
+        onOpenEndNode={() => {
+          const endNode = nodes.find(
+            (n) => n.data?.isEndNode || n.data?.taskType === 'END_WORKFLOW'
+          );
+          if (endNode) {
+            setSelectedNodeId(endNode.id);
+            setIsInspectorOpen(true);
+          }
+        }}
         workflowIR={exportToWorkflowIR(nodes, edges)}
         onSimulationSuccess={handleSimulationSuccess}
         isSimulationModalOpen={isSimulationModalOpen}
@@ -999,6 +1124,39 @@ function DagStudioCanvas({
         isStepping={stepOverExecutionMutation.isPending}
         isHotMigrationOpen={isHotMigrationOpen}
         onCloseHotMigration={() => setIsHotMigrationOpen(false)}
+      />
+
+      {/* 13. Pre-Flight Semantic Diagnostics Drawer */}
+      <DagDiagnosticDrawer
+        isOpen={isDiagnosticsOpen}
+        onClose={() => setIsDiagnosticsOpen(false)}
+        issues={diagnosticIssues}
+        onSelectNode={handleSelectDiagnosticNode}
+      />
+
+      {/* 14. Floating In-Canvas Search (Ctrl+F) */}
+      <DagCanvasSearch
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        nodes={nodes}
+        onFocusNode={handleFocusNode}
+      />
+
+      {/* 15. Task Definition Version Diff & Upgrade Modal */}
+      <TaskVersionDiffModal
+        open={Boolean(upgradeNode)}
+        onOpenChange={(open) => !open && setUpgradeNode(null)}
+        nodeData={upgradeNode}
+        currentRecord={taskDefs?.find((td) => td.name === (upgradeNode?.taskDefName || upgradeNode?.taskReferenceName) && td.version === upgradeNode?.taskDefVersion)}
+        targetRecord={taskDefs?.find((td) => td.name === (upgradeNode?.taskDefName || upgradeNode?.taskReferenceName) && td.version === upgradeNode?.latestTaskDefVersion)}
+        onConfirmUpgrade={handleConfirmUpgrade}
+      />
+
+      {/* 16. In-Canvas Task Definition Creator Dialog */}
+      <TaskDefinitionEditorDialog
+        open={isNewTaskDefOpen}
+        onOpenChange={setIsNewTaskDefOpen}
+        mode="create"
       />
     </div>
   );

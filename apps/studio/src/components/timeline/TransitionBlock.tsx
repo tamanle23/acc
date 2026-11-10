@@ -1,12 +1,11 @@
-import React from 'react';
-import { Film, Sparkles, Layers } from 'lucide-react';
+import { Film } from 'lucide-solid';
 import type { ModifierNode } from '@acc/ir';
 
 export interface TransitionBlockProps {
   transitionModifier: ModifierNode;
   sequenceId: string;
   pixelsPerFrame: number;
-  onClick?: (e: React.MouseEvent) => void;
+  onClick?: (e: MouseEvent) => void;
 }
 
 export type TimelineTransitionBlockProps = TransitionBlockProps;
@@ -16,22 +15,17 @@ export type TimelineTransitionBlockProps = TransitionBlockProps;
  * Renders a stylized transition handle / badge directly on the incoming sequence's cut edge.
  * Visualizes the transition duration footprint and type icon (crossfade, wipe, push, zoom, dip, glitch).
  */
-export const TransitionBlock: React.FC<TransitionBlockProps> = ({
-  transitionModifier,
-  sequenceId,
-  pixelsPerFrame,
-  onClick,
-}) => {
-  const p = (transitionModifier.params || {}) as Record<string, unknown>;
-  const durationFrames = typeof p.durationFrames === 'number' ? p.durationFrames : 15;
-  const transType =
-    (typeof p.transitionType === 'string' && p.transitionType) ||
-    transitionModifier.type.split('/').pop() ||
+export function TransitionBlock(props: TransitionBlockProps) {
+  const p = () => (props.transitionModifier.params || {}) as Record<string, unknown>;
+  const durationFrames = () => (typeof p().durationFrames === 'number' ? (p().durationFrames as number) : 15);
+  const transType = () =>
+    (typeof p().transitionType === 'string' && (p().transitionType as string)) ||
+    props.transitionModifier.type.split('/').pop() ||
     'transition';
-  const widthPx = Math.max(16, durationFrames * pixelsPerFrame);
+  const widthPx = () => Math.max(16, durationFrames() * props.pixelsPerFrame);
 
   const getTransitionBadgeColor = () => {
-    switch (transType) {
+    switch (transType()) {
       case 'crossfade':
         return 'from-indigo-600/70 to-blue-500/70 border-indigo-400/60 text-white';
       case 'wipe':
@@ -51,24 +45,23 @@ export const TransitionBlock: React.FC<TransitionBlockProps> = ({
 
   return (
     <div
-      onClick={onClick}
-      style={{ width: `${widthPx}px` }}
-      className={`absolute left-0 top-0 bottom-0 z-20 pointer-events-auto cursor-pointer flex items-center justify-between px-1 bg-gradient-to-r ${getTransitionBadgeColor()} border-r border-t border-b shadow-2xs backdrop-blur-xs select-none hover:brightness-110 transition-all`}
-      title={`Transition: ${transType} (${durationFrames}f) - Click to inspect`}
+      onClick={props.onClick}
+      style={{ width: `${widthPx()}px` }}
+      class={`absolute left-0 top-0 bottom-0 z-20 pointer-events-auto cursor-pointer flex items-center justify-between px-1 bg-gradient-to-r ${getTransitionBadgeColor()} border-r border-t border-b shadow-2xs backdrop-blur-xs select-none hover:brightness-110 transition-all`}
+      title={`Transition: ${transType()} (${durationFrames()}f) - Click to inspect`}
     >
-      <div className="flex items-center gap-0.5 truncate pointer-events-none">
-        <Film className="w-2.5 h-2.5 shrink-0 opacity-80" />
-        <span className="text-[8px] font-mono font-bold uppercase truncate max-w-[40px]">
-          {transType}
+      <div class="flex items-center gap-0.5 truncate pointer-events-none">
+        <Film class="w-2.5 h-2.5 shrink-0 opacity-80" />
+        <span class="text-[8px] font-mono font-bold uppercase truncate max-w-[40px]">
+          {transType()}
         </span>
       </div>
-      <span className="text-[7px] font-mono bg-black/40 px-1 py-0.2 rounded-xs shrink-0 pointer-events-none">
-        {durationFrames}f
+      <span class="text-[7px] font-mono bg-black/40 px-1 py-0.2 rounded-xs shrink-0 pointer-events-none">
+        {durationFrames()}f
       </span>
     </div>
   );
-};
+}
 
 // Backward-compatible alias
 export const TimelineTransitionBlock = TransitionBlock;
-

@@ -131,6 +131,48 @@ describe('Workflow & Versioning Sandbox Handlers Test Suite', () => {
         expect(resolveRes?.data?.resolved).toBe(true);
       }
     });
+
+    it('returns predefined task contracts and detail via /tasks/contracts', async () => {
+      // 1. List all contracts
+      const listCtx = createCtx('/api/v1/tasks/contracts', 'GET');
+      const listRes = await workflowSandboxHandler.handler({ url: '/api/v1/tasks/contracts', method: 'GET', headers: {} }, listCtx);
+      expect(listRes?.status).toBe(200);
+      expect(Array.isArray(listRes?.data)).toBe(true);
+      expect(listRes?.data.length).toBeGreaterThanOrEqual(10);
+
+      // Verify HTTP and checkInventory contracts exist
+      const httpContract = listRes?.data.find((c: any) => c.taskType === 'HTTP');
+      expect(httpContract).toBeDefined();
+      expect(httpContract.inputSchema?.properties?.url).toBeDefined();
+
+      // 2. Fetch single contract
+      const detailCtx = createCtx('/api/v1/tasks/contracts/HTTP', 'GET');
+      const detailRes = await workflowSandboxHandler.handler({ url: '/api/v1/tasks/contracts/HTTP', method: 'GET', headers: {} }, detailCtx);
+      expect(detailRes?.status).toBe(200);
+      expect(detailRes?.data?.taskType).toBe('HTTP');
+      expect(detailRes?.data?.category).toBe('SYSTEM');
+    });
+
+    it('verifies seeded definitions carry node-level inputSchema and outputSchema', async () => {
+      const ctx = createCtx('/api/v1/workflow/definitions/order-fulfillment-pipeline', 'GET');
+      const res = await workflowSandboxHandler.handler({ url: '/api/v1/workflow/definitions/order-fulfillment-pipeline', method: 'GET', headers: {} }, ctx);
+      expect(res?.status).toBe(200);
+      const def = res?.data;
+      expect(def).toBeDefined();
+      expect(def.tasks).toHaveLength(6);
+
+      // Verify validateOrder carries inputSchema and outputSchema
+      const validateOrder = def.tasks.find((t: any) => t.taskReferenceName === 'validateOrder');
+      expect(validateOrder?.inputSchema).toBeDefined();
+      expect(validateOrder?.outputSchema).toBeDefined();
+      expect(validateOrder?.inputSchema?.required).toContain('orderId');
+
+      // Verify checkInventory carries inputSchema and outputSchema
+      const checkInventory = def.tasks.find((t: any) => t.taskReferenceName === 'checkInventory');
+      expect(checkInventory?.inputSchema).toBeDefined();
+      expect(checkInventory?.outputSchema).toBeDefined();
+      expect(checkInventory?.inputSchema?.required).toContain('quantity');
+    });
   });
 
   describe('Workflow Versioning & Hot Migration Handler', () => {

@@ -87,13 +87,19 @@ export class DeterministicTimelineClock {
   }
 
   public setSyncMode(mode: ClockSyncMode): void {
-    this.mode = mode;
+    if (this.mode !== mode) {
+      this.playbackStartFrame = this.currentFrame;
+      this.accumulatedElapsedSec = 0;
+      this.needsAudioReanchor = true;
+      this.mode = mode;
+    }
   }
 
   public getState(): ClockState {
-    const rationalTime = RationalTime.fromFrame(this.currentFrame, this.fps);
+    const discreteFrame = Math.round(this.currentFrame);
+    const rationalTime = RationalTime.fromFrame(discreteFrame, this.fps);
     return {
-      currentFrame: this.currentFrame,
+      currentFrame: discreteFrame,
       isPlaying: this.isPlaying,
       speed: this.speed,
       fps: this.fps,
@@ -105,10 +111,14 @@ export class DeterministicTimelineClock {
   }
 
   public getRationalTime(): RationalTime {
-    return RationalTime.fromFrame(this.currentFrame, this.fps);
+    return RationalTime.fromFrame(Math.round(this.currentFrame), this.fps);
   }
 
   public getFrame(): number {
+    return Math.round(this.currentFrame);
+  }
+
+  public getFractionalFrame(): number {
     return this.currentFrame;
   }
 
@@ -149,7 +159,7 @@ export class DeterministicTimelineClock {
   public lockMasterAudio(audioStartSec: number): void {
     this.audioStartSec = audioStartSec;
     this.playbackStartFrame = this.currentFrame;
-    this.needsAudioReanchor = false;
+    this.needsAudioReanchor = audioStartSec <= 0;
     this.mode = 'audio_master';
   }
 
@@ -175,18 +185,23 @@ export class DeterministicTimelineClock {
     let targetFrame = this.currentFrame;
 
     if (this.mode === 'audio_master') {
-      if (this.needsAudioReanchor && timeOrDeltaSec !== undefined) {
+      if ((this.needsAudioReanchor || this.audioStartSec <= 0) && timeOrDeltaSec !== undefined) {
         this.audioStartSec = timeOrDeltaSec;
         this.needsAudioReanchor = false;
       }
       const audioNow = timeOrDeltaSec ?? this.audioStartSec;
-      const audioElapsed = Math.max(0, audioNow - this.audioStartSec);
-      const deltaFrames = Math.round(audioElapsed * this.fps * this.speed);
+      // Guard against stale audio reference clock drift: if elapsed time exceeds 0.5s on initial frame, reanchor
+      let audioElapsed = audioNow - this.audioStartSec;
+      if (audioElapsed < 0 || (this.currentFrame === this.playbackStartFrame && audioElapsed > 0.5)) {
+        this.audioStartSec = audioNow;
+        audioElapsed = 0;
+      }
+      const deltaFrames = Math.max(0, audioElapsed) * this.fps * this.speed;
       targetFrame = this.playbackStartFrame + deltaFrames;
     } else if (this.mode === 'monotonic_worker') {
       const delta = timeOrDeltaSec ?? (1 / (this.fps * Math.abs(this.speed || 1)));
       this.accumulatedElapsedSec += delta;
-      const deltaFrames = Math.round(this.accumulatedElapsedSec * this.fps * this.speed);
+      const deltaFrames = this.accumulatedElapsedSec * this.fps * this.speed;
       targetFrame = this.playbackStartFrame + deltaFrames;
     }
 

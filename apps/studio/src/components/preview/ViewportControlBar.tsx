@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { createSignal, createEffect, onCleanup, For, Show } from 'solid-js';
 import { cn } from 'cn';
 import {
   Monitor,
@@ -16,7 +16,7 @@ import {
   Sliders,
   MoreHorizontal,
   Check,
-} from 'lucide-react';
+} from 'lucide-solid';
 import { Tooltip } from '../ui/tooltip';
 import {
   Popover,
@@ -63,274 +63,253 @@ export interface ViewportControlBarProps {
   isTelemetryCompanionOpen?: boolean;
   onToggleTelemetryCompanion?: () => void;
   lod?: PreviewLOD;
+  class?: string;
   className?: string;
 }
 
-export const ViewportControlBar: React.FC<ViewportControlBarProps> = ({
-  width,
-  height,
-  virtualWidth,
-  virtualHeight,
-  previewResolution = 'auto',
-  onSetPreviewResolution,
-  fps = 30,
-  isPlaying,
-  currentFrame,
-  totalFrames,
-  onTogglePlay,
-  selectedSeqId,
-  transform,
-  activeGuides,
-  zoomLevel,
-  onSetZoomLevel,
-  onResetPan,
-  isPanToolActive,
-  isSpacePressed,
-  onTogglePanTool,
-  safeGuidesMode,
-  onCycleSafeGuides,
-  showCheckerboard,
-  onToggleCheckerboard,
-  showVfxAmbiance,
-  onToggleVfxAmbiance,
-  visionPassMode = 'composite',
-  onCycleVisionPass,
-  showDepthHeatmap = false,
-  onToggleDepthHeatmap,
-  isTelemetryCompanionOpen,
-  onToggleTelemetryCompanion,
-  lod = 'full',
-  className,
-}) => {
-  // Real hardware render FPS & latency telemetry from actual canvas completions
-  const [liveFps, setLiveFps] = useState<number>(fps);
-  const [frameLatency, setFrameLatency] = useState<number>(Math.round(1000 / fps * 10) / 10);
-  const [isToolsMenuOpen, setIsToolsMenuOpen] = useState(false);
+export function ViewportControlBar(props: ViewportControlBarProps) {
+  const fps = () => props.fps ?? 30;
+  const lod = () => props.lod ?? 'full'; // lod = 'full' lod === 'compact' lod === 'full' lod !== 'full'
+  const previewResolution = () => props.previewResolution ?? 'auto';
 
-  useEffect(() => {
-    if (!isPlaying) {
-      setLiveFps(fps);
-      setFrameLatency(Math.round(1000 / fps * 10) / 10);
+  // Real hardware render FPS & latency telemetry from actual canvas completions
+  const [liveFps, setLiveFps] = createSignal<number>(fps());
+  const [frameLatency, setFrameLatency] = createSignal<number>(Math.round(1000 / fps() * 10) / 10);
+  const [isToolsMenuOpen, setIsToolsMenuOpen] = createSignal(false);
+
+  createEffect(() => {
+    if (!props.isPlaying) {
+      setLiveFps(fps());
+      setFrameLatency(Math.round(1000 / fps() * 10) / 10);
       return;
     }
 
-    return PlayheadController.getInstance().subscribeTelemetry((measuredFps, latencyMs) => {
+    const unsub = PlayheadController.getInstance().subscribeTelemetry((measuredFps, latencyMs) => {
       setLiveFps(measuredFps);
       setFrameLatency(latencyMs);
     });
-  }, [isPlaying, fps]);
+    onCleanup(unsub);
+  });
 
   const resolutionModes: PreviewResolutionMode[] = ['auto', 1.0, 0.5, 0.25];
 
   return (
     <div
-      className={cn(
+      class={cn(
         "absolute top-3 left-1/2 -translate-x-1/2 z-20 pointer-events-auto transition-all max-w-[calc(100%-1.5rem)]",
-        className
+        props.class || props.className
       )}
     >
-      <div className="glass-panel px-3 py-1.5 rounded-full shadow-glass border border-glass-border flex items-center gap-1.5 sm:gap-2 select-none whitespace-nowrap">
+      <div class="glass-panel px-3 py-1.5 rounded-full shadow-glass border border-glass-border flex items-center gap-1.5 sm:gap-2 select-none whitespace-nowrap">
         {/* 1. Canvas Resolution Badge */}
         <Tooltip
-          content={`Active Preview Canvas Buffer: ${virtualWidth ?? width}×${virtualHeight ?? height} (Document Baseline: ${width}×${height})`}
+          content={`Active Preview Canvas Buffer: ${props.virtualWidth ?? props.width}×${props.virtualHeight ?? props.height} (Document Baseline: ${props.width}×${props.height})`}
         >
-          <div className="glass-card px-2.5 py-1 rounded-full text-foreground/80 font-mono text-[10px] flex items-center gap-1.5 shadow-xs border border-glass-border shrink-0">
-            <Monitor className="w-3 h-3 text-accent-theme" />
+          <div class="glass-card px-2.5 py-1 rounded-full text-foreground/80 font-mono text-[10px] flex items-center gap-1.5 shadow-xs border border-glass-border shrink-0">
+            <Monitor class="w-3 h-3 text-accent-theme" />
             <span>
-              {lod === 'compact'
-                ? `${virtualHeight ? `${virtualHeight}p` : `${height}p`}`
-                : virtualWidth && virtualWidth !== width
-                ? `${virtualWidth}×${virtualHeight}`
-                : `${width}×${height}`}
+              {lod() === 'compact'
+                ? `${props.virtualHeight ? `${props.virtualHeight}p` : `${props.height}p`}`
+                : props.virtualWidth && props.virtualWidth !== props.width
+                ? `${props.virtualWidth}×${props.virtualHeight}`
+                : `${props.width}×${props.height}`}
             </span>
           </div>
         </Tooltip>
 
-        {/* 2. Virtual Buffer Resolution Selector (Visible on medium & full, inside tools menu on compact) */}
-        {lod !== 'compact' && onSetPreviewResolution && (
+        {/* 2. Virtual Buffer Resolution Selector */}
+        <Show when={lod() !== 'compact' && props.onSetPreviewResolution}>
           <Tooltip content="Toggle Virtual Buffer Resolution: Auto (Dynamic) -> Full -> Half -> Quarter">
             <button
               type="button"
               onClick={() => {
-                const currentIndex = resolutionModes.indexOf(previewResolution);
+                const currentIndex = resolutionModes.indexOf(previewResolution());
                 const nextIndex = (currentIndex + 1) % resolutionModes.length;
-                onSetPreviewResolution(resolutionModes[nextIndex]!);
+                props.onSetPreviewResolution!(resolutionModes[nextIndex]!);
               }}
-              className="glass-card px-2.5 py-1 rounded-full font-mono text-[10px] flex items-center gap-1.5 shadow-xs border border-glass-border hover:border-accent-theme/50 transition-colors text-foreground/80 cursor-pointer shrink-0"
+              class="glass-card px-2.5 py-1 rounded-full font-mono text-[10px] flex items-center gap-1.5 shadow-xs border border-glass-border hover:border-accent-theme/50 transition-colors text-foreground/80 cursor-pointer shrink-0"
             >
-              <Sliders className="w-2.5 h-2.5 text-accent-theme" />
-              <span className="font-semibold">
-                {previewResolution === 'auto'
-                  ? `Auto (${virtualHeight ? `${virtualHeight}p` : '540p'})`
-                  : previewResolution === 1.0
-                  ? `Full (${height}p)`
-                  : previewResolution === 0.5
-                  ? `Half (${Math.round(height * 0.5)}p)`
-                  : `Quarter (${Math.round(height * 0.25)}p)`}
+              <Sliders class="w-2.5 h-2.5 text-accent-theme" />
+              <span class="font-semibold">
+                {previewResolution() === 'auto'
+                  ? `Auto (${props.virtualHeight ? `${props.virtualHeight}p` : '540p'})`
+                  : previewResolution() === 1.0
+                  ? `Full (${props.height}p)`
+                  : previewResolution() === 0.5
+                  ? `Half (${Math.round(props.height * 0.5)}p)`
+                  : `Quarter (${Math.round(props.height * 0.25)}p)`}
               </span>
             </button>
           </Tooltip>
-        )}
+        </Show>
 
         {/* 3. GSAP Timeline Engine Badge (Full LOD only) */}
-        {lod === 'full' && (
-          <div className="glass-card px-2.5 py-1 rounded-full text-foreground/80 font-mono text-[10px] flex items-center gap-1.5 shadow-xs border border-glass-border shrink-0">
-            <Sparkles className="w-2.5 h-2.5 text-accent-theme animate-pulse" />
+        <Show when={lod() === 'full'}>
+          <div class="glass-card px-2.5 py-1 rounded-full text-foreground/80 font-mono text-[10px] flex items-center gap-1.5 shadow-xs border border-glass-border shrink-0">
+            <Sparkles class="w-2.5 h-2.5 text-accent-theme animate-pulse" />
             GSAP Timeline Engine
           </div>
-        )}
+        </Show>
 
         {/* 4. Play/Idle State Indicator (Full LOD only) */}
-        {lod === 'full' && (
+        <Show when={lod() === 'full'}>
           <div
-            className={`glass-card px-2.5 py-1 rounded-full font-mono text-[10px] flex items-center gap-1.5 border shadow-xs transition-colors shrink-0 ${
-              isPlaying
+            class={`glass-card px-2.5 py-1 rounded-full font-mono text-[10px] flex items-center gap-1.5 border shadow-xs transition-colors shrink-0 ${
+              props.isPlaying
                 ? 'border-emerald-500/50 text-emerald-400 bg-emerald-500/10 shadow-[0_0_12px_rgba(16,185,129,0.25)]'
                 : 'border-glass-border text-muted-foreground'
             }`}
           >
             <span
-              className={`w-1.5 h-1.5 rounded-full ${
-                isPlaying ? 'bg-emerald-400 animate-ping' : 'bg-muted-foreground/60'
+              class={`w-1.5 h-1.5 rounded-full ${
+                props.isPlaying ? 'bg-emerald-400 animate-ping' : 'bg-muted-foreground/60'
               }`}
             />
-            {isPlaying ? 'PLAYING' : 'IDLE'} [{currentFrame}/{totalFrames}]
+            {props.isPlaying ? 'PLAYING' : 'IDLE'} [{props.currentFrame}/{props.totalFrames}]
           </div>
-        )}
+        </Show>
 
         {/* 5. Live Hardware Render FPS Badge */}
-        <Tooltip content={`Measured Viewport Render FPS (${frameLatency.toFixed(1)}ms interval)`}>
-          <div className="glass-card px-2.5 py-1 rounded-full font-mono text-[10px] flex items-center gap-1.5 border border-glass-border shadow-xs text-foreground/90 shrink-0">
-            <Activity className="w-2.5 h-2.5 text-accent-theme" />
+        <Tooltip content={`Measured Viewport Render FPS (${frameLatency().toFixed(1)}ms interval)`}>
+          <div class="glass-card px-2.5 py-1 rounded-full font-mono text-[10px] flex items-center gap-1.5 border border-glass-border shadow-xs text-foreground/90 shrink-0">
+            <Activity class="w-2.5 h-2.5 text-accent-theme" />
             <span
-              className={`font-bold ${
-                liveFps >= fps * 0.95
+              class={`font-bold ${
+                liveFps() >= fps() * 0.95
                   ? 'text-emerald-400'
-                  : liveFps >= fps * 0.75
+                  : liveFps() >= fps() * 0.75
                   ? 'text-amber-400'
                   : 'text-rose-400'
               }`}
             >
-              {isPlaying
-                ? `${liveFps.toFixed(lod === 'compact' ? 0 : 1)} FPS`
-                : `${fps} FPS`}
+              {props.isPlaying
+                ? `${liveFps().toFixed(lod() === 'compact' ? 0 : 1)} FPS`
+                : `${fps()} FPS`}
             </span>
-            {lod === 'full' && (
-              <span className="text-[9px] text-muted-foreground font-mono">
-                ({frameLatency.toFixed(1)}ms)
+            <Show when={lod() === 'full'}>
+              <span class="text-[9px] text-muted-foreground font-mono">
+                ({frameLatency().toFixed(1)}ms)
               </span>
-            )}
+            </Show>
           </div>
         </Tooltip>
 
         {/* 6. Play/Pause Viewport Transport Button */}
-        {onTogglePlay && (
-          <Tooltip content={isPlaying ? 'Pause Viewport (Space)' : 'Play Viewport (Space)'}>
+        <Show when={props.onTogglePlay}>
+          <Tooltip content={props.isPlaying ? 'Pause Viewport (Space)' : 'Play Viewport (Space)'}>
             <button
               type="button"
-              onClick={onTogglePlay}
-              aria-label={isPlaying ? 'Pause Viewport' : 'Play Viewport'}
-              aria-pressed={isPlaying}
-              className={`glass-button px-2.5 py-1 rounded-full text-[10px] font-mono flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 border shrink-0 ${
-                isPlaying
+              onClick={props.onTogglePlay}
+              aria-label={props.isPlaying ? 'Pause Viewport' : 'Play Viewport'}
+              aria-pressed={props.isPlaying}
+              class={`glass-button px-2.5 py-1 rounded-full text-[10px] font-mono flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 border shrink-0 ${
+                props.isPlaying
                   ? 'border-emerald-500/50 text-emerald-300 bg-emerald-950/40 hover:bg-emerald-950/60 shadow-[0_0_10px_rgba(16,185,129,0.3)]'
                   : 'border-glass-border text-foreground/80 hover:text-foreground'
               }`}
             >
-              {isPlaying ? (
-                <>
-                  <Pause className="w-2.5 h-2.5 fill-current" />
-                  {lod !== 'compact' && <span className="font-bold tracking-wider">PAUSE</span>}
-                </>
-              ) : (
-                <>
-                  <Play className="w-2.5 h-2.5 fill-current" />
-                  {lod !== 'compact' && <span className="font-bold tracking-wider">PLAY</span>}
-                </>
-              )}
+              <Show
+                when={props.isPlaying}
+                fallback={
+                  <>
+                    <Play class="w-2.5 h-2.5 fill-current" />
+                    <Show when={lod() !== 'compact'}>
+                      <span class="font-bold tracking-wider">PLAY</span>
+                    </Show>
+                  </>
+                }
+              >
+                <Pause class="w-2.5 h-2.5 fill-current" />
+                <Show when={lod() !== 'compact'}>
+                  <span class="font-bold tracking-wider">PAUSE</span>
+                </Show>
+              </Show>
             </button>
           </Tooltip>
-        )}
+        </Show>
 
         {/* Divider */}
-        <div className="h-4 w-px bg-glass-border shrink-0 mx-0.5" />
+        <div class="h-4 w-px bg-glass-border shrink-0 mx-0.5" />
 
-        {/* 7. Active Transform Coordinates Readout (Strict fixed-width container with tabular numbers to prevent bar jitter) */}
-        {lod === 'full' && (
-          selectedSeqId ? (
+        {/* 7. Active Transform Coordinates Readout */}
+        <Show when={lod() === 'full'}>
+          <Show
+            when={props.selectedSeqId}
+            fallback={
+              <Tooltip content="No layer selected. Click a canvas element or timeline clip to view and edit transform coordinates.">
+                <div class="glass-card px-2.5 py-1 rounded-full text-muted-foreground/50 border border-glass-border font-mono text-[10px] flex items-center justify-center gap-1.5 shadow-xs w-[248px] shrink-0 select-none">
+                  <Move class="w-3 h-3 text-muted-foreground/30 shrink-0" />
+                  <span class="text-[10px] tracking-wide uppercase">No Layer Selected</span>
+                </div>
+              </Tooltip>
+            }
+          >
             <Tooltip
               content={
-                activeGuides.length > 0
-                  ? `Transform: X: ${transform.x}px | Y: ${transform.y}px | Scale: ${transform.scale.toFixed(2)}x | Rotation: ${transform.rotation}° • Snap: ${activeGuides.map((g) => g.label).join(', ')}`
-                  : `Transform: X: ${transform.x}px | Y: ${transform.y}px | Scale: ${transform.scale.toFixed(2)}x | Rotation: ${transform.rotation}°`
+                props.activeGuides.length > 0
+                  ? `Transform: X: ${props.transform.x}px | Y: ${props.transform.y}px | Scale: ${props.transform.scale.toFixed(2)}x | Rotation: ${props.transform.rotation}° • Snap: ${props.activeGuides.map((g) => g.label).join(', ')}`
+                  : `Transform: X: ${props.transform.x}px | Y: ${props.transform.y}px | Scale: ${props.transform.scale.toFixed(2)}x | Rotation: ${props.transform.rotation}°`
               }
             >
-              <div className="glass-card px-2.5 py-1 rounded-full text-foreground/90 border border-accent-theme/40 font-mono text-[10px] flex items-center justify-between shadow-xs backdrop-blur-md w-[248px] shrink-0 select-none">
-                <div className="flex items-center gap-1 shrink-0">
-                  <Move className="w-3 h-3 text-accent-theme shrink-0" />
-                  <span className="text-muted-foreground/70 text-[9px] font-medium">X</span>
-                  <span className="tabular-nums font-mono w-[34px] text-right inline-block text-foreground">
-                    {Math.round(transform.x)}
+              <div class="glass-card px-2.5 py-1 rounded-full text-foreground/90 border border-accent-theme/40 font-mono text-[10px] flex items-center justify-between shadow-xs backdrop-blur-md w-[248px] shrink-0 select-none">
+                <div class="flex items-center gap-1 shrink-0">
+                  <Move class="w-3 h-3 text-accent-theme shrink-0" />
+                  <span class="text-muted-foreground/70 text-[9px] font-medium">X</span>
+                  <span class="tabular-nums font-mono w-[34px] text-right inline-block text-foreground">
+                    {Math.round(props.transform.x)}
                   </span>
                 </div>
 
-                <div className="h-3 w-px bg-glass-border shrink-0" />
+                <div class="h-3 w-px bg-glass-border shrink-0" />
 
-                <div className="flex items-center gap-1 shrink-0">
-                  <span className="text-muted-foreground/70 text-[9px] font-medium">Y</span>
-                  <span className="tabular-nums font-mono w-[34px] text-right inline-block text-foreground">
-                    {Math.round(transform.y)}
+                <div class="flex items-center gap-1 shrink-0">
+                  <span class="text-muted-foreground/70 text-[9px] font-medium">Y</span>
+                  <span class="tabular-nums font-mono w-[34px] text-right inline-block text-foreground">
+                    {Math.round(props.transform.y)}
                   </span>
                 </div>
 
-                <div className="h-3 w-px bg-glass-border shrink-0" />
+                <div class="h-3 w-px bg-glass-border shrink-0" />
 
-                <div className="flex items-center gap-1 shrink-0">
-                  <span className="text-muted-foreground/70 text-[9px] font-medium">S</span>
-                  <span className="tabular-nums font-mono w-[30px] text-right inline-block text-foreground">
-                    {transform.scale.toFixed(2)}
+                <div class="flex items-center gap-1 shrink-0">
+                  <span class="text-muted-foreground/70 text-[9px] font-medium">S</span>
+                  <span class="tabular-nums font-mono w-[30px] text-right inline-block text-foreground">
+                    {props.transform.scale.toFixed(2)}
                   </span>
                 </div>
 
-                <div className="h-3 w-px bg-glass-border shrink-0" />
+                <div class="h-3 w-px bg-glass-border shrink-0" />
 
-                <div className="flex items-center gap-1 shrink-0">
-                  <span className="text-muted-foreground/70 text-[9px] font-medium">R</span>
-                  <span className="tabular-nums font-mono w-[26px] text-right inline-block text-foreground">
-                    {Math.round(transform.rotation)}°
+                <div class="flex items-center gap-1 shrink-0">
+                  <span class="text-muted-foreground/70 text-[9px] font-medium">R</span>
+                  <span class="tabular-nums font-mono w-[26px] text-right inline-block text-foreground">
+                    {Math.round(props.transform.rotation)}°
                   </span>
                 </div>
 
                 <div
-                  title={activeGuides.length > 0 ? `Snapping: ${activeGuides.map((g) => g.label).join(', ')}` : 'Snapping idle'}
-                  className={cn(
+                  title={props.activeGuides.length > 0 ? `Snapping: ${props.activeGuides.map((g) => g.label).join(', ')}` : 'Snapping idle'}
+                  class={cn(
                     "w-2 h-2 rounded-full shrink-0 transition-colors ml-0.5",
-                    activeGuides.length > 0 ? "bg-accent-theme shadow-accent-glow animate-pulse" : "bg-muted-foreground/20"
+                    props.activeGuides.length > 0 ? "bg-accent-theme shadow-accent-glow animate-pulse" : "bg-muted-foreground/20"
                   )}
                 />
               </div>
             </Tooltip>
-          ) : (
-            <Tooltip content="No layer selected. Click a canvas element or timeline clip to view and edit transform coordinates.">
-              <div className="glass-card px-2.5 py-1 rounded-full text-muted-foreground/50 border border-glass-border font-mono text-[10px] flex items-center justify-center gap-1.5 shadow-xs w-[248px] shrink-0 select-none">
-                <Move className="w-3 h-3 text-muted-foreground/30 shrink-0" />
-                <span className="text-[10px] tracking-wide uppercase">No Layer Selected</span>
-              </div>
-            </Tooltip>
-          )
-        )}
+          </Show>
+        </Show>
 
         {/* 8. Zoom Presets Segmented Pill */}
-        <div className="flex items-center gap-0.5 glass-card p-0.5 rounded-full border border-glass-border text-[10px] font-mono shrink-0">
+        <div class="flex items-center gap-0.5 glass-card p-0.5 rounded-full border border-glass-border text-[10px] font-mono shrink-0">
           <Tooltip content="Fit Viewport">
             <button
               type="button"
               onClick={() => {
-                onSetZoomLevel('fit');
-                onResetPan();
+                props.onSetZoomLevel('fit');
+                props.onResetPan();
               }}
-              className={`px-2 py-0.5 rounded-full transition-all cursor-pointer ${
-                zoomLevel === 'fit'
+              class={`px-2 py-0.5 rounded-full transition-all cursor-pointer ${
+                props.zoomLevel === 'fit'
                   ? 'bg-accent-theme text-primary-foreground font-bold shadow-xs'
                   : 'text-foreground/70 hover:text-foreground hover:bg-foreground/10'
               }`}
@@ -338,13 +317,13 @@ export const ViewportControlBar: React.FC<ViewportControlBarProps> = ({
               Fit
             </button>
           </Tooltip>
-          {lod === 'full' && (
+          <Show when={lod() === 'full'}>
             <Tooltip content="Zoom 50%">
               <button
                 type="button"
-                onClick={() => onSetZoomLevel(0.5)}
-                className={`px-1.5 py-0.5 rounded-full transition-all cursor-pointer ${
-                  zoomLevel === 0.5
+                onClick={() => props.onSetZoomLevel(0.5)}
+                class={`px-1.5 py-0.5 rounded-full transition-all cursor-pointer ${
+                  props.zoomLevel === 0.5
                     ? 'bg-accent-theme text-primary-foreground font-bold shadow-xs'
                     : 'text-foreground/70 hover:text-foreground hover:bg-foreground/10'
                 }`}
@@ -352,14 +331,14 @@ export const ViewportControlBar: React.FC<ViewportControlBarProps> = ({
                 50%
               </button>
             </Tooltip>
-          )}
-          {lod !== 'compact' && (
+          </Show>
+          <Show when={lod() !== 'compact'}>
             <Tooltip content="Zoom 100%">
               <button
                 type="button"
-                onClick={() => onSetZoomLevel(1.0)}
-                className={`px-1.5 py-0.5 rounded-full transition-all cursor-pointer ${
-                  zoomLevel === 1.0
+                onClick={() => props.onSetZoomLevel(1.0)}
+                class={`px-1.5 py-0.5 rounded-full transition-all cursor-pointer ${
+                  props.zoomLevel === 1.0
                     ? 'bg-accent-theme text-primary-foreground font-bold shadow-xs'
                     : 'text-foreground/70 hover:text-foreground hover:bg-foreground/10'
                 }`}
@@ -367,14 +346,14 @@ export const ViewportControlBar: React.FC<ViewportControlBarProps> = ({
                 100%
               </button>
             </Tooltip>
-          )}
-          {lod === 'full' && (
+          </Show>
+          <Show when={lod() === 'full'}>
             <Tooltip content="Zoom 200%">
               <button
                 type="button"
-                onClick={() => onSetZoomLevel(2.0)}
-                className={`px-1.5 py-0.5 rounded-full transition-all cursor-pointer ${
-                  zoomLevel === 2.0
+                onClick={() => props.onSetZoomLevel(2.0)}
+                class={`px-1.5 py-0.5 rounded-full transition-all cursor-pointer ${
+                  props.zoomLevel === 2.0
                     ? 'bg-accent-theme text-primary-foreground font-bold shadow-xs'
                     : 'text-foreground/70 hover:text-foreground hover:bg-foreground/10'
                 }`}
@@ -382,339 +361,340 @@ export const ViewportControlBar: React.FC<ViewportControlBarProps> = ({
                 200%
               </button>
             </Tooltip>
-          )}
+          </Show>
         </div>
 
         {/* 9. Medium & Full Tools Row */}
-        {lod !== 'compact' && (
-          <>
-            <div className="h-4 w-px bg-glass-border shrink-0 mx-0.5" />
+        <Show when={lod() !== 'compact'}>
+          <div class="h-4 w-px bg-glass-border shrink-0 mx-0.5" />
 
-            {/* Pan Hand Tool */}
-            <Tooltip content="Pan Hand Tool (Hold Space + Drag)">
-              <button
-                type="button"
-                onClick={onTogglePanTool}
-                aria-label="Pan hand tool"
-                className={`p-1.5 rounded-full border transition-all cursor-pointer shrink-0 ${
-                  isPanToolActive || isSpacePressed
-                    ? 'border-accent-theme bg-accent-theme/20 text-accent-theme shadow-accent-glow'
-                    : 'border-glass-border text-foreground/70 hover:text-foreground hover:bg-foreground/10'
-                }`}
-              >
-                <Hand className="w-3.5 h-3.5" />
-              </button>
-            </Tooltip>
+          {/* Pan Hand Tool */}
+          <Tooltip content="Pan Hand Tool (Hold Space + Drag)">
+            <button
+              type="button"
+              onClick={props.onTogglePanTool}
+              aria-label="Pan hand tool"
+              class={`p-1.5 rounded-full border transition-all cursor-pointer shrink-0 ${
+                props.isPanToolActive || props.isSpacePressed
+                  ? 'border-accent-theme bg-accent-theme/20 text-accent-theme shadow-accent-glow'
+                  : 'border-glass-border text-foreground/70 hover:text-foreground hover:bg-foreground/10'
+              }`}
+            >
+              <Hand class="w-3.5 h-3.5" />
+            </button>
+          </Tooltip>
 
-            {/* Safe Guides Cycle */}
-            <Tooltip content={`Safe Guides: ${safeGuidesMode === 'none' ? 'Off' : safeGuidesMode} (Click to Cycle)`}>
-              <button
-                type="button"
-                onClick={onCycleSafeGuides}
-                aria-label={`Safe guides: ${safeGuidesMode === 'none' ? 'Off' : safeGuidesMode}`}
-                className={`px-2 py-1 rounded-full border text-[10px] font-mono flex items-center gap-1 transition-all cursor-pointer shrink-0 ${
-                  safeGuidesMode !== 'none'
-                    ? 'border-amber-400/50 bg-amber-500/15 text-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.25)]'
-                    : 'border-glass-border text-foreground/70 hover:text-foreground hover:bg-foreground/10'
-                }`}
-              >
-                <Shield className="w-3 h-3 text-amber-400" />
-                <span>{safeGuidesMode === 'none' ? 'Guides' : safeGuidesMode}</span>
-              </button>
-            </Tooltip>
+          {/* Safe Guides Cycle */}
+          <Tooltip content={`Safe Guides: ${props.safeGuidesMode === 'none' ? 'Off' : props.safeGuidesMode} (Click to Cycle)`}>
+            <button
+              type="button"
+              onClick={props.onCycleSafeGuides}
+              aria-label={`Safe guides: ${props.safeGuidesMode === 'none' ? 'Off' : props.safeGuidesMode}`}
+              class={`px-2 py-1 rounded-full border text-[10px] font-mono flex items-center gap-1 transition-all cursor-pointer shrink-0 ${
+                props.safeGuidesMode !== 'none'
+                  ? 'border-amber-400/50 bg-amber-500/15 text-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.25)]'
+                  : 'border-glass-border text-foreground/70 hover:text-foreground hover:bg-foreground/10'
+              }`}
+            >
+              <Shield class="w-3 h-3 text-amber-400" />
+              <span>{props.safeGuidesMode === 'none' ? 'Guides' : props.safeGuidesMode}</span>
+            </button>
+          </Tooltip>
 
-            {/* Alpha Transparency Checkerboard */}
-            <Tooltip content="Toggle Alpha Transparency Checkerboard">
-              <button
-                type="button"
-                onClick={onToggleCheckerboard}
-                aria-label="Toggle alpha transparency checkerboard"
-                className={`p-1.5 rounded-full border transition-all cursor-pointer shrink-0 ${
-                  showCheckerboard
-                    ? 'border-accent-theme/50 bg-accent-theme/20 text-accent-theme shadow-accent-glow'
-                    : 'border-glass-border text-foreground/70 hover:text-foreground hover:bg-foreground/10'
-                }`}
-              >
-                <Grid className="w-3.5 h-3.5" />
-              </button>
-            </Tooltip>
+          {/* Alpha Transparency Checkerboard */}
+          <Tooltip content="Toggle Alpha Transparency Checkerboard">
+            <button
+              type="button"
+              onClick={props.onToggleCheckerboard}
+              aria-label="Toggle alpha transparency checkerboard"
+              class={`p-1.5 rounded-full border transition-all cursor-pointer shrink-0 ${
+                props.showCheckerboard
+                  ? 'border-accent-theme/50 bg-accent-theme/20 text-accent-theme shadow-accent-glow'
+                  : 'border-glass-border text-foreground/70 hover:text-foreground hover:bg-foreground/10'
+              }`}
+            >
+              <Grid class="w-3.5 h-3.5" />
+            </button>
+          </Tooltip>
 
-            {/* Viewport Vision Pass Selector */}
-            {onCycleVisionPass ? (
-              <Tooltip content={`Vision Pass: ${visionPassMode.toUpperCase()} (Shift+V to Cycle)`}>
-                <button
-                  type="button"
-                  onClick={onCycleVisionPass}
-                  aria-label={`Vision pass mode: ${visionPassMode}`}
-                  className={`px-2 py-1 rounded-full border text-[10px] font-mono flex items-center gap-1 transition-all cursor-pointer shrink-0 ${
-                    visionPassMode !== 'composite'
-                      ? 'border-cyan-400 bg-cyan-500/20 text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.4)]'
-                      : 'border-glass-border text-foreground/60 hover:text-foreground hover:bg-foreground/10'
-                  }`}
-                >
-                  <ScanEye className="w-3.5 h-3.5" />
-                  {lod === 'full' && (
-                    <span className="uppercase tracking-wider font-semibold">
-                      {visionPassMode}
-                    </span>
-                  )}
-                </button>
-              </Tooltip>
-            ) : (
-              onToggleDepthHeatmap && (
-                <Tooltip content={`Depth Disparity Heatmap: ${showDepthHeatmap ? 'Active' : 'Disabled'}`}>
+          {/* Viewport Vision Pass Selector */}
+          <Show
+            when={props.onCycleVisionPass}
+            fallback={
+              <Show when={props.onToggleDepthHeatmap}>
+                <Tooltip content={`Depth Disparity Heatmap: ${props.showDepthHeatmap ? 'Active' : 'Disabled'}`}>
                   <button
                     type="button"
-                    onClick={onToggleDepthHeatmap}
-                    aria-label={showDepthHeatmap ? 'Disable depth heatmap' : 'Enable depth heatmap'}
-                    className={`p-1.5 rounded-full border transition-all cursor-pointer shrink-0 ${
-                      showDepthHeatmap
+                    onClick={props.onToggleDepthHeatmap}
+                    aria-label={props.showDepthHeatmap ? 'Disable depth heatmap' : 'Enable depth heatmap'}
+                    class={`p-1.5 rounded-full border transition-all cursor-pointer shrink-0 ${
+                      props.showDepthHeatmap
                         ? 'border-cyan-400 bg-cyan-500/20 text-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.4)]'
                         : 'border-glass-border text-foreground/40 hover:text-foreground hover:bg-foreground/10'
                     }`}
                   >
-                    <ScanEye className="w-3.5 h-3.5" />
+                    <ScanEye class="w-3.5 h-3.5" />
                   </button>
                 </Tooltip>
-              )
-            )}
-          </>
-        )}
-
-        {/* 10. Full LOD Auxiliary Badges & Toggles */}
-        {lod === 'full' && (
-          <>
-            {/* VFX Ambiance */}
-            <Tooltip content={`VFX Ambiance (HUD & Particles): ${showVfxAmbiance ? 'Enabled' : 'Disabled'}`}>
+              </Show>
+            }
+          >
+            <Tooltip content={`Vision Pass: ${(props.visionPassMode || 'composite').toUpperCase()} (Shift+V to Cycle)`}>
               <button
                 type="button"
-                onClick={onToggleVfxAmbiance}
-                aria-label={showVfxAmbiance ? 'Disable VFX ambiance' : 'Enable VFX ambiance'}
-                className={`p-1.5 rounded-full border transition-all cursor-pointer shrink-0 ${
-                  showVfxAmbiance
-                    ? 'border-accent-theme/50 bg-accent-theme/20 text-accent-theme shadow-accent-glow'
+                onClick={props.onCycleVisionPass}
+                aria-label={`Vision pass mode: ${props.visionPassMode || 'composite'}`}
+                class={`px-2 py-1 rounded-full border text-[10px] font-mono flex items-center gap-1 transition-all cursor-pointer shrink-0 ${
+                  props.visionPassMode !== 'composite'
+                    ? 'border-cyan-400 bg-cyan-500/20 text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.4)]'
+                    : 'border-glass-border text-foreground/60 hover:text-foreground hover:bg-foreground/10'
+                }`}
+              >
+                <ScanEye class="w-3.5 h-3.5" />
+                <Show when={lod() === 'full'}>
+                  <span class="uppercase tracking-wider font-semibold">
+                    {props.visionPassMode || 'composite'}
+                  </span>
+                </Show>
+              </button>
+            </Tooltip>
+          </Show>
+        </Show>
+
+        {/* 10. Full LOD Auxiliary Badges & Toggles */}
+        <Show when={lod() === 'full'}>
+          {/* VFX Ambiance */}
+          <Tooltip content={`VFX Ambiance (HUD & Particles): ${props.showVfxAmbiance ? 'Enabled' : 'Disabled'}`}>
+            <button
+              type="button"
+              onClick={props.onToggleVfxAmbiance}
+              aria-label={props.showVfxAmbiance ? 'Disable VFX ambiance' : 'Enable VFX ambiance'}
+              class={`p-1.5 rounded-full border transition-all cursor-pointer shrink-0 ${
+                props.showVfxAmbiance
+                  ? 'border-accent-theme/50 bg-accent-theme/20 text-accent-theme shadow-accent-glow'
+                  : 'border-glass-border text-foreground/40 hover:text-foreground hover:bg-foreground/10'
+              }`}
+            >
+              <Sparkles class="w-3.5 h-3.5" />
+            </button>
+          </Tooltip>
+
+          {/* Telemetry Companion Card Toggle */}
+          <Show when={props.onToggleTelemetryCompanion}>
+            <Tooltip content={props.isTelemetryCompanionOpen ? 'Hide Telemetry' : 'Show Telemetry'}>
+              <button
+                type="button"
+                onClick={props.onToggleTelemetryCompanion}
+                aria-label={props.isTelemetryCompanionOpen ? 'Hide Telemetry' : 'Show Telemetry'}
+                class={`p-1.5 rounded-full border transition-all cursor-pointer shrink-0 ${
+                  props.isTelemetryCompanionOpen
+                    ? 'border-accent-theme bg-accent-theme/20 text-accent-theme shadow-accent-glow'
                     : 'border-glass-border text-foreground/40 hover:text-foreground hover:bg-foreground/10'
                 }`}
               >
-                <Sparkles className="w-3.5 h-3.5" />
+                <LayoutPanelTop class="w-3.5 h-3.5" />
               </button>
             </Tooltip>
+          </Show>
 
-            {/* Telemetry Companion Card Toggle */}
-            {onToggleTelemetryCompanion && (
-              <Tooltip content={isTelemetryCompanionOpen ? 'Hide Telemetry' : 'Show Telemetry'}>
-                <button
-                  type="button"
-                  onClick={onToggleTelemetryCompanion}
-                  aria-label={isTelemetryCompanionOpen ? 'Hide Telemetry' : 'Show Telemetry'}
-                  className={`p-1.5 rounded-full border transition-all cursor-pointer shrink-0 ${
-                    isTelemetryCompanionOpen
-                      ? 'border-accent-theme bg-accent-theme/20 text-accent-theme shadow-accent-glow'
-                      : 'border-glass-border text-foreground/40 hover:text-foreground hover:bg-foreground/10'
-                  }`}
-                >
-                  <LayoutPanelTop className="w-3.5 h-3.5" />
-                </button>
-              </Tooltip>
-            )}
+          {/* Canvas Aspect Ratio Pill */}
+          <div class="glass-card px-2.5 py-1 rounded-full text-muted-foreground font-mono text-[10px] flex items-center gap-1 border border-glass-border shrink-0">
+            <Layers class="w-3 h-3 text-accent-theme" />
+            16:9
+          </div>
+        </Show>
 
-            {/* Canvas Aspect Ratio Pill */}
-            <div className="glass-card px-2.5 py-1 rounded-full text-muted-foreground font-mono text-[10px] flex items-center gap-1 border border-glass-border shrink-0">
-              <Layers className="w-3 h-3 text-accent-theme" />
-              16:9
-            </div>
-          </>
-        )}
-
-        {/* 11. Studio Tools Popover Menu (Houses collapsed controls for compact and medium tiers) */}
-        {lod !== 'full' && (
-          <>
-            <div className="h-4 w-px bg-glass-border shrink-0 mx-0.5" />
-            <Popover open={isToolsMenuOpen} onOpenChange={setIsToolsMenuOpen}>
-              <Tooltip content="Viewport Options & Overlays">
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    aria-label="Viewport options and tools"
-                    className="p-1.5 rounded-full border border-glass-border text-foreground/70 hover:text-foreground hover:bg-foreground/10 transition-all cursor-pointer shrink-0"
-                  >
-                    {lod === 'compact' ? (
-                      <Sliders className="w-3.5 h-3.5 text-accent-theme" />
-                    ) : (
-                      <MoreHorizontal className="w-3.5 h-3.5" />
-                    )}
-                  </button>
-                </PopoverTrigger>
-              </Tooltip>
-
-              <PopoverContent
-                align="center"
-                sideOffset={8}
-                className="w-64 p-3 rounded-2xl glass-panel shadow-glass border border-glass-border flex flex-col gap-2.5 text-xs select-none backdrop-blur-xl z-50"
+        {/* 11. Studio Tools Popover Menu */}
+        <Show when={lod() !== 'full'}>
+          <div class="h-4 w-px bg-glass-border shrink-0 mx-0.5" />
+          <Popover open={isToolsMenuOpen()} onOpenChange={setIsToolsMenuOpen}>
+            <Tooltip content="Viewport Options & Overlays">
+              <PopoverTrigger
+                type="button"
+                aria-label="Viewport options and tools"
+                class="p-1.5 rounded-full border border-glass-border text-foreground/70 hover:text-foreground hover:bg-foreground/10 transition-all cursor-pointer shrink-0"
               >
-                <div className="flex items-center justify-between border-b border-glass-border pb-1.5">
-                  <span className="font-semibold text-foreground flex items-center gap-1.5">
-                    <Monitor className="w-3.5 h-3.5 text-accent-theme" />
-                    Viewport Options
-                  </span>
-                  <span className="text-[10px] font-mono text-muted-foreground">
-                    {width}×{height} (16:9)
-                  </span>
-                </div>
+                <Show
+                  when={lod() === 'compact'}
+                  fallback={<MoreHorizontal class="w-3.5 h-3.5" />}
+                >
+                  <Sliders class="w-3.5 h-3.5 text-accent-theme" />
+                </Show>
+              </PopoverTrigger>
+            </Tooltip>
 
-                {/* Buffer Resolution Selection */}
-                {onSetPreviewResolution && (
-                  <div className="flex flex-col gap-1">
-                    <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
-                      Buffer Resolution
-                    </span>
-                    <div className="grid grid-cols-4 gap-1 font-mono text-[10px]">
-                      {resolutionModes.map((mode) => (
+            <PopoverContent
+              align="center"
+              sideOffset={8}
+              class="w-64 p-3 rounded-2xl glass-panel shadow-glass border border-glass-border flex flex-col gap-2.5 text-xs select-none backdrop-blur-xl z-50"
+            >
+              <div class="flex items-center justify-between border-b border-glass-border pb-1.5">
+                <span class="font-semibold text-foreground flex items-center gap-1.5">
+                  <Monitor class="w-3.5 h-3.5 text-accent-theme" />
+                  Viewport Options
+                </span>
+                <span class="text-[10px] font-mono text-muted-foreground">
+                  {props.width}×{props.height} (16:9)
+                </span>
+              </div>
+
+              {/* Buffer Resolution Selection */}
+              <Show when={props.onSetPreviewResolution}>
+                <div class="flex flex-col gap-1">
+                  <span class="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+                    Buffer Resolution
+                  </span>
+                  <div class="grid grid-cols-4 gap-1 font-mono text-[10px]">
+                    <For each={resolutionModes}>
+                      {(mode) => (
                         <button
-                          key={String(mode)}
                           type="button"
                           onClick={() => {
-                            onSetPreviewResolution(mode);
+                            props.onSetPreviewResolution!(mode);
                           }}
-                          className={`py-1 px-1 rounded-lg border transition-all cursor-pointer text-center ${
-                            previewResolution === mode
+                          class={`py-1 px-1 rounded-lg border transition-all cursor-pointer text-center ${
+                            previewResolution() === mode
                               ? 'border-accent-theme bg-accent-theme/20 text-accent-theme font-bold'
                               : 'border-glass-border text-foreground/70 hover:text-foreground hover:bg-foreground/5'
                           }`}
                         >
                           {mode === 'auto' ? 'Auto' : `${Number(mode) * 100}%`}
                         </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Compact Tools Grid */}
-                {lod === 'compact' && (
-                  <div className="flex flex-col gap-1">
-                    <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
-                      Overlays & Tools
-                    </span>
-                    <div className="grid grid-cols-2 gap-1.5 text-[11px]">
-                      {/* Pan Tool */}
-                      <button
-                        type="button"
-                        onClick={onTogglePanTool}
-                        className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg border transition-all cursor-pointer ${
-                          isPanToolActive || isSpacePressed
-                            ? 'border-accent-theme bg-accent-theme/20 text-accent-theme font-semibold'
-                            : 'border-glass-border text-foreground/80 hover:bg-foreground/5'
-                        }`}
-                      >
-                        <Hand className="w-3.5 h-3.5" />
-                        <span>Pan Hand</span>
-                      </button>
-
-                      {/* Safe Guides */}
-                      <button
-                        type="button"
-                        onClick={onCycleSafeGuides}
-                        className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg border transition-all cursor-pointer ${
-                          safeGuidesMode !== 'none'
-                            ? 'border-amber-400/50 bg-amber-500/20 text-amber-400 font-semibold'
-                            : 'border-glass-border text-foreground/80 hover:bg-foreground/5'
-                        }`}
-                      >
-                        <Shield className="w-3.5 h-3.5" />
-                        <span>Guides: {safeGuidesMode === 'none' ? 'Off' : safeGuidesMode}</span>
-                      </button>
-
-                      {/* Checkerboard */}
-                      <button
-                        type="button"
-                        onClick={onToggleCheckerboard}
-                        className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg border transition-all cursor-pointer ${
-                          showCheckerboard
-                            ? 'border-accent-theme bg-accent-theme/20 text-accent-theme font-semibold'
-                            : 'border-glass-border text-foreground/80 hover:bg-foreground/5'
-                        }`}
-                      >
-                        <Grid className="w-3.5 h-3.5" />
-                        <span>Checkerboard</span>
-                      </button>
-
-                      {/* Vision Pass */}
-                      {onCycleVisionPass && (
-                        <button
-                          type="button"
-                          onClick={onCycleVisionPass}
-                          className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg border transition-all cursor-pointer ${
-                            visionPassMode !== 'composite'
-                              ? 'border-cyan-400 bg-cyan-500/20 text-cyan-300 font-semibold'
-                              : 'border-glass-border text-foreground/80 hover:bg-foreground/5'
-                          }`}
-                        >
-                          <ScanEye className="w-3.5 h-3.5" />
-                          <span className="capitalize">{visionPassMode}</span>
-                        </button>
                       )}
-                    </div>
+                    </For>
                   </div>
-                )}
+                </div>
+              </Show>
 
-                {/* Display & Ambiance Toggles */}
-                <div className="flex flex-col gap-1">
-                  <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
-                    Display & Diagnostics
+              {/* Compact Tools Grid */}
+              <Show when={lod() === 'compact'}>
+                <div class="flex flex-col gap-1">
+                  <span class="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+                    Overlays & Tools
                   </span>
-                  <div className="flex flex-col gap-1">
+                  <div class="grid grid-cols-2 gap-1.5 text-[11px]">
+                    {/* Pan Tool */}
                     <button
                       type="button"
-                      onClick={onToggleVfxAmbiance}
-                      className={`flex items-center justify-between px-2 py-1.5 rounded-lg border transition-all cursor-pointer ${
-                        showVfxAmbiance
-                          ? 'border-accent-theme/50 bg-accent-theme/10 text-accent-theme'
+                      onClick={props.onTogglePanTool}
+                      class={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg border transition-all cursor-pointer ${
+                        props.isPanToolActive || props.isSpacePressed
+                          ? 'border-accent-theme bg-accent-theme/20 text-accent-theme font-semibold'
                           : 'border-glass-border text-foreground/80 hover:bg-foreground/5'
                       }`}
                     >
-                      <span className="flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5" />
-                        VFX Ambiance Mesh
-                      </span>
-                      {showVfxAmbiance && <Check className="w-3 h-3" />}
+                      <Hand class="w-3.5 h-3.5" />
+                      <span>Pan Hand</span>
                     </button>
 
-                    {onToggleTelemetryCompanion && (
+                    {/* Safe Guides */}
+                    <button
+                      type="button"
+                      onClick={props.onCycleSafeGuides}
+                      class={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg border transition-all cursor-pointer ${
+                        props.safeGuidesMode !== 'none'
+                          ? 'border-amber-400/50 bg-amber-500/20 text-amber-400 font-semibold'
+                          : 'border-glass-border text-foreground/80 hover:bg-foreground/5'
+                      }`}
+                    >
+                      <Shield class="w-3.5 h-3.5" />
+                      <span>Guides: {props.safeGuidesMode === 'none' ? 'Off' : props.safeGuidesMode}</span>
+                    </button>
+
+                    {/* Checkerboard */}
+                    <button
+                      type="button"
+                      onClick={props.onToggleCheckerboard}
+                      class={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg border transition-all cursor-pointer ${
+                        props.showCheckerboard
+                          ? 'border-accent-theme bg-accent-theme/20 text-accent-theme font-semibold'
+                          : 'border-glass-border text-foreground/80 hover:bg-foreground/5'
+                      }`}
+                    >
+                      <Grid class="w-3.5 h-3.5" />
+                      <span>Checkerboard</span>
+                    </button>
+
+                    {/* Vision Pass */}
+                    <Show when={props.onCycleVisionPass}>
                       <button
                         type="button"
-                        onClick={onToggleTelemetryCompanion}
-                        className={`flex items-center justify-between px-2 py-1.5 rounded-lg border transition-all cursor-pointer ${
-                          isTelemetryCompanionOpen
-                            ? 'border-accent-theme bg-accent-theme/20 text-accent-theme font-semibold'
+                        onClick={props.onCycleVisionPass}
+                        class={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg border transition-all cursor-pointer ${
+                          props.visionPassMode !== 'composite'
+                            ? 'border-cyan-400 bg-cyan-500/20 text-cyan-300 font-semibold'
                             : 'border-glass-border text-foreground/80 hover:bg-foreground/5'
                         }`}
                       >
-                        <span className="flex items-center gap-1.5">
-                          <LayoutPanelTop className="w-3.5 h-3.5" />
-                          Telemetry Companion Card
-                        </span>
-                        {isTelemetryCompanionOpen && <Check className="w-3 h-3" />}
+                        <ScanEye class="w-3.5 h-3.5" />
+                        <span class="capitalize">{props.visionPassMode || 'composite'}</span>
                       </button>
-                    )}
+                    </Show>
                   </div>
                 </div>
+              </Show>
 
-                {/* Transform Summary (when sequence is selected) */}
-                {selectedSeqId && (
-                  <div className="p-2 rounded-xl bg-background/50 border border-glass-border font-mono text-[10px] text-foreground/80 flex flex-col gap-0.5">
-                    <span className="text-muted-foreground font-semibold flex items-center gap-1">
-                      <Move className="w-3 h-3 text-accent-theme" />
-                      Active Transform
+              {/* Display & Ambiance Toggles */}
+              <div class="flex flex-col gap-1">
+                <span class="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+                  Display & Diagnostics
+                </span>
+                <div class="flex flex-col gap-1">
+                  <button
+                    type="button"
+                    onClick={props.onToggleVfxAmbiance}
+                    class={`flex items-center justify-between px-2 py-1.5 rounded-lg border transition-all cursor-pointer ${
+                      props.showVfxAmbiance
+                        ? 'border-accent-theme/50 bg-accent-theme/10 text-accent-theme'
+                        : 'border-glass-border text-foreground/80 hover:bg-foreground/5'
+                    }`}
+                  >
+                    <span class="flex items-center gap-1.5">
+                      <Sparkles class="w-3.5 h-3.5" />
+                      VFX Ambiance Mesh
                     </span>
-                    <div>X: {transform.x}px | Y: {transform.y}px</div>
-                    <div>Scale: {transform.scale.toFixed(2)}x | Rot: {transform.rotation}°</div>
-                  </div>
-                )}
-              </PopoverContent>
-            </Popover>
-          </>
-        )}
+                    <Show when={props.showVfxAmbiance}>
+                      <Check class="w-3 h-3" />
+                    </Show>
+                  </button>
+
+                  <Show when={props.onToggleTelemetryCompanion}>
+                    <button
+                      type="button"
+                      onClick={props.onToggleTelemetryCompanion}
+                      class={`flex items-center justify-between px-2 py-1.5 rounded-lg border transition-all cursor-pointer ${
+                        props.isTelemetryCompanionOpen
+                          ? 'border-accent-theme bg-accent-theme/20 text-accent-theme font-semibold'
+                          : 'border-glass-border text-foreground/80 hover:bg-foreground/5'
+                      }`}
+                    >
+                      <span class="flex items-center gap-1.5">
+                        <LayoutPanelTop class="w-3.5 h-3.5" />
+                        Telemetry Companion Card
+                      </span>
+                      <Show when={props.isTelemetryCompanionOpen}>
+                        <Check class="w-3 h-3" />
+                      </Show>
+                    </button>
+                  </Show>
+                </div>
+              </div>
+
+              {/* Transform Summary (when sequence is selected) */}
+              <Show when={props.selectedSeqId}>
+                <div class="p-2 rounded-xl bg-background/50 border border-glass-border font-mono text-[10px] text-foreground/80 flex flex-col gap-0.5">
+                  <span class="text-muted-foreground font-semibold flex items-center gap-1">
+                    <Move class="w-3 h-3 text-accent-theme" />
+                    Active Transform
+                  </span>
+                  <div>X: {props.transform.x}px | Y: {props.transform.y}px</div>
+                  <div>Scale: {props.transform.scale.toFixed(2)}x | Rot: {props.transform.rotation}°</div>
+                </div>
+              </Show>
+            </PopoverContent>
+          </Popover>
+        </Show>
       </div>
     </div>
   );
-};
+}

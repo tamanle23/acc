@@ -112,3 +112,34 @@
 | 446 | [Migration of tekgo-ui to Astro 5 + Preact + Tailwind CSS v4](./446_tekgo_ui_astro5_preact_migration.md) | Completed |
 | 447 | [Refactor Human Approval Node to Atomic In-Line Review Gate](./447_refactor_human_approval_to_atomic_review_gate.md) | Completed |
 | 448 | [tekgo-ui Pure PortableText to HTML Migration](./448_tekgo_ui_pure_portabletext_to_html.md) | Completed |
+| 449 | [Visual DAG Studio 2.0 - Enterprise Data Pipeline & DAG Designer Upgrade](./449_visual_dag_studio_2_data_pipeline_designer.md) | Completed |
+| 450 | [Fix Notification SSE Stream 401 Unauthorized](./450_fix_notification_sse_stream_401_unauthorized.md) | Completed |
+| 451 | [Eliminate URL Tokens and Harden Server-Sent Events Security](./451_eliminate_url_tokens_and_harden_sse_security.md) | Completed |
+| 452 | [Fix Profile Form Values Reset to Default on Save](./452_fix_profile_form_reset_to_default_on_save.md) | Completed |
+| 453 | [Unified Backend Envelope Error Extraction and Non-Success Rejection](./453_unified_backend_envelope_error_handling.md) | Completed |
+| 454 | [Decouple Sandbox Components from Production Screens](./454_decouple_sandbox_from_production_screens.md) | Completed |
+| 455 | [Mandatory Workflow Input/Output Schemas and Unaware Task Context Passing](./455_mandatory_workflow_io_schemas_and_context_passing.md) | Completed |
+| 456 | [Backend Sandbox Sample Workflow Seeder & End-to-End Flow Verification](./456_backend_sandbox_sample_workflow_seeder.md) | Completed |
+| 457 | [Predefined Task Node Schemas & Contract Inspector](./457_predefined_task_node_schemas_and_contract_inspector.md) | Completed |
+| 458 | [Studio Migration from React 19 to SolidJS 1.9](./458_studio_react_to_solid_migration.md) | Completed |
+| 459 | [Rehydrate Workflow Definition Catalog from Persistence & Tenant Query Scoping](./459_rehydrate_workflow_definitions_catalog.md) | Completed |
+| 460 | [Comprehensive Studio Bug Resolution & Zero-Error Audit](./460_comprehensive_studio_bug_resolution_and_zero_error_audit.md) | Completed |
+| 461 | [Decouple Task Definitions from Workers & Versioned Catalog](./461_decouple_task_definitions_from_workers_and_versioned_catalog.md) | Completed |
+| 462 | [Preview Playback Black Flashing Resolution & RAM Optimization](./462_preview_playback_black_flashing_and_ram_optimization.md) | Completed |
+| 463 | [Eliminate Preview Black Flashing & Unify Shuttle Engine](./463_eliminate_preview_black_flashing_and_unify_shuttle_engine.md) | Completed |
+| 464 | [Fix Preview Playback Lag & Optimize Sequential Video Reader](./464_fix_preview_playback_lag_and_optimize_sequential_reader.md) | Completed |
+| 465 | [Dedicated Task Definitions Manager & Studio Hub](./465_dedicated_task_definitions_manager_and_studio_hub.md) | Completed |
+| 466 | [Backend SSOT Task Contracts & In-Memory Preloaded Registry](./466_backend_ssot_task_contracts_and_preloaded_registry.md) | Completed |
+| 467 | [Studio Memory Minimization & Multi-FPS Smooth Playback](./467_studio_memory_minimization_and_multi_fps_playback.md) | Completed |
+| 468 | [Fix Studio RightSidebar Property Modifications and Sequence Preview Popup Positioning](./468_fix_studio_right_sidebar_properties_and_sequence_preview_popup.md) | Completed |
+| 469 | [End-to-End Task Contract Design & Runtime Integrity](./469_task_contract_studio_engine_integrity.md) | Completed |
+| 470 | [Fix Studio RightSidebar Sliders Not Moving](./470_fix_studio_right_sidebar_sliders_not_moving.md) | Completed |
+| 471 | [Fix Studio Add Effect Popover Flashing](./471_fix_studio_add_effect_popover_flashing.md) | Completed |
+| 472 | [Fix Audio and Image Asset Cache Negative Caching and Dead Demo URLs](./472_fix_audio_and_image_asset_cache_negative_caching_and_dead_urls.md) | Completed |
+| 473 | [Fix Studio Playhead Controller and Playback Clock Desynchronization](./473_fix_studio_playhead_controller_and_playback_clock_desync.md) | Completed |
+| 474 | [Fix Studio Single-Click Replay and Boundary Wrap](./474_fix_studio_single_click_replay_and_boundary_wrap.md) | Completed |
+| 475 | [Fix Audio Hardware Reference Clock Leap Causing Replay Auto-Stop](./475_fix_audio_hardware_clock_leap_causing_replay_auto_stop.md) | Completed |
+| 476 | [Enforce Zero Junk Code and Engineering Hygiene Rules](./476_enforce_zero_junk_code_and_engineering_hygiene_rules.md) | Completed |
+| 477 | [Fix Sidecar Worker Single Warmup Dispatch & Passive Barrier](./477_fix_sidecar_worker_single_warmup_dispatch.md) | Completed |
+| 478 | [Establish 100% Isomorphic and WinterTC Compliant Architecture in @acc/effect-engines](./478_fully_isomorphic_effect_engines.md) | Completed |
+| 479 | [Unified Decoupled Audio Mixing and Hardware Rate Negotiation](./479_unified_audio_mixing_and_hardware_rate_negotiation.md) | Completed |

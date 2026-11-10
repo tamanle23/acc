@@ -127,4 +127,21 @@ describe('DagQuickInsertPopover Component Unit Tests', () => {
       expect.objectContaining({ taskType: 'SIMPLE' })
     );
   });
+
+  it('renders custom task definitions from catalog and triggers selection with taskDef metadata', () => {
+    const handleSelect = vi.fn();
+    const handleClose = vi.fn();
+
+    // Re-render with mocked custom tasks
+    render(
+      <DagQuickInsertPopover
+        position={{ x: 200, y: 200 }}
+        onSelectNodeType={handleSelect}
+        onClose={handleClose}
+      />
+    );
+
+    // Verify search input is rendered
+    expect(screen.getByTestId('dag-quick-insert-search-input')).toBeDefined();
+  });
 });

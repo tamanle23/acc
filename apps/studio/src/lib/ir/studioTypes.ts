@@ -5,19 +5,27 @@ import type {
   ModifierNode,
   ResolvedSequence,
   ResolvedTrack,
+  SequenceTime,
 } from '@acc/ir';
 
 /**
  * Union representing either a compiled ResolvedSequence (from timeline)
  * or a raw IRSequence (from VideoIRDocument).
  */
-export type StudioSequence = ResolvedSequence | IRSequence;
+export type StudioSequence = (ResolvedSequence | IRSequence) & {
+  name?: string;
+  startFrame?: number;
+  durationFrames?: number;
+  time?: SequenceTime;
+};
 
 /**
  * Union representing either a compiled ResolvedTrack (from timeline)
  * or a raw IRTrack (from VideoIRDocument).
  */
-export type StudioTrack = ResolvedTrack | IRTrack;
+export type StudioTrack = (ResolvedTrack | IRTrack) & {
+  name?: string;
+};
 
 /**
  * Extended asset definition record stored in IRState.doc.assets

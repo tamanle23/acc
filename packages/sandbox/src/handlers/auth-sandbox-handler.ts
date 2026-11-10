@@ -387,11 +387,12 @@ export const authSandboxHandler: SandboxRouteHandler = {
       const rawUser = decoded?.sub || decoded?.personaId || 'admin@acc.io';
       const persona = resolveSandboxPersona(rawUser) || DEFAULT_SANDBOX_PERSONAS.admin;
 
+      const email = mockUserProfileState.email || (persona.username?.includes('@') ? persona.username : `${persona.username || 'user'}@acc.io`);
       const profileRes = {
         userId: persona.uid || `usr-${persona.id}`,
         username: persona.username,
         ...mockUserProfileState,
-        email: persona.username?.includes('@') ? persona.username : `${persona.username || 'user'}@acc.io`,
+        email,
       };
 
       return {
@@ -423,13 +424,18 @@ export const authSandboxHandler: SandboxRouteHandler = {
         };
       }
 
+      const updatedProfile = {
+        userId: `usr-${username}`,
+        username,
+        ...mockUserProfileState,
+      };
+
       return {
         status: 200,
         statusText: 'OK',
         data: {
-          userId: `usr-${username}`,
-          username,
-          ...mockUserProfileState,
+          ...updatedProfile,
+          body: updatedProfile,
         },
       };
     }

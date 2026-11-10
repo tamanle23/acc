@@ -132,6 +132,28 @@ export function SandboxDock() {
     }
   };
 
+  const handleSimulateBillingPayment = async (planTier: 'PRO' | 'PRO_MAX') => {
+    const orderCode = Date.now();
+    const amount = planTier === 'PRO_MAX' ? 4990000 : 1990000;
+    try {
+      await springApiClient.post('/v1/billing/payos/webhook', {
+        code: '00',
+        desc: 'Success',
+        signature: 'mock_signature_ok',
+        data: {
+          orderCode,
+          amount,
+          description: `UNIPOST ${planTier} PAYMENT`,
+        },
+      });
+      queryClient.invalidateQueries({ queryKey: ['billing-summary', activeTenantId] });
+      queryClient.invalidateQueries({ queryKey: ['entity-types'] });
+      toast.success(`FinOps Simulator: Gói ${planTier} đã unlock toàn bộ quyền lợi cho ${activeTenantId}.`);
+    } catch (e: any) {
+      toast.error(`FinOps Simulation Failed: ${e.message}`);
+    }
+  };
+
   const tenants = [
     { id: 'SYSTEM', label: '👑 SYSTEM (Sovereign Root System)' },
     { id: 'tenant-acme', label: 'Acme International Corp (tenant-acme)' },
@@ -384,6 +406,35 @@ export function SandboxDock() {
               >
                 <AlertOctagon className="size-3 mr-1 text-rose-500" />
                 Inject Poison Task (DLQ)
+              </Button>
+            </div>
+          </div>
+
+          {/* FinOps & VietQR Billing Simulator */}
+          <div className="pt-2 border-t border-border/40 space-y-1.5">
+            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
+              FinOps & Billing Simulator
+            </span>
+            <div className="grid grid-cols-2 gap-1.5">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleSimulateBillingPayment('PRO')}
+                className="text-[10px] h-7 px-2 justify-start border-blue-500/30 hover:bg-blue-500/10 text-blue-700 dark:text-blue-300"
+                title="Simulate VietQR instant payment webhook to upgrade tenant to PRO"
+              >
+                <Zap className="size-3 mr-1 text-blue-500" />
+                Upgrade PRO (0s)
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleSimulateBillingPayment('PRO_MAX')}
+                className="text-[10px] h-7 px-2 justify-start border-purple-500/30 hover:bg-purple-500/10 text-purple-700 dark:text-purple-300"
+                title="Simulate VietQR instant payment webhook to upgrade tenant to PRO MAX"
+              >
+                <Zap className="size-3 mr-1 text-purple-500" />
+                Upgrade PRO MAX (0s)
               </Button>
             </div>
           </div>

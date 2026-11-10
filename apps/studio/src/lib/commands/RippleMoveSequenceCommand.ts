@@ -157,9 +157,9 @@ export class RippleMoveSequenceCommand implements ICommand {
 
     // Synchronize linked A/V sequence if editorial/av_link is active
     const deltaShift = this.targetStartFrame - (this.previousStartFrame ?? 0);
-    const avLink = sequenceToMove.modifiers?.find((m) => m.type === 'editorial/av_link');
-    if (avLink && avLink.params?.enabled !== false && avLink.params?.linkedSequenceId) {
-      const linkedId = avLink.params.linkedSequenceId as string;
+    const avLink = sequenceToMove.modifiers?.find((m) => (m.type as string) === 'editorial/av_link');
+    if (avLink && (avLink.params as any)?.enabled !== false && (avLink.params as any)?.linkedSequenceId) {
+      const linkedId = (avLink.params as any).linkedSequenceId as string;
       for (const t of copy.tracks) {
         const linkedSeq = t.sequences.find((s) => s.id === linkedId);
         if (linkedSeq) {

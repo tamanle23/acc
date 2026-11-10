@@ -58,9 +58,9 @@ export class TrimSequenceCommand implements ICommand {
           }
 
           // Symmetrical linked sequence trimming if editorial/av_link is present and enabled
-          const avLink = seq.modifiers?.find((m) => m.type === 'editorial/av_link');
-          if (avLink && avLink.params?.enabled !== false && avLink.params?.linkedSequenceId && avLink.params?.syncTrim !== false) {
-            const linkedId = avLink.params.linkedSequenceId as string;
+          const avLink = seq.modifiers?.find((m) => (m.type as string) === 'editorial/av_link');
+          if (avLink && (avLink.params as any)?.enabled !== false && (avLink.params as any)?.linkedSequenceId && (avLink.params as any)?.syncTrim !== false) {
+            const linkedId = (avLink.params as any).linkedSequenceId as string;
             for (const t of copy.tracks) {
               const linkedSeq = t.sequences.find((s) => s.id === linkedId);
               if (linkedSeq) {

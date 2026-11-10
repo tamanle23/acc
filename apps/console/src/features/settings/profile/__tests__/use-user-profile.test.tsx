@@ -71,4 +71,29 @@ describe('useUserProfile API Hooks', () => {
 
     expect(springApiClient.put).toHaveBeenCalledWith('/v1/user/profile', updatePayload);
   });
+
+  it('unwraps Spring Boot ResponseWrapper payload from backend GET and PUT', async () => {
+    const wrappedProfile = {
+      headers: { timestamp: 123456789 },
+      status: 'success',
+      body: {
+        userId: 'usr-42',
+        username: 'alice',
+        firstName: 'Alice',
+        lastName: 'Smith',
+        email: 'alice@acc.local',
+        preferences: { language: 'vi', bio: 'Engineer' },
+      },
+      errors: [],
+    };
+
+    vi.mocked(springApiClient.get).mockResolvedValueOnce({ data: wrappedProfile });
+
+    const { result } = renderHook(() => useUserProfileQuery(), { wrapper });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    // Must be unwrapped to the UserProfileDto payload inside body
+    expect(result.current.data).toEqual(wrappedProfile.body);
+  });
 });

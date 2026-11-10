@@ -5,6 +5,7 @@ import {
   importFromWorkflowIR,
   validateGraphTopology,
   validateBindingExpression,
+  inferDraft7Schema,
 } from './workflow-ir-converter';
 import type { DagNodeData } from '../canvas/dag-node';
 
@@ -614,6 +615,186 @@ describe('Workflow IR Converter & Graph Validation Engine', () => {
 
       const restoredComp = roundtrip.edges.find((e) => e.sourceHandle === 'compensate');
       expect(restoredComp).toBeDefined();
+    });
+
+    it('preserves outputParameters, outputSchema, and mockOutputPayload across IR export and import roundtrip', () => {
+      const nodes: Node<DagNodeData>[] = [
+        {
+          id: 'node-start',
+          type: 'dagNode',
+          position: { x: 0, y: 0 },
+          data: {
+            taskReferenceName: 'start',
+            taskType: 'START_WORKFLOW',
+            inputParameters: { customerId: 'CUST-10' },
+          },
+        },
+        {
+          id: 'node-http',
+          type: 'dagNode',
+          position: { x: 200, y: 0 },
+          data: {
+            taskReferenceName: 'fetchUser',
+            taskType: 'HTTP',
+            inputParameters: { url: 'https://api.acme.com/users' },
+            outputParameters: { mappedId: '${fetchUser.output.body.id}' },
+            declaredOutputSchema: {
+              type: 'object',
+              properties: {
+                token: { type: 'string' },
+              },
+            },
+            mockOutputPayload: {
+              status: 200,
+              body: { id: 'usr-99', name: 'Alice' },
+            },
+          },
+        },
+        {
+          id: 'node-end',
+          type: 'dagNode',
+          position: { x: 400, y: 0 },
+          data: {
+            taskReferenceName: 'end',
+            taskType: 'END_WORKFLOW',
+          },
+        },
+      ];
+
+      const edges: Edge[] = [
+        { id: 'e1', source: 'node-start', target: 'node-http' },
+        { id: 'e2', source: 'node-http', target: 'node-end' },
+      ];
+
+      // Export
+      const ir = exportToWorkflowIR(nodes, edges, { workflowKey: 'test-data-contracts', version: 1 });
+      const httpTask = ir.tasks.find((t) => t.taskReferenceName === 'fetchUser');
+      expect(httpTask?.outputParameters).toEqual({ mappedId: '${fetchUser.output.body.id}' });
+      expect(httpTask?.outputSchema).toEqual({ type: 'object', properties: { token: { type: 'string' } } });
+      expect(httpTask?.mockOutputPayload).toEqual({ status: 200, body: { id: 'usr-99', name: 'Alice' } });
+
+      // Import roundtrip
+      const imported = importFromWorkflowIR(ir);
+      const importedHttpNode = imported.nodes.find((n) => n.data.taskReferenceName === 'fetchUser');
+      expect(importedHttpNode?.data.outputParameters).toEqual({ mappedId: '${fetchUser.output.body.id}' });
+      expect(importedHttpNode?.data.declaredOutputSchema).toEqual({ type: 'object', properties: { token: { type: 'string' } } });
+      expect(importedHttpNode?.data.mockOutputPayload).toEqual({ status: 200, body: { id: 'usr-99', name: 'Alice' } });
+    });
+
+    it('exports and imports top-level workflow inputSchema and outputSchema across START and END boundary nodes', () => {
+      const customInputSchema = {
+        type: 'object',
+        required: ['customerId', 'amount'],
+        properties: {
+          customerId: { type: 'string' },
+          amount: { type: 'number' },
+        },
+      };
+
+      const customOutputSchema = {
+        type: 'object',
+        required: ['orderId', 'status'],
+        properties: {
+          orderId: { type: 'string' },
+          status: { type: 'string' },
+        },
+      };
+
+      const nodes: Node<DagNodeData>[] = [
+        {
+          id: 'node-start',
+          type: 'dagNode',
+          position: { x: 0, y: 0 },
+          data: {
+            taskReferenceName: 'workflow_start',
+            taskType: 'START_WORKFLOW',
+            isStartNode: true,
+            declaredOutputSchema: customInputSchema,
+          },
+        },
+        {
+          id: 'node-end',
+          type: 'dagNode',
+          position: { x: 400, y: 0 },
+          data: {
+            taskReferenceName: 'workflow_end',
+            taskType: 'END_WORKFLOW',
+            isEndNode: true,
+            declaredOutputSchema: customOutputSchema,
+          },
+        },
+      ];
+
+      const edges: Edge[] = [
+        { id: 'e1', source: 'node-start', target: 'node-end' },
+      ];
+
+      // Export
+      const ir = exportToWorkflowIR(nodes, edges, { workflowKey: 'contract-wf', version: 1 });
+      expect(ir.inputSchema).toEqual(customInputSchema);
+      expect(ir.outputSchema).toEqual(customOutputSchema);
+
+      // Import
+      const imported = importFromWorkflowIR(ir);
+      const importedStart = imported.nodes.find((n) => n.data.isStartNode || n.data.taskType === 'START_WORKFLOW');
+      const importedEnd = imported.nodes.find((n) => n.data.isEndNode || n.data.taskType === 'END_WORKFLOW');
+
+      expect(importedStart?.data.declaredOutputSchema).toEqual(customInputSchema);
+      expect(importedEnd?.data.declaredOutputSchema).toEqual(customOutputSchema);
+    });
+
+    it('infers Draft 7 schema correctly from sample payload and mappings', () => {
+      const sample = {
+        orderId: 'ORD-1234',
+        quantity: 5,
+        unitPrice: 19.99,
+        isExpress: true,
+        tags: ['priority', 'fragile'],
+        customer: {
+          id: 'CUST-01',
+          vip: true,
+        },
+      };
+
+      const schema = inferDraft7Schema(sample) as any;
+
+      expect(schema.$schema).toBe('http://json-schema.org/draft-07/schema#');
+      expect(schema.type).toBe('object');
+      expect(schema.additionalProperties).toBe(false);
+      expect(schema.required).toEqual([
+        'orderId',
+        'quantity',
+        'unitPrice',
+        'isExpress',
+        'tags',
+        'customer',
+      ]);
+
+      expect(schema.properties.orderId).toEqual({ type: 'string' });
+      expect(schema.properties.quantity).toEqual({ type: 'integer' });
+      expect(schema.properties.unitPrice).toEqual({ type: 'number' });
+      expect(schema.properties.isExpress).toEqual({ type: 'boolean' });
+      expect(schema.properties.tags).toEqual({
+        type: 'array',
+        items: { type: 'string' },
+      });
+      expect(schema.properties.customer).toEqual({
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          vip: { type: 'boolean' },
+        },
+        required: ['id', 'vip'],
+        additionalProperties: false,
+      });
+    });
+
+    it('handles empty sample payload gracefully', () => {
+      const emptySchema = inferDraft7Schema({}) as any;
+      expect(emptySchema.type).toBe('object');
+      expect(emptySchema.properties).toEqual({});
+      expect(emptySchema.required).toEqual([]);
+      expect(emptySchema.additionalProperties).toBe(false);
     });
   });
 });

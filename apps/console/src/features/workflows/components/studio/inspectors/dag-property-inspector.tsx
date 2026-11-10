@@ -13,7 +13,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import type { DagNodeData } from '../canvas/dag-node';
-import { validateBindingExpression } from '../utils/workflow-ir-converter';
+import {
+  validateBindingExpression,
+  DEFAULT_DRAFT7_SCHEMA,
+  inferDraft7Schema,
+} from '../utils/workflow-ir-converter';
 import { cn } from '@/lib/utils';
 import {
   Plus,
@@ -29,10 +33,20 @@ import {
   Braces,
   PlaySquare,
   StopCircle,
+  FileCode,
+  ArrowRightLeft,
+  Copy,
+  Check,
+  Play,
+  Sparkles,
 } from 'lucide-react';
 import { useWorkerCatalog, type TaskWorkerDescriptor } from '@/features/workers/api/worker-fleet-api';
 import { VisualJsonEditor } from '@/components/ui/json-editor';
 import { multiBranchRegistry } from '../utils/branch-strategies';
+import { taskContractRegistry } from '../utils/contracts/task-contract-registry';
+import { VariableBindingPopover } from '../canvas/variable-binding-popover';
+import { executeStepSandboxTest, type StepTestResult } from '../sandbox/dag-step-sandbox-runner';
+import { type Node, type Edge } from '@xyflow/react';
 
 interface DagPropertyInspectorProps {
   nodeId: string | null;
@@ -44,6 +58,8 @@ interface DagPropertyInspectorProps {
   defaultTab?: string;
   onAddBranch?: (nodeId: string, customBranchName?: string) => void;
   onRemoveBranch?: (nodeId: string, branchId: string) => void;
+  nodes?: Node<DagNodeData>[];
+  edges?: Edge[];
 }
 
 export function DagPropertyInspector({
@@ -56,15 +72,47 @@ export function DagPropertyInspector({
   defaultTab,
   onAddBranch,
   onRemoveBranch,
+  nodes = [],
+  edges = [],
 }: DagPropertyInspectorProps) {
   const [formData, setFormData] = useState<DagNodeData | null>(nodeData);
   const [paramKey, setParamKey] = useState('');
   const [paramValue, setParamValue] = useState('');
+  const [dataSubTab, setDataSubTab] = useState<'inputs' | 'outputs' | 'payloads'>('inputs');
+  const [testStepResult, setTestStepResult] = useState<StepTestResult | null>(null);
   const { data: workerCatalog = [] } = useWorkerCatalog();
 
   useEffect(() => {
     setFormData(nodeData);
+    setTestStepResult(null);
   }, [nodeData]);
+
+  const handleRunStepTest = () => {
+    if (!formData || !nodeId) return;
+
+    const upstreamOutputs: Record<string, Record<string, unknown>> = {};
+    nodes.forEach((n) => {
+      if (n.data?.taskReferenceName) {
+        upstreamOutputs[n.data.taskReferenceName] =
+          n.data.mockOutputPayload ||
+          n.data.outputParameters ||
+          taskContractRegistry.getContract(n.data.taskType).defaultMockOutput;
+      }
+    });
+
+    const startNode = nodes.find((n) => n.data?.isStartNode || n.data?.taskType === 'START_WORKFLOW');
+    const workflowInput = startNode?.data?.inputParameters || { orderId: 'ORD-TEST-1', customerId: 'CUST-001' };
+
+    const activeNode = {
+      id: nodeId,
+      type: 'dagNode',
+      position: { x: 0, y: 0 },
+      data: formData,
+    } as any;
+
+    const res = executeStepSandboxTest(activeNode, workflowInput, upstreamOutputs);
+    setTestStepResult(res);
+  };
 
   if (!nodeId || !formData) {
     return null;
@@ -654,27 +702,88 @@ export function DagPropertyInspector({
               />
             </div>
 
-            {/* Structured Input Parameters Editor via VisualJsonEditor */}
+            {/* Draft 7 Input Schema Contract (Mandatory) */}
+            <div className="space-y-3 pt-3 border-t border-border/40">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label className="text-xs font-semibold flex items-center gap-1.5">
+                    <ShieldAlert className="w-3.5 h-3.5 text-emerald-500" />
+                    Trigger Input Schema (Draft 7)
+                  </Label>
+                  <p className="text-[11px] text-muted-foreground">
+                    Trigger payloads are strictly validated against this contract before initialization.
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Badge variant="outline" className="text-[10px] font-mono border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
+                    Draft 7
+                  </Badge>
+                  <Badge variant="secondary" className="text-[10px] font-mono">
+                    {Object.keys(((formData.declaredOutputSchema as Record<string, unknown>)?.properties as Record<string, unknown>) || {}).length} properties
+                  </Badge>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] text-muted-foreground">
+                  Fast schema generation:
+                </span>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-7 px-2.5 text-xs gap-1.5 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10 font-semibold"
+                  onClick={() => {
+                    const sample = formData.inputParameters || {};
+                    const inferred = inferDraft7Schema(sample);
+                    handleFieldChange('declaredOutputSchema', inferred);
+                  }}
+                  data-testid="start-infer-schema-btn"
+                >
+                  <Sparkles className="w-3 h-3 text-emerald-500" />
+                  Infer Schema from Sample
+                </Button>
+              </div>
+
+              <div className="rounded-xl border border-border/50 overflow-hidden bg-background/60">
+                <VisualJsonEditor
+                  value={formData.declaredOutputSchema || DEFAULT_DRAFT7_SCHEMA}
+                  onChange={(updated) => {
+                    if (updated && typeof updated === 'object' && !Array.isArray(updated)) {
+                      handleFieldChange('declaredOutputSchema', updated);
+                    }
+                  }}
+                  defaultMode="tree"
+                  height="180px"
+                />
+              </div>
+            </div>
+
+            {/* Structured Sample Input Parameters */}
             <div className="space-y-2 pt-2 border-t border-border/40">
               <div className="flex items-center justify-between">
                 <Label className="text-xs font-semibold flex items-center gap-1.5">
                   <Braces className="w-3.5 h-3.5 text-emerald-500" />
-                  Workflow Input Parameters & Default Schema
+                  Sample / Default Payload ($&#123;workflow.input&#125;)
                 </Label>
                 <span className="text-[10px] text-muted-foreground font-mono">
                   {Object.keys(formData.inputParameters || {}).length} variables
                 </span>
               </div>
               <p className="text-[11px] text-muted-foreground">
-                Define the default input JSON payload or parameter bindings for this workflow.
+                Default payload used for dry-run simulation and isolated step tests.
               </p>
 
               <div className="rounded-xl border border-border/50 overflow-hidden bg-background/60">
                 <VisualJsonEditor
-                  data={formData.inputParameters || {}}
-                  onChange={(updated) => handleFieldChange('inputParameters', updated)}
-                  allowModeSwitch={true}
+                  value={formData.inputParameters || {}}
+                  onChange={(updated) => {
+                    if (updated && typeof updated === 'object' && !Array.isArray(updated)) {
+                      handleFieldChange('inputParameters', updated);
+                    }
+                  }}
                   defaultMode="tree"
+                  height="160px"
                 />
               </div>
             </div>
@@ -811,6 +920,113 @@ export function DagPropertyInspector({
               </div>
             </div>
 
+            {/* Draft 7 Exit Output Schema Contract (Mandatory) */}
+            {(() => {
+              const currentOutputSchema =
+                (formData.declaredOutputSchema as Record<string, unknown>) || DEFAULT_DRAFT7_SCHEMA;
+              const reqOutputs = Array.isArray(currentOutputSchema.required)
+                ? (currentOutputSchema.required as string[])
+                : [];
+              const currentMappings = formData.inputParameters || {};
+              const unsatisfied = reqOutputs.filter(
+                (k) => currentMappings[k] === undefined || currentMappings[k] === ''
+              );
+              const propCount = Object.keys(
+                (currentOutputSchema.properties as Record<string, unknown>) || {}
+              ).length;
+
+              return (
+                <div className="space-y-3 pt-3 border-t border-border/40">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label className="text-xs font-semibold flex items-center gap-1.5">
+                        <ShieldAlert className="w-3.5 h-3.5 text-purple-500" />
+                        Exit Output Schema (Draft 7)
+                      </Label>
+                      <p className="text-[11px] text-muted-foreground">
+                        Execution completes only if terminal payload satisfies this contract.
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Badge variant="outline" className="text-[10px] font-mono border-purple-500/30 text-purple-600 dark:text-purple-400">
+                        Draft 7
+                      </Badge>
+                      <Badge variant="secondary" className="text-[10px] font-mono">
+                        {propCount} properties
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {/* Satisfaction Alert */}
+                  {unsatisfied.length > 0 ? (
+                    <div className="p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs text-rose-700 dark:text-rose-300 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600 dark:text-rose-400" />
+                        <span className="truncate">
+                          Unsatisfied required outputs: <span className="font-mono font-semibold">{unsatisfied.join(', ')}</span>
+                        </span>
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="h-6 px-2 text-[10px] shrink-0 border-rose-500/40 text-rose-700 dark:text-rose-300 hover:bg-rose-500/20"
+                        onClick={() => {
+                          const updated = { ...currentMappings };
+                          unsatisfied.forEach((k) => {
+                            const guessRef = precedingRefs[precedingRefs.length - 1] || 'task';
+                            updated[k] = `\${${guessRef}.output.${k}}`;
+                          });
+                          handleFieldChange('inputParameters', updated);
+                        }}
+                      >
+                        Auto-Map
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>All required output fields are satisfied by terminal mappings.</span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[11px] text-muted-foreground">
+                      Fast schema generation:
+                    </span>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-7 px-2.5 text-xs gap-1.5 text-purple-600 dark:text-purple-400 border-purple-500/30 hover:bg-purple-500/10 font-semibold"
+                      onClick={() => {
+                        const currentParams = formData.inputParameters || {};
+                        const inferred = inferDraft7Schema(currentParams);
+                        handleFieldChange('declaredOutputSchema', inferred);
+                      }}
+                      data-testid="end-infer-schema-btn"
+                    >
+                      <Sparkles className="w-3 h-3 text-purple-500" />
+                      Infer Schema from Mappings
+                    </Button>
+                  </div>
+
+                  <div className="rounded-xl border border-border/50 overflow-hidden bg-background/60">
+                    <VisualJsonEditor
+                      value={formData.declaredOutputSchema || DEFAULT_DRAFT7_SCHEMA}
+                      onChange={(updated) => {
+                        if (updated && typeof updated === 'object' && !Array.isArray(updated)) {
+                          handleFieldChange('declaredOutputSchema', updated);
+                        }
+                      }}
+                      defaultMode="tree"
+                      height="180px"
+                    />
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* Workflow Output Payload Mapping via VisualJsonEditor */}
             <div className="space-y-2 pt-2 border-t border-border/40">
               <div className="flex items-center justify-between">
@@ -823,15 +1039,19 @@ export function DagPropertyInspector({
                 </span>
               </div>
               <p className="text-[11px] text-muted-foreground">
-                Map preceding step outputs (e.g. <code className="text-foreground font-mono font-bold">${'{task.output.field}'}</code>) to format the final execution result.
+                Map preceding step outputs (e.g. <code className="text-foreground font-mono font-bold">$&#123;task.output.field&#125;</code>) to format the final execution result.
               </p>
 
               <div className="rounded-xl border border-border/50 overflow-hidden bg-background/60">
                 <VisualJsonEditor
-                  data={formData.inputParameters || {}}
-                  onChange={(updated) => handleFieldChange('inputParameters', updated)}
-                  allowModeSwitch={true}
+                  value={formData.inputParameters || {}}
+                  onChange={(updated) => {
+                    if (updated && typeof updated === 'object' && !Array.isArray(updated)) {
+                      handleFieldChange('inputParameters', updated);
+                    }
+                  }}
                   defaultMode="tree"
+                  height="160px"
                 />
               </div>
             </div>
@@ -897,7 +1117,9 @@ export function DagPropertyInspector({
             <TabsList className="grid grid-cols-5 w-full h-9">
               <TabsTrigger value="general" className="text-[11px]">General</TabsTrigger>
               <TabsTrigger value="config" className="text-[11px]">Config</TabsTrigger>
-              <TabsTrigger value="params" className="text-[11px]">Bindings</TabsTrigger>
+              <TabsTrigger value="params" className="text-[11px] font-semibold text-primary flex items-center gap-1">
+                <Braces className="w-3 h-3 text-primary" /> Data (I/O)
+              </TabsTrigger>
               <TabsTrigger value="policies" className="text-[11px]">Policies</TabsTrigger>
               <TabsTrigger value="routing" className="text-[11px]">Routing</TabsTrigger>
             </TabsList>
@@ -906,6 +1128,41 @@ export function DagPropertyInspector({
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
             {/* 1. General Tab */}
             <TabsContent value="general" className="mt-0 space-y-4">
+              {formData.taskDefName && (
+                <div className="p-3 rounded-xl bg-teal-500/10 border border-teal-500/30 space-y-1.5" data-testid="task-def-banner">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                      <span className="text-xs font-bold text-teal-700 dark:text-teal-300">
+                        Task Definition: {formData.taskDefName}
+                      </span>
+                    </div>
+                    <Badge className="bg-teal-500/20 text-teal-700 dark:text-teal-300 border-teal-500/30 text-[10px] font-mono">
+                      v{formData.taskDefVersion || 1}
+                    </Badge>
+                  </div>
+                  {formData.latestTaskDefVersion && formData.taskDefVersion && formData.latestTaskDefVersion > formData.taskDefVersion && (
+                    <div className="flex items-center justify-between pt-1 border-t border-teal-500/20 text-[11px]">
+                      <span className="text-muted-foreground">
+                        Newer version <span className="font-mono font-bold text-primary">v{formData.latestTaskDefVersion}</span> available
+                      </span>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="h-6 text-[10px] px-2 border-teal-500/40 text-teal-700 dark:text-teal-300 hover:bg-teal-500/20"
+                        onClick={() => {
+                          formData.onUpgradeTaskDef?.(formData.taskReferenceName);
+                        }}
+                        data-testid="upgrade-task-def-btn"
+                      >
+                        Review & Upgrade
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {formData.taskType === 'SIMPLE' && workerCatalog.length > 0 && (
                 <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 space-y-2">
                   <Label htmlFor="workerCatalogSelect" className="text-xs font-semibold flex items-center gap-1.5 text-primary">
@@ -1005,132 +1262,531 @@ export function DagPropertyInspector({
               {renderSpecializedConfig()}
             </TabsContent>
 
-            {/* 3. Parameter Bindings Tab */}
-            <TabsContent value="params" className="mt-0 space-y-4">
-              <div className="space-y-3">
-                {/* Upstream Variable Autocomplete Pills */}
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                    <Braces className="w-3 h-3 text-primary" />
-                    Upstream Variable Reference Pills (Click to insert)
-                  </Label>
-                  <div className="flex flex-wrap gap-1">
-                    <button
-                      type="button"
-                      onClick={() => setParamValue('${workflow.input.orderId}')}
-                      className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/20 hover:bg-sky-500/20"
-                    >
-                      ${'{workflow.input.*}'}
-                    </button>
-                    {availableTaskRefs
-                      .filter((r) => r !== formData.taskReferenceName)
-                      .map((ref) => (
-                        <button
-                          key={ref}
-                          type="button"
-                          onClick={() => setParamValue(`\${${ref}.output.result}`)}
-                          className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20 hover:bg-indigo-500/20"
-                        >
-                          ${`{${ref}.output.*}`}
-                        </button>
-                      ))}
-                  </div>
-                </div>
+            {/* 3. Data & Schema (I/O) Tab */}
+            <TabsContent value="params" className="mt-0 space-y-3">
+              {/* Sub-tab Pill Switcher */}
+              <div className="flex items-center gap-1 p-0.5 rounded-lg bg-muted/30 border border-border/40">
+                <button
+                  type="button"
+                  onClick={() => setDataSubTab('inputs')}
+                  className={cn(
+                    'flex-1 py-1 text-xs font-semibold rounded-md transition-all text-center',
+                    dataSubTab === 'inputs' ? 'bg-background shadow-xs text-primary font-bold' : 'text-muted-foreground hover:text-foreground'
+                  )}
+                  data-testid="dag-inspector-tab-inputs"
+                >
+                  Inputs ({Object.keys(formData.inputParameters || {}).length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDataSubTab('outputs')}
+                  className={cn(
+                    'flex-1 py-1 text-xs font-semibold rounded-md transition-all text-center',
+                    dataSubTab === 'outputs' ? 'bg-background shadow-xs text-primary font-bold' : 'text-muted-foreground hover:text-foreground'
+                  )}
+                  data-testid="dag-inspector-tab-outputs"
+                >
+                  Outputs & Contract
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDataSubTab('payloads')}
+                  className={cn(
+                    'flex-1 py-1 text-xs font-semibold rounded-md transition-all text-center',
+                    dataSubTab === 'payloads' ? 'bg-background shadow-xs text-primary font-bold' : 'text-muted-foreground hover:text-foreground'
+                  )}
+                  data-testid="dag-inspector-tab-payloads"
+                >
+                  Live Payloads
+                </button>
+              </div>
 
-                <div className="flex gap-2 items-end">
-                  <div className="flex-1 space-y-1">
-                    <Label htmlFor="paramKey" className="text-[11px] font-medium">Key</Label>
-                    <Input
-                      id="paramKey"
-                      value={paramKey}
-                      onChange={(e) => setParamKey(e.target.value)}
-                      placeholder="e.g. orderId"
-                      className="h-7 text-xs font-mono"
-                    />
-                  </div>
-                  <div className="flex-[2] space-y-1">
-                    <Label htmlFor="paramVal" className="text-[11px] font-medium">Value Expression</Label>
-                    <Input
-                      id="paramVal"
-                      value={paramValue}
-                      onChange={(e) => setParamValue(e.target.value)}
-                      placeholder="${workflow.input.orderId}"
-                      className="h-7 text-xs font-mono"
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    size="sm"
-                    className="h-7 px-2.5 text-xs gap-1"
-                    onClick={handleAddParam}
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    Add
-                  </Button>
-                </div>
-
-                <div className="space-y-1.5 pt-2 border-t border-border/40">
-                  <Label className="text-xs font-semibold">Active Input Parameters</Label>
-                  {Object.entries(formData.inputParameters || {}).length === 0 ? (
-                    <p className="text-xs text-muted-foreground italic">No input parameters bound.</p>
-                  ) : (
-                    <div className="space-y-1.5">
-                      {Object.entries(formData.inputParameters || {}).map(([k, v]) => {
-                        const valStr = typeof v === 'object' ? JSON.stringify(v) : String(v);
-                        const validation = validateBindingExpression(valStr, availableTaskRefs);
-
-                        return (
-                          <div
-                            key={k}
-                            className="flex items-center justify-between p-2 rounded-lg bg-background/50 border border-border/40 gap-2"
+              {/* Sub-tab 1: Inputs & Bindings */}
+              {dataSubTab === 'inputs' && (
+                <div className="space-y-3">
+                  {/* Upstream Variable Autocomplete Pills */}
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                      <Braces className="w-3 h-3 text-primary" />
+                      Upstream Variable Reference Pills (Click to insert)
+                    </Label>
+                    <div className="flex flex-wrap gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setParamValue('${workflow.input.orderId}')}
+                        className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/20 hover:bg-sky-500/20"
+                      >
+                        ${'{workflow.input.*}'}
+                      </button>
+                      {availableTaskRefs
+                        .filter((r) => r !== formData.taskReferenceName)
+                        .map((ref) => (
+                          <button
+                            key={ref}
+                            type="button"
+                            onClick={() => setParamValue(`\${${ref}.output.result}`)}
+                            className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20 hover:bg-indigo-500/20"
                           >
-                            <div className="flex flex-col min-w-0 flex-1">
-                              <span className="text-xs font-mono font-semibold text-foreground truncate">
-                                {k}
-                              </span>
-                              <span className="text-[10px] font-mono text-muted-foreground truncate">
-                                {valStr}
-                              </span>
-                              {!validation.valid && (
-                                <span className="text-[10px] text-rose-500 font-sans flex items-center gap-1 mt-0.5">
-                                  <AlertTriangle className="w-3 h-3 shrink-0" />
-                                  {validation.error}
-                                </span>
-                              )}
+                            ${`{${ref}.output.*}`}
+                          </button>
+                        ))}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 items-end">
+                    <div className="flex-1 space-y-1">
+                      <Label htmlFor="paramKey" className="text-[11px] font-medium">Key</Label>
+                      <Input
+                        id="paramKey"
+                        value={paramKey}
+                        onChange={(e) => setParamKey(e.target.value)}
+                        placeholder="e.g. orderId"
+                        className="h-7 text-xs font-mono"
+                      />
+                    </div>
+                    <div className="flex-[2] space-y-1">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="paramVal" className="text-[11px] font-medium">Value Expression</Label>
+                        {nodes.length > 0 && (
+                          <VariableBindingPopover
+                            currentNodeId={nodeId}
+                            nodes={nodes}
+                            edges={edges}
+                            currentValue={paramValue}
+                            onSelectVariable={(expr) => setParamValue(expr)}
+                            workerCatalog={workerCatalog}
+                          />
+                        )}
+                      </div>
+                      <Input
+                        id="paramVal"
+                        value={paramValue}
+                        onChange={(e) => setParamValue(e.target.value)}
+                        placeholder="${workflow.input.orderId}"
+                        className="h-7 text-xs font-mono"
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="h-7 px-2.5 text-xs gap-1"
+                      onClick={handleAddParam}
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Add
+                    </Button>
+                  </div>
+
+                  {/* Predefined Input Contract Requirements Checklist */}
+                  {(() => {
+                    const expectedParams = taskContractRegistry.getInputParameters(formData, matchedWorkerDescriptor);
+                    const resolvedInputSchema = taskContractRegistry.resolveInputSchema(formData, matchedWorkerDescriptor) as
+                      | { required?: string[]; properties?: Record<string, { type?: string; description?: string }> }
+                      | undefined;
+                    const reqInputs = Array.isArray(resolvedInputSchema?.required)
+                      ? resolvedInputSchema.required
+                      : expectedParams.filter((p) => p.required).map((p) => p.key);
+
+                    const currentInputs = formData.inputParameters || {};
+                    const missing = reqInputs.filter(
+                      (k) => currentInputs[k] === undefined || currentInputs[k] === ''
+                    );
+
+                    const contractSource = formData.taskDefName
+                      ? `Task Def (${formData.taskDefName})`
+                      : formData.declaredInputSchema || formData.inputSchema
+                        ? 'Custom Override'
+                        : matchedWorkerDescriptor?.inputSchema
+                          ? 'Worker Fleet'
+                          : 'Built-in Contract';
+
+                    return (
+                      <div className="p-2.5 rounded-lg border border-border/50 bg-muted/20 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs font-semibold flex items-center gap-1.5 text-primary">
+                            <ShieldAlert className="w-3.5 h-3.5 text-primary" />
+                            Predefined Input Contract
+                          </Label>
+                          <div className="flex items-center gap-1.5">
+                            <Badge variant="outline" className="text-[9px] font-mono uppercase">
+                              {contractSource}
+                            </Badge>
+                            {reqInputs.length === 0 ? (
+                              <Badge className="bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20 text-[9px]">
+                                Flexible Input
+                              </Badge>
+                            ) : missing.length === 0 ? (
+                              <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-[9px]">
+                                All Required Bound
+                              </Badge>
+                            ) : (
+                              <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 text-[9px]">
+                                {missing.length} Unbound
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* List of Expected Contract Parameters with type badges */}
+                        {expectedParams.length > 0 && (
+                          <div className="space-y-1 pt-1 border-t border-border/30">
+                            <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+                              Expected Node Parameters:
+                            </span>
+                            <div className="flex flex-wrap gap-1">
+                              {expectedParams.map((param) => {
+                                const isBound = currentInputs[param.key] !== undefined && currentInputs[param.key] !== '';
+                                return (
+                                  <Badge
+                                    key={param.key}
+                                    variant="secondary"
+                                    className={cn(
+                                      'text-[10px] font-mono flex items-center gap-1 cursor-pointer transition-colors',
+                                      isBound
+                                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                                        : param.required
+                                          ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+                                          : 'bg-muted text-muted-foreground'
+                                    )}
+                                    title={param.description || (param.required ? 'Required parameter' : 'Optional parameter')}
+                                    onClick={() => {
+                                      if (!isBound) {
+                                        setParamKey(param.key);
+                                        setParamValue(`\${workflow.input.${param.key}}`);
+                                      }
+                                    }}
+                                  >
+                                    <span>{param.key}</span>
+                                    <span className="opacity-60 text-[9px]">[{param.type}]</span>
+                                    {param.required && <span className="text-amber-500 font-bold">*</span>}
+                                  </Badge>
+                                );
+                              })}
                             </div>
+                          </div>
+                        )}
+
+                        {missing.length > 0 && (
+                          <div className="flex items-center justify-between gap-2 pt-1 border-t border-border/30 text-xs">
+                            <span className="text-[11px] text-muted-foreground truncate">
+                              Missing: <span className="font-mono text-amber-600 dark:text-amber-400">{missing.join(', ')}</span>
+                            </span>
                             <Button
                               type="button"
-                              variant="ghost"
                               size="sm"
-                              className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
-                              onClick={() => handleRemoveParam(k)}
+                              variant="outline"
+                              className="h-6 px-2 text-[10px] shrink-0 border-primary/30 text-primary hover:bg-primary/10"
+                              onClick={() => {
+                                const updated = { ...currentInputs };
+                                missing.forEach((k) => {
+                                  updated[k] = `\${workflow.input.${k}}`;
+                                });
+                                handleFieldChange('inputParameters', updated);
+                              }}
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
+                              Auto-Bind Missing
                             </Button>
                           </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
+                        )}
 
-                <div className="space-y-1.5 pt-2 border-t border-border/40">
-                  <Label className="text-xs font-semibold">
-                    Structured Input Parameters (Visual JSON Editor)
-                  </Label>
-                  <VisualJsonEditor
-                    value={formData.inputParameters || {}}
-                    onChange={(nextVal) => {
-                      if (nextVal && typeof nextVal === 'object' && !Array.isArray(nextVal)) {
-                        handleFieldChange('inputParameters', nextVal);
-                      }
-                    }}
-                    jsonSchema={matchedWorkerDescriptor?.inputSchema}
-                    defaultMode="tree"
-                    height="220px"
-                  />
+                        {/* Dynamic Schema Form for Expected Parameters */}
+                        {expectedParams.length > 0 && (
+                          <div className="space-y-2 pt-2 border-t border-border/30">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold flex items-center gap-1">
+                                <SlidersHorizontal className="w-3 h-3 text-teal-500" />
+                                Contract Parameters Form
+                              </span>
+                              <span className="text-[9px] text-muted-foreground font-mono">
+                                {expectedParams.length} schema fields
+                              </span>
+                            </div>
+                            <div className="space-y-1.5">
+                              {expectedParams.map((param) => {
+                                const currentVal = currentInputs[param.key] !== undefined ? String(currentInputs[param.key]) : '';
+                                return (
+                                  <div key={param.key} className="p-2 rounded-lg border border-border/30 bg-background/50 space-y-1">
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-1.5 min-w-0">
+                                        <span className="text-[11px] font-mono font-semibold truncate">{param.key}</span>
+                                        <span className="text-[9px] px-1 py-0 rounded bg-muted text-muted-foreground font-mono uppercase">
+                                          {param.type}
+                                        </span>
+                                        {param.required && <span className="text-amber-500 font-bold text-xs">*</span>}
+                                      </div>
+                                      {nodes.length > 0 && (
+                                        <VariableBindingPopover
+                                          currentNodeId={nodeId}
+                                          nodes={nodes}
+                                          edges={edges}
+                                          currentValue={currentVal}
+                                          onSelectVariable={(expr) => {
+                                            handleFieldChange('inputParameters', {
+                                              ...(formData.inputParameters || {}),
+                                              [param.key]: expr,
+                                            });
+                                          }}
+                                          workerCatalog={workerCatalog}
+                                        />
+                                      )}
+                                    </div>
+                                    {param.description && (
+                                      <p className="text-[9px] text-muted-foreground leading-tight truncate">{param.description}</p>
+                                    )}
+                                    <Input
+                                      value={currentVal}
+                                      onChange={(e) => {
+                                        const nextVal = e.target.value;
+                                        handleFieldChange('inputParameters', {
+                                          ...(formData.inputParameters || {}),
+                                          [param.key]: nextVal,
+                                        });
+                                      }}
+                                      placeholder={param.defaultValue !== undefined ? String(param.defaultValue) : `Enter ${param.key} or \${...}`}
+                                      className="h-6 text-[11px] font-mono bg-background"
+                                      data-testid={`schema-param-input-${param.key}`}
+                                    />
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+
+                  <div className="space-y-1.5 pt-2 border-t border-border/40">
+                    <Label className="text-xs font-semibold">Active Input Parameters</Label>
+                    {Object.entries(formData.inputParameters || {}).length === 0 ? (
+                      <p className="text-xs text-muted-foreground italic">No input parameters bound.</p>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {Object.entries(formData.inputParameters || {}).map(([k, v]) => {
+                          const valStr = typeof v === 'object' ? JSON.stringify(v) : String(v);
+                          const validation = validateBindingExpression(valStr, availableTaskRefs);
+
+                          return (
+                            <div
+                              key={k}
+                              className="flex items-center justify-between p-2 rounded-lg bg-background/50 border border-border/40 gap-2"
+                            >
+                              <div className="flex flex-col min-w-0 flex-1">
+                                <span className="text-xs font-mono font-semibold text-foreground truncate">
+                                  {k}
+                                </span>
+                                <span className="text-[10px] font-mono text-muted-foreground truncate">
+                                  {valStr}
+                                </span>
+                                {!validation.valid && (
+                                  <span className="text-[10px] text-rose-500 font-sans flex items-center gap-1 mt-0.5">
+                                    <AlertTriangle className="w-3 h-3 shrink-0" />
+                                    {validation.error}
+                                  </span>
+                                )}
+                              </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                                onClick={() => handleRemoveParam(k)}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5 pt-2 border-t border-border/40">
+                    <Label className="text-xs font-semibold">
+                      Structured Input Parameters (Visual JSON Editor)
+                    </Label>
+                    <VisualJsonEditor
+                      value={formData.inputParameters || {}}
+                      onChange={(nextVal) => {
+                        if (nextVal && typeof nextVal === 'object' && !Array.isArray(nextVal)) {
+                          handleFieldChange('inputParameters', nextVal);
+                        }
+                      }}
+                      jsonSchema={taskContractRegistry.resolveInputSchema(formData, matchedWorkerDescriptor)}
+                      defaultMode="tree"
+                      height="200px"
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* Sub-tab 2: Outputs & Schema */}
+              {dataSubTab === 'outputs' && (
+                <div className="space-y-3">
+                  {/* Input Contract Schema */}
+                  <div className="p-2.5 rounded-lg border border-border/50 bg-muted/20 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-semibold flex items-center gap-1 text-primary">
+                        <FileCode className="w-3.5 h-3.5" />
+                        Predefined Input Contract Schema
+                      </Label>
+                      <Badge variant="outline" className="text-[9px] font-mono uppercase">
+                        {formData.declaredInputSchema || formData.inputSchema ? 'Custom Override' : matchedWorkerDescriptor?.inputSchema ? 'Worker Fleet' : 'Built-in Contract'}
+                      </Badge>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      Contract fields required by this node before execution.
+                    </p>
+
+                    <div className="p-2 rounded bg-background/60 border border-border/40 font-mono text-[10px] max-h-36 overflow-y-auto">
+                      <pre className="text-foreground/90 whitespace-pre-wrap">
+                        {JSON.stringify(
+                          taskContractRegistry.resolveInputSchema(formData, matchedWorkerDescriptor),
+                          null,
+                          2
+                        )}
+                      </pre>
+                    </div>
+                  </div>
+
+                  {/* Output Contract Schema */}
+                  <div className="p-2.5 rounded-lg border border-border/50 bg-muted/20 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-semibold flex items-center gap-1 text-primary">
+                        <FileCode className="w-3.5 h-3.5" />
+                        Resolved Output Contract Schema
+                      </Label>
+                      <Badge variant="outline" className="text-[9px] font-mono uppercase">
+                        {formData.declaredOutputSchema ? 'Custom Override' : matchedWorkerDescriptor?.outputSchema ? 'Worker Fleet' : 'Built-in Contract'}
+                      </Badge>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      Fields exported by this step. Downstream tasks reference these via <code className="text-primary font-mono">${`{${formData.taskReferenceName}.output.<field>}`}</code>.
+                    </p>
+
+                    <div className="p-2 rounded bg-background/60 border border-border/40 font-mono text-[10px] max-h-36 overflow-y-auto">
+                      <pre className="text-foreground/90 whitespace-pre-wrap">
+                        {JSON.stringify(
+                          taskContractRegistry.resolveOutputSchema(formData, matchedWorkerDescriptor),
+                          null,
+                          2
+                        )}
+                      </pre>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5 pt-2 border-t border-border/40">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-semibold">
+                        Mock Output Payload (Visual JSON Editor)
+                      </Label>
+                      <span className="text-[10px] text-muted-foreground">
+                        Used for autocomplete & zero-run testing
+                      </span>
+                    </div>
+                    <VisualJsonEditor
+                      value={
+                        formData.mockOutputPayload ||
+                        taskContractRegistry.getContract(formData.taskType, matchedWorkerDescriptor).defaultMockOutput
+                      }
+                      onChange={(nextVal) => {
+                        if (nextVal && typeof nextVal === 'object' && !Array.isArray(nextVal)) {
+                          handleFieldChange('mockOutputPayload', nextVal);
+                        }
+                      }}
+                      defaultMode="tree"
+                      height="200px"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Sub-tab 3: Live Payloads View */}
+              {dataSubTab === 'payloads' && (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="space-y-1">
+                      <span className="font-semibold text-muted-foreground flex items-center gap-1 text-[11px]">
+                        <ArrowRightLeft className="w-3 h-3 text-sky-500" /> Input Payload
+                      </span>
+                      <div className="p-2 rounded-lg bg-background/50 border border-border/40 font-mono text-[10px] max-h-56 overflow-y-auto">
+                        <pre className="whitespace-pre-wrap">
+                          {JSON.stringify(formData.inputParameters || {}, null, 2)}
+                        </pre>
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <span className="font-semibold text-muted-foreground flex items-center gap-1 text-[11px]">
+                        <Check className="w-3 h-3 text-emerald-500" /> Output Payload
+                      </span>
+                      <div className="p-2 rounded-lg bg-background/50 border border-border/40 font-mono text-[10px] max-h-56 overflow-y-auto">
+                        <pre className="whitespace-pre-wrap">
+                          {JSON.stringify(
+                            formData.outputParameters ||
+                              formData.mockOutputPayload ||
+                              taskContractRegistry.getContract(formData.taskType, matchedWorkerDescriptor).defaultMockOutput,
+                            null,
+                            2
+                          )}
+                        </pre>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-border/40 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-semibold flex items-center gap-1 text-primary">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                        Zero-Run Isolated Sandbox Runner
+                      </Label>
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={handleRunStepTest}
+                        className="h-7 px-2.5 text-xs gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
+                        data-testid="property-inspector-test-step-btn"
+                      >
+                        <Play className="w-3 h-3 fill-current" />
+                        Run Step Test
+                      </Button>
+                    </div>
+
+                    {testStepResult && (
+                      <div
+                        data-testid="property-inspector-step-test-result"
+                        className="p-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/5 space-y-2 text-xs"
+                      >
+                        <div className="flex items-center justify-between">
+                          <Badge className="bg-emerald-600 text-white text-[9px] font-mono">
+                            {testStepResult.status} ({testStepResult.durationMs}ms)
+                          </Badge>
+                          <span className="text-[10px] text-muted-foreground font-mono">
+                            Ref: {testStepResult.taskReferenceName}
+                          </span>
+                        </div>
+
+                        <div>
+                          <span className="text-[10px] font-semibold text-muted-foreground uppercase">
+                            Evaluated Inputs:
+                          </span>
+                          <pre className="mt-0.5 p-1.5 rounded bg-background/60 font-mono text-[9px] max-h-24 overflow-y-auto">
+                            {JSON.stringify(testStepResult.evaluatedInputs, null, 2)}
+                          </pre>
+                        </div>
+
+                        <div>
+                          <span className="text-[10px] font-semibold text-muted-foreground uppercase">
+                            Simulated Output Payload:
+                          </span>
+                          <pre className="mt-0.5 p-1.5 rounded bg-background/60 font-mono text-[9px] max-h-24 overflow-y-auto">
+                            {JSON.stringify(testStepResult.outputPayload, null, 2)}
+                          </pre>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </TabsContent>
 
             {/* 4. Policies Tab */}

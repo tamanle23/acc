@@ -9,7 +9,7 @@ import {
   type StudioThemePreset,
   applyThemeToDocument,
   type ThemePreferences,
-} from '../apps/studio/src/lib/theme';
+} from '../apps/studio/src/lib/theme/themePresets';
 
 describe('Studio 20 Curated Theme Presets & Responsive Layout Architecture (Task 428)', () => {
   it('should define exactly 20 curated iconic theme presets', () => {

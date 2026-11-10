@@ -1,11 +1,11 @@
-import type { ICanvasInstance } from '@acc/core-isomorphic';
+import type { ICanvasInstance, ICanvasContext2D, BoundingBox } from '@acc/core-isomorphic';
 import type { Depth3DConfig, CaptionConfig } from '../types';
 import type { DepthMeshLayers } from './depth-mesh';
 
 export interface Depth3DFrameState {
   img: any;
   subjectImg: any | null;
-  subjectBBox?: { x: number; y: number; width: number; height: number; minX?: number; maxX?: number; minY?: number; maxY?: number } | null;
+  subjectBBox?: BoundingBox | { x: number; y: number; width: number; height: number; minX?: number; maxX?: number; minY?: number; maxY?: number } | null;
   bgImg?: any | null;
   bgCanvas?: ICanvasInstance | any | null;
   srcCanvas?: ICanvasInstance | any | null;
@@ -26,7 +26,7 @@ export interface Depth3DFrameState {
 export interface IDepth3DRenderer {
   readonly mode: string;
   readonly aliases?: string[];
-  renderFrame(ctx: any, state: Depth3DFrameState): void;
+  renderFrame(ctx: ICanvasContext2D, state: Depth3DFrameState): void;
 }
 
 export class Depth3DRendererRegistry {

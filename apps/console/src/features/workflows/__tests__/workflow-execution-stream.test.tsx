@@ -3,36 +3,46 @@ import { renderHook, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 import { useWorkflowExecutionStream } from '../hooks/use-workflow-execution-stream';
+import { FetchEventSource } from '@/core/sse/fetch-sse';
 
-// Mock EventSource
-class MockEventSource {
-  public static instances: MockEventSource[] = [];
-  public url: string;
-  public onopen: (() => void) | null = null;
-  public onerror: ((err: any) => void) | null = null;
-  private listeners: Map<string, Array<(e: any) => void>> = new Map();
+// Mock FetchEventSource
+vi.mock('@/core/sse/fetch-sse', () => {
+  class MockFetchEventSource {
+    public static instances: MockFetchEventSource[] = [];
+    public url: string;
+    public options: any;
+    public onopen: (() => void) | null = null;
+    public onerror: ((err: any) => void) | null = null;
+    private listeners: Map<string, Array<(e: any) => void>> = new Map();
 
-  constructor(url: string) {
-    this.url = url;
-    MockEventSource.instances.push(this);
-  }
-
-  addEventListener(type: string, listener: (e: any) => void) {
-    if (!this.listeners.has(type)) {
-      this.listeners.set(type, []);
+    constructor(url: string, options: any = {}) {
+      this.url = url;
+      this.options = options;
+      MockFetchEventSource.instances.push(this);
     }
-    this.listeners.get(type)!.push(listener);
+
+    addEventListener(type: string, listener: (e: any) => void) {
+      if (!this.listeners.has(type)) {
+        this.listeners.set(type, []);
+      }
+      this.listeners.get(type)!.push(listener);
+    }
+
+    emit(type: string, data: any) {
+      const list = this.listeners.get(type) || [];
+      list.forEach((cb) => cb({ data: JSON.stringify(data) }));
+    }
+
+    close() {
+      // closed
+    }
   }
 
-  emit(type: string, data: any) {
-    const list = this.listeners.get(type) || [];
-    list.forEach((cb) => cb({ data: JSON.stringify(data) }));
-  }
-
-  close() {
-    // closed
-  }
-}
+  return {
+    FetchEventSource: MockFetchEventSource,
+    createFetchEventSource: (url: string, options: any) => new MockFetchEventSource(url, options),
+  };
+});
 
 describe('useWorkflowExecutionStream', () => {
   let queryClient: QueryClient;
@@ -43,8 +53,7 @@ describe('useWorkflowExecutionStream', () => {
         queries: { retry: false },
       },
     });
-    MockEventSource.instances = [];
-    (globalThis as any).EventSource = MockEventSource;
+    (FetchEventSource as any).instances = [];
     // Returns 0 so the hook's rafBatchRef stays falsy after the synchronous flush
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
       cb(performance.now());
@@ -67,10 +76,10 @@ describe('useWorkflowExecutionStream', () => {
 
     // Wait for connection
     await vi.waitFor(() => {
-      expect(MockEventSource.instances.length).toBe(1);
+      expect((FetchEventSource as any).instances.length).toBe(1);
     });
 
-    const es = MockEventSource.instances[0];
+    const es = (FetchEventSource as any).instances[0];
 
     // Simulate connection opened
     act(() => {
@@ -116,10 +125,10 @@ describe('useWorkflowExecutionStream', () => {
     const { result } = renderHook(() => useWorkflowExecutionStream('wf_exec_logs_test'), { wrapper });
 
     await vi.waitFor(() => {
-      expect(MockEventSource.instances.length).toBe(1);
+      expect((FetchEventSource as any).instances.length).toBe(1);
     });
 
-    const es = MockEventSource.instances[0];
+    const es = (FetchEventSource as any).instances[0];
 
     act(() => {
       if (es.onopen) es.onopen();
@@ -163,9 +172,9 @@ describe('useWorkflowExecutionStream', () => {
       const { result } = renderHook(() => useWorkflowExecutionStream('wf_exec_reconnect'), { wrapper });
 
       await vi.advanceTimersByTimeAsync(20);
-      expect(MockEventSource.instances.length).toBe(1);
+      expect((FetchEventSource as any).instances.length).toBe(1);
 
-      const es1 = MockEventSource.instances[0];
+      const es1 = (FetchEventSource as any).instances[0];
 
       // Simulate connection drop
       act(() => {
@@ -178,11 +187,11 @@ describe('useWorkflowExecutionStream', () => {
 
       // Fast-forward backoff delay (1s) to trigger reconnect attempt
       await vi.advanceTimersByTimeAsync(1100);
-      expect(MockEventSource.instances.length).toBe(2);
+      expect((FetchEventSource as any).instances.length).toBe(2);
 
       // 5 retries are allowed; the 6th failure engages polling fallback
       for (let i = 2; i <= 6; i++) {
-        const curEs = MockEventSource.instances[MockEventSource.instances.length - 1];
+        const curEs = (FetchEventSource as any).instances[(FetchEventSource as any).instances.length - 1];
         act(() => {
           if (curEs.onerror) curEs.onerror(new Error(`Failure ${i}`));
         });

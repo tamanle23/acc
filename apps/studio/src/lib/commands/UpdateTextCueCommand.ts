@@ -53,7 +53,7 @@ export class UpdateTextCueCommand implements ICommand {
 
           // 2. Also update text/draw or timed_text/style modifier params if text is cached there
           if (seq.modifiers) {
-            const styleMod = seq.modifiers.find((m) => m.type === 'timed_text/style' || m.type === 'text/style');
+            const styleMod = seq.modifiers.find((m) => m.type === 'timed_text/style' || (m.type as string) === 'text/style');
             if (styleMod && styleMod.params) {
               const params = styleMod.params as Record<string, unknown>;
               if (this.previousModifierText === null && typeof params.text === 'string') {
@@ -61,7 +61,7 @@ export class UpdateTextCueCommand implements ICommand {
               }
               params.text = this.newText;
             }
-            const textDrawMod = seq.modifiers.find((m) => m.type === 'text/draw' || m.type === 'text/overlay');
+            const textDrawMod = seq.modifiers.find((m) => (m.type as string) === 'text/draw' || (m.type as string) === 'text/overlay');
             if (textDrawMod && textDrawMod.params) {
               const params = textDrawMod.params as Record<string, unknown>;
               if (this.previousModifierText === null && typeof params.text === 'string') {
@@ -89,11 +89,11 @@ export class UpdateTextCueCommand implements ICommand {
             seq.cues[this.cueIndex].text = this.previousText;
           }
           if (this.previousModifierText !== null && seq.modifiers) {
-            const styleMod = seq.modifiers.find((m) => m.type === 'timed_text/style' || m.type === 'text/style');
+            const styleMod = seq.modifiers.find((m) => m.type === 'timed_text/style' || (m.type as string) === 'text/style');
             if (styleMod && styleMod.params) {
               (styleMod.params as Record<string, unknown>).text = this.previousModifierText;
             }
-            const textDrawMod = seq.modifiers.find((m) => m.type === 'text/draw' || m.type === 'text/overlay');
+            const textDrawMod = seq.modifiers.find((m) => (m.type as string) === 'text/draw' || (m.type as string) === 'text/overlay');
             if (textDrawMod && textDrawMod.params) {
               (textDrawMod.params as Record<string, unknown>).text = this.previousModifierText;
             }
@@ -104,5 +104,9 @@ export class UpdateTextCueCommand implements ICommand {
     }
 
     return copy;
+  }
+
+  public tryMerge(_next: ICommand): boolean {
+    return false;
   }
 }

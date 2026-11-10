@@ -41,10 +41,16 @@ export class RmbgStrategy implements ISegmentationStrategy, IIsomorphicSegmentat
     return this.initPromise;
   }
 
-  public async segment(imageBufferOrInput: Buffer | VisionImageInput, options?: SegmentationOptions): Promise<any> {
+  public async segment(
+    imageBufferOrInput: Uint8Array | ArrayBuffer | Buffer | VisionImageInput,
+    options?: SegmentationOptions
+  ): Promise<SegmentationResult> {
     await this.init();
 
-    const imageBytes = (imageBufferOrInput as any).data || imageBufferOrInput;
+    const imageBytes = (imageBufferOrInput as any).data ||
+      (imageBufferOrInput instanceof Uint8Array
+        ? imageBufferOrInput
+        : new Uint8Array(imageBufferOrInput as ArrayBuffer));
     const RawImage = this.rawImageClass || (await loadUniversalTransformers())?.RawImage;
     if (!RawImage) throw new Error('[RmbgStrategy] RawImage class unavailable.');
     const rawImage = await RawImage.fromBlob(new Blob([imageBytes]));
@@ -67,7 +73,7 @@ export class RmbgStrategy implements ISegmentationStrategy, IIsomorphicSegmentat
     }
 
     const { rgbaBuffer, alphaBuffer, bbox } = await createCutoutRgba(
-      Buffer.from(imageBytes),
+      imageBytes,
       uint8Mask,
       maskW,
       maskH,

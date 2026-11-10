@@ -1,5 +1,4 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
+import { render } from 'solid-js/web';
 import { registerCoreModifierPlugins } from '@acc/ir';
 import App from './App';
 import './index.css';
@@ -10,10 +9,4 @@ import { bootstrapClient } from './bootstrap';
 bootstrapClient();
 registerCoreModifierPlugins();
 
-
-
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+render(() => <App />, document.getElementById('root')!);

@@ -1,5 +1,6 @@
 package com.acc.aio.controller.workflow;
 
+import com.acc.workflow.application.TaskDefinitionRegistry;
 import com.acc.workflow.application.WorkflowDefinitionRegistry;
 import com.acc.workflow.adapters.transport.InProcessTransportAdapter;
 import com.acc.workflow.application.WorkflowEngineService;
@@ -31,7 +32,25 @@ public class SimpleTaskWorkerRegistrar {
     private final WorkflowEngineService engineService;
     private final WorkflowDefinitionRegistry definitionRegistry;
     private final ExecutionStreamBroadcaster broadcaster;
+    private final TaskDefinitionRegistry taskDefinitionRegistry;
     private WorkerHost workerHost;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public SimpleTaskWorkerRegistrar(
+        WorkerRegistry workerRegistry,
+        PersistencePort persistencePort,
+        WorkflowEngineService engineService,
+        WorkflowDefinitionRegistry definitionRegistry,
+        ExecutionStreamBroadcaster broadcaster,
+        @org.springframework.beans.factory.annotation.Autowired(required = false) TaskDefinitionRegistry taskDefinitionRegistry
+    ) {
+        this.workerRegistry = workerRegistry;
+        this.persistencePort = persistencePort;
+        this.engineService = engineService;
+        this.definitionRegistry = definitionRegistry;
+        this.broadcaster = broadcaster;
+        this.taskDefinitionRegistry = taskDefinitionRegistry != null ? taskDefinitionRegistry : new TaskDefinitionRegistry(persistencePort);
+    }
 
     public SimpleTaskWorkerRegistrar(
         WorkerRegistry workerRegistry,
@@ -40,11 +59,7 @@ public class SimpleTaskWorkerRegistrar {
         WorkflowDefinitionRegistry definitionRegistry,
         ExecutionStreamBroadcaster broadcaster
     ) {
-        this.workerRegistry = workerRegistry;
-        this.persistencePort = persistencePort;
-        this.engineService = engineService;
-        this.definitionRegistry = definitionRegistry;
-        this.broadcaster = broadcaster;
+        this(workerRegistry, persistencePort, engineService, definitionRegistry, broadcaster, new TaskDefinitionRegistry(persistencePort));
     }
 
     @PostConstruct
@@ -90,6 +105,9 @@ public class SimpleTaskWorkerRegistrar {
 
         this.workerHost = new WorkerHost(transportAdapter, "jvm-virtual-thread-worker-01");
 
+        if (this.taskDefinitionRegistry != null) {
+            this.taskDefinitionRegistry.seedBuiltIns();
+        }
         registerBuiltInCapabilities();
         scanAndRegisterAnnotatedMethods(this);
         this.workerHost.start();

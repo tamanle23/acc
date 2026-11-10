@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { createSignal, createEffect, Show, For } from 'solid-js';
 import {
   Dialog,
   DialogContent,
@@ -10,7 +10,7 @@ import {
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { ScrollArea } from '../ui/scroll-area';
-import { Plus, Trash2, Copy, Type, Clock } from 'lucide-react';
+import { Plus, Trash2, Copy, Type, Clock } from 'lucide-solid';
 import type { TimedTextCue } from '@acc/ir';
 
 export interface CueTimelineDialogProps {
@@ -21,21 +21,15 @@ export interface CueTimelineDialogProps {
   disabled?: boolean;
 }
 
-export const CueTimelineDialog: React.FC<CueTimelineDialogProps> = ({
-  open,
-  onOpenChange,
-  cues,
-  onSaveCues,
-  disabled = false,
-}) => {
-  const [localCues, setLocalCues] = useState<TimedTextCue[]>(cues);
+export function CueTimelineDialog(props: CueTimelineDialogProps) {
+  const [localCues, setLocalCues] = createSignal<TimedTextCue[]>(props.cues ? [...props.cues] : []);
 
   // Sync with prop when dialog opens
-  React.useEffect(() => {
-    if (open) {
-      setLocalCues(cues ? [...cues] : []);
+  createEffect(() => {
+    if (props.open) {
+      setLocalCues(props.cues ? [...props.cues] : []);
     }
-  }, [open, cues]);
+  });
 
   const handleCueTextChange = (index: number, text: string) => {
     setLocalCues((prev) => {
@@ -104,160 +98,164 @@ export const CueTimelineDialog: React.FC<CueTimelineDialogProps> = ({
 
   const handleSaveAndClose = () => {
     // Sort cues chronologically by startOffsetMs
-    const sorted = [...localCues].sort((a, b) => a.startOffsetMs - b.startOffsetMs);
-    onSaveCues(sorted);
-    onOpenChange(false);
+    const sorted = [...localCues()].sort((a, b) => a.startOffsetMs - b.startOffsetMs);
+    props.onSaveCues(sorted);
+    props.onOpenChange(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl glass-panel border-glass-border text-foreground shadow-2xl">
+    <Dialog open={props.open} onOpenChange={props.onOpenChange}>
+      <DialogContent class="max-w-2xl glass-panel border-glass-border text-foreground shadow-2xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-sm font-bold text-foreground">
-            <Type className="w-4 h-4 text-accent-theme" />
+          <DialogTitle class="flex items-center gap-2 text-sm font-bold text-foreground">
+            <Type class="w-4 h-4 text-accent-theme" />
             Manage Timed Text Subtitle Cues
           </DialogTitle>
-          <DialogDescription className="text-xs text-muted-foreground">
+          <DialogDescription class="text-xs text-muted-foreground">
             Configure phrase text, start offset, and end offset in milliseconds for this sequence.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="py-2 space-y-3">
-          <div className="flex items-center justify-between pb-2 border-b border-glass-border">
-            <span className="text-xs font-medium text-foreground">
-              Total Cues: {localCues.length}
+        <div class="py-2 space-y-3">
+          <div class="flex items-center justify-between pb-2 border-b border-glass-border">
+            <span class="text-xs font-medium text-foreground">
+              Total Cues: {localCues().length}
             </span>
             <Button
               variant="outline"
               size="sm"
-              disabled={disabled}
+              disabled={props.disabled}
               onClick={handleAddCue}
-              className="h-7 text-xs gap-1 cursor-pointer border-accent-theme/40 text-accent-theme bg-accent-theme/10 hover:bg-accent-theme/20"
+              class="h-7 text-xs gap-1 cursor-pointer border-accent-theme/40 text-accent-theme bg-accent-theme/10 hover:bg-accent-theme/20"
             >
-              <Plus className="w-3.5 h-3.5" />
+              <Plus class="w-3.5 h-3.5" />
               Add Cue
             </Button>
           </div>
 
-          <ScrollArea className="max-h-[360px] pr-2">
-            {localCues.length === 0 ? (
-              <div className="p-8 text-center border-2 border-dashed border-glass-border rounded-lg space-y-2 bg-muted/20">
-                <Clock className="w-8 h-8 mx-auto text-muted-foreground/60" />
-                <p className="text-xs font-semibold text-foreground">No Subtitle Cues</p>
-                <p className="text-[11px] text-muted-foreground">
-                  Click "+ Add Cue" above to insert your first timed subtitle cue.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-2.5">
-                {localCues.map((cue, idx) => {
-                  const durationMs =
-                    typeof cue.endOffsetMs === 'number'
-                      ? cue.endOffsetMs - cue.startOffsetMs
-                      : 0;
+          <ScrollArea class="max-h-[360px] pr-2">
+            <Show
+              when={localCues().length > 0}
+              fallback={
+                <div class="p-8 text-center border-2 border-dashed border-glass-border rounded-lg space-y-2 bg-muted/20">
+                  <Clock class="w-8 h-8 mx-auto text-muted-foreground/60" />
+                  <p class="text-xs font-semibold text-foreground">No Subtitle Cues</p>
+                  <p class="text-[11px] text-muted-foreground">
+                    Click "+ Add Cue" above to insert your first timed subtitle cue.
+                  </p>
+                </div>
+              }
+            >
+              <div class="space-y-2.5">
+                <For each={localCues()}>
+                  {(cue, idx) => {
+                    const durationMs = () =>
+                      typeof cue.endOffsetMs === 'number'
+                        ? cue.endOffsetMs - cue.startOffsetMs
+                        : 0;
 
-                  return (
-                    <div
-                      key={idx}
-                      className="p-2.5 rounded-md border border-glass-border bg-glass-surface hover:bg-muted/40 transition-colors space-y-2 text-xs"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-mono text-[10px] text-muted-foreground font-semibold">
-                          #{idx + 1}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-mono text-muted-foreground">
-                            Duration: {durationMs > 0 ? `${durationMs}ms` : 'end'}
+                    return (
+                      <div
+                        class="p-2.5 rounded-md border border-glass-border bg-glass-surface hover:bg-muted/40 transition-colors space-y-2 text-xs"
+                      >
+                        <div class="flex items-center justify-between gap-2">
+                          <span class="font-mono text-[10px] text-muted-foreground font-semibold">
+                            #{idx() + 1}
                           </span>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            disabled={disabled}
-                            onClick={() => handleDuplicateCue(idx)}
-                            className="h-6 w-6 text-muted-foreground hover:text-foreground cursor-pointer"
-                            title="Duplicate Cue"
-                          >
-                            <Copy className="w-3 h-3" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            disabled={disabled}
-                            onClick={() => handleDeleteCue(idx)}
-                            className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10 cursor-pointer"
-                            title="Delete Cue"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
+                          <div class="flex items-center gap-2">
+                            <span class="text-[10px] font-mono text-muted-foreground">
+                              Duration: {durationMs() > 0 ? `${durationMs()}ms` : 'end'}
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              disabled={props.disabled}
+                              onClick={() => handleDuplicateCue(idx())}
+                              class="h-6 w-6 text-muted-foreground hover:text-foreground cursor-pointer"
+                              title="Duplicate Cue"
+                            >
+                              <Copy class="w-3 h-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              disabled={props.disabled}
+                              onClick={() => handleDeleteCue(idx())}
+                              class="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+                              title="Delete Cue"
+                            >
+                              <Trash2 class="w-3 h-3" />
+                            </Button>
+                          </div>
                         </div>
-                      </div>
 
-                      <div className="grid grid-cols-12 gap-2 items-center">
-                        <div className="col-span-7">
-                          <label className="text-[10px] text-muted-foreground block mb-0.5">
-                            Subtitle Text
-                          </label>
-                          <Input
-                            type="text"
-                            value={cue.text}
-                            disabled={disabled}
-                            onChange={(e) => handleCueTextChange(idx, e.target.value)}
-                            placeholder="Subtitle text..."
-                            className="h-7 text-xs bg-background border-glass-border"
-                          />
-                        </div>
-                        <div className="col-span-2">
-                          <label className="text-[10px] text-muted-foreground block mb-0.5">
-                            Start (ms)
-                          </label>
-                          <Input
-                            type="number"
-                            min={0}
-                            step={100}
-                            value={cue.startOffsetMs}
-                            disabled={disabled}
-                            onChange={(e) => handleCueTimingChange(idx, 'startOffsetMs', e.target.value)}
-                            className="h-7 text-xs font-mono bg-background border-glass-border"
-                          />
-                        </div>
-                        <div className="col-span-3">
-                          <label className="text-[10px] text-muted-foreground block mb-0.5">
-                            End (ms)
-                          </label>
-                          <Input
-                            type="number"
-                            min={0}
-                            step={100}
-                            value={typeof cue.endOffsetMs === 'number' ? cue.endOffsetMs : 0}
-                            disabled={disabled}
-                            onChange={(e) => handleCueTimingChange(idx, 'endOffsetMs', e.target.value)}
-                            className="h-7 text-xs font-mono bg-background border-glass-border"
-                          />
+                        <div class="grid grid-cols-12 gap-2 items-center">
+                          <div class="col-span-7">
+                            <label class="text-[10px] text-muted-foreground block mb-0.5">
+                              Subtitle Text
+                            </label>
+                            <Input
+                              type="text"
+                              value={cue.text}
+                              disabled={props.disabled}
+                              onInput={(e) => handleCueTextChange(idx(), e.currentTarget.value)}
+                              placeholder="Subtitle text..."
+                              class="h-7 text-xs bg-background border-glass-border"
+                            />
+                          </div>
+                          <div class="col-span-2">
+                            <label class="text-[10px] text-muted-foreground block mb-0.5">
+                              Start (ms)
+                            </label>
+                            <Input
+                              type="number"
+                              min={0}
+                              step={100}
+                              value={cue.startOffsetMs}
+                              disabled={props.disabled}
+                              onInput={(e) => handleCueTimingChange(idx(), 'startOffsetMs', e.currentTarget.value)}
+                              class="h-7 text-xs font-mono bg-background border-glass-border"
+                            />
+                          </div>
+                          <div class="col-span-3">
+                            <label class="text-[10px] text-muted-foreground block mb-0.5">
+                              End (ms)
+                            </label>
+                            <Input
+                              type="number"
+                              min={0}
+                              step={100}
+                              value={typeof cue.endOffsetMs === 'number' ? cue.endOffsetMs : 0}
+                              disabled={props.disabled}
+                              onInput={(e) => handleCueTimingChange(idx(), 'endOffsetMs', e.currentTarget.value)}
+                              class="h-7 text-xs font-mono bg-background border-glass-border"
+                            />
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  }}
+                </For>
               </div>
-            )}
+            </Show>
           </ScrollArea>
         </div>
 
-        <DialogFooter className="flex items-center justify-between sm:justify-between pt-2 border-t border-glass-border">
+        <DialogFooter class="flex items-center justify-between sm:justify-between pt-2 border-t border-glass-border">
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => onOpenChange(false)}
-            className="h-8 text-xs cursor-pointer"
+            onClick={() => props.onOpenChange(false)}
+            class="h-8 text-xs cursor-pointer"
           >
             Cancel
           </Button>
           <Button
             variant="default"
             size="sm"
-            disabled={disabled}
+            disabled={props.disabled}
             onClick={handleSaveAndClose}
-            className="h-8 text-xs cursor-pointer bg-accent-theme text-primary-foreground hover:bg-accent-theme/90"
+            class="h-8 text-xs cursor-pointer bg-accent-theme text-primary-foreground hover:bg-accent-theme/90"
           >
             Save Cues
           </Button>
@@ -265,4 +263,4 @@ export const CueTimelineDialog: React.FC<CueTimelineDialogProps> = ({
       </DialogContent>
     </Dialog>
   );
-};
+}

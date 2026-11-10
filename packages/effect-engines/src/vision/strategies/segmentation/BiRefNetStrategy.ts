@@ -43,13 +43,16 @@ export class BiRefNetStrategy implements ISegmentationStrategy, IIsomorphicSegme
   }
 
   public async segment(
-    imageBufferOrInput: Buffer | Uint8Array | VisionImageInput,
+    imageBufferOrInput: Uint8Array | ArrayBuffer | Buffer | VisionImageInput,
     options?: SegmentationOptions | IsomorphicSegOptions
   ): Promise<SegmentationResult & Partial<IsomorphicSegResult>> {
 
     await this.init();
 
-    const imageBytes = (imageBufferOrInput as any).data || imageBufferOrInput;
+    const imageBytes = (imageBufferOrInput as any).data ||
+      (imageBufferOrInput instanceof Uint8Array
+        ? imageBufferOrInput
+        : new Uint8Array(imageBufferOrInput as ArrayBuffer));
     const rawImage = await this.rawImageClass.fromBlob(new Blob([imageBytes]));
     const origW = rawImage.width;
     const origH = rawImage.height;
@@ -71,7 +74,7 @@ export class BiRefNetStrategy implements ISegmentationStrategy, IIsomorphicSegme
     }
 
     const { rgbaBuffer, alphaBuffer, bbox } = await createCutoutRgba(
-      Buffer.isBuffer(imageBytes) ? imageBytes : Buffer.from(imageBytes),
+      imageBytes,
       uint8Mask,
       maskW,
       maskH,

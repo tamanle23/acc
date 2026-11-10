@@ -7,11 +7,11 @@ import {
   type ThemePreferences,
   type GlassStyle,
   type BlurIntensity,
-} from '../apps/studio/src/lib/theme/ThemeProvider';
+} from '../apps/studio/src/lib/theme/themePresets';
 import {
   STUDIO_THEME_PRESETS,
   getThemePreset,
-} from '../apps/studio/src/lib/theme';
+} from '../apps/studio/src/lib/theme/themePresets';
 
 describe('Studio Unified System Theme Manager & Tailwind v4 Integration', () => {
   const indexCssPath = path.join(process.cwd(), 'apps/studio/src/index.css');

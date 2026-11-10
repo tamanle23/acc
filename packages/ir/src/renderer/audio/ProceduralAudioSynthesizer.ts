@@ -20,8 +20,11 @@ export class ProceduralAudioSynthesizer {
     const f2 = 110.0;
     const f3 = 174.61;
 
+    const startSample = Math.round(timeOffsetSec * sampleRate);
+
     for (let i = 0; i < numSamples; i++) {
-      const t = timeOffsetSec + i / sampleRate;
+      const sIdx = startSample + i;
+      const t = sIdx / sampleRate;
 
       // Slow LFO for filter sweep
       const lfo = 0.5 + 0.5 * Math.sin(t * 0.4);
@@ -54,8 +57,11 @@ export class ProceduralAudioSynthesizer {
     const numSamples = Math.floor(durationSec * sampleRate);
     const buffer = new Float32Array(numSamples);
 
+    const startSample = Math.round(timeOffsetSec * sampleRate);
+
     for (let i = 0; i < numSamples; i++) {
-      const t = timeOffsetSec + i / sampleRate;
+      const sIdx = startSample + i;
+      const t = sIdx / sampleRate;
       const localT = t % 1.5; // loop burst every 1.5s if long
 
       if (localT > 0.4) {
@@ -68,8 +74,9 @@ export class ProceduralAudioSynthesizer {
       const freq = 120.0 + 2280.0 * Math.exp(-localT * 25.0);
       const osc = Math.sin(2 * Math.PI * freq * localT);
 
-      // White noise transient pop at impact start
-      const noise = (Math.random() * 2.0 - 1.0) * Math.exp(-localT * 50.0) * 0.3;
+      // Deterministic white noise transient pop at impact start
+      const prng = Math.sin(sIdx * 12.9898 + 78.233) * 43758.5453;
+      const noise = ((prng - Math.floor(prng)) * 2.0 - 1.0) * Math.exp(-localT * 50.0) * 0.3;
 
       buffer[i] = (osc + noise) * decay * 0.7;
     }
@@ -90,8 +97,11 @@ export class ProceduralAudioSynthesizer {
     const numSamples = Math.floor(durationSec * sampleRate);
     const buffer = new Float32Array(numSamples);
 
+    const startSample = Math.round(timeOffsetSec * sampleRate);
+
     for (let i = 0; i < numSamples; i++) {
-      const t = timeOffsetSec + i / sampleRate;
+      const sIdx = startSample + i;
+      const t = sIdx / sampleRate;
 
       // Speech syllabic cadence envelope (syllables per second ~ 4Hz)
       const speechEnvelope = Math.max(0, Math.sin(t * Math.PI * 4.5)) * Math.max(0, Math.sin(t * 1.2));
@@ -107,8 +117,9 @@ export class ProceduralAudioSynthesizer {
       const f3 = Math.sin(2 * Math.PI * 2400 * t) * 0.15;
       const formantBody = (f1 + f2 + f3) * glottalPulse;
 
-      // Military radio bandpass noise & squelch
-      const radioNoise = (Math.random() * 2.0 - 1.0) * 0.08;
+      // Deterministic military radio bandpass noise & squelch
+      const prng = Math.sin(sIdx * 12.9898 + 78.233) * 43758.5453;
+      const radioNoise = ((prng - Math.floor(prng)) * 2.0 - 1.0) * 0.08;
 
       const raw = (formantBody * speechEnvelope * 0.8 + radioNoise * 0.15);
       buffer[i] = Math.tanh(raw * 1.5) * 0.6;
@@ -128,8 +139,11 @@ export class ProceduralAudioSynthesizer {
     const numSamples = Math.floor(durationSec * sampleRate);
     const buffer = new Float32Array(numSamples);
 
+    const startSample = Math.round(timeOffsetSec * sampleRate);
+
     for (let i = 0; i < numSamples; i++) {
-      const t = timeOffsetSec + i / sampleRate;
+      const sIdx = startSample + i;
+      const t = sIdx / sampleRate;
       const sub = Math.sin(2 * Math.PI * 45.0 * t) * 0.5;
       const rumble = Math.sin(2 * Math.PI * 90.0 * t + Math.sin(t * 1.5)) * 0.25;
       const flutter = Math.sin(2 * Math.PI * 135.0 * t) * 0.1;

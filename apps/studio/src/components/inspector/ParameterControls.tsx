@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { createSignal, createEffect, For, Show } from 'solid-js';
 import { Input } from '../ui/input';
 import { Slider } from '../ui/slider';
 
@@ -13,58 +13,52 @@ export interface ParameterSliderProps {
   onChange: (value: number) => void;
 }
 
-export function ParameterSlider({
-  label,
-  value,
-  min,
-  max,
-  step,
-  defaultValue,
-  unit = '',
-  onChange,
-}: ParameterSliderProps) {
-  const [localVal, setLocalVal] = useState(String(value));
+export function ParameterSlider(props: ParameterSliderProps) {
+  const [localVal, setLocalVal] = createSignal(String(props.value));
 
-  useEffect(() => {
-    setLocalVal(String(value));
-  }, [value]);
+  createEffect(() => {
+    setLocalVal(String(props.value));
+  });
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setLocalVal(e.target.value);
-    const num = parseFloat(e.target.value);
+  const handleInputChange = (e: InputEvent & { currentTarget: HTMLInputElement }) => {
+    setLocalVal(e.currentTarget.value);
+    const num = parseFloat(e.currentTarget.value);
     if (!isNaN(num)) {
-      onChange(Math.max(min, Math.min(max, num)));
+      props.onChange(Math.max(props.min, Math.min(props.max, num)));
     }
   };
 
   return (
-    <div className="space-y-1">
-      <div className="flex justify-between items-center text-[11px]">
+    <div class="space-y-1">
+      <div class="flex justify-between items-center text-[11px]">
         <span
-          onDoubleClick={() => onChange(defaultValue)}
-          className="text-muted-foreground select-none cursor-pointer hover:text-accent-theme transition-colors"
+          onDblClick={() => props.onChange(props.defaultValue)}
+          class="text-muted-foreground select-none cursor-pointer hover:text-accent-theme transition-colors"
           title="Double-click to reset"
         >
-          {label}
+          {props.label}
         </span>
-        <div className="flex items-center gap-1">
+        <div class="flex items-center gap-1">
           <Input
             type="number"
-            step={step}
-            value={localVal}
-            onChange={handleInputChange}
-            className="w-14 h-5 text-[10px] text-right font-mono px-1 py-0 border-glass-border bg-glass-surface text-foreground"
+            step={props.step}
+            value={localVal()}
+            onInput={handleInputChange}
+            class="w-14 h-5 text-[10px] text-right font-mono px-1 py-0 border-glass-border bg-glass-surface text-foreground"
           />
-          {unit && <span className="text-[10px] text-muted-foreground font-mono">{unit}</span>}
+          <Show when={props.unit}>
+            <span class="text-[10px] text-muted-foreground font-mono">{props.unit}</span>
+          </Show>
         </div>
       </div>
       <Slider
-        min={min}
-        max={max}
-        step={step}
-        value={[value]}
-        onValueChange={(val) => onChange(val[0])}
-        onDoubleClick={() => onChange(defaultValue)}
+        min={props.min}
+        max={props.max}
+        step={props.step}
+        defaultValue={props.defaultValue}
+        value={props.value}
+        onChange={(val: number[]) => props.onChange(val[0])}
+        onDblClick={() => props.onChange(props.defaultValue)}
       />
     </div>
   );
@@ -77,35 +71,36 @@ export interface ColorPickerRowProps {
   onChange: (hex: string) => void;
 }
 
-export function ColorPickerRow({ label, value, presets, onChange }: ColorPickerRowProps) {
+export function ColorPickerRow(props: ColorPickerRowProps) {
   return (
-    <div className="space-y-1.5">
-      <div className="flex justify-between items-center text-[11px] text-muted-foreground">
-        <span>{label}</span>
-        <div className="flex items-center gap-1.5">
+    <div class="space-y-1.5">
+      <div class="flex justify-between items-center text-[11px] text-muted-foreground">
+        <span>{props.label}</span>
+        <div class="flex items-center gap-1.5">
           <input
             type="color"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            className="w-5 h-5 rounded cursor-pointer border border-glass-border p-0 bg-transparent"
+            value={props.value}
+            onInput={(e) => props.onChange(e.currentTarget.value)}
+            class="w-5 h-5 rounded cursor-pointer border border-glass-border p-0 bg-transparent"
           />
-          <span className="font-mono text-[10px] text-muted-foreground uppercase">{value}</span>
+          <span class="font-mono text-[10px] text-muted-foreground uppercase">{props.value}</span>
         </div>
       </div>
-      <div className="flex items-center gap-1.5 flex-wrap">
-        {presets.map((preset) => (
-          <button
-            key={preset.name}
-            onClick={() => onChange(preset.hex)}
-            className={`w-4 h-4 rounded-full border transition-transform hover:scale-125 ${
-              value.toLowerCase() === preset.hex.toLowerCase()
-                ? 'ring-2 ring-accent-theme border-background scale-110'
-                : 'border-glass-border'
-            }`}
-            style={{ backgroundColor: preset.hex }}
-            title={preset.name}
-          />
-        ))}
+      <div class="flex items-center gap-1.5 flex-wrap">
+        <For each={props.presets}>
+          {(preset) => (
+            <button
+              onClick={() => props.onChange(preset.hex)}
+              class={`w-4 h-4 rounded-full border transition-transform hover:scale-125 ${
+                props.value.toLowerCase() === preset.hex.toLowerCase()
+                  ? 'ring-2 ring-accent-theme border-background scale-110'
+                  : 'border-glass-border'
+              }`}
+              style={{ 'background-color': preset.hex }}
+              title={preset.name}
+            />
+          )}
+        </For>
       </div>
     </div>
   );

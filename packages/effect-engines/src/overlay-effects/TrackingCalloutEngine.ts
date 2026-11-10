@@ -1,4 +1,4 @@
-import { createTimeSpaceMachine, TimeSpaceStateMachine, Pt, Curve } from '@acc/core-isomorphic';
+import { createTimeSpaceMachine, TimeSpaceStateMachine, Pt, Curve, type ICanvasContext2D } from '@acc/core-isomorphic';
 
 export interface CalloutTargetPoint {
   x: number;
@@ -13,7 +13,7 @@ export interface CalloutSpec {
 
 export class TrackingCalloutEngine {
   public static renderTrackingCallout(
-    ctx: any,
+    ctx: ICanvasContext2D,
     spec: CalloutSpec
   ): void {
     ctx.save();

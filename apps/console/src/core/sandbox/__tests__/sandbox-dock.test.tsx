@@ -97,4 +97,12 @@ describe('SandboxDock UI Component', () => {
     expect(localStorage.getItem('acc_user_default_ws_tenant-acme')).toBeNull();
     expect(localStorage.getItem('acc_assumed_tenant')).toBeNull();
   });
+
+  it('should render FinOps & Billing simulator triggers under Persona & Scope', () => {
+    renderWithQueryClient(<SandboxDock />);
+
+    expect(screen.getByText('FinOps & Billing Simulator')).toBeTruthy();
+    expect(screen.getByText('Upgrade PRO (0s)')).toBeTruthy();
+    expect(screen.getByText('Upgrade PRO MAX (0s)')).toBeTruthy();
+  });
 });

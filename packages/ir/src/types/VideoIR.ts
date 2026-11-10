@@ -69,6 +69,7 @@ export interface IRMeta {
 
 export interface ResolvedSequence {
   id: string;
+  name?: string;
   type: SequenceType;
   trackId: string;
   assetId?: string;

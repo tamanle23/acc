@@ -36,6 +36,7 @@ public final class InMemoryPersistenceAdapter implements PersistencePort {
     private final Map<String, QueueRecord> queue = new ConcurrentHashMap<>();
     private final Map<String, TaskDlqRecord> dlq = new ConcurrentHashMap<>();
     private final Map<String, com.acc.workflow.core.model.WorkflowDefinitionRecord> definitions = new ConcurrentHashMap<>();
+    private final Map<String, com.acc.workflow.core.model.TaskDefinitionRecord> taskDefinitions = new ConcurrentHashMap<>();
     private final Map<String, List<com.acc.workflow.core.model.WorkflowAuditRecord>> auditLogs = new ConcurrentHashMap<>();
 
     private record WorkflowRecord(
@@ -453,6 +454,20 @@ public final class InMemoryPersistenceAdapter implements PersistencePort {
     }
 
     @Override
+    public List<com.acc.workflow.core.model.WorkflowDefinitionRecord> listTenantDefinitionVersions(String tenantId) {
+        String prefix = (tenantId != null ? tenantId : "system") + ":";
+        List<com.acc.workflow.core.model.WorkflowDefinitionRecord> list = new ArrayList<>();
+        for (Map.Entry<String, com.acc.workflow.core.model.WorkflowDefinitionRecord> entry : definitions.entrySet()) {
+            if (entry.getKey().startsWith(prefix)) {
+                list.add(entry.getValue());
+            }
+        }
+        list.sort(Comparator.comparing(com.acc.workflow.core.model.WorkflowDefinitionRecord::workflowKey)
+            .thenComparingInt(com.acc.workflow.core.model.WorkflowDefinitionRecord::version));
+        return list;
+    }
+
+    @Override
     public void updateDefinitionStatus(
         String tenantId,
         String workflowKey,
@@ -540,6 +555,134 @@ public final class InMemoryPersistenceAdapter implements PersistencePort {
         List<com.acc.workflow.core.model.WorkflowAuditRecord> list = auditLogs.get(workflowId);
         if (list == null || list.isEmpty()) return Optional.empty();
         return Optional.of(list.get(list.size() - 1));
+    }
+
+    @Override
+    public void saveTaskDefinition(com.acc.workflow.core.model.TaskDefinitionRecord record) {
+        lock.lock();
+        try {
+            String key = (record.tenantId() != null ? record.tenantId() : "system") + ":" + record.name() + ":" + record.version();
+            taskDefinitions.put(key, record);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public Optional<com.acc.workflow.core.model.TaskDefinitionRecord> getTaskDefinition(String tenantId, String name, int version) {
+        String key = (tenantId != null ? tenantId : "system") + ":" + name + ":" + version;
+        com.acc.workflow.core.model.TaskDefinitionRecord rec = taskDefinitions.get(key);
+        if (rec != null) return Optional.of(rec);
+        String sysKey = "system:" + name + ":" + version;
+        return Optional.ofNullable(taskDefinitions.get(sysKey));
+    }
+
+    @Override
+    public Optional<com.acc.workflow.core.model.TaskDefinitionRecord> getLatestActiveTaskDefinition(String tenantId, String name) {
+        return listTaskDefinitionVersions(tenantId, name).stream()
+            .filter(r -> r.status() == com.acc.workflow.core.model.WorkflowVersionStatus.ACTIVE)
+            .max(Comparator.comparingInt(com.acc.workflow.core.model.TaskDefinitionRecord::version));
+    }
+
+    @Override
+    public List<com.acc.workflow.core.model.TaskDefinitionRecord> listTaskDefinitions(String tenantId) {
+        String prefix = (tenantId != null ? tenantId : "system") + ":";
+        Map<String, com.acc.workflow.core.model.TaskDefinitionRecord> latestByName = new HashMap<>();
+
+        for (Map.Entry<String, com.acc.workflow.core.model.TaskDefinitionRecord> entry : taskDefinitions.entrySet()) {
+            if (entry.getKey().startsWith(prefix)) {
+                com.acc.workflow.core.model.TaskDefinitionRecord rec = entry.getValue();
+                latestByName.merge(rec.name(), rec, (existing, replace) ->
+                    replace.version() > existing.version() ? replace : existing
+                );
+            }
+        }
+        if (latestByName.isEmpty() && !"system".equals(tenantId)) {
+            for (Map.Entry<String, com.acc.workflow.core.model.TaskDefinitionRecord> entry : taskDefinitions.entrySet()) {
+                if (entry.getKey().startsWith("system:")) {
+                    com.acc.workflow.core.model.TaskDefinitionRecord rec = entry.getValue();
+                    latestByName.merge(rec.name(), rec, (existing, replace) ->
+                        replace.version() > existing.version() ? replace : existing
+                    );
+                }
+            }
+        }
+        List<com.acc.workflow.core.model.TaskDefinitionRecord> list = new ArrayList<>(latestByName.values());
+        list.sort(Comparator.comparing(com.acc.workflow.core.model.TaskDefinitionRecord::name));
+        return list;
+    }
+
+    @Override
+    public List<com.acc.workflow.core.model.TaskDefinitionRecord> listTaskDefinitionVersions(String tenantId, String name) {
+        String prefix = (tenantId != null ? tenantId : "system") + ":" + name + ":";
+        List<com.acc.workflow.core.model.TaskDefinitionRecord> list = new ArrayList<>();
+        for (Map.Entry<String, com.acc.workflow.core.model.TaskDefinitionRecord> entry : taskDefinitions.entrySet()) {
+            if (entry.getKey().startsWith(prefix)) {
+                list.add(entry.getValue());
+            }
+        }
+        if (list.isEmpty() && !"system".equals(tenantId)) {
+            String sysPrefix = "system:" + name + ":";
+            for (Map.Entry<String, com.acc.workflow.core.model.TaskDefinitionRecord> entry : taskDefinitions.entrySet()) {
+                if (entry.getKey().startsWith(sysPrefix)) {
+                    list.add(entry.getValue());
+                }
+            }
+        }
+        list.sort(Comparator.comparingInt(com.acc.workflow.core.model.TaskDefinitionRecord::version));
+        return list;
+    }
+
+    @Override
+    public void updateTaskDefinitionStatus(
+        String tenantId,
+        String name,
+        int version,
+        com.acc.workflow.core.model.WorkflowVersionStatus status,
+        Long publishedAtMs,
+        String publishedBy
+    ) {
+        lock.lock();
+        try {
+            String key = (tenantId != null ? tenantId : "system") + ":" + name + ":" + version;
+            com.acc.workflow.core.model.TaskDefinitionRecord existing = taskDefinitions.get(key);
+            if (existing != null) {
+                com.acc.workflow.core.model.TaskDefinitionRecord updated = new com.acc.workflow.core.model.TaskDefinitionRecord(
+                    existing.taskDefId(),
+                    existing.tenantId(),
+                    existing.name(),
+                    existing.version(),
+                    status,
+                    existing.description(),
+                    existing.retryCount(),
+                    existing.retryDelaySeconds(),
+                    existing.backoffRate(),
+                    existing.timeoutSeconds(),
+                    existing.inputSchema(),
+                    existing.outputSchema(),
+                    existing.changelogNote(),
+                    publishedAtMs != null ? publishedAtMs : existing.publishedAtMs(),
+                    publishedBy != null ? publishedBy : existing.publishedBy(),
+                    existing.createdAtMs(),
+                    System.currentTimeMillis(),
+                    existing.createdBy()
+                );
+                taskDefinitions.put(key, updated);
+            }
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public boolean deleteTaskDefinition(String tenantId, String name, int version) {
+        lock.lock();
+        try {
+            String key = (tenantId != null ? tenantId : "system") + ":" + name + ":" + version;
+            return taskDefinitions.remove(key) != null;
+        } finally {
+            lock.unlock();
+        }
     }
 
     private TaskSnapshot toTaskSnapshot(TaskRecord tr) {

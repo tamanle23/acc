@@ -127,5 +127,64 @@ public abstract class PersistenceContractTest {
         port.deleteDlqTask("dlq-101");
         assertThat(port.getDlqTask("dlq-101")).isEmpty();
     }
+
+    @Test
+    @DisplayName("Contract: should save, retrieve, version, and manage Task Definitions")
+    void testTaskDefinitionLifecycle() {
+        PersistencePort port = createPersistencePort();
+        com.acc.workflow.core.model.TaskDefinitionRecord v1 = com.acc.workflow.core.model.TaskDefinitionRecord.builder("validateOrder")
+            .tenantId("tenant-alpha")
+            .version(1)
+            .status(com.acc.workflow.core.model.WorkflowVersionStatus.ACTIVE)
+            .description("Validates user cart and items")
+            .inputSchema(Map.of("type", "object", "properties", Map.of("orderId", Map.of("type", "string"))))
+            .outputSchema(Map.of("type", "object", "properties", Map.of("valid", Map.of("type", "boolean"))))
+            .publishedAtMs(1000L)
+            .publishedBy("admin")
+            .changelogNote("Initial version")
+            .build();
+
+        port.saveTaskDefinition(v1);
+
+        Optional<com.acc.workflow.core.model.TaskDefinitionRecord> fetchedV1 = port.getTaskDefinition("tenant-alpha", "validateOrder", 1);
+        assertThat(fetchedV1).isPresent();
+        assertThat(fetchedV1.get().name()).isEqualTo("validateOrder");
+        assertThat(fetchedV1.get().version()).isEqualTo(1);
+        assertThat(fetchedV1.get().status()).isEqualTo(com.acc.workflow.core.model.WorkflowVersionStatus.ACTIVE);
+
+        // Save draft v2
+        com.acc.workflow.core.model.TaskDefinitionRecord v2Draft = com.acc.workflow.core.model.TaskDefinitionRecord.builder("validateOrder")
+            .tenantId("tenant-alpha")
+            .version(2)
+            .status(com.acc.workflow.core.model.WorkflowVersionStatus.DRAFT)
+            .description("Validates user cart and coupon codes")
+            .changelogNote("Adding promo code check")
+            .build();
+        port.saveTaskDefinition(v2Draft);
+
+        // Latest ACTIVE should still be v1
+        Optional<com.acc.workflow.core.model.TaskDefinitionRecord> latestActive = port.getLatestActiveTaskDefinition("tenant-alpha", "validateOrder");
+        assertThat(latestActive).isPresent();
+        assertThat(latestActive.get().version()).isEqualTo(1);
+
+        // List all versions of validateOrder
+        List<com.acc.workflow.core.model.TaskDefinitionRecord> allVersions = port.listTaskDefinitionVersions("tenant-alpha", "validateOrder");
+        assertThat(allVersions).hasSize(2);
+
+        // Publish v2
+        port.updateTaskDefinitionStatus("tenant-alpha", "validateOrder", 2, com.acc.workflow.core.model.WorkflowVersionStatus.ACTIVE, 2500L, "lead-eng");
+
+        Optional<com.acc.workflow.core.model.TaskDefinitionRecord> newLatest = port.getLatestActiveTaskDefinition("tenant-alpha", "validateOrder");
+        assertThat(newLatest).isPresent();
+        assertThat(newLatest.get().version()).isEqualTo(2);
+        assertThat(newLatest.get().status()).isEqualTo(com.acc.workflow.core.model.WorkflowVersionStatus.ACTIVE);
+        assertThat(newLatest.get().publishedBy()).isEqualTo("lead-eng");
+
+        // List task definitions for tenant
+        List<com.acc.workflow.core.model.TaskDefinitionRecord> tenantDefs = port.listTaskDefinitions("tenant-alpha");
+        assertThat(tenantDefs).hasSize(1);
+        assertThat(tenantDefs.get(0).version()).isEqualTo(2);
+    }
 }
+
 

@@ -156,6 +156,13 @@ export class IRPreviewEngine {
   }
 
   /**
+   * Synchronizes the mixer sample rate with the active audio context / hardware output.
+   */
+  public setAudioSampleRate(sampleRate: number): void {
+    this.audioMixer.setSampleRate(sampleRate);
+  }
+
+  /**
    * Renders a synchronized audio slice deterministically from the Master Bus.
    */
   public renderAudioSlice(timeSec: number, durationSec: number): AudioMixResult {
@@ -242,8 +249,7 @@ export class IRPreviewEngine {
     return {
       x: override.x !== undefined ? override.x : base.x,
       y: override.y !== undefined ? override.y : base.y,
-      scaleX: override.scaleX !== undefined ? override.scaleX : base.scaleX,
-      scaleY: override.scaleY !== undefined ? override.scaleY : base.scaleY,
+      scale: override.scale !== undefined ? override.scale : base.scale,
       rotation: override.rotation !== undefined ? override.rotation : base.rotation,
       opacity: override.opacity !== undefined ? override.opacity : base.opacity,
     };

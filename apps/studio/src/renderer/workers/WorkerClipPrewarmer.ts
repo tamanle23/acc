@@ -44,7 +44,7 @@ export class WorkerClipPrewarmer {
     this.memoryManager.pruneOutsideWindow(currentFrame, fps, this.timeline);
 
     for (const track of this.timeline.tracks.values()) {
-      if (track.type !== 'video' && track.type !== 'image' && track.type !== 'overlay') {
+      if (track.type !== 'video' && (track.type as string) !== 'image' && (track.type as string) !== 'overlay') {
         continue;
       }
 
@@ -53,18 +53,10 @@ export class WorkerClipPrewarmer {
         if (seq.startFrame + (seq.durationFrames ?? 0) < currentFrame - 300) {
           this.warmedSequences.delete(seq.id);
         }
-        // 1. Proactive 4-frame sequential lookahead for actively playing clips
-        if (
-          isPlaying &&
-          seq.assetId &&
-          currentFrame >= seq.startFrame &&
-          currentFrame < seq.startFrame + seq.durationFrames
-        ) {
-          this.prewarmSequentialLookahead(seq, currentFrame, fps);
-        }
 
-        // 2. Discover upcoming clips in the lookahead window [currentFrame, windowEnd]
-        if (seq.startFrame >= currentFrame && seq.startFrame <= windowEnd) {
+        // Discover upcoming clips in the lookahead window [currentFrame, windowEnd]
+        // Prewarm frame 0 only when parked or scrubbing to prevent WebCodecs hardware decode collisions during playback.
+        if (!isPlaying && seq.startFrame >= currentFrame && seq.startFrame <= windowEnd) {
           if (!this.warmedSequences.has(seq.id)) {
             this.warmedSequences.add(seq.id);
             this.prewarmSequence(seq, fps);
@@ -74,35 +66,7 @@ export class WorkerClipPrewarmer {
     }
   }
 
-  /**
-   * Proactively pre-decodes [currentFrame + 1 .. currentFrame + 4] into PreviewFrameMemoryManager
-   * so upcoming frames are hot in memory before playhead advancement.
-   */
-  private prewarmSequentialLookahead(seq: ResolvedSequence, currentFrame: number, fps: number): void {
-    if (!seq.assetId) return;
-    const reader = this.readers.get(seq.assetId);
-    if (!reader) return;
 
-    const assetId = seq.assetId;
-    const seqStart = seq.startFrame ?? 0;
-    const seqEnd = seqStart + seq.durationFrames;
-
-    // 4-frame lookahead window
-    for (let offset = 1; offset <= 4; offset++) {
-      const targetFrame = currentFrame + offset;
-      if (targetFrame >= seqEnd) break;
-
-      const localFrame = targetFrame - seqStart;
-      if (this.memoryManager.get(assetId, localFrame)) continue;
-
-      // Asynchronously trigger decode into memory manager via concurrency gate
-      reader.requestFrame(localFrame, fps, false).then((bmp) => {
-        if (bmp && (bmp.width === undefined || bmp.width > 0)) {
-          this.memoryManager.set(assetId, localFrame, bmp);
-        }
-      }).catch(() => {});
-    }
-  }
 
   private async prewarmSequence(seq: ResolvedSequence, fps: number): Promise<void> {
     if (!seq.assetId) return;

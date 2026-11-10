@@ -62,4 +62,8 @@ export class AddTrackCommand implements ICommand {
     }
     return copy;
   }
+
+  public tryMerge(_next: ICommand): boolean {
+    return false;
+  }
 }

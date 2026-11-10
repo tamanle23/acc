@@ -120,7 +120,10 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
         .filter(t -> t.startsWith("Bearer "))
         .map(t -> t.substring(7))
         .orElse(null);
-    String authenticationToken = this.readCookie(request, jwtCookieName).orElse(header);
+
+    String authenticationToken = this.readCookie(request, jwtCookieName)
+        .or(() -> Optional.ofNullable(header))
+        .orElse(null);
     String path = request.getRequestURI();
 
     if (StringUtils.isBlank(authenticationToken)
@@ -139,6 +142,15 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
     Optional<JwtAuthenticationToken> authResult = attemptAuthentication(request, authenticationToken);
     if (!authResult.isPresent()) {
       securityContextHolderStrategy.clearContext();
+      String servletPath = request.getServletPath();
+      boolean isPermitted = applicationProperties.getSecurity() != null
+          && applicationProperties.getSecurity().getPermitAlls() != null
+          && Arrays.stream(applicationProperties.getSecurity().getPermitAlls())
+              .anyMatch(pattern -> pathMatcher.match(pattern, servletPath));
+      if (isPermitted) {
+        filterChain.doFilter(request, response);
+        return;
+      }
       response.setStatus(HttpStatus.UNAUTHORIZED.value());
       return;
     }

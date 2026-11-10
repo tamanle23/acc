@@ -18,6 +18,19 @@ import { WorkflowCreateDialog } from './components/catalog/workflow-create-dialo
 import { FleetMigrationModal } from './components/migration/fleet-migration-modal';
 import { ApprovalsInbox } from './approvals/approvals-inbox';
 import { WorkflowCatalogKpiBar } from './components/catalog/workflow-catalog-kpi-bar';
+import {
+  TaskDefinitionKpiBar,
+  TaskDefinitionTable,
+  TaskDefinitionEditorDialog,
+  TaskVersionHistoryDrawer,
+} from './components/task-definitions';
+import {
+  useTaskDefinitions,
+  usePublishTaskDefinition,
+  useDeleteTaskDefinitionDraft,
+  type TaskDefinitionRecord,
+} from './api/task-definition-api';
+import { taskContractRegistry } from './components/studio/utils/contracts/task-contract-registry';
 import { getRouteApi } from '@tanstack/react-router';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -26,12 +39,59 @@ const route = getRouteApi('/_authenticated/workflows/')
 export const WorkflowsFeature: React.FC = () => {
   const search = route.useSearch()
   const { data: definitions = [], isLoading, refetch } = useWorkflowsQuery();
+  const { data: taskDefs = [], isLoading: isTaskDefsLoading, refetch: refetchTaskDefs } = useTaskDefinitions();
+  const publishTaskDefMutation = usePublishTaskDefinition();
+  const deleteDraftTaskDefMutation = useDeleteTaskDefinitionDraft();
 
   const { t } = useTranslation('console');
   const [activeWorkflowKey, setActiveWorkflowKey] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'catalog' | 'approvals'>('catalog');
+  const [activeTab, setActiveTab] = useState<'catalog' | 'task-definitions' | 'approvals'>('catalog');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [fleetMigrateTarget, setFleetMigrateTarget] = useState<WorkflowDefinitionSummary | null>(null);
+
+  // Task Definitions Manager Modal & Drawer states
+  const [isTaskEditorOpen, setIsTaskEditorOpen] = useState(false);
+  const [editingTaskDef, setEditingTaskDef] = useState<TaskDefinitionRecord | null>(null);
+  const [editorMode, setEditorMode] = useState<'create' | 'edit' | 'fork' | 'inspect'>('create');
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [historyTaskName, setHistoryTaskName] = useState<string | null>(null);
+
+  const handleCreateNewTaskDef = () => {
+    setEditingTaskDef(null);
+    setEditorMode('create');
+    setIsTaskEditorOpen(true);
+  };
+
+  const handleEditTaskDef = (taskDef: TaskDefinitionRecord) => {
+    setEditingTaskDef(taskDef);
+    setEditorMode(taskContractRegistry.isBuiltIn(taskDef.name) ? 'inspect' : 'edit');
+    setIsTaskEditorOpen(true);
+  };
+
+  const handleInspectTaskDef = (taskDef: TaskDefinitionRecord) => {
+    setEditingTaskDef(taskDef);
+    setEditorMode('inspect');
+    setIsTaskEditorOpen(true);
+  };
+
+  const handleForkDraft = (taskDef: TaskDefinitionRecord) => {
+    setEditingTaskDef(taskDef);
+    setEditorMode('fork');
+    setIsTaskEditorOpen(true);
+  };
+
+  const handleViewHistory = (taskName: string) => {
+    setHistoryTaskName(taskName);
+    setIsHistoryOpen(true);
+  };
+
+  const handlePublishTaskDef = (name: string, version: number) => {
+    publishTaskDefMutation.mutate({ name, version });
+  };
+
+  const handleDeleteDraft = (name: string, version: number) => {
+    deleteDraftTaskDefMutation.mutate({ name, version });
+  };
 
 
 
@@ -78,13 +138,23 @@ export const WorkflowsFeature: React.FC = () => {
                   <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground">
                     {activeWorkflowKey
                       ? `${t('workflows.studio', 'Studio')}: ${activeWorkflowKey}`
-                      : t('workflows.title', 'Workflow Definitions')}
+                      : activeTab === 'task-definitions'
+                        ? t('workflows.task_definitions_title', 'Task Definitions Catalog')
+                        : activeTab === 'approvals'
+                          ? t('workflows.approvals_title', 'Workflow Approvals')
+                          : t('workflows.title', 'Workflow Definitions')}
                   </h1>
                   <Badge
                     variant="outline"
                     className="text-[11px] font-mono bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20"
                   >
-                    {activeWorkflowKey ? 'Designer Mode' : 'Catalog'}
+                    {activeWorkflowKey
+                      ? 'Designer Mode'
+                      : activeTab === 'task-definitions'
+                        ? 'Task Engine'
+                        : activeTab === 'approvals'
+                          ? 'Governance'
+                          : 'Catalog'}
                   </Badge>
                 </div>
               </div>
@@ -94,10 +164,20 @@ export const WorkflowsFeature: React.FC = () => {
                     'workflows.designer_desc',
                     'Design and bind DAG node topologies, parameters, and compensation handlers.'
                   )
-                  : t(
-                    'workflows.catalog_desc',
-                    'Catalog of enterprise distributed workflows. Create, manage, and inspect DAG orchestrations.'
-                  )}
+                  : activeTab === 'task-definitions'
+                    ? t(
+                      'workflows.task_definitions_desc',
+                      'Enterprise catalog of typed task contracts, schema validation bounds, and worker policies.'
+                    )
+                    : activeTab === 'approvals'
+                      ? t(
+                        'workflows.approvals_desc',
+                        'Review and action pending human workflow transition decisions and policy audits.'
+                      )
+                      : t(
+                        'workflows.catalog_desc',
+                        'Catalog of enterprise distributed workflows. Create, manage, and inspect DAG orchestrations.'
+                      )}
               </p>
             </div>
           </div>
@@ -111,6 +191,14 @@ export const WorkflowsFeature: React.FC = () => {
                 onClick={() => setActiveTab('catalog')}
               >
                 Definitions Catalog
+              </Button>
+              <Button
+                variant={activeTab === 'task-definitions' ? 'default' : 'ghost'}
+                size="sm"
+                className="text-xs h-8 px-3"
+                onClick={() => setActiveTab('task-definitions')}
+              >
+                Task Definitions
               </Button>
               <Button
                 variant={activeTab === 'approvals' ? 'default' : 'ghost'}
@@ -141,7 +229,12 @@ export const WorkflowsFeature: React.FC = () => {
           <WorkflowCatalogKpiBar definitions={definitions} />
         )}
 
-        {/* Content Area: Catalog Table, Approvals Inbox, or Full-bleed Studio Canvas */}
+        {/* Task Definitions Telemetry KPI Bar */}
+        {!activeWorkflowKey && activeTab === 'task-definitions' && (
+          <TaskDefinitionKpiBar definitions={taskDefs} />
+        )}
+
+        {/* Content Area: Catalog Table, Task Definitions, Approvals Inbox, or Full-bleed Studio Canvas */}
         {activeWorkflowKey ? (
           <VisualDagStudio
             mode="designer"
@@ -150,6 +243,20 @@ export const WorkflowsFeature: React.FC = () => {
           />
         ) : activeTab === 'approvals' ? (
           <ApprovalsInbox />
+        ) : activeTab === 'task-definitions' ? (
+          <div className="flex-1 w-full min-w-0 min-h-0 overflow-y-auto">
+            <TaskDefinitionTable
+              data={taskDefs}
+              isLoading={isTaskDefsLoading}
+              onCreateNew={handleCreateNewTaskDef}
+              onEditTaskDef={handleEditTaskDef}
+              onInspectTaskDef={handleInspectTaskDef}
+              onForkDraft={handleForkDraft}
+              onViewHistory={handleViewHistory}
+              onPublishTaskDef={handlePublishTaskDef}
+              onDeleteDraft={handleDeleteDraft}
+            />
+          </div>
         ) : isLoading ? (
           <div className='space-y-4'>
             <Skeleton className='h-10 w-full' />
@@ -175,6 +282,27 @@ export const WorkflowsFeature: React.FC = () => {
         onCreated={(key) => {
           refetch();
           setActiveWorkflowKey(key);
+        }}
+      />
+
+      <TaskDefinitionEditorDialog
+        open={isTaskEditorOpen}
+        onOpenChange={setIsTaskEditorOpen}
+        initialData={editingTaskDef}
+        mode={editorMode}
+        onSaved={() => {
+          refetchTaskDefs();
+        }}
+      />
+
+      <TaskVersionHistoryDrawer
+        open={isHistoryOpen}
+        onOpenChange={setIsHistoryOpen}
+        taskName={historyTaskName}
+        onForkDraft={(record) => {
+          setEditingTaskDef(record);
+          setEditorMode('fork');
+          setIsTaskEditorOpen(true);
         }}
       />
 

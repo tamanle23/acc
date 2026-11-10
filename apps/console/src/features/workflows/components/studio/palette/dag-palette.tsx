@@ -28,18 +28,21 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Search,
+  Plus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { type DagNodeType, type DagNodeData } from '../canvas/dag-node';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { useTaskDefinitions } from '@/features/workflows/api/task-definition-api';
+import { taskContractRegistry } from '../utils/contracts/task-contract-registry';
 
 export interface PaletteItem {
   type: DagNodeType;
   label: string;
   description: string;
-  category: 'control' | 'data' | 'connectors' | 'human' | 'ai';
+  category: 'control' | 'data' | 'connectors' | 'human' | 'ai' | 'catalog';
   icon: React.ReactNode;
   defaultData: Partial<DagNodeData>;
   isCompound?: boolean;
@@ -52,9 +55,10 @@ export interface DagPaletteProps {
   isCollapsed?: boolean;
   onCollapsedChange?: (collapsed: boolean) => void;
   onInsertNode?: (type: DagNodeType, defaultData?: Partial<DagNodeData>) => void;
+  onCreateNewTaskDef?: () => void;
 }
 
-export const CATEGORIES: { id: PaletteItem['category']; label: string }[] = [
+export const CATEGORIES: { id: 'control' | 'data' | 'connectors' | 'human' | 'ai'; label: string }[] = [
   { id: 'control', label: 'Control Flow' },
   { id: 'data', label: 'Data & Transformation' },
   { id: 'connectors', label: 'Connectors & I/O' },
@@ -399,6 +403,7 @@ export function DagPalette({
   isCollapsed: controlledCollapsed,
   onCollapsedChange,
   onInsertNode,
+  onCreateNewTaskDef,
 }: DagPaletteProps = {}) {
   const [internalCollapsed, setInternalCollapsed] = useState(defaultCollapsed);
   const isCollapsed = controlledCollapsed !== undefined ? controlledCollapsed : internalCollapsed;
@@ -410,8 +415,11 @@ export function DagPalette({
     }
   };
 
+  const { data: taskDefs } = useTaskDefinitions();
+
   const [searchQuery, setSearchQuery] = useState('');
   const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({
+    catalog: true,
     control: true,
     data: true,
     connectors: true,
@@ -425,6 +433,7 @@ export function DagPalette({
 
   const handleExpandAll = () => {
     setOpenCategories({
+      catalog: true,
       control: true,
       data: true,
       connectors: true,
@@ -435,6 +444,7 @@ export function DagPalette({
 
   const handleCollapseAll = () => {
     setOpenCategories({
+      catalog: false,
       control: false,
       data: false,
       connectors: false,
@@ -443,16 +453,44 @@ export function DagPalette({
     });
   };
 
+  const catalogItems: PaletteItem[] = useMemo(() => {
+    if (!taskDefs || taskDefs.length === 0) return [];
+    return taskDefs
+      .filter((td) => !td.isBuiltIn && td.name !== 'SIMPLE' && !taskContractRegistry.isBuiltIn(td.name))
+      .map((td) => ({
+        type: 'SIMPLE' as DagNodeType,
+        label: td.name,
+        description: td.description || `Catalog task ${td.name} (v${td.version})`,
+        category: 'catalog' as const,
+        icon: <Play className="w-3.5 h-3.5 text-teal-500" />,
+        defaultData: {
+          taskType: 'SIMPLE',
+          taskDefName: td.name,
+          taskDefVersion: td.version,
+          latestTaskDefVersion: td.version,
+          label: td.name,
+          inputSchema: td.inputSchema,
+          outputSchema: td.outputSchema,
+          timeoutSeconds: td.timeoutSeconds,
+          retryCount: td.retryCount,
+          retryDelaySeconds: td.retryDelaySeconds,
+          backoffRate: td.backoffRate,
+        },
+      }));
+  }, [taskDefs]);
+
+  const allItems = useMemo(() => [...catalogItems, ...PALETTE_ITEMS], [catalogItems]);
+
   const filteredItems = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return PALETTE_ITEMS;
-    return PALETTE_ITEMS.filter(
+    if (!q) return allItems;
+    return allItems.filter(
       (item) =>
         item.label.toLowerCase().includes(q) ||
         item.description.toLowerCase().includes(q) ||
         item.type.toLowerCase().includes(q)
     );
-  }, [searchQuery]);
+  }, [searchQuery, allItems]);
 
   const onDragStart = (event: React.DragEvent, item: PaletteItem) => {
     event.dataTransfer.setData('application/dag-node-type', item.type);
@@ -566,9 +604,9 @@ export function DagPalette({
 
       {/* Accordion Categories */}
       <div className="flex flex-col gap-2 overflow-y-auto pr-1 flex-1">
-        {CATEGORIES.map((cat) => {
+        {[{ id: 'catalog' as const, label: 'Task Definitions Catalog' }, ...CATEGORIES].map((cat) => {
           const catItems = filteredItems.filter((item) => item.category === cat.id);
-          if (catItems.length === 0) return null;
+          if (catItems.length === 0 && cat.id !== 'catalog') return null;
           const isOpen = searchQuery.trim().length > 0 || openCategories[cat.id];
 
           return (
@@ -586,14 +624,51 @@ export function DagPalette({
                   )}
                   <span>{cat.label}</span>
                 </div>
-                <span className="text-[10px] text-muted-foreground/60">{catItems.length}</span>
+                <div className="flex items-center gap-1">
+                  {cat.id === 'catalog' && onCreateNewTaskDef && (
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onCreateNewTaskDef();
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.stopPropagation();
+                          onCreateNewTaskDef();
+                        }
+                      }}
+                      className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium text-primary hover:bg-primary/10 transition-colors cursor-pointer"
+                      title="Create New Task Definition"
+                    >
+                      <Plus className="w-2.5 h-2.5" />
+                      New
+                    </span>
+                  )}
+                  <span className="text-[10px] text-muted-foreground/60">{catItems.length}</span>
+                </div>
               </button>
 
               {isOpen && (
                 <div className="flex flex-col gap-1 mt-1 pl-1">
-                  {catItems.map((item) => (
+                  {cat.id === 'catalog' && catItems.length === 0 ? (
+                    <div className="p-2 text-center text-[10px] text-muted-foreground border border-dashed rounded-lg bg-muted/10">
+                      No task definitions found.
+                      {onCreateNewTaskDef && (
+                        <button
+                          type="button"
+                          onClick={onCreateNewTaskDef}
+                          className="text-primary hover:underline block mt-0.5 mx-auto font-medium"
+                        >
+                          + Create Definition
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    catItems.map((item) => (
                     <div
-                      key={item.type}
+                      key={item.defaultData?.taskDefName ? `catalog-${item.defaultData.taskDefName}` : item.type}
                       draggable
                       onDragStart={(e) => onDragStart(e, item)}
                       onClick={() => onInsertNode?.(item.type, item.defaultData)}
@@ -617,7 +692,7 @@ export function DagPalette({
                         <span className="text-[10px] text-muted-foreground truncate">{item.description}</span>
                       </div>
                     </div>
-                  ))}
+                  )))}
                 </div>
               )}
             </div>

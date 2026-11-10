@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import { createEffect } from 'solid-js';
 import { WebAudioEngine } from '../../lib/audio/WebAudioEngine';
 import { WaveformLODPyramid } from '../../lib/timeline/WaveformLODPyramid';
 
@@ -49,18 +49,13 @@ export function clearWaveSurferPeakCache(): void {
  * Pure, high-performance HTML5 2D Canvas waveform renderer.
  * Eliminates heavy wavesurfer.js DOM/AudioContext overhead while preserving exact drop-in API parity.
  */
-export function WaveSurferWaveform({
-  id,
-  durationFrames,
-  width,
-  height,
-  color = '#a855f7',
-  fps = 30,
-}: WaveSurferWaveformProps) {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+export function WaveSurferWaveform(props: WaveSurferWaveformProps) {
+  let canvasRef: HTMLCanvasElement | undefined;
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
+  createEffect(() => {
+    const canvas = canvasRef;
+    const width = props.width;
+    const height = props.height;
     if (!canvas || width <= 0 || height <= 0) return;
 
     const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
@@ -83,10 +78,10 @@ export function WaveSurferWaveform({
     const barGap = 1;
     const barSpacing = barWidth + barGap;
     const numBars = Math.max(5, Math.floor(width / barSpacing));
-    const peaks = getCachedPeaks(id, durationFrames, numBars);
+    const peaks = getCachedPeaks(props.id, props.durationFrames, numBars);
 
     if (peaks && peaks.length > 0) {
-      ctx.fillStyle = color;
+      ctx.fillStyle = props.color ?? '#a855f7';
       const centerY = height / 2;
       const maxAmp = height * 0.42;
 
@@ -100,13 +95,13 @@ export function WaveSurferWaveform({
     }
 
     ctx.restore();
-  }, [id, durationFrames, width, height, color, fps]);
+  });
 
   return (
     <canvas
       ref={canvasRef}
-      style={{ width: `${width}px`, height: `${height}px` }}
-      className="absolute inset-0 pointer-events-none opacity-85 block"
+      style={{ width: `${props.width}px`, height: `${props.height}px` }}
+      class="absolute inset-0 pointer-events-none opacity-85 block"
     />
   );
 }

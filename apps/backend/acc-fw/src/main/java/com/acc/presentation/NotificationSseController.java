@@ -27,11 +27,15 @@ public class NotificationSseController {
 
     @GetMapping(value = "/api/v1/notifications/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter streamNotifications(@RequestParam(required = false) String tenantId) {
-        String activeTenantId = (tenantId != null && !tenantId.isBlank())
-                ? tenantId
-                : TenantContextHolder.getTenantId();
+        String callerTenant = TenantContextHolder.getTenantId();
+        boolean isSovereign = "SYSTEM".equalsIgnoreCase(callerTenant) || TenantContextHolder.isSovereignActor();
 
-        if (activeTenantId == null || activeTenantId.isBlank()) {
+        String activeTenantId;
+        if (isSovereign && tenantId != null && !tenantId.isBlank()) {
+            activeTenantId = tenantId;
+        } else if (callerTenant != null && !callerTenant.isBlank()) {
+            activeTenantId = callerTenant;
+        } else {
             activeTenantId = "DEFAULT";
         }
 

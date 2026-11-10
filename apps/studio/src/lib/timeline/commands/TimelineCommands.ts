@@ -19,9 +19,14 @@ export class SelectClipCommand implements TimelineCommand {
     stateManager.setInspectorMode('sequence');
 
     // Find and select corresponding track
-    const tracks = stateManager.getState().timeline?.tracks || [];
+    const rawTracks = stateManager.getState().timeline?.tracks;
+    const tracks = rawTracks instanceof Map
+      ? Array.from(rawTracks.values())
+      : Array.isArray(rawTracks)
+        ? rawTracks
+        : [];
     for (const track of tracks) {
-      if (track.sequences?.some((s) => s.id === this.clipId)) {
+      if (track.sequences?.some((s: any) => s.id === this.clipId)) {
         stateManager.setSelectedTrackId(track.id);
         break;
       }

@@ -1,3 +1,4 @@
+import type { ICanvasContext2D } from '@acc/core-isomorphic';
 import type { CaptionConfig, CaptionSettings, CaptionTrackSnapshot } from '../types';
 import { PRESETS } from '../styles';
 import { BoundedAcousticCaptionStrategy } from './BoundedAcousticCaptionStrategy';
@@ -13,7 +14,7 @@ export function groupCaptionsIntoPhrases(captions: CaptionConfig[], wordsPerPhra
  * Draws styled, frame-perfect subtitles onto a Canvas 2D context using an immutable CaptionTrackSnapshot.
  */
 export function drawCanvasCaptionsFromSnapshot(
-  ctx: any,
+  ctx: ICanvasContext2D,
   snapshot: CaptionTrackSnapshot,
   settings: CaptionSettings | undefined,
   width: number,

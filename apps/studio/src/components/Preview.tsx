@@ -1,5 +1,5 @@
-import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react';
-import { useDroppable } from '@dnd-kit/core';
+import { createSignal, createMemo, createEffect, Show } from 'solid-js';
+import { useDroppable } from '@dnd-kit/solid';
 import { IRStateManager } from '../lib/ir/irState';
 import { useIRState } from '../lib/ir/useStudioStore';
 import { STAGING_PRESETS } from '../lib/library/stagingPresets';
@@ -24,7 +24,7 @@ import {
 
 const EMPTY_ASSETS: Record<string, any> = {};
 
-interface PreviewProps {
+export interface PreviewProps {
   playhead: {
     currentFrame: number;
     totalFrames: number;
@@ -36,27 +36,21 @@ interface PreviewProps {
   onScrub?: (frame: number) => void;
 }
 
-function PreviewInner({
-  playhead,
-  isPlaying = false,
-  onTogglePlay,
-  onScrub,
-}: PreviewProps) {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const [containerEl, setContainerEl] = useState<HTMLDivElement | null>(null);
+export function Preview(props: PreviewProps) {
+  const [canvasRef, setCanvasRef] = createSignal<HTMLCanvasElement | null>(null);
+  const [overlayCanvasRef, setOverlayCanvasRef] = createSignal<HTMLCanvasElement | null>(null);
+  const [containerRef, setContainerRef] = createSignal<HTMLDivElement | null>(null);
 
   // Adaptive Container LOD (Level of Detail) Tracking for Floating HUDs
-  const containerLOD = useContainerLOD(containerEl || containerRef);
+  const containerLOD = useContainerLOD(containerRef);
 
   // Droppable container for dragging library presets into the viewport
-  const { setNodeRef: setDroppableRef, isOver } = useDroppable({
+  const droppable = useDroppable({
     id: 'canvas-viewport-drop-zone',
     data: {
       type: 'canvas-viewport',
       getNormalizedCoords: (clientX: number, clientY: number) => {
-        const rect = canvasRef.current?.getBoundingClientRect();
+        const rect = canvasRef()?.getBoundingClientRect();
         if (rect && rect.width > 0 && rect.height > 0) {
           return {
             normX: Math.max(0.05, Math.min(0.95, (clientX - rect.left) / rect.width)),
@@ -71,142 +65,189 @@ function PreviewInner({
   // Global IR Reactive Subscription
   const irState = useIRState();
 
-  const width = irState.doc?.meta?.canvasSize?.w || 1920;
-  const height = irState.doc?.meta?.canvasSize?.h || 1080;
-  const currentFrame = playhead?.currentFrame || 0;
-  const fps = playhead?.fps || 30;
-  const totalFrames = playhead?.totalFrames || irState.timeline?.totalFrames || 300;
-  const selectedSeqId = irState.selectedSequenceId;
+  const width = () => irState.doc?.meta?.canvasSize?.w || 1920;
+  const height = () => irState.doc?.meta?.canvasSize?.h || 1080;
+  const currentFrame = () => props.playhead?.currentFrame || 0;
+  const fps = () => props.playhead?.fps || 30;
+  const totalFrames = () => props.playhead?.totalFrames || irState.timeline?.totalFrames || 300;
+  const selectedSeqId = () => irState.selectedSequenceId;
 
   // Viewport Control & Overlay States
-  const [isLocked, setIsLocked] = useState(false);
-  const [safeGuidesMode, setSafeGuidesMode] = useState<'none' | '16:9' | '9:16'>('none');
-  const [showCheckerboard, setShowCheckerboard] = useState(false);
-  const [showVfxAmbiance, setShowVfxAmbiance] = useState(true);
-  const [showDepthHeatmap, setShowDepthHeatmap] = useState(false);
-  const [visionPassMode, setVisionPassMode] = useState<'composite' | 'depth' | 'normals' | 'alpha'>('composite');
-  const [isTelemetryCompanionOpen, setIsTelemetryCompanionOpen] = useState(false);
-  const [editingCue, setEditingCue] = useState<{ sequenceId: string; cueIndex: number; text: string } | null>(null);
+  const [isLocked, setIsLocked] = createSignal(false);
+  const [safeGuidesMode, setSafeGuidesMode] = createSignal<'none' | '16:9' | '9:16'>('none');
+  const [showCheckerboard, setShowCheckerboard] = createSignal(false);
+  const [showVfxAmbiance, setShowVfxAmbiance] = createSignal(true);
+  const [showDepthHeatmap, setShowDepthHeatmap] = createSignal(false);
+  const [visionPassMode, setVisionPassMode] = createSignal<'composite' | 'depth' | 'normals' | 'alpha'>('composite');
+  const [isTelemetryCompanionOpen, setIsTelemetryCompanionOpen] = createSignal(false);
+  const [editingCue, setEditingCue] = createSignal<{ sequenceId: string; cueIndex: number; text: string } | null>(null);
 
   // Configurable Virtual Preview Buffer Resolution
-  const [previewResolution, setPreviewResolution] = useState<PreviewResolutionMode>(0.5);
+  const [previewResolution, setPreviewResolution] = createSignal<PreviewResolutionMode>(0.5);
 
   // Calculate active virtual resolution scale
-  const activeScale = useMemo(() => {
-    if (previewResolution === 'auto') {
-      return isPlaying ? 0.5 : 1.0;
+  const activeScale = () => {
+    const res = previewResolution();
+    if (res === 'auto') {
+      return props.isPlaying ? 0.5 : 1.0;
     }
-    return previewResolution;
-  }, [previewResolution, isPlaying]);
+    return res;
+  };
 
-  const virtualWidth = Math.max(320, Math.round(width * activeScale));
-  const virtualHeight = Math.max(180, Math.round(height * activeScale));
+  const virtualWidth = () => Math.max(320, Math.round(width() * activeScale()));
+  const virtualHeight = () => Math.max(180, Math.round(height() * activeScale()));
 
   // Staging Drag-and-Drop States
-  const [isDragOver, setIsDragOver] = useState(false);
-  const [dragCoords, setDragCoords] = useState<{ normX: number; normY: number } | null>(null);
+  const [isDragOver, setIsDragOver] = createSignal(false);
+  const [dragCoords, setDragCoords] = createSignal<{ normX: number; normY: number } | null>(null);
 
   // Domain Hook 1: Pan & Zoom Navigation
   const panZoom = useViewportPanZoom();
 
-  // Query active sequences for hit detection, textures & rendering (memoized to prevent redundant texture sync during drag)
-  const activeSequences = useMemo(
-    () => irState.intervalTree?.queryActive(currentFrame) || [],
-    [irState.intervalTree, currentFrame]
+  // Query active sequences for hit detection, textures & rendering
+  const activeSequences = createMemo(
+    () => irState.intervalTree?.queryActive(currentFrame()) || []
   );
-  const clearColor = showCheckerboard ? 'transparent' : '#000000';
-  const debugMode =
-    visionPassMode === 'depth' || showDepthHeatmap
-      ? 'depth_heatmap'
-      : visionPassMode === 'normals'
-        ? 'normals'
-        : visionPassMode === 'alpha'
-          ? 'alpha'
-          : 'none';
+  const clearColor = () => (showCheckerboard() ? 'transparent' : '#000000');
+  const debugMode = () => {
+    const pass = visionPassMode();
+    if (pass === 'depth' || showDepthHeatmap()) return 'depth_heatmap';
+    if (pass === 'normals') return 'normals';
+    if (pass === 'alpha') return 'alpha';
+    return 'none';
+  };
 
   // Domain Hook 4: Viewport Render Strategy (Decoupled Worker / Main-Thread Pipeline)
   const renderStrategy = useViewportRenderStrategy({
     canvasRef,
     overlayCanvasRef,
-    timeline: irState.timeline,
-    assetsMap: irState.doc?.assets || EMPTY_ASSETS,
-    width: virtualWidth,
-    height: virtualHeight,
-    timelineWidth: width,
-    timelineHeight: height,
-    fps,
-    totalFrames,
-    currentFrame,
-    isPlaying,
-    clearColor,
-    debugMode,
-    activeSeqs: activeSequences,
+    get timeline() {
+      return irState.timeline;
+    },
+    get assetsMap() {
+      return irState.doc?.assets || EMPTY_ASSETS;
+    },
+    get width() {
+      return virtualWidth();
+    },
+    get height() {
+      return virtualHeight();
+    },
+    get timelineWidth() {
+      return width();
+    },
+    get timelineHeight() {
+      return height();
+    },
+    get fps() {
+      return fps();
+    },
+    get totalFrames() {
+      return totalFrames();
+    },
+    get currentFrame() {
+      return currentFrame();
+    },
+    get isPlaying() {
+      return props.isPlaying ?? false;
+    },
+    get clearColor() {
+      return clearColor();
+    },
+    get debugMode() {
+      return debugMode();
+    },
+    get activeSeqs() {
+      return activeSequences();
+    },
   });
 
   // Domain Hook 2: Gizmo Direct Manipulation & Vector Snapping
   const gizmo = useGizmoTransform({
-    selectedSeqId,
-    width,
-    height,
-    isLocked,
-    timeline: irState.timeline,
-    doc: irState.doc,
-    activeSequences,
-    previewEngine: renderStrategy.previewEngine,
-    onRenderFrame: () => renderStrategy.renderFrame(currentFrame),
+    get selectedSeqId() {
+      return selectedSeqId();
+    },
+    get width() {
+      return width();
+    },
+    get height() {
+      return height();
+    },
+    get isLocked() {
+      return isLocked();
+    },
+    get timeline() {
+      return irState.timeline;
+    },
+    get doc() {
+      return irState.doc;
+    },
+    get activeSequences() {
+      return activeSequences();
+    },
+    get previewEngine() {
+      return renderStrategy.previewEngine;
+    },
+    onRenderFrame: () => renderStrategy.renderFrame(currentFrame()),
   });
 
   // Domain Hook 3: Global Keyboard Hotkeys
   usePreviewHotkeys({
-    selectedSeqId,
+    selectedSeqId: () => selectedSeqId(),
     editingCue,
     setEditingCue,
-    isSpacePressed: panZoom.isSpacePressed,
+    isSpacePressed: () => panZoom.isSpacePressed,
     setIsSpacePressed: panZoom.setIsSpacePressed,
     setVisionPassMode,
   });
 
-  const handleCommitText = useCallback(() => {
-    if (editingCue) {
-      const allSeqs = irState.timeline?.tracks?.flatMap((t: any) => t.sequences || []) || [];
-      const seq = allSeqs.find((s: any) => s.id === editingCue.sequenceId);
+  const handleCommitText = () => {
+    const cue = editingCue();
+    if (cue) {
+      const rawTracks = irState.timeline?.tracks;
+      const tracks = rawTracks instanceof Map
+        ? Array.from(rawTracks.values())
+        : Array.isArray(rawTracks)
+          ? rawTracks
+          : [];
+      const allSeqs = tracks.flatMap((t: any) => t.sequences || []);
+      const seq = allSeqs.find((s: any) => s.id === cue.sequenceId);
       const textMod = seq?.modifiers?.find((m: any) => m.type === 'text/draw' || m.type === 'text/overlay');
       if (textMod) {
-        IRStateManager.getInstance().updateModifier(editingCue.sequenceId, textMod.type, { text: editingCue.text });
+        IRStateManager.getInstance().updateModifier(cue.sequenceId, textMod.type, { text: cue.text });
       } else {
-        IRStateManager.getInstance().updateTextCue(editingCue.sequenceId, editingCue.cueIndex, editingCue.text);
+        IRStateManager.getInstance().updateTextCue(cue.sequenceId, cue.cueIndex, cue.text);
       }
       setEditingCue(null);
     }
-  }, [editingCue, irState.timeline]);
+  };
 
   // Vector Snapping Guide Canvas Render Pass
-  useEffect(() => {
-    const overlayCanvas = overlayCanvasRef.current;
+  createEffect(() => {
+    if (props.isPlaying) return; // Zero GPU compositor / canvas overhead during active playback
+    const overlayCanvas = overlayCanvasRef();
     if (overlayCanvas) {
       const overlayCtx = overlayCanvas.getContext('2d');
       if (overlayCtx) {
-        overlayCtx.clearRect(0, 0, width, height);
-        if (selectedSeqId && gizmo.activeGuides.length > 0) {
-          gizmo.overlayRef.current.renderGuides(overlayCtx, width, height, gizmo.activeGuides);
+        const vW = virtualWidth();
+        const vH = virtualHeight();
+        overlayCtx.clearRect(0, 0, vW, vH);
+        if (selectedSeqId() && gizmo.activeGuides.length > 0) {
+          gizmo.overlayRef.current.renderGuides(overlayCtx, vW, vH, gizmo.activeGuides);
         }
       }
     }
-  }, [selectedSeqId, gizmo.activeGuides, width, height]);
+  });
 
-  // Mouse pan and coordinate tracking
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
-      panZoom.handleMouseMovePan(e);
-    },
-    [panZoom]
-  );
+  const handleMouseMove = (e: MouseEvent) => {
+    panZoom.handleMouseMovePan(e);
+  };
 
   // Drag-and-drop preset handlers from catalog
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = (e: DragEvent) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'copy';
-    const rect = canvasRef.current?.getBoundingClientRect();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+    const rect = canvasRef()?.getBoundingClientRect();
     if (rect) {
       const normX = Math.max(0.05, Math.min(0.95, (e.clientX - rect.left) / rect.width));
       const normY = Math.max(0.05, Math.min(0.95, (e.clientY - rect.top) / rect.height));
@@ -215,26 +256,26 @@ function PreviewInner({
     setIsDragOver(true);
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = (e: DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
     setDragCoords(null);
 
-    const presetId = e.dataTransfer.getData('application/x-studio-preset');
+    const presetId = e.dataTransfer?.getData('application/x-studio-preset');
     const preset = STAGING_PRESETS.find((p) => p.id === presetId);
     if (!preset) return;
 
     try {
       let normX = 0.5;
       let normY = 0.5;
-      const rect = canvasRef.current?.getBoundingClientRect();
+      const rect = canvasRef()?.getBoundingClientRect();
       if (rect) {
         normX = Math.max(0.05, Math.min(0.95, (e.clientX - rect.left) / rect.width));
         normY = Math.max(0.05, Math.min(0.95, (e.clientY - rect.top) / rect.height));
       }
 
       const seq = preset.createSequence({
-        startFrame: currentFrame,
+        startFrame: currentFrame(),
         normX,
         normY,
       });
@@ -247,21 +288,24 @@ function PreviewInner({
     }
   };
 
-  const selectedSeq = selectedSeqId
-    ? irState.timeline?.sequences?.get(selectedSeqId) ||
-    irState.doc?.tracks.flatMap((t) => t.sequences).find((s) => s.id === selectedSeqId)
-    : undefined;
-  const hasTransformModifier = Boolean(selectedSeq?.modifiers?.some((m) => m.type === 'transform'));
+  const selectedSeq = () => {
+    const id = selectedSeqId();
+    if (!id) return undefined;
+    return (
+      irState.timeline?.sequences?.get(id) ||
+      irState.doc?.tracks.flatMap((t) => t.sequences).find((s) => s.id === id)
+    );
+  };
+
+  const hasTransformModifier = () =>
+    Boolean(selectedSeq()?.modifiers?.some((m) => m.type === 'transform'));
 
   return (
     <div
       id="preview-inner"
-      ref={(node) => {
-        containerRef.current = node;
-        setDroppableRef(node);
-        if (node && node !== containerEl) {
-          setContainerEl(node);
-        }
+      ref={(el) => {
+        setContainerRef(el);
+        droppable.ref(el);
       }}
       onMouseMove={handleMouseMove}
       onMouseUp={panZoom.handleMouseUpPan}
@@ -271,29 +315,30 @@ function PreviewInner({
         setDragCoords(null);
       }}
       onDrop={handleDrop}
-      className={`relative h-full w-full flex flex-col items-center justify-center p-0 overflow-hidden rounded-2xl select-none transition-all duration-300 ${isOver
-        ? 'ring-2 ring-[var(--accent-primary)] shadow-[0_0_35px_var(--accent-glow)] scale-[1.005]'
-        : 'hover:border-[var(--glass-border-highlight)]'
-        }`}
+      class={`relative h-full w-full flex flex-col items-center justify-center p-0 overflow-hidden rounded-2xl select-none transition-all duration-300 ${
+        droppable.isDropTarget()
+          ? 'ring-2 ring-[var(--accent-primary)] shadow-[0_0_35px_var(--accent-glow)] scale-[1.005]'
+          : 'hover:border-[var(--glass-border-highlight)]'
+      }`}
     >
-      {showVfxAmbiance && (
-        <div className="absolute inset-0 pointer-events-none opacity-40 liquid-ambient-mesh transition-opacity duration-300" />
-      )}
+      <Show when={showVfxAmbiance()}>
+        <div class="absolute inset-0 pointer-events-none opacity-40 liquid-ambient-mesh transition-opacity duration-300" />
+      </Show>
 
       {/* Top Monitor Status Bar */}
       <ViewportControlBar
-        width={width}
-        height={height}
-        virtualWidth={virtualWidth}
-        virtualHeight={virtualHeight}
-        previewResolution={previewResolution}
+        width={width()}
+        height={height()}
+        virtualWidth={virtualWidth()}
+        virtualHeight={virtualHeight()}
+        previewResolution={previewResolution()}
         onSetPreviewResolution={setPreviewResolution}
-        fps={fps}
-        isPlaying={isPlaying}
-        currentFrame={currentFrame}
-        totalFrames={totalFrames}
-        onTogglePlay={onTogglePlay}
-        selectedSeqId={selectedSeqId}
+        fps={fps()}
+        isPlaying={props.isPlaying ?? false}
+        currentFrame={currentFrame()}
+        totalFrames={totalFrames()}
+        onTogglePlay={props.onTogglePlay}
+        selectedSeqId={selectedSeqId()}
         transform={gizmo.transform}
         activeGuides={gizmo.activeGuides}
         zoomLevel={panZoom.zoomLevel}
@@ -302,54 +347,60 @@ function PreviewInner({
         isPanToolActive={panZoom.isPanToolActive}
         isSpacePressed={panZoom.isSpacePressed}
         onTogglePanTool={() => panZoom.setIsPanToolActive(!panZoom.isPanToolActive)}
-        safeGuidesMode={safeGuidesMode}
+        safeGuidesMode={safeGuidesMode()}
         onCycleSafeGuides={() => {
           setSafeGuidesMode((prev) => (prev === 'none' ? '16:9' : prev === '16:9' ? '9:16' : 'none'));
         }}
-        showCheckerboard={showCheckerboard}
-        onToggleCheckerboard={() => setShowCheckerboard(!showCheckerboard)}
-        showVfxAmbiance={showVfxAmbiance}
-        onToggleVfxAmbiance={() => setShowVfxAmbiance(!showVfxAmbiance)}
-        visionPassMode={visionPassMode}
+        showCheckerboard={showCheckerboard()}
+        onToggleCheckerboard={() => setShowCheckerboard(!showCheckerboard())}
+        showVfxAmbiance={showVfxAmbiance()}
+        onToggleVfxAmbiance={() => setShowVfxAmbiance(!showVfxAmbiance())}
+        visionPassMode={visionPassMode()}
         onCycleVisionPass={() => {
           setVisionPassMode((prev) =>
             prev === 'composite' ? 'depth' : prev === 'depth' ? 'normals' : prev === 'normals' ? 'alpha' : 'composite'
           );
         }}
-        showDepthHeatmap={showDepthHeatmap}
-        onToggleDepthHeatmap={() => setShowDepthHeatmap(!showDepthHeatmap)}
-        isTelemetryCompanionOpen={isTelemetryCompanionOpen}
-        onToggleTelemetryCompanion={() => setIsTelemetryCompanionOpen(!isTelemetryCompanionOpen)}
-        lod={containerLOD}
+        showDepthHeatmap={showDepthHeatmap()}
+        onToggleDepthHeatmap={() => setShowDepthHeatmap(!showDepthHeatmap())}
+        isTelemetryCompanionOpen={isTelemetryCompanionOpen()}
+        onToggleTelemetryCompanion={() => setIsTelemetryCompanionOpen(!isTelemetryCompanionOpen())}
+        lod={containerLOD()} /* lod={containerLOD} */
       />
 
       {/* Dynamic Viewport: Canvas Cell + Dockable Telemetry Companion */}
       <div
-        className={`w-full flex-1 flex flex-col xl:flex-row items-center justify-center gap-4 px-2 pt-14 pb-14 max-w-full overflow-hidden ${isTelemetryCompanionOpen ? 'xl:justify-between' : 'justify-center'
-          }`}
+        class={`w-full flex-1 flex flex-col xl:flex-row items-center justify-center gap-4 px-2 pt-14 pb-14 max-w-full overflow-hidden ${
+          isTelemetryCompanionOpen() ? 'xl:justify-between' : 'justify-center'
+        }`}
       >
         <div
-          className={`relative flex items-center justify-center isolate rounded-xl overflow-hidden shadow-[0_12px_40px_rgba(0,0,0,0.7)] border border-[var(--glass-border)] bg-black select-none transition-all duration-300 ${panZoom.isPanToolActive || panZoom.isSpacePressed ? (panZoom.isPanning ? 'cursor-grabbing' : 'cursor-grab') : ''
-            } ${isTelemetryCompanionOpen ? 'xl:max-w-[calc(100%-270px)]' : 'max-w-full'}`}
+          class={`relative w-full h-full flex items-center justify-center isolate rounded-xl overflow-hidden shadow-[0_12px_40px_rgba(0,0,0,0.7)] border border-[var(--glass-border)] bg-black select-none transition-all duration-300 ${
+            panZoom.isPanToolActive || panZoom.isSpacePressed
+              ? panZoom.isPanning
+                ? 'cursor-grabbing'
+                : 'cursor-grab'
+              : ''
+          } ${isTelemetryCompanionOpen() ? 'xl:max-w-[calc(100%-270px)]' : 'max-w-full'}`}
           style={{
-            aspectRatio: `${width} / ${height}`,
-            maxHeight: '68vh',
-            maxWidth: isTelemetryCompanionOpen ? '72vw' : '82vw',
-            backgroundImage: showCheckerboard
+            "aspect-ratio": `${width()} / ${height()}`,
+            "max-height": '68vh',
+            "max-width": isTelemetryCompanionOpen() ? '72vw' : '82vw',
+            "background-image": showCheckerboard()
               ? 'repeating-conic-gradient(rgba(255,255,255,0.07) 0% 25%, transparent 0% 50%)'
               : undefined,
-            backgroundSize: showCheckerboard ? '20px 20px' : undefined,
+            "background-size": showCheckerboard() ? '20px 20px' : undefined,
             transform:
               panZoom.zoomLevel === 'fit'
                 ? 'none'
                 : `translate(${panZoom.panOffset.x}px, ${panZoom.panOffset.y}px) scale(${panZoom.zoomLevel})`,
-            transformOrigin: 'center center',
+            "transform-origin": 'center center',
             transition: panZoom.isPanning ? 'none' : 'transform 0.15s ease-out',
           }}
           onMouseDown={(e) => {
             if (panZoom.isPanToolActive || panZoom.isSpacePressed || e.button === 1) {
               panZoom.handleMouseDownPan(e);
-            } else if (e.target === canvasRef.current) {
+            } else if (e.target === canvasRef()) {
               IRStateManager.getInstance().setSelectedSequenceId(null);
               IRStateManager.getInstance().setInspectorMode('timeline');
             }
@@ -357,31 +408,34 @@ function PreviewInner({
         >
           {/* Dual-Layer Viewport Canvas */}
           <ViewportCanvasLayer
-            canvasRef={canvasRef}
-            overlayCanvasRef={overlayCanvasRef}
+            canvasRef={setCanvasRef}
+            overlayCanvasRef={setOverlayCanvasRef}
             isPanToolActive={panZoom.isPanToolActive}
             isSpacePressed={panZoom.isSpacePressed}
           />
 
           {/* Safe Guides */}
           <ViewportSafeGuides
-            mode={safeGuidesMode === 'none' ? 'none' : 'auto'}
+            mode={safeGuidesMode() === 'none' ? 'none' : 'auto'}
             aspectRatio={irState.doc?.meta?.aspectRatio}
           />
 
           {/* Drag-and-Drop Staging Overlay */}
-          <StagingDropTargetOverlay isOver={isOver} isDragOver={isDragOver} dragCoords={dragCoords} />
+          <StagingDropTargetOverlay
+            isOver={droppable.isDropTarget()}
+            isDragOver={isDragOver()}
+            dragCoords={dragCoords()}
+          />
 
-          {/* 2D Vector Transform Gizmo (hidden during active playback to eliminate visual jitter) */}
-          {hasTransformModifier && !isPlaying && !editingCue && (
+          {/* 2D Vector Transform Gizmo */}
+          <Show when={hasTransformModifier() && !props.isPlaying && !editingCue()}>
             <TransformGizmoOverlay
-              key={selectedSeqId || 'no-seq-gizmo'}
-              selectedSeqId={selectedSeqId}
-              activeSequences={activeSequences}
-              currentFrame={currentFrame}
-              width={width}
-              height={height}
-              isLocked={isLocked}
+              selectedSeqId={selectedSeqId()}
+              activeSequences={activeSequences()}
+              currentFrame={currentFrame()}
+              width={width()}
+              height={height()}
+              isLocked={isLocked()}
               transform={gizmo.transform}
               isDragging={gizmo.isDragging}
               telemetry={gizmo.telemetry}
@@ -393,90 +447,88 @@ function PreviewInner({
               onHandlePointerUp={gizmo.handlePointerUp}
               onHandlePointerCancel={gizmo.handlePointerCancel}
               onSetTransform={gizmo.setTransform}
-              onToggleLock={() => setIsLocked(!isLocked)}
+              onToggleLock={() => setIsLocked(!isLocked())}
               onStartEditingCue={setEditingCue}
             />
-          )}
+          </Show>
 
           {/* 3D Point Light Gizmo */}
           <LightGizmoOverlay
-            selectedSeqId={selectedSeqId}
-            activeSequences={activeSequences}
-            width={width}
-            height={height}
+            selectedSeqId={selectedSeqId()}
+            activeSequences={activeSequences()}
+            width={width()}
+            height={height()}
             zoomLevel={panZoom.zoomLevel}
           />
 
           {/* Hit Detection Overlay */}
           <UniversalCanvasHitOverlay
-            activeSequences={activeSequences}
-            selectedSeqId={selectedSeqId}
+            activeSequences={activeSequences()}
+            selectedSeqId={selectedSeqId()}
             tracks={irState.doc?.tracks || []}
             onStartEditingCue={setEditingCue}
           />
 
           {/* Studio-Grade In-Place On-Canvas Text Editor */}
-          {editingCue && (
+          <Show when={editingCue()}>
             <InPlaceTextEditor
-              editingCue={editingCue}
-              selectedSeq={activeSequences.find((s) => s.id === editingCue.sequenceId) || null}
+              editingCue={editingCue()}
+              selectedSeq={activeSequences().find((s) => s.id === editingCue()!.sequenceId) || null}
               bounds={gizmo.targetBounds}
               transform={gizmo.transform}
-              canvasWidth={width}
-              canvasHeight={height}
+              canvasWidth={width()}
+              canvasHeight={height()}
               onUpdateText={(text) => setEditingCue((prev) => (prev ? { ...prev, text } : null))}
               onCommit={handleCommitText}
               onCancel={() => setEditingCue(null)}
             />
-          )}
+          </Show>
         </div>
 
         {/* Telemetry Companion Card */}
-        {isTelemetryCompanionOpen && (
-          <div className="w-full xl:w-64 shrink-0 flex flex-col justify-center animate-in fade-in slide-in-from-right-2 duration-200">
+        <Show when={isTelemetryCompanionOpen()}>
+          <div class="w-full xl:w-64 shrink-0 flex flex-col justify-center animate-in fade-in slide-in-from-right-2 duration-200">
             <TelemetryCompanionCard
-              width={width}
-              height={height}
-              fps={fps}
-              currentFrame={currentFrame}
-              totalFrames={totalFrames}
+              width={width()}
+              height={height()}
+              fps={fps()}
+              currentFrame={currentFrame()}
+              totalFrames={totalFrames()}
               trackCount={
-                irState.timeline?.tracks?.length ||
-                (irState.timeline?.tracks instanceof Map ? irState.timeline.tracks.size : 0) ||
-                0
+                irState.timeline?.tracks instanceof Map
+                  ? irState.timeline.tracks.size
+                  : ((irState.timeline?.tracks as unknown as any[])?.length ?? 0)
               }
-              activeSequenceCount={activeSequences.length}
-              selectedSeqId={selectedSeqId}
-              safeGuidesMode={safeGuidesMode}
+              activeSequenceCount={activeSequences().length}
+              selectedSeqId={selectedSeqId()}
+              safeGuidesMode={safeGuidesMode()}
               onCycleSafeGuides={() => {
                 setSafeGuidesMode((prev) => (prev === 'none' ? '16:9' : prev === '16:9' ? '9:16' : 'none'));
               }}
-              showCheckerboard={showCheckerboard}
-              onToggleCheckerboard={() => setShowCheckerboard(!showCheckerboard)}
-              showVfxAmbiance={showVfxAmbiance}
-              onToggleVfxAmbiance={() => setShowVfxAmbiance(!showVfxAmbiance)}
+              showCheckerboard={showCheckerboard()}
+              onToggleCheckerboard={() => setShowCheckerboard(!showCheckerboard())}
+              showVfxAmbiance={showVfxAmbiance()}
+              onToggleVfxAmbiance={() => setShowVfxAmbiance(!showVfxAmbiance())}
               zoomLevel={panZoom.zoomLevel}
               onSetZoomLevel={panZoom.setZoomLevel}
             />
           </div>
-        )}
+        </Show>
       </div>
 
-      {/* Floating Studio Quick Playback Transport HUD - Docked bottom center OUTSIDE canvas viewport */}
+      {/* Floating Studio Quick Playback Transport HUD */}
       <ViewportQuickTransport
-        isPlaying={isPlaying}
-        onTogglePlay={onTogglePlay}
-        currentFrame={currentFrame}
-        totalFrames={totalFrames}
-        fps={fps}
-        onScrub={onScrub}
+        isPlaying={props.isPlaying ?? false}
+        onTogglePlay={props.onTogglePlay}
+        currentFrame={currentFrame()}
+        totalFrames={totalFrames()}
+        fps={fps()}
+        onScrub={props.onScrub}
         zoomLevel={panZoom.zoomLevel}
         onSetZoomLevel={panZoom.setZoomLevel}
-        onResetPan={panZoom.resetPan}
-        lod={containerLOD}
+        onResetPan={panZoom.resetPanZoom}
+        lod={containerLOD()} /* lod={containerLOD} */
       />
     </div>
   );
 }
-
-export const Preview = React.memo(PreviewInner);
