@@ -272,6 +272,13 @@ export class MediabunnyServerStrategy implements IMediaEngineStrategy {
             return null;
           }
 
+          let detectedSampleRate: number | undefined;
+          try {
+            if (typeof (audioTrack as any).getSampleRate === 'function') {
+              detectedSampleRate = await (audioTrack as any).getSampleRate();
+            }
+          } catch {}
+
           const durationSeconds = await input.computeDuration();
           const audioSink = new AudioSampleSink(audioTrack);
           const sampleChunks: Float32Array[] = [];
@@ -281,13 +288,30 @@ export class MediabunnyServerStrategy implements IMediaEngineStrategy {
             try {
               const numFrames = sample.numberOfFrames;
               const numChannels = sample.numberOfChannels;
+              if (!detectedSampleRate && sample.sampleRate) {
+                detectedSampleRate = sample.sampleRate;
+              }
 
-              if (sample.format === 'f32') {
-                const interleaved = new Float32Array(numFrames * numChannels);
-                sample.copyTo(interleaved, { planeIndex: 0, format: 'f32' });
-                sampleChunks.push(interleaved);
-                totalExtractedSamplesPerChannel += numFrames;
-              } else if (sample.format === 'f32-planar' || numChannels === 2) {
+              const interleaved = new Float32Array(numFrames * 2);
+
+              if (numChannels === 1) {
+                // Mono source: duplicate mono samples into both Left and Right stereo channels
+                const mono = new Float32Array(numFrames);
+                sample.copyTo(mono, { planeIndex: 0, format: 'f32-planar' });
+                for (let i = 0; i < numFrames; i++) {
+                  interleaved[i * 2] = mono[i];
+                  interleaved[i * 2 + 1] = mono[i];
+                }
+              } else if (sample.format === 'f32') {
+                // Interleaved stereo f32 source
+                const rawInterleaved = new Float32Array(numFrames * numChannels);
+                sample.copyTo(rawInterleaved, { planeIndex: 0, format: 'f32' });
+                for (let i = 0; i < numFrames; i++) {
+                  interleaved[i * 2] = rawInterleaved[i * numChannels];
+                  interleaved[i * 2 + 1] = rawInterleaved[i * numChannels + 1];
+                }
+              } else {
+                // Planar or multi-channel source: extract plane 0 (L) and plane 1 (R)
                 const left = new Float32Array(numFrames);
                 const right = new Float32Array(numFrames);
                 sample.copyTo(left, { planeIndex: 0, format: 'f32-planar' });
@@ -296,25 +320,14 @@ export class MediabunnyServerStrategy implements IMediaEngineStrategy {
                 } else {
                   right.set(left);
                 }
-                const interleaved = new Float32Array(numFrames * 2);
                 for (let i = 0; i < numFrames; i++) {
                   interleaved[i * 2] = left[i];
                   interleaved[i * 2 + 1] = right[i];
                 }
-                sampleChunks.push(interleaved);
-                totalExtractedSamplesPerChannel += numFrames;
-              } else {
-                // Fallback planar plane 0 copy
-                const mono = new Float32Array(numFrames);
-                sample.copyTo(mono, { planeIndex: 0, format: 'f32-planar' });
-                const interleaved = new Float32Array(numFrames * 2);
-                for (let i = 0; i < numFrames; i++) {
-                  interleaved[i * 2] = mono[i];
-                  interleaved[i * 2 + 1] = mono[i];
-                }
-                sampleChunks.push(interleaved);
-                totalExtractedSamplesPerChannel += numFrames;
               }
+
+              sampleChunks.push(interleaved);
+              totalExtractedSamplesPerChannel += numFrames;
             } finally {
               sample.close();
             }
@@ -331,11 +344,12 @@ export class MediabunnyServerStrategy implements IMediaEngineStrategy {
             offset += chunk.length;
           }
 
+          const actualRate = detectedSampleRate || targetSampleRate;
           return {
-            sampleRate: targetSampleRate,
+            sampleRate: actualRate,
             channels: 2,
             totalSamplesPerChannel: totalExtractedSamplesPerChannel,
-            durationSeconds: durationSeconds || (totalExtractedSamplesPerChannel / targetSampleRate),
+            durationSeconds: durationSeconds || (totalExtractedSamplesPerChannel / actualRate),
             data: finalPcm,
           };
         } catch (err) {

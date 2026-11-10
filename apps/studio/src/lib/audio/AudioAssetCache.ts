@@ -24,9 +24,9 @@ export class AudioAssetCache {
   // Cooldown interval before retrying a failed or 404 audio asset (prevents infinite fetch loop)
   private readonly FAILED_RETRY_INTERVAL_MS = 60_000;
 
-  // Strict LRU budget to prevent uncompressed Float32Array PCM heap blowups
-  private readonly MAX_CACHE_ENTRIES = 4;
-  private readonly MAX_TOTAL_PCM_BYTES = 16 * 1024 * 1024; // 16 MB ceiling (aggressive savings)
+  // Balanced LRU budget for multi-track video editing (allows ~6 minutes of uncompressed stereo 44.1k/48k Float32 PCM)
+  private readonly MAX_CACHE_ENTRIES = 32;
+  private readonly MAX_TOTAL_PCM_BYTES = 128 * 1024 * 1024; // 128 MB ceiling
   private currentPcmBytes = 0;
 
   private constructor() {}

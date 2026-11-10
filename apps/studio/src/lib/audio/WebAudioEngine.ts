@@ -49,12 +49,16 @@ export class WebAudioEngine {
   private playbackStartTimelineTime = 0;
   private lastIrState: IRState | null = null;
   private lastFps = 30;
+  private lastCurrentFrame = 0;
   private lastScrubAudioTime = 0;
 
   private constructor() {
     AudioAssetCache.getInstance().subscribe(() => {
       if (this.lastIrState) {
-        this.syncFromIR(this.lastIrState, this.lastFps);
+        this.syncFromIR(this.lastIrState, this.lastFps, false, this.lastCurrentFrame);
+        if (this.isPlaying && this.ctx && this.currentSource) {
+          this.hotSwapActivePlayback();
+        }
       }
     });
   }
@@ -142,19 +146,37 @@ export class WebAudioEngine {
    * Synchronizes timeline audio state across the attached IRPreviewEngine or internal mixer.
    * Leverages UniversalAudioMixer.syncFromTimeline for 100% parity with IRMasterRenderer.
    */
-  public syncFromIR(irState: IRState | null | undefined, fps = 30, preload = true): void {
+  public syncFromIR(
+    irState: IRState | null | undefined,
+    fps = 30,
+    preload = true,
+    currentFrame = 0
+  ): void {
     if (!irState || !irState.timeline) return;
     this.lastIrState = irState;
     this.lastFps = fps;
+    this.lastCurrentFrame = currentFrame;
 
     if (preload && irState.timeline) {
-      // Lazy lookahead: Preload audio assets for sequences starting within 6 seconds (~2.1MB per track) or active
+      // Dynamic lookahead window around playhead (currentSec - 2s to currentSec + 30s)
+      // or sequences near the timeline beginning (startSec <= 10s)
+      const currentSec = currentFrame / Math.max(1, fps);
+      const lookaheadStartFrame = Math.max(0, Math.floor((currentSec - 2.0) * fps));
+      const lookaheadEndFrame = Math.ceil((currentSec + 30.0) * fps);
+
       const proximateAssetIds = new Set<string>();
       for (const track of irState.timeline.tracks.values()) {
-        if (track.type === 'audio') {
+        if (track.type === 'audio' || track.type === 'video') {
           for (const seq of track.sequences) {
-            if (seq.assetId && (seq.startFrame <= (fps * 6) || seq.startFrame === 0)) {
-              proximateAssetIds.add(seq.assetId);
+            if (seq.assetId) {
+              const startF = seq.startFrame ?? 0;
+              const endF = seq.endFrame ?? (startF + (seq.durationFrames ?? 30));
+              if (
+                (startF <= lookaheadEndFrame && endF >= lookaheadStartFrame) ||
+                startF <= fps * 10
+              ) {
+                proximateAssetIds.add(seq.assetId);
+              }
             }
           }
         }
@@ -162,7 +184,7 @@ export class WebAudioEngine {
       const assets = irState.timeline.assets || irState.doc?.assets || {};
       const filteredAssets: Record<string, { src: string; type: string }> = {};
       for (const id of proximateAssetIds) {
-        if (assets[id] && assets[id].type === 'audio') {
+        if (assets[id] && (assets[id].type === 'audio' || assets[id].type === 'video' || assets[id].src)) {
           filteredAssets[id] = assets[id];
         }
       }
@@ -192,6 +214,60 @@ export class WebAudioEngine {
   }
 
   /**
+   * Seamlessly hot-swaps active playback buffer when a background audio decode finishes,
+   * completely eliminating the 5-second initial playback silence.
+   */
+  private hotSwapActivePlayback(): void {
+    if (!this.isPlaying || !this.ctx || !this.masterGain) return;
+    try {
+      const now = this.ctx.currentTime;
+      const elapsedAudioSec = Math.max(0, now - this.playbackStartAudioTime);
+      const currentTimelineSec = this.playbackStartTimelineTime + elapsedAudioSec;
+      const totalFrames = this.lastIrState?.timeline?.totalFrames || 300;
+      const totalDurationSec = totalFrames / Math.max(1, this.lastFps);
+      const remainingSec = Math.max(0.1, totalDurationSec - currentTimelineSec);
+      const sliceDuration = Math.min(5.0, remainingSec);
+
+      const mix = this.mixer.mixStereo(currentTimelineSec, sliceDuration);
+
+      // Stop previous (potentially silent) source
+      if (this.currentSource) {
+        try {
+          this.currentSource.stop();
+          this.currentSource.disconnect();
+        } catch {}
+        this.activeSources.delete(this.currentSource);
+        this.currentSource = null;
+      }
+
+      const buffer = this.ctx.createBuffer(2, mix.left.length, this.ctx.sampleRate);
+      buffer.copyToChannel(mix.left as unknown as Float32Array<ArrayBuffer>, 0);
+      buffer.copyToChannel(mix.right as unknown as Float32Array<ArrayBuffer>, 1);
+
+      const source = this.ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(this.masterGain);
+      source.start(now);
+
+      this.currentSource = source;
+      this.activeSources.add(source);
+      source.onended = () => {
+        try {
+          source.disconnect();
+        } catch {}
+        this.activeSources.delete(source);
+      };
+
+      this.playbackStartAudioTime = now;
+      this.playbackStartTimelineTime = currentTimelineSec;
+      this.scheduledAudioEndTime = now + sliceDuration;
+      this.nextTimelineSecToSynthesize = currentTimelineSec + sliceDuration;
+    } catch (err) {
+      console.warn('[WebAudioEngine] Error during hotSwapActivePlayback:', err);
+    }
+  }
+
+  /**
    * Starts synchronized audio playback from current playhead frame.
    * Synthesizes audio using lightweight non-blocking 5.0s chunks and chains
    * consecutive AudioBufferSourceNode instances into the Master Bus for continuous playback.
@@ -201,7 +277,7 @@ export class WebAudioEngine {
       if (!this.initContext() || !this.ctx || !this.masterGain) return;
       this.stopPlayback();
 
-      this.syncFromIR(irState, fps);
+      this.syncFromIR(irState, fps, true, currentFrame);
       if (this.mixer.sampleRate !== this.ctx.sampleRate) {
         this.mixer.setSampleRate(this.ctx.sampleRate);
         if (this.previewEngine) {
