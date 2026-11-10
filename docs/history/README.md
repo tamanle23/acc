@@ -154,3 +154,4 @@
 | 488 | [Hexagonal Worker Outbox & Sagas Architecture](./488_hexagonal_worker_outbox_and_sagas_architecture.md) | Completed |
 | 489 | [Spring Modulith Package Encapsulation & Named Interfaces](./489_spring_modulith_package_encapsulation_and_named_interfaces.md) | Completed |
 | 490 | [Tier 3 PostgreSQL Contract Tests & MyBatis Repositories Verification](./490_tier3_postgresql_contract_tests_and_mybatis_verification.md) | Completed |
+| 491 | [Hexagonal Architecture & DDD Migration Final Closeout](./491_hexagonal_architecture_migration_closeout.md) | Completed |
