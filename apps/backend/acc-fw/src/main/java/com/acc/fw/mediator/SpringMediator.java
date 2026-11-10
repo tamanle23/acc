@@ -1,5 +1,6 @@
-package com.acc.core.mediator;
+package com.acc.fw.mediator;
 
+import com.acc.core.mediator.*;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ClassUtils;
@@ -9,6 +10,10 @@ import jakarta.annotation.PostConstruct;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Infrastructure Spring-aware Mediator implementing the pure CommandDispatcher
+ * and QueryDispatcher ports defined in acc-core.
+ */
 @Component
 public class SpringMediator implements CommandDispatcher, QueryDispatcher {
 
@@ -30,7 +35,9 @@ public class SpringMediator implements CommandDispatcher, QueryDispatcher {
             ResolvableType resolvableType = ResolvableType.forClass(targetClass).as(CommandHandler.class);
             if (resolvableType.hasGenerics()) {
                 Class<?> commandType = resolvableType.resolveGeneric(0);
-                commandHandlers.put(commandType, handler);
+                if (commandType != null) {
+                    commandHandlers.put(commandType, handler);
+                }
             }
         }
 
@@ -42,7 +49,9 @@ public class SpringMediator implements CommandDispatcher, QueryDispatcher {
             ResolvableType resolvableType = ResolvableType.forClass(targetClass).as(QueryHandler.class);
             if (resolvableType.hasGenerics()) {
                 Class<?> queryType = resolvableType.resolveGeneric(0);
-                queryHandlers.put(queryType, handler);
+                if (queryType != null) {
+                    queryHandlers.put(queryType, handler);
+                }
             }
         }
     }
@@ -50,20 +59,26 @@ public class SpringMediator implements CommandDispatcher, QueryDispatcher {
     @Override
     @SuppressWarnings("unchecked")
     public <R, C extends Command<R>> R dispatch(C command) {
-        CommandHandler<C, R> handler = (CommandHandler<C, R>) commandHandlers.get(command.getClass());
-        if (handler != null) {
-            return handler.handle(command);
+        if (command == null) {
+            throw new IllegalArgumentException("Command cannot be null");
         }
-        throw new IllegalArgumentException("No handler found for command: " + command.getClass().getName());
+        CommandHandler<C, R> handler = (CommandHandler<C, R>) commandHandlers.get(command.getClass());
+        if (handler == null) {
+            throw new IllegalArgumentException("No CommandHandler registered for command: " + command.getClass().getName());
+        }
+        return handler.handle(command);
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public <R, Q extends Query<R>> R dispatch(Q query) {
-        QueryHandler<Q, R> handler = (QueryHandler<Q, R>) queryHandlers.get(query.getClass());
-        if (handler != null) {
-            return handler.handle(query);
+        if (query == null) {
+            throw new IllegalArgumentException("Query cannot be null");
         }
-        throw new IllegalArgumentException("No handler found for query: " + query.getClass().getName());
+        QueryHandler<Q, R> handler = (QueryHandler<Q, R>) queryHandlers.get(query.getClass());
+        if (handler == null) {
+            throw new IllegalArgumentException("No QueryHandler registered for query: " + query.getClass().getName());
+        }
+        return handler.handle(query);
     }
 }

@@ -31,7 +31,7 @@ public class NotificationSseController {
         boolean isSovereign = "SYSTEM".equalsIgnoreCase(callerTenant) || TenantContextHolder.isSovereignActor();
 
         String activeTenantId;
-        if (isSovereign && tenantId != null && !tenantId.isBlank()) {
+        if ((isSovereign || callerTenant == null) && tenantId != null && !tenantId.isBlank()) {
             activeTenantId = tenantId;
         } else if (callerTenant != null && !callerTenant.isBlank()) {
             activeTenantId = callerTenant;

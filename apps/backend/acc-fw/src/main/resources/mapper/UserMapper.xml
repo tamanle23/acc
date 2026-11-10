@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.acc.identity.infra.user.repository.mybatis.UserMyBatisMapper">
+
+  <resultMap id="UserAggregateResultMap" type="com.acc.identity.domain.user.model.UserAggregate">
+    <constructor>
+      <idArg column="uid" javaType="com.acc.identity.domain.user.valobj.UserId" 
+             typeHandler="com.acc.identity.infra.user.repository.mybatis.UserIdTypeHandler"/>
+      <arg column="tenant_id" javaType="java.lang.String"/>
+      <arg column="username" javaType="java.lang.String"/>
+      <arg column="email" javaType="java.lang.String"/>
+      <arg column="password_hash" javaType="java.lang.String"/>
+      <arg column="status" javaType="com.acc.identity.domain.user.valobj.UserStatus"
+           typeHandler="com.acc.identity.infra.user.repository.mybatis.UserStatusTypeHandler"/>
+      <arg column="roles" javaType="java.util.Set" 
+           typeHandler="com.acc.fw.mybatis.typehandler.StringSetJsonbTypeHandler"/>
+      <arg column="created_at_epoch_ms" javaType="long"/>
+      <arg column="updated_at_epoch_ms" javaType="long"/>
+    </constructor>
+  </resultMap>
+
+  <select id="selectByEmail" resultMap="UserAggregateResultMap">
+    SELECT 
+      u.uid, 
+      COALESCE(u.mode, 'default') AS tenant_id, 
+      u.username, 
+      u.email, 
+      COALESCE(u.password, '') AS password_hash, 
+      u.status, 
+      '["USER"]'::jsonb AS roles,
+      COALESCE(EXTRACT(EPOCH FROM u.createddate) * 1000, 0)::bigint AS created_at_epoch_ms, 
+      COALESCE(EXTRACT(EPOCH FROM u.lastupdateddate) * 1000, 0)::bigint AS updated_at_epoch_ms
+    FROM unipost_user u
+    WHERE LOWER(u.email) = LOWER(#{email})
+      AND (u.deleteddate IS NULL)
+    LIMIT 1
+  </select>
+
+  <select id="selectById" resultMap="UserAggregateResultMap">
+    SELECT 
+      u.uid, 
+      COALESCE(u.mode, 'default') AS tenant_id, 
+      u.username, 
+      u.email, 
+      COALESCE(u.password, '') AS password_hash, 
+      u.status, 
+      '["USER"]'::jsonb AS roles,
+      COALESCE(EXTRACT(EPOCH FROM u.createddate) * 1000, 0)::bigint AS created_at_epoch_ms, 
+      COALESCE(EXTRACT(EPOCH FROM u.lastupdateddate) * 1000, 0)::bigint AS updated_at_epoch_ms
+    FROM unipost_user u
+    WHERE u.uid = #{id}
+      AND (u.deleteddate IS NULL)
+    LIMIT 1
+  </select>
+
+  <select id="selectByUsername" resultMap="UserAggregateResultMap">
+    SELECT 
+      u.uid, 
+      COALESCE(u.mode, 'default') AS tenant_id, 
+      u.username, 
+      u.email, 
+      COALESCE(u.password, '') AS password_hash, 
+      u.status, 
+      '["USER"]'::jsonb AS roles,
+      COALESCE(EXTRACT(EPOCH FROM u.createddate) * 1000, 0)::bigint AS created_at_epoch_ms, 
+      COALESCE(EXTRACT(EPOCH FROM u.lastupdateddate) * 1000, 0)::bigint AS updated_at_epoch_ms
+    FROM unipost_user u
+    WHERE LOWER(u.username) = LOWER(#{username})
+      AND (u.deleteddate IS NULL)
+    LIMIT 1
+  </select>
+
+  <select id="countByEmail" resultType="int">
+    SELECT COUNT(1)
+    FROM unipost_user u
+    WHERE LOWER(u.email) = LOWER(#{email})
+      AND (u.deleteddate IS NULL)
+  </select>
+
+  <select id="countByUsername" resultType="int">
+    SELECT COUNT(1)
+    FROM unipost_user u
+    WHERE LOWER(u.username) = LOWER(#{username})
+      AND (u.deleteddate IS NULL)
+  </select>
+
+  <insert id="upsertUser">
+    INSERT INTO unipost_user (
+      uid, mode, username, email, password, status, createddate, lastupdateddate
+    ) VALUES (
+      #{id.value}, 
+      #{tenantId}, 
+      #{username}, 
+      #{email}, 
+      #{passwordHash}, 
+      #{status, typeHandler=com.acc.identity.infra.user.repository.mybatis.UserStatusTypeHandler},
+      TO_TIMESTAMP(#{createdAtEpochMs} / 1000.0), 
+      TO_TIMESTAMP(#{updatedAtEpochMs} / 1000.0)
+    )
+    ON CONFLICT (uid) DO UPDATE SET
+      password = EXCLUDED.password,
+      status = EXCLUDED.status,
+      lastupdateddate = EXCLUDED.lastupdateddate
+  </insert>
+
+  <update id="updateStatus">
+    UPDATE unipost_user
+    SET status = CASE 
+          WHEN #{status} = 'ACTIVE' THEN 1
+          WHEN #{status} = 'DISABLED' THEN 2
+          WHEN #{status} = 'LOCKED' THEN 3
+          ELSE 0 
+        END,
+        lastupdateddate = TO_TIMESTAMP(#{updatedAt} / 1000.0)
+    WHERE uid = #{id}
+  </update>
+
+</mapper>

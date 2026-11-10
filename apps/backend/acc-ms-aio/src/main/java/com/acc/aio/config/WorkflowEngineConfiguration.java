@@ -113,8 +113,8 @@ public class WorkflowEngineConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(AuditLedgerService.class)
-    public AuditLedgerService auditLedgerService() {
-        return new AuditLedgerService();
+    public AuditLedgerService auditLedgerService(@Autowired(required = false) PersistencePort persistencePort) {
+        return new AuditLedgerService(new com.fasterxml.jackson.databind.ObjectMapper(), persistencePort);
     }
 
     @Bean

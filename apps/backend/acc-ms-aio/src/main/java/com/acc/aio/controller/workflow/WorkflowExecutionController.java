@@ -419,26 +419,7 @@ public class WorkflowExecutionController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Definition not found", "key", snapshot.workflowKey()));
         }
 
-        var compensator = new com.acc.workflow.application.SagaCompensator();
-        var compCommands = compensator.planCompensation(def, snapshot, now);
-
-        for (var compCmd : compCommands) {
-            persistencePort.saveTaskExecution(
-                compCmd.taskId(), id, snapshot.tenantId(), snapshot.workspaceId(),
-                compCmd.referenceName(), compCmd.taskType(), compCmd.domain(),
-                com.acc.workflow.core.model.TaskStatus.SCHEDULED, compCmd.attempt(), compCmd.input(),
-                Collections.emptyMap(), null, compCmd.responseTimeoutMs(), now
-            );
-            persistencePort.enqueueTask(
-                compCmd.taskId(), id, snapshot.tenantId(), snapshot.workspaceId(),
-                compCmd.taskType(), compCmd.domain(), 0, compCmd.visibleAtEpochMs()
-            );
-        }
-
-        persistencePort.updateWorkflowStatus(
-            id, WorkflowStatus.COMPENSATED_FAILED, snapshot.outputPayload(),
-            "Manual reverse compensation triggered", now
-        );
+        engineService.executeManualCompensation(def, snapshot, now);
 
         broadcaster.broadcast(id, "WORKFLOW_COMPENSATING", Map.of(
             "workflowId", id,

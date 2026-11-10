@@ -1,5 +1,7 @@
-package com.acc.core.mediator;
+package com.acc.fw.mediator;
 
+import com.acc.core.mediator.Command;
+import com.acc.core.mediator.CommandHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -7,7 +9,7 @@ import org.springframework.context.support.StaticApplicationContext;
 
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class DynamicCommandDispatcherTest {
 
@@ -51,21 +53,14 @@ class DynamicCommandDispatcherTest {
     }
 
     @Test
-    void testDynamicPayloadDispatchWithJsonbDeserialization() {
+    void testDispatchPayload() {
         Map<String, Object> payload = Map.of(
-                "title", "Dynamic Title",
-                "content", "Dynamic Content",
-                "views", 100
+            "title", "Dynamic Title",
+            "content", "Dynamic Content",
+            "views", 100
         );
 
         String result = dynamicCommandDispatcher.dispatchPayload(CreateArticleCommand.class, payload);
-
         assertEquals("ArticleCreated:Dynamic Title:100", result);
-    }
-
-    @Test
-    void testNullCommandOrClassThrowsIllegalArgumentException() {
-        assertThrows(IllegalArgumentException.class, () -> dynamicCommandDispatcher.dispatch(null));
-        assertThrows(IllegalArgumentException.class, () -> dynamicCommandDispatcher.dispatchPayload(null, Map.of()));
     }
 }

@@ -10,6 +10,8 @@ public interface UserRepository extends BaseRepository<User> {
 
   User findByUserName(String username);
 
+  User findByEmail(String email);
+
   User findByUid(String uid);
 
   User deleteByUserName(String username);

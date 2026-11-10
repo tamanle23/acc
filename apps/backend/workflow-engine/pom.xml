@@ -12,6 +12,16 @@
   </parent>
 
   <dependencies>
+    <!-- Pure Shared DDD Kernel -->
+    <dependency>
+      <groupId>com.acc</groupId>
+      <artifactId>acc-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.acc</groupId>
+      <artifactId>acc-fw</artifactId>
+    </dependency>
+
     <!-- Jackson for Canonical IR JSON Serialization / Memento Snapshots -->
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>

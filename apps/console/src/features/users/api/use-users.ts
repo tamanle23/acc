@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { springApiClient } from '@/features/spring-auth';
 import { type User, type UserStatus } from '../data/schema';
+import { userGateway } from '../infrastructure/adapters/http-user-gateway.adapter';
 import { toast } from 'sonner';
 
 export const USERS_QUERY_KEY = ['users'] as const;
@@ -8,9 +8,8 @@ export const USERS_QUERY_KEY = ['users'] as const;
 export function useUsersQuery() {
   return useQuery({
     queryKey: USERS_QUERY_KEY,
-    queryFn: async (): Promise<User[]> => {
-      const response = await springApiClient.get<User[]>('/api/users');
-      return response.data;
+    queryFn: async ({ signal }): Promise<User[]> => {
+      return userGateway.listUsers({ signal });
     },
   });
 }
@@ -21,7 +20,8 @@ export function useCreateUserMutation() {
   return useMutation({
     mutationFn: async (newUser: Partial<User> & { password?: string }): Promise<User> => {
       const payload = {
-        id: newUser.id || `usr-${Math.random().toString(36).substring(2, 9)}`,
+        ...newUser,
+        id: newUser.id || `usr-${crypto.randomUUID()}`,
         firstName: newUser.firstName || '',
         lastName: newUser.lastName || '',
         username: newUser.username || '',
@@ -30,11 +30,10 @@ export function useCreateUserMutation() {
         status: newUser.status || 'active',
         role: newUser.role || 'manager',
         password: newUser.password,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        createdAt: newUser.createdAt || new Date(),
+        updatedAt: newUser.updatedAt || new Date(),
       };
-      const response = await springApiClient.post<User>('/api/users', payload);
-      return response.data;
+      return userGateway.createUser(payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: USERS_QUERY_KEY });
@@ -51,8 +50,7 @@ export function useUpdateUserMutation() {
 
   return useMutation({
     mutationFn: async ({ id, ...patch }: { id: string } & Partial<User>): Promise<User> => {
-      const response = await springApiClient.patch<User>(`/api/users/${id}`, patch);
-      return response.data;
+      return userGateway.updateUser(id, patch);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: USERS_QUERY_KEY });
@@ -69,8 +67,7 @@ export function useDeleteUserMutation() {
 
   return useMutation({
     mutationFn: async (id: string): Promise<boolean> => {
-      const response = await springApiClient.delete<{ success: boolean }>(`/api/users/${id}`);
-      return response.data?.success ?? true;
+      return userGateway.deleteUser(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: USERS_QUERY_KEY });
@@ -87,7 +84,7 @@ export function useBulkDeleteUsersMutation() {
 
   return useMutation({
     mutationFn: async (ids: string[]): Promise<void> => {
-      await Promise.all(ids.map((id) => springApiClient.delete(`/api/users/${id}`)));
+      return userGateway.bulkDeleteUsers(ids);
     },
     onSuccess: (_, ids) => {
       queryClient.invalidateQueries({ queryKey: USERS_QUERY_KEY });
@@ -104,7 +101,7 @@ export function useBulkUpdateUsersStatusMutation() {
 
   return useMutation({
     mutationFn: async ({ ids, status }: { ids: string[]; status: UserStatus }): Promise<void> => {
-      await Promise.all(ids.map((id) => springApiClient.patch(`/api/users/${id}`, { status })));
+      return userGateway.bulkUpdateStatus(ids, status);
     },
     onSuccess: (_, { ids, status }) => {
       queryClient.invalidateQueries({ queryKey: USERS_QUERY_KEY });
@@ -121,20 +118,7 @@ export function useInviteUserMutation() {
 
   return useMutation({
     mutationFn: async (payload: { email: string; role: string; desc?: string }): Promise<User> => {
-      const newUser = {
-        id: `usr-inv-${Math.random().toString(36).substring(2, 8)}`,
-        firstName: 'Invited',
-        lastName: 'Member',
-        username: payload.email.split('@')[0],
-        email: payload.email,
-        phoneNumber: '',
-        status: 'invited' as UserStatus,
-        role: payload.role as any,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      const response = await springApiClient.post<User>('/api/users', newUser);
-      return response.data;
+      return userGateway.inviteUser(payload);
     },
     onSuccess: (_, { email }) => {
       queryClient.invalidateQueries({ queryKey: USERS_QUERY_KEY });
