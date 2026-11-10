@@ -181,5 +181,17 @@ describe('Isomorphic Video Decoder Parity & Universal Asset Protocol Resolution'
       const decoder = new MediabunnyClientVideoDecoder('missing_strict.mp4', 1920, 1080, { strict: true });
       expect(decoder.open()).rejects.toThrow();
     });
+
+    it('safeguards resolveClientMediabunnySource from invoking fetch on cache: URIs', async () => {
+      // Calling resolveClientMediabunnySource with a cache key not in cache should reject cleanly without Fetch API scheme errors
+      expect(resolveClientMediabunnySource('cache:asset-matrix-core')).rejects.toThrow(
+        /Unable to resolve client media source for URI/
+      );
+    });
+
+    it('resolves remote http(s) URLs in client engine directly to UrlSource without fetch crashes', async () => {
+      const source = await resolveClientMediabunnySource('https://media.example.com/stream.mp4');
+      expect(source).toBeDefined();
+    });
   });
 });

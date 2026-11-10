@@ -147,3 +147,4 @@
 | 481 | [Unified Media Asset Conformance Engine](./481_media_asset_quality_conformation_engine.md) | Completed |
 | 482 | [Temporal Cadence Preview Worker Integration & Video Decoder Strategy Parity](./482_temporal_cadence_and_video_decoder_parity.md) | Completed |
 | 483 | [Isomorphic Asset Protocol Resolution & Video Decoder Strategy Parity](./483_isomorphic_asset_protocol_and_video_decoder_parity.md) | Completed |
+| 484 | [Fix MediabunnyClient Cache Fetch Error & Sidecar Warmup Deduplication](./484_fix_mediabunny_client_cache_fetch_and_sidecar_warmup_deduplication.md) | Completed |

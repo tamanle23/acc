@@ -124,6 +124,8 @@ let pendingRender: {
 // Playback state
 let isPlaying = false;
 let currentClearColor = '#000000';
+let isWorkerWarmedUp = false;
+let isWorkerWarmingUp = false;
 
 // Double-buffering: Private offscreen back-buffer eliminates front-canvas black flashes
 let backCanvas: OffscreenCanvas | null = null;
@@ -541,6 +543,10 @@ self.onmessage = async (e: MessageEvent) => {
 
     // --- Sidecar & Background Modifier Preflight Protocol ---
     case 'WARMUP': {
+      if (isWorkerWarmedUp || isWorkerWarmingUp) {
+        break;
+      }
+      isWorkerWarmingUp = true;
       try {
         const depthStrategy = VisionEngineRegistry.getDepthStrategy();
         if (depthStrategy && !(depthStrategy as any).modelId && typeof (depthStrategy as any).init === 'function') {
@@ -550,8 +556,11 @@ self.onmessage = async (e: MessageEvent) => {
         if (segStrategy && !(segStrategy as any).modelId && typeof (segStrategy as any).init === 'function') {
           await (segStrategy as any).init();
         }
+        isWorkerWarmedUp = true;
+        isWorkerWarmingUp = false;
         self.postMessage({ type: 'WARMED_UP' } satisfies PreviewWorkerResponse);
       } catch (err: any) {
+        isWorkerWarmingUp = false;
         self.postMessage({
           type: 'ERROR',
           error: `[PreviewWorker:Warmup] ${err?.message || err}`,

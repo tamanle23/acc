@@ -6,6 +6,8 @@
  * Implements double-rAF to guarantee zero canvas/timeline flicker.
  */
 
+import { PreviewWorkerCoordinator } from '../../renderer/PreviewWorkerCoordinator';
+
 export class StudioBootController {
   private static dismissed = false;
   private static canvasReady = false;
@@ -77,7 +79,6 @@ export class StudioBootController {
     this.updateStatus('Warming up preview worker & neural engines...');
 
     try {
-      const { PreviewWorkerCoordinator } = await import('../../renderer/PreviewWorkerCoordinator');
       await Promise.all([
         PreviewWorkerCoordinator.getInstance().waitForWarmup(options?.workerTimeoutMs ?? 3500),
         this.waitForCanvas(options?.canvasTimeoutMs ?? 2500),

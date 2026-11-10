@@ -60,10 +60,22 @@ export class MediabunnyWorkerReader {
     this.isInitializing = true;
     this.initPromise = (async () => {
       try {
-        // Universal AssetProtocolRegistry resolution via MediabunnyClientVideoDecoder
-        const uri = this.assetId
-          ? (this.assetId.startsWith('cache:') ? this.assetId : `cache:${this.assetId}`)
-          : this.src;
+        // Prioritize cached media blob if available in ContentCacheRegistry; otherwise use network src
+        let uri = this.src;
+        if (this.assetId) {
+          try {
+            const cache = ContentCacheRegistry.namespace(CacheNamespace.Assets);
+            let cachedBlob = await cache.get(this.assetId);
+            if (!cachedBlob && this.src) {
+              cachedBlob = await cache.get(this.src);
+            }
+            if (cachedBlob) {
+              uri = this.assetId.startsWith('cache:') ? this.assetId : `cache:${this.assetId}`;
+            }
+          } catch {
+            // Cache miss: fall back directly to this.src
+          }
+        }
 
         this.decoder = new MediabunnyClientVideoDecoder(uri, 0, 0);
         const ok = await this.decoder.open();

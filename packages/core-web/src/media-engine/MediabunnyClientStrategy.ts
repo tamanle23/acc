@@ -102,12 +102,20 @@ export async function resolveClientMediabunnySource(uriOrPath: string): Promise<
     }
   }
 
-  // 4. Fetch fallback for absolute or relative URLs
-  if (typeof fetch !== 'undefined') {
-    const res = await fetch(uriOrPath);
-    if (res.ok) {
-      const blob = await res.blob();
-      return new BlobSource(blob);
+  // 4. Fetch fallback for absolute or relative network/blob URLs (NEVER for cache: or file:)
+  if (
+    typeof fetch !== 'undefined' &&
+    !uriOrPath.startsWith('cache:') &&
+    !uriOrPath.startsWith('file:')
+  ) {
+    try {
+      const res = await fetch(uriOrPath);
+      if (res.ok) {
+        const blob = await res.blob();
+        return new BlobSource(blob);
+      }
+    } catch {
+      // Network fetch failure
     }
   }
 
