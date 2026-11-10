@@ -150,3 +150,4 @@
 | 484 | [Fix MediabunnyClient Cache Fetch Error & Sidecar Warmup Deduplication](./484_fix_mediabunny_client_cache_fetch_and_sidecar_warmup_deduplication.md) | Completed |
 | 485 | [Fix Video Decoder Retry Storm, Negative Caching & Dead Getty Images Demo URL](./485_fix_video_decoder_retry_storm_and_negative_caching.md) | Completed |
 | 486 | [Enterprise Hexagonal Architecture & DDD Ports-and-Adapters Migration](./486_enterprise_hexagonal_architecture_and_ddd_migration.md) | Completed |
+| 487 | [Fix Backend Dev Sandbox Startup and Hexagonal Adapters](./487_fix_backend_dev_sandbox_startup_and_hexagonal_adapters.md) | Completed |

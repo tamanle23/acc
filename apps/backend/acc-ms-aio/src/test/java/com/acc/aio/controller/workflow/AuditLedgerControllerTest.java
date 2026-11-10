@@ -43,8 +43,8 @@ class AuditLedgerControllerTest {
         persistencePort = new InMemoryPersistenceAdapter();
         pureDecider = new PureDecider();
         engineService = new WorkflowEngineService(persistencePort, pureDecider);
-        auditLedgerService = new AuditLedgerService();
-        auditLedgerController = new AuditLedgerController(auditLedgerService, persistencePort, engineService);
+        auditLedgerService = new AuditLedgerService(new com.fasterxml.jackson.databind.ObjectMapper(), persistencePort);
+        auditLedgerController = new AuditLedgerController(auditLedgerService, engineService);
     }
 
     @AfterEach

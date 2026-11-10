@@ -419,19 +419,19 @@ public class WorkflowExecutionController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Definition not found", "key", snapshot.workflowKey()));
         }
 
-        engineService.executeManualCompensation(def, snapshot, now);
+        int scheduledCompensations = engineService.executeManualCompensation(def, snapshot, now);
 
         broadcaster.broadcast(id, "WORKFLOW_COMPENSATING", Map.of(
             "workflowId", id,
             "status", "COMPENSATED_FAILED",
-            "scheduledCompensations", compCommands.size(),
+            "scheduledCompensations", scheduledCompensations,
             "timestamp", now
         ));
 
         return ResponseEntity.ok(Map.of(
             "compensated", true,
             "workflowId", id,
-            "scheduledCompensations", compCommands.size()
+            "scheduledCompensations", scheduledCompensations
         ));
     }
 }

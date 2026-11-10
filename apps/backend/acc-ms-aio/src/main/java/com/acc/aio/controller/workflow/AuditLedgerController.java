@@ -46,7 +46,7 @@ public class AuditLedgerController {
     public ResponseEntity<AuditLedgerService.AuditVerificationResult> verifyAuditChain(@PathVariable("workflowId") String workflowId) {
         AuditLedgerService.AuditVerificationResult result = auditLedgerService.verifyAuditChainForWorkflow(workflowId);
         if (!result.verified()) {
-            if ("Workflow not found: " + workflowId).equals(result.details())) {
+            if (("Workflow not found: " + workflowId).equals(result.details())) {
                 return ResponseEntity.notFound().build();
             }
             // Immediately freeze and hold workflow execution

@@ -37,7 +37,14 @@ import com.acc.presentation.context.UserAuditorAware;
 @EnableJpaRepositories(basePackages = {
     "com.acc" }, entityManagerFactoryRef = "entityManagerFactory", transactionManagerRef = "transactionManager")
 // @EntityScan("com.acc.repository.domain")
-@MapperScan(basePackages = "com.acc.*.repository.mybatis", nameGenerator = BeanNameGenerator.class)
+@MapperScan(
+    basePackages = {
+        "com.acc.*.repository.mybatis",
+        "com.acc.identity.infra.user.repository.mybatis",
+        "com.acc.workflow.infrastructure.adapters.outbound.persistence.mybatis"
+    },
+    nameGenerator = BeanNameGenerator.class
+)
 @EnableJpaAuditing(auditorAwareRef = "auditorProvider")
 public class MasterDatabaseConfiguration {
 

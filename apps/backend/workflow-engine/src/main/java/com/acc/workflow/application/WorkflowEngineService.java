@@ -905,7 +905,7 @@ public class WorkflowEngineService {
         return taskLeaseWatchdog;
     }
 
-    public void executeManualCompensation(WorkflowDefinition def, WorkflowSnapshot snapshot, long now) {
+    public int executeManualCompensation(WorkflowDefinition def, WorkflowSnapshot snapshot, long now) {
         var compensator = new SagaCompensator();
         var compCommands = compensator.planCompensation(def, snapshot, now);
 
@@ -926,5 +926,7 @@ public class WorkflowEngineService {
             snapshot.workflowId(), WorkflowStatus.COMPENSATED_FAILED, snapshot.outputPayload(),
             "Manual reverse compensation triggered", now
         );
+
+        return compCommands.size();
     }
 }

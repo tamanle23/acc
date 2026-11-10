@@ -133,7 +133,7 @@ spring:
 
 mybatis:
   type-aliases-package: com.acc.*.model, com.acc.*.repository.**.model
-  mapper-locations: classpath*:mappers/*.xml
+  mapper-locations: classpath*:mappers/*.xml, classpath*:mapper/**/*.xml
   config-location: classpath:mybatis-config.xml
 
 springdoc:
