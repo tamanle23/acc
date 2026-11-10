@@ -6,6 +6,9 @@ export interface AssetMetadata {
   durationFrames: number;
   width?: number;
   height?: number;
+  fps?: number;
+  pixelAspectRatio?: number;
+  colorSpace?: string;
   sampleRate?: number;
   channels?: number;
   hasAudio?: boolean;

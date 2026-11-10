@@ -17,6 +17,8 @@ import {
   NativeResourceManager,
   type FrameResourceScope,
 } from '@acc/core-isomorphic';
+import { SpatialConformanceHelper } from './SpatialConformanceHelper';
+import { ColorConformanceEngine } from '../color/ColorConformanceEngine';
 
 export interface IAssetSourceResolver {
   get(assetId: string): any | undefined;
@@ -520,25 +522,21 @@ export class IRCanvasCompositor {
 
         if (!hasDepth3D && seq.assetId) {
           if (asset) {
-            const srcW = asset.width || asset.videoWidth || width;
-            const srcH = asset.height || asset.videoHeight || height;
-            const fitMode = (seq as any).fitMode || 'cover';
+            const srcW = asset.width || asset.videoWidth || asset.naturalWidth || width;
+            const srcH = asset.height || asset.videoHeight || asset.naturalHeight || height;
+            const fitMode = seq.fitMode || (seq as any).fitMode || 'cover';
+            const crop = seq.crop;
+            const par = (asset as any).pixelAspectRatio || 1.0;
 
-            let drawW = width;
-            let drawH = height;
-
-            if (fitMode === 'cover') {
-              const scale = Math.max(width / srcW, height / srcH);
-              drawW = srcW * scale;
-              drawH = srcH * scale;
-            } else {
-              const scale = Math.min(width / srcW, height / srcH);
-              drawW = srcW * scale;
-              drawH = srcH * scale;
-            }
-
-            const drawX = (width - drawW) * 0.5;
-            const drawY = (height - drawH) * 0.5;
+            const mapping = SpatialConformanceHelper.calculateDrawMapping(
+              width,
+              height,
+              srcW,
+              srcH,
+              fitMode,
+              crop,
+              par
+            );
 
             const rawAsset = typeof (asset as any).getRawCanvas === 'function'
               ? (asset as any).getRawCanvas()
@@ -551,12 +549,72 @@ export class IRCanvasCompositor {
             );
 
             if (isAssetValid && typeof ctx.drawImage === 'function') {
+              const intermediateCanvases: any[] = [];
+              const prevFilter = typeof ctx.filter === 'string' ? ctx.filter : undefined;
+              const colorSpace = (seq as any).colorSpace || (asset as any)?.colorSpace;
+              if (colorSpace) {
+                const previewFilter = ColorConformanceEngine.getPreviewCssFilter(colorSpace);
+                if (previewFilter !== 'none') {
+                  ctx.filter = previewFilter;
+                }
+              }
               try {
-                ctx.drawImage(rawAsset, drawX, drawY, drawW, drawH);
+                let currentSource = rawAsset;
+                let curSx = mapping.sx;
+                let curSy = mapping.sy;
+                let curW = mapping.sw;
+                let curH = mapping.sh;
+
+                // Multi-step anti-aliased downsampling (mipmap pyramid) for downscale ratios > 2.0x
+                if (mapping.needsDownsamplePyramid && mapping.pyramidSteps > 0) {
+                  for (let s = 0; s < mapping.pyramidSteps; s++) {
+                    const nextW = Math.max(Math.round(mapping.dw), Math.floor(curW * 0.5));
+                    const nextH = Math.max(Math.round(mapping.dh), Math.floor(curH * 0.5));
+                    if (nextW >= curW || nextH >= curH) break;
+
+                    const scratch = UniversalCanvasProvider.acquireScratchCanvas(nextW, nextH);
+                    intermediateCanvases.push(scratch);
+                    const sCanvas = scratch.getRawCanvas ? scratch.getRawCanvas() : scratch;
+                    const sCtx = sCanvas.getContext('2d');
+                    if (sCtx) {
+                      sCtx.imageSmoothingEnabled = true;
+                      sCtx.imageSmoothingQuality = 'high';
+                      sCtx.drawImage(currentSource, curSx, curSy, curW, curH, 0, 0, nextW, nextH);
+                      currentSource = sCanvas;
+                      curSx = 0;
+                      curSy = 0;
+                      curW = nextW;
+                      curH = nextH;
+                    }
+                  }
+                }
+
+                ctx.drawImage(
+                  currentSource,
+                  curSx,
+                  curSy,
+                  curW,
+                  curH,
+                  mapping.dx,
+                  mapping.dy,
+                  mapping.dw,
+                  mapping.dh
+                );
               } catch {
                 ctx.fillStyle = 'rgba(20, 20, 28, 0.4)';
                 ctx.fillRect(0, 0, width, height);
               } finally {
+                if (prevFilter !== undefined) {
+                  try {
+                    ctx.filter = prevFilter;
+                  } catch {}
+                }
+                for (const c of intermediateCanvases) {
+                  try {
+                    UniversalCanvasProvider.releaseScratchCanvas(c);
+                  } catch {}
+                }
+
                 if (assets?.onAssetDrawn && seq.assetId) {
                   assets.onAssetDrawn(seq.assetId, asset);
                 } else if (

@@ -1,10 +1,12 @@
 import type { AssetMetadata, IAssetMetadataProber } from '@acc/ir';
+import { Input, ALL_FORMATS, BlobSource, UrlSource } from 'mediabunny';
+import { ContentCacheRegistry, CacheNamespace } from '@acc/core-isomorphic';
 
 /**
  * BrowserAssetMetadataProber:
  * Client-side implementation of IAssetMetadataProber for apps/studio.
- * Uses standard HTML5 Image, Audio, and Video elements to probe media duration and dimensions
- * with zero Node/Bun dependency. Includes in-memory caching.
+ * Uses Mediabunny demuxer with HTML5 Image, Audio, and Video element fallbacks
+ * to probe media duration, frame rates, and display dimensions with zero Node/Bun dependency.
  */
 export class BrowserAssetMetadataProber implements IAssetMetadataProber {
   private cache = new Map<string, AssetMetadata>();
@@ -24,7 +26,8 @@ export class BrowserAssetMetadataProber implements IAssetMetadataProber {
     let durationSeconds = 5.0;
     let width: number | undefined = undefined;
     let height: number | undefined = undefined;
-
+    let detectedFps: number | undefined = undefined;
+    let pixelAspectRatio: number | undefined = 1.0;
     let hasAudio: boolean | undefined = undefined;
 
     // Check if running in real DOM environment
@@ -33,13 +36,17 @@ export class BrowserAssetMetadataProber implements IAssetMetadataProber {
         if (type === 'audio' || src.endsWith('.wav') || src.endsWith('.mp3')) {
           durationSeconds = await this.probeAudioElement(src);
           hasAudio = true;
-        } else if (type === 'video' || src.endsWith('.mp4') || src.endsWith('.webm')) {
-          const videoMeta = await this.probeVideoElement(src);
+        } else if (type === 'video' || src.endsWith('.mp4') || src.endsWith('.webm') || src.endsWith('.mov')) {
+          const videoMeta = await this.probeVideoWithMediabunny(assetId, src).catch(() =>
+            this.probeVideoElement(src)
+          );
           durationSeconds = videoMeta.duration;
           width = videoMeta.width;
           height = videoMeta.height;
+          detectedFps = videoMeta.fps;
+          pixelAspectRatio = videoMeta.pixelAspectRatio ?? 1.0;
           hasAudio = videoMeta.hasAudio;
-        } else if (type === 'image' || src.endsWith('.png') || src.endsWith('.jpg') || src.endsWith('.webp')) {
+        } else if (type === 'image' || src.endsWith('.png') || src.endsWith('.jpg') || src.endsWith('.webp') || src.endsWith('.svg')) {
           const imgMeta = await this.probeImageElement(src);
           width = imgMeta.width;
           height = imgMeta.height;
@@ -51,7 +58,8 @@ export class BrowserAssetMetadataProber implements IAssetMetadataProber {
       }
     }
 
-    const durationFrames = Math.max(1, Math.round(durationSeconds * fps));
+    const effectiveFps = detectedFps || fps;
+    const durationFrames = Math.max(1, Math.round(durationSeconds * effectiveFps));
     const meta: AssetMetadata = {
       assetId,
       src,
@@ -60,11 +68,62 @@ export class BrowserAssetMetadataProber implements IAssetMetadataProber {
       durationFrames,
       width,
       height,
+      fps: detectedFps,
+      pixelAspectRatio,
       hasAudio,
     };
 
     this.cache.set(cacheKey, meta);
     return meta;
+  }
+
+  private async probeVideoWithMediabunny(
+    assetId: string,
+    src: string
+  ): Promise<{ duration: number; width: number; height: number; fps?: number; pixelAspectRatio?: number; hasAudio: boolean }> {
+    let source: any = new UrlSource(src);
+    try {
+      const cache = ContentCacheRegistry.namespace(CacheNamespace.Assets);
+      const cachedBlob = (await cache.get(assetId)) || (await cache.get(src));
+      if (cachedBlob) {
+        source = new BlobSource(cachedBlob);
+      }
+    } catch {
+      // Fallback to UrlSource
+    }
+
+    const input = new Input({
+      formats: ALL_FORMATS,
+      source,
+    });
+
+    const videoTrack = await input.getPrimaryVideoTrack();
+    if (!videoTrack) {
+      throw new Error('No video track in container');
+    }
+
+    const width = (await videoTrack.getDisplayWidth().catch(() => 1920)) || 1920;
+    const height = (await videoTrack.getDisplayHeight().catch(() => 1080)) || 1080;
+    const duration = await input.computeDuration().catch(() => 5.0);
+
+    let fps: number | undefined;
+    try {
+      if (typeof (videoTrack as any).getFrameRate === 'function') {
+        fps = await (videoTrack as any).getFrameRate();
+      }
+    } catch {}
+
+    const audioTrack = await input.getPrimaryAudioTrack().catch(() => null);
+    const hasAudio = Boolean(audioTrack);
+
+    return {
+      duration: duration > 0 ? duration : 5.0,
+      width,
+      height,
+      fps,
+      pixelAspectRatio: 1.0,
+      hasAudio,
+    };
   }
 
   private probeAudioElement(src: string): Promise<number> {

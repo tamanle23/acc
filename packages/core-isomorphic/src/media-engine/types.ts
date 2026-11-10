@@ -102,6 +102,7 @@ export interface IVideoDecoder {
   readNextFrame(): Promise<any>;
   getNextFrame?(): Promise<DecodedVideoFrame | null>;
   seek?(targetFrame: number): Promise<boolean>;
+  seekTimestamp?(targetSeconds: number): Promise<any>;
   getFrame?(frameIndex: number): Promise<DecodedVideoFrame | null>;
 }
 

@@ -1,4 +1,5 @@
 import { ProceduralAudioSynthesizer } from './ProceduralAudioSynthesizer';
+import { AudioConformanceEngine } from './AudioConformanceEngine';
 
 /**
  * IAudioSourceProvider:
@@ -35,7 +36,7 @@ export class DecodedPcmSource implements IAudioSourceProvider {
   private loop: boolean;
 
   constructor(options: DecodedPcmOptions) {
-    this.channels = options.channels;
+    this.channels = AudioConformanceEngine.conformChannels(options.channels);
     this.sourceSampleRate = options.sourceSampleRate;
     this.trimStartSec = options.sourceTrimStartSec ?? 0;
     this.loop = options.loop ?? false;

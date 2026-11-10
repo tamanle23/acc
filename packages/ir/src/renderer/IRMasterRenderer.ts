@@ -17,6 +17,7 @@ import {
 } from '@acc/core-isomorphic';
 import type { IVideoDecoder, IMediaEngineStrategy, MediaEngineType, INamespacedCache } from '@acc/core-isomorphic';
 import { IRCanvasCompositor, type IAssetSourceResolver } from './shared/IRCanvasCompositor';
+import { TemporalCadenceResolver } from './shared/TemporalCadenceResolver';
 
 export interface IRMasterPrepareOptions {
   baseDir?: string;
@@ -169,6 +170,7 @@ export class IRMasterRenderer implements Disposable {
   private assetLastEndFrame: Map<string, number> = new Map();
   private sequencesByAssetKey: Map<string, ResolvedSequence[]> = new Map();
   private evictedAssetKeys: Set<string> = new Set();
+  private lastMediaSecByAsset: Map<string, number> = new Map();
 
   constructor(
     timeline: ResolvedTimeline,
@@ -273,6 +275,7 @@ export class IRMasterRenderer implements Disposable {
             if (seq.assetId && this.videoDecoders.has(seq.assetId)) {
               const dec = this.videoDecoders.get(seq.assetId);
               this.videoDecoders.delete(seq.assetId);
+              this.lastMediaSecByAsset.delete(seq.assetId);
               if (dec) {
                 try {
                   dec.close();
@@ -623,9 +626,45 @@ export class IRMasterRenderer implements Disposable {
 
     // 1. Asynchronously pre-fetch next frame from active video decoders if required
     const activeVideoFrames = new Map<string, any>();
+    const fps = this.timeline.meta.globalFps || 30;
+
     for (const [assetId, decoder] of this.videoDecoders) {
       try {
-        const frame = await decoder.readNextFrame();
+        let frame: any = null;
+        let activeSeq: ResolvedSequence | undefined;
+        for (const track of this.timeline.tracks.values()) {
+          for (const seq of track.sequences) {
+            if (seq.assetId === assetId && t >= seq.startFrame && t < seq.endFrame) {
+              activeSeq = seq;
+              break;
+            }
+          }
+          if (activeSeq) break;
+        }
+
+        if (activeSeq) {
+          const lastSec = this.lastMediaSecByAsset.get(assetId) ?? -1;
+          const cadence = TemporalCadenceResolver.resolve(
+            {
+              timelineFrame: t,
+              timelineFps: fps,
+              sequenceStartFrame: activeSeq.startFrame,
+              trimInSec: activeSeq.trimInSec,
+              speed: activeSeq.speed,
+            },
+            lastSec
+          );
+
+          if (cadence.shouldSeek && typeof (decoder as any).seekTimestamp === 'function') {
+            frame = await (decoder as any).seekTimestamp(cadence.targetMediaSec);
+          } else {
+            frame = await decoder.readNextFrame();
+          }
+          this.lastMediaSecByAsset.set(assetId, cadence.targetMediaSec);
+        } else {
+          frame = await decoder.readNextFrame();
+        }
+
         if (frame) {
           activeVideoFrames.set(assetId, frame);
           this.resourceManager.register(`video-frame-${t}-${assetId}`, frame, {
