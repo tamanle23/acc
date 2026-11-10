@@ -1,4 +1,4 @@
-import { Video } from 'lucide-solid';
+import { Video, X } from 'lucide-solid';
 import {
   Dialog,
   DialogContent,
@@ -15,6 +15,7 @@ export interface ExportProgressModalProps {
   isExporting: boolean;
   exportProgress: number;
   onCancelExport: () => void;
+  onOpenChange: (open: boolean) => void;
 }
 
 export function ExportProgressModal(props: ExportProgressModalProps) {
@@ -26,7 +27,7 @@ export function ExportProgressModal(props: ExportProgressModalProps) {
       }}
     >
       <DialogContent class="max-w-sm glass-panel border-glass-border text-foreground">
-        <DialogHeader>
+        <DialogHeader class="p-4 border-b shrink-0 flex flex-row items-center justify-between px-5 py-3 gap-4">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
               <Video class="w-4 h-4 text-accent-theme" />
@@ -38,6 +39,14 @@ export function ExportProgressModal(props: ExportProgressModalProps) {
             >
               {props.exportProgress}%
             </Badge>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => props.onOpenChange(false)}
+              class="h-7 w-7 rounded-full text-muted-foreground hover:text-foreground"
+            >
+              <X class="w-4 h-4" />
+            </Button>
           </div>
           <DialogDescription>Encoding Video IR timeline into MP4 ...</DialogDescription>
         </DialogHeader>
@@ -45,7 +54,6 @@ export function ExportProgressModal(props: ExportProgressModalProps) {
         <div class="py-3">
           <Progress value={props.exportProgress} class="h-2.5" />
         </div>
-
         <DialogFooter>
           <Button variant="destructive" size="sm" onClick={props.onCancelExport}>
             Cancel Export

@@ -212,4 +212,12 @@ export class FFIVideoDecoder implements IVideoDecoder {
     }
     this.isOpened = false;
   }
+
+  public [Symbol.dispose](): void {
+    this.close();
+  }
+
+  public async [Symbol.asyncDispose](): Promise<void> {
+    this.close();
+  }
 }

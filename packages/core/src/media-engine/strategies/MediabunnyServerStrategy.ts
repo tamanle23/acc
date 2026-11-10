@@ -14,6 +14,9 @@ import {
   EncodedPacket,
   AudioSampleSink,
   CanvasSink,
+  BlobSource,
+  BufferSource,
+  UrlSource,
 } from 'mediabunny';
 import { FFAudioMuxer } from '../../ffmpeg-ffi/FFAudioMuxer';
 import {
@@ -23,9 +26,11 @@ import {
   IMediaFrameSink,
   IAudioDecoder,
   IVideoDecoder,
+  VideoDecoderOptions,
   ICanvasInstance,
   ICanvasContext2D,
   UniversalCanvasProvider,
+  AssetProtocolRegistry,
   DecodedAudioPCM,
   IMediaProbeStrategy,
   IMediaConcatStrategy,
@@ -213,6 +218,49 @@ export class MediabunnyServerChunkPolicy implements IChunkExecutionPolicy {
 }
 
 /**
+ * Resolves media URI or path to a valid Mediabunny Source instance for server/node runtime.
+ * Supports native file paths, cache:// (OPFS/memory), blob:, http(s)://, and data: URIs.
+ */
+export async function resolveServerMediabunnySource(uriOrPath: string): Promise<any> {
+  const registry = AssetProtocolRegistry.getInstance();
+  const asset = registry.resolve(uriOrPath);
+
+  // 1. Native filesystem check
+  const nativePath = typeof asset.getNativePath === 'function' ? asset.getNativePath() : null;
+  if (nativePath && fs.existsSync(nativePath)) {
+    return new FilePathSource(nativePath);
+  }
+
+  // 2. Direct filesystem path fallback
+  if (fs.existsSync(uriOrPath)) {
+    return new FilePathSource(uriOrPath);
+  }
+
+  // 3. Remote URL
+  if (uriOrPath.startsWith('http://') || uriOrPath.startsWith('https://')) {
+    return new UrlSource(uriOrPath);
+  }
+
+  // 4. Blob or Cached Asset (OPFS / Memory)
+  if (typeof asset.blob === 'function') {
+    const blob = await asset.blob();
+    if (blob) {
+      return new BlobSource(blob);
+    }
+  }
+
+  // 5. ArrayBuffer fallback
+  if (typeof asset.arrayBuffer === 'function') {
+    const ab = await asset.arrayBuffer();
+    if (ab) {
+      return new BufferSource(ab);
+    }
+  }
+
+  throw new Error(`[resolveServerMediabunnySource] Unable to resolve source for asset: ${uriOrPath}`);
+}
+
+/**
  * MediabunnyVideoDecoder:
  * Decodes video files frame-by-frame or via random-access seeking leveraging mediabunny.CanvasSink.
  * Provides 100% strategy parity with FFIVideoDecoder for server/node runtimes.
@@ -220,74 +268,94 @@ export class MediabunnyServerChunkPolicy implements IChunkExecutionPolicy {
 export class MediabunnyVideoDecoder implements IVideoDecoder {
   private input: Input | null = null;
   private canvasSink: CanvasSink | null = null;
-  private canvas: ICanvasInstance | null = null;
-  private ctx: ICanvasContext2D | null = null;
   private isOpened = false;
   private currentTimestampSec = 0;
   private fps = 30;
-  public readonly width: number;
-  public readonly height: number;
+  public width: number;
+  public height: number;
   public duration: number = 0;
+  private options?: VideoDecoderOptions;
 
-  constructor(private videoPath: string, targetWidth: number, targetHeight: number) {
+  constructor(
+    private videoPath: string,
+    targetWidth: number,
+    targetHeight: number,
+    options?: VideoDecoderOptions
+  ) {
     this.width = targetWidth;
     this.height = targetHeight;
+    this.options = options;
   }
 
   public async open(): Promise<boolean> {
     if (this.isOpened) return true;
-    if (!fs.existsSync(this.videoPath)) {
-      return false;
-    }
 
     try {
+      const source = await resolveServerMediabunnySource(this.videoPath);
+
       this.input = new Input({
         formats: ALL_FORMATS,
-        source: new FilePathSource(this.videoPath),
+        source,
       });
 
-      this.duration = await this.input.computeDuration();
+      this.duration = await this.input.computeDuration().catch(() => 0);
       const videoTrack = await this.input.getPrimaryVideoTrack();
       if (!videoTrack) {
+        if (this.options?.strict) {
+          throw new Error(`[MediabunnyVideoDecoder] No primary video track found for ${this.videoPath}`);
+        }
         return false;
       }
 
-      this.canvasSink = new CanvasSink(videoTrack, { poolSize: 2 });
-      this.canvas = UniversalCanvasProvider.createCanvas(this.width, this.height);
-      this.ctx = this.canvas.getContext('2d');
+      const trackW = (typeof (videoTrack as any).getDisplayWidth === 'function'
+        ? await (videoTrack as any).getDisplayWidth().catch(() => 1920)
+        : (videoTrack as any).displayWidth) || 1920;
+      const trackH = (typeof (videoTrack as any).getDisplayHeight === 'function'
+        ? await (videoTrack as any).getDisplayHeight().catch(() => 1080)
+        : (videoTrack as any).displayHeight) || 1080;
+
+      if (!this.width || this.width <= 0) this.width = trackW;
+      if (!this.height || this.height <= 0) this.height = trackH;
+
+      this.canvasSink = new CanvasSink(videoTrack, {
+        width: this.width,
+        height: this.height,
+        fit: 'fill',
+        poolSize: 2,
+      });
+
       this.isOpened = true;
       this.currentTimestampSec = 0;
       return true;
-    } catch {
+    } catch (err) {
+      if (this.options?.strict) {
+        throw err;
+      }
       return false;
     }
   }
 
-  public async seekTimestamp(targetSeconds: number): Promise<ICanvasInstance | null> {
-    if (!this.isOpened || !this.canvasSink || !this.canvas || !this.ctx) return null;
+  public async seekTimestamp(targetSeconds: number): Promise<any | null> {
+    if (!this.isOpened || !this.canvasSink) return null;
     this.currentTimestampSec = Math.max(0, targetSeconds);
     return this.renderFrameAtSec(this.currentTimestampSec);
   }
 
-  public async readNextFrame(): Promise<ICanvasInstance | null> {
-    if (!this.isOpened || !this.canvasSink || !this.canvas || !this.ctx) return null;
+  public async readNextFrame(): Promise<any | null> {
+    if (!this.isOpened || !this.canvasSink) return null;
     const frame = await this.renderFrameAtSec(this.currentTimestampSec);
     this.currentTimestampSec += 1 / this.fps;
     return frame;
   }
 
-  private async renderFrameAtSec(sec: number): Promise<ICanvasInstance | null> {
-    if (!this.canvasSink || !this.ctx || !this.canvas) return null;
+  private async renderFrameAtSec(sec: number): Promise<any | null> {
+    if (!this.canvasSink) return null;
     try {
       const wrappedCanvas = await this.canvasSink.getCanvas(sec);
       if (!wrappedCanvas) return null;
-      const raw = typeof wrappedCanvas.getRawCanvas === 'function'
+      return typeof wrappedCanvas.getRawCanvas === 'function'
         ? wrappedCanvas.getRawCanvas()
         : wrappedCanvas.canvas || wrappedCanvas;
-
-      this.ctx.clearRect(0, 0, this.width, this.height);
-      this.ctx.drawImage(raw, 0, 0, this.width, this.height);
-      return this.canvas;
     } catch {
       return null;
     }
@@ -296,13 +364,19 @@ export class MediabunnyVideoDecoder implements IVideoDecoder {
   public close(): void {
     if (!this.isOpened) return;
     try {
-      if (this.canvasSink && typeof (this.canvasSink as any).close === 'function') {
-        (this.canvasSink as any).close();
-      }
+      this.input?.dispose();
     } catch { }
     this.canvasSink = null;
     this.input = null;
     this.isOpened = false;
+  }
+
+  public [Symbol.dispose](): void {
+    this.close();
+  }
+
+  public async [Symbol.asyncDispose](): Promise<void> {
+    this.close();
   }
 }
 
@@ -336,9 +410,14 @@ export class MediabunnyServerStrategy implements IMediaEngineStrategy {
     }
   }
 
-  public createVideoDecoder(filePath: string, targetWidth: number, targetHeight: number): IVideoDecoder {
+  public createVideoDecoder(
+    filePathOrUri: string,
+    targetWidth: number,
+    targetHeight: number,
+    options?: VideoDecoderOptions
+  ): IVideoDecoder {
     this.validatePrerequisites();
-    return new MediabunnyVideoDecoder(filePath, targetWidth, targetHeight);
+    return new MediabunnyVideoDecoder(filePathOrUri, targetWidth, targetHeight, options);
   }
 
   public createVideoSink(options?: SinkInitMetadata): IMediaFrameSink {
@@ -347,18 +426,17 @@ export class MediabunnyServerStrategy implements IMediaEngineStrategy {
 
   public createAudioDecoder(): IAudioDecoder {
     return {
-      decodeToPCM: async (filePath: string, targetSampleRate = 48000, targetChannels = 2): Promise<DecodedAudioPCM | null> => {
-        if (!fs.existsSync(filePath)) {
-          return null;
-        }
-
+      decodeToPCM: async (filePathOrUri: string, targetSampleRate = 48000, targetChannels = 2): Promise<DecodedAudioPCM | null> => {
+        let input: Input | null = null;
         try {
-          // If FFIAudioDecoder is available in current runtime (Bun/FFI), take fast native path
+          // If FFIAudioDecoder is available in current runtime (Bun/FFI) and path is on disk, take fast native path
           try {
-            const ffiModule = await import('../../ffmpeg-ffi/FFIAudioDecoder');
-            if (ffiModule?.FFIAudioDecoder) {
-              const decoded = await ffiModule.FFIAudioDecoder.decodeToPCM(filePath, targetSampleRate, targetChannels);
-              if (decoded) return decoded;
+            if (fs.existsSync(filePathOrUri)) {
+              const ffiModule = await import('../../ffmpeg-ffi/FFIAudioDecoder');
+              if (ffiModule?.FFIAudioDecoder) {
+                const decoded = await ffiModule.FFIAudioDecoder.decodeToPCM(filePathOrUri, targetSampleRate, targetChannels);
+                if (decoded) return decoded;
+              }
             }
           } catch {
             // Fall back to Mediabunny Server decoding pipeline
@@ -366,9 +444,10 @@ export class MediabunnyServerStrategy implements IMediaEngineStrategy {
 
           this.validatePrerequisites();
 
-          const input = new Input({
+          const source = await resolveServerMediabunnySource(filePathOrUri);
+          input = new Input({
             formats: ALL_FORMATS,
-            source: new FilePathSource(filePath),
+            source,
           });
 
           const audioTrack = await input.getPrimaryAudioTrack();
@@ -381,9 +460,9 @@ export class MediabunnyServerStrategy implements IMediaEngineStrategy {
             if (typeof (audioTrack as any).getSampleRate === 'function') {
               detectedSampleRate = await (audioTrack as any).getSampleRate();
             }
-          } catch {}
+          } catch { }
 
-          const durationSeconds = await input.computeDuration();
+          const durationSeconds = await input.computeDuration().catch(() => 0);
           const audioSink = new AudioSampleSink(audioTrack);
           const sampleChunks: Float32Array[] = [];
           let totalExtractedSamplesPerChannel = 0;
@@ -456,8 +535,12 @@ export class MediabunnyServerStrategy implements IMediaEngineStrategy {
             durationSeconds: durationSeconds || (totalExtractedSamplesPerChannel / actualRate),
             data: finalPcm,
           };
-        } catch (err) {
+        } catch {
           return null;
+        } finally {
+          try {
+            input?.dispose();
+          } catch { }
         }
       },
     };

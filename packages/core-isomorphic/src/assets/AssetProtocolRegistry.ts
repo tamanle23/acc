@@ -330,7 +330,6 @@ export class CachedAssetBlob implements IAssetBlob {
       throw new Error(`[CachedAssetBlob] Key "${this.cacheKey}" not found in cache.`);
     }
     return blob;
-    return new Blob([bytes], { type: this.mimeType });
   }
 }
 
@@ -386,6 +385,10 @@ export class AssetProtocolRegistry {
     let filePath = uri;
     if (filePath.startsWith('file://')) {
       filePath = filePath.slice(7);
+      // Windows file URL normalization: file:///C:/path -> /C:/path -> C:/path
+      if (/^\/[a-zA-Z]:/.test(filePath)) {
+        filePath = filePath.slice(1);
+      }
     }
 
     // Resolve relative path if baseDir provided and not absolute

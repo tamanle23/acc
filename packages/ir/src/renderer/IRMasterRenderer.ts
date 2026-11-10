@@ -61,6 +61,7 @@ function isAbsolutePath(p: string): boolean {
     p.startsWith('https://') ||
     p.startsWith('data:') ||
     p.startsWith('blob:') ||
+    p.startsWith('cache:') ||
     /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(p) ||
     /^[a-zA-Z]:[\\/]/.test(p) ||
     p.startsWith('\\\\')
@@ -678,16 +679,9 @@ export class IRMasterRenderer implements Disposable {
     const assetResolver: IAssetSourceResolver = {
       has: (id: string) => activeVideoFrames.has(id) || this.imageCache.has(id),
       get: (id: string) => activeVideoFrames.get(id) || this.imageCache.get(id),
-      onAssetDrawn: (assetId: string) => {
-        if (activeVideoFrames.has(assetId)) {
-          const frame = activeVideoFrames.get(assetId);
-          activeVideoFrames.delete(assetId);
-          try {
-            if (frame && typeof frame.close === 'function') {
-              frame.close();
-            }
-          } catch { }
-        }
+      onAssetDrawn: (_assetId: string) => {
+        // Multi-track frame retention: frames are preserved across all sequences during frame t
+        // and deterministically closed and cleared in the finally block below.
       },
     };
 

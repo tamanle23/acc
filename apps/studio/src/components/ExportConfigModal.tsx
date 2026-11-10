@@ -1,6 +1,6 @@
 import { createSignal, createMemo, For, Show } from 'solid-js';
 import { Download, Film, Check, ShieldCheck } from 'lucide-solid';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './ui/dialog';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import {
@@ -58,7 +58,7 @@ export function ExportConfigModal(props: ExportConfigModalProps) {
 
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
-      <DialogContent class="max-w-xl glass-modal border-glass-border p-5 text-foreground">
+      <DialogContent class="max-w-xl glass-modal border-glass-border text-foreground">
         <DialogHeader class="pb-3 border-b border-glass-border">
           <div class="flex items-center gap-2">
             <div class="w-8 h-8 rounded-lg bg-accent-theme/20 text-accent-theme flex items-center justify-center font-bold shadow-accent-glow">
@@ -77,81 +77,79 @@ export function ExportConfigModal(props: ExportConfigModalProps) {
             </div>
           </div>
         </DialogHeader>
-
-        {/* Base Aspect Ratio Optimal Quality Indicator */}
-        <div class="p-3 rounded-lg border border-emerald-500/30 bg-emerald-950/20 text-xs flex items-center justify-between gap-3 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
-          <div class="flex items-center gap-2.5 min-w-0">
-            <ShieldCheck class="w-5 h-5 text-emerald-400 shrink-0" />
-            <div class="min-w-0">
-              <div class="font-bold text-emerald-300 flex items-center gap-1.5 text-xs">
-                <span>Native Aspect Ratio Locked:</span>
-                <span class="font-mono bg-emerald-500/20 px-1.5 py-0.5 rounded text-emerald-200">
-                  {activeRatio()}
-                </span>
+        <div class="flex-1 flex flex-col overflow-hidden">
+          {/* Base Aspect Ratio Optimal Quality Indicator */}
+          <div class="flex items-center justify-between gap-3 w-full">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <ShieldCheck class="w-5 h-5 text-emerald-400 shrink-0" />
+              <div class="min-w-0">
+                <div class="font-bold text-emerald-300 flex items-center gap-1.5 text-xs">
+                  <span>Native Aspect Ratio Locked:</span>
+                  <span class="font-mono bg-emerald-500/20 px-1.5 py-0.5 rounded text-emerald-200">
+                    {activeRatio()}
+                  </span>
+                </div>
+                <p class="text-[10px] text-emerald-200/80 truncate">
+                  100% optimal framing without letterboxing, pillarboxing, or image distortion.
+                </p>
               </div>
-              <p class="text-[10px] text-emerald-200/80 truncate">
-                100% optimal framing without letterboxing, pillarboxing, or image distortion.
-              </p>
             </div>
+            <Badge class="bg-emerald-500/20 text-emerald-300 border-emerald-500/40 text-[9px] shrink-0 font-mono">
+              ★ Optimal Quality
+            </Badge>
           </div>
-          <Badge class="bg-emerald-500/20 text-emerald-300 border-emerald-500/40 text-[9px] shrink-0 font-mono">
-            ★ Optimal Quality
-          </Badge>
-        </div>
-
-        {/* Platform Resolution Preset Cards Grid */}
-        <div class="space-y-2">
-          <label class="text-[11px] font-mono text-muted-foreground">
-            Target Resolution Standards ({activeRatio()})
-          </label>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1">
-            <For each={matchingPresets()}>
-              {(preset) => {
-                const isSelected = () => selectedPreset()?.id === preset.id;
-                return (
-                  <button
-                    type="button"
-                    onClick={() => setSelectedPresetId(preset.id)}
-                    class={`p-3 rounded-lg border text-left transition-all cursor-pointer flex flex-col justify-between ${
-                      isSelected()
+          {/* Platform Resolution Preset Cards Grid */}
+          <div class="space-y-2  w-full">
+            <label class="text-[11px] font-mono text-muted-foreground">
+              Target Resolution Standards ({activeRatio()})
+            </label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1">
+              <For each={matchingPresets()}>
+                {(preset) => {
+                  const isSelected = () => selectedPreset()?.id === preset.id;
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPresetId(preset.id)}
+                      class={`p-3 rounded-lg border text-left transition-all cursor-pointer flex flex-col justify-between ${isSelected()
                         ? 'bg-accent-theme/15 border-accent-theme shadow-accent-glow text-foreground'
                         : 'bg-glass-surface border-glass-border text-foreground/80 hover:border-accent-theme/50 hover:bg-accent-theme/5'
-                    }`}
-                  >
-                    <div class="flex items-start justify-between gap-2">
-                      <div>
-                        <div class="font-bold text-xs flex items-center gap-1.5">
-                          {preset.label}
+                        }`}
+                    >
+                      <div class="flex items-start justify-between gap-2">
+                        <div>
+                          <div class="font-bold text-xs flex items-center gap-1.5">
+                            {preset.label}
+                          </div>
+                          <div class="text-[10px] font-mono text-accent-theme font-semibold mt-0.5">
+                            {preset.width} × {preset.height} px
+                          </div>
                         </div>
-                        <div class="text-[10px] font-mono text-accent-theme font-semibold mt-0.5">
-                          {preset.width} × {preset.height} px
-                        </div>
+                        <Show
+                          when={isSelected()}
+                          fallback={
+                            <Badge variant="outline" class="text-[9px] font-mono shrink-0">
+                              {preset.badge}
+                            </Badge>
+                          }
+                        >
+                          <div class="w-4 h-4 rounded-full bg-accent-theme text-primary-foreground flex items-center justify-center shrink-0">
+                            <Check class="w-3 h-3 stroke-[3]" />
+                          </div>
+                        </Show>
                       </div>
-                      <Show
-                        when={isSelected()}
-                        fallback={
-                          <Badge variant="outline" class="text-[9px] font-mono shrink-0">
-                            {preset.badge}
-                          </Badge>
-                        }
-                      >
-                        <div class="w-4 h-4 rounded-full bg-accent-theme text-primary-foreground flex items-center justify-center shrink-0">
-                          <Check class="w-3 h-3 stroke-[3]" />
-                        </div>
-                      </Show>
-                    </div>
-                    <p class="text-[9px] text-muted-foreground mt-2 line-clamp-2">
-                      {preset.description}
-                    </p>
-                  </button>
-                );
-              }}
-            </For>
+                      <p class="text-[9px] text-muted-foreground mt-2 line-clamp-2">
+                        {preset.description}
+                      </p>
+                    </button>
+                  );
+                }}
+              </For>
+            </div>
           </div>
         </div>
-
         {/* Export Telemetry & Actions */}
-        <div class="pt-3 border-t border-glass-border flex items-center justify-between text-xs">
+        <DialogFooter class="pt-3 border-t border-glass-border flex items-center justify-between text-xs">
           <div class="text-muted-foreground font-mono text-[10px]">
             Target Bitrate: {((selectedPreset()?.recommendedBitrateBps || 0) / 1_000_000).toFixed(1)} Mbps @ {props.fps}fps ({props.totalFrames} frames)
           </div>
@@ -168,7 +166,7 @@ export function ExportConfigModal(props: ExportConfigModalProps) {
               Start MP4 Export
             </Button>
           </div>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
