@@ -313,7 +313,7 @@ export function PlaygroundInspector(props: PlaygroundInspectorProps) {
             </span>
 
             {/* Bloom Subgroup */}
-            <div class="p-2 rounded bg-black/20 border border-white/5 flex flex-col gap-1.5">
+            <div class="p-2 rounded bg-background/40 border border-glass-border flex flex-col gap-1.5">
               <div class="flex items-center justify-between">
                 <span class="text-[11px] font-semibold text-foreground">Bloom & Glow</span>
                 <Switch
@@ -348,7 +348,7 @@ export function PlaygroundInspector(props: PlaygroundInspectorProps) {
             </div>
 
             {/* Chromatic Aberration Subgroup */}
-            <div class="p-2 rounded bg-black/20 border border-white/5 flex flex-col gap-1.5">
+            <div class="p-2 rounded bg-background/40 border border-glass-border flex flex-col gap-1.5">
               <div class="flex items-center justify-between">
                 <span class="text-[11px] font-semibold text-foreground">Chromatic Aberration</span>
                 <Switch
@@ -451,7 +451,7 @@ export function PlaygroundInspector(props: PlaygroundInspectorProps) {
 
             <For each={regions()}>
               {(reg, idx) => (
-                <div class="p-2 rounded-lg bg-black/20 border border-white/5 flex flex-col gap-2">
+                <div class="p-2 rounded-lg bg-background/40 border border-glass-border flex flex-col gap-2">
                   <div class="flex items-center justify-between">
                     <span class="text-[11px] font-semibold text-foreground font-mono">
                       Region #{idx() + 1} ({reg.type || 'spotlight'})

@@ -68,14 +68,27 @@ export function BentoCurveVisualizer(props: BentoCurveVisualizerProps) {
 
     const width = canvasRef.width;
     const height = canvasRef.height;
-    const pad = 24;
+    const pad = 20;
     const plotW = width - pad * 2;
     const plotH = height - pad * 2;
 
     ctx.clearRect(0, 0, width, height);
 
+    // Read system theme variables
+    let accent = '#06b6d4';
+    let isDark = true;
+    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+      const rootStyle = getComputedStyle(document.documentElement);
+      const themeAccent = rootStyle.getPropertyValue('--accent-primary').trim();
+      if (themeAccent) accent = themeAccent;
+      isDark = document.documentElement.classList.contains('dark');
+    }
+
+    const gridColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)';
+    const hairlineColor = isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)';
+
     // Background grid lines
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+    ctx.strokeStyle = gridColor;
     ctx.lineWidth = 1;
     ctx.setLineDash([3, 3]);
 
@@ -114,23 +127,18 @@ export function BentoCurveVisualizer(props: BentoCurveVisualizerProps) {
     ctx.closePath();
 
     const areaGrad = ctx.createLinearGradient(0, pad, 0, height - pad);
-    areaGrad.addColorStop(0, 'rgba(168, 85, 247, 0.25)');
-    areaGrad.addColorStop(1, 'rgba(168, 85, 247, 0.0)');
+    areaGrad.addColorStop(0, isDark ? 'rgba(6, 182, 212, 0.25)' : 'rgba(6, 182, 212, 0.15)');
+    areaGrad.addColorStop(1, 'rgba(6, 182, 212, 0.0)');
     ctx.fillStyle = areaGrad;
     ctx.fill();
     ctx.restore();
 
     // Glowing Curve Stroke
     ctx.save();
-    ctx.shadowColor = '#c084fc';
-    ctx.shadowBlur = 10;
+    ctx.shadowColor = accent;
+    ctx.shadowBlur = 8;
     ctx.lineWidth = 2.5;
-
-    const lineGrad = ctx.createLinearGradient(pad, 0, width - pad, 0);
-    lineGrad.addColorStop(0, '#818cf8');
-    lineGrad.addColorStop(0.5, '#c084fc');
-    lineGrad.addColorStop(1, '#f472b6');
-    ctx.strokeStyle = lineGrad;
+    ctx.strokeStyle = accent;
 
     ctx.beginPath();
     for (let i = 0; i <= steps; i++) {
@@ -152,7 +160,7 @@ export function BentoCurveVisualizer(props: BentoCurveVisualizerProps) {
 
     // Playhead vertical hairline
     ctx.save();
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+    ctx.strokeStyle = hairlineColor;
     ctx.lineWidth = 1;
     ctx.setLineDash([2, 2]);
     ctx.beginPath();
@@ -163,14 +171,14 @@ export function BentoCurveVisualizer(props: BentoCurveVisualizerProps) {
 
     // Glowing Playhead Ball
     ctx.save();
-    ctx.shadowColor = '#38bdf8';
-    ctx.shadowBlur = 12;
-    ctx.fillStyle = '#ffffff';
+    ctx.shadowColor = accent;
+    ctx.shadowBlur = 10;
+    ctx.fillStyle = isDark ? '#ffffff' : '#0f172a';
     ctx.beginPath();
-    ctx.arc(markerX, markerY, 5, 0, Math.PI * 2);
+    ctx.arc(markerX, markerY, 4.5, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.strokeStyle = '#38bdf8';
+    ctx.strokeStyle = accent;
     ctx.lineWidth = 2;
     ctx.stroke();
     ctx.restore();
@@ -197,33 +205,33 @@ export function BentoCurveVisualizer(props: BentoCurveVisualizerProps) {
 
   return (
     <div
-      class={`flex flex-col rounded-2xl bg-slate-900/60 backdrop-blur-xl border border-white/10 shadow-xl overflow-hidden p-3.5 transition-all duration-200 ${
+      class={`flex flex-col h-full w-full min-h-0 min-w-0 glass-panel rounded-2xl border border-[var(--glass-border)] border-t-[var(--glass-border-highlight)] bg-glass-surface/50 backdrop-blur-xl shadow-lg p-2.5 transition-all duration-200 overflow-hidden select-none ${
         props.class || ''
       }`}
     >
       {/* Header */}
-      <div class="flex items-center justify-between gap-2 mb-2">
+      <div class="flex items-center justify-between gap-2 mb-1.5 shrink-0">
         <div class="flex items-center gap-2">
-          <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-500/20 text-purple-400 border border-purple-500/30">
+          <div class="flex h-6 w-6 items-center justify-center rounded-md bg-accent-theme/15 text-accent-theme border border-accent-theme/30">
             <TrendingUp class="h-3.5 w-3.5" />
           </div>
           <div>
-            <div class="flex items-center gap-2">
-              <span class="text-xs font-semibold text-white tracking-wide">Motion & Bezier Curves</span>
+            <div class="flex items-center gap-1.5">
+              <span class="text-xs font-bold text-foreground">Motion Curves</span>
             </div>
-            <p class="text-[10px] text-slate-400">Temporal interpolation & easing</p>
+            <p class="text-[9px] text-muted-foreground">Temporal interpolation</p>
           </div>
         </div>
 
         <div class="flex items-center gap-2">
-          <Badge variant="outline" class="text-[10px] py-0 px-2 h-5 font-mono text-purple-300 border-purple-500/30">
+          <Badge variant="outline" class="text-[9px] py-0 px-1.5 h-4 font-mono text-accent-theme border-accent-theme/30 bg-accent-theme/10">
             f(t) = {currentValue().toFixed(3)}
           </Badge>
         </div>
       </div>
 
       {/* Curve Selector Pills */}
-      <div class="flex flex-wrap gap-1 mb-2">
+      <div class="flex flex-wrap gap-1 mb-1.5 shrink-0">
         <For each={Object.keys(EASING_FUNCTIONS) as EasingType[]}>
           {(curveKey) => {
             const isSelected = () => selectedCurve() === curveKey;
@@ -231,10 +239,10 @@ export function BentoCurveVisualizer(props: BentoCurveVisualizerProps) {
               <button
                 type="button"
                 onClick={() => setSelectedCurve(curveKey)}
-                class={`px-2 py-0.5 rounded-md text-[10px] font-medium transition-colors border ${
+                class={`px-1.5 py-0.5 rounded text-[9px] font-mono transition-colors border ${
                   isSelected()
-                    ? 'bg-purple-600/40 text-purple-200 border-purple-500/50 shadow-sm'
-                    : 'bg-white/5 text-slate-400 border-white/5 hover:text-white hover:bg-white/10'
+                    ? 'bg-accent-theme/20 text-accent-theme border-accent-theme/40 font-bold shadow-xs'
+                    : 'bg-glass-surface/40 text-muted-foreground border-glass-border hover:text-foreground hover:bg-glass-surface'
                 }`}
               >
                 {EASING_FUNCTIONS[curveKey].name}
@@ -245,19 +253,19 @@ export function BentoCurveVisualizer(props: BentoCurveVisualizerProps) {
       </div>
 
       {/* Canvas Graph Viewport */}
-      <div class="relative w-full flex-1 min-h-[140px] rounded-xl bg-slate-950/80 border border-white/5 overflow-hidden flex items-center justify-center">
+      <div class="relative w-full flex-1 min-h-0 rounded-xl bg-background/50 border border-glass-border overflow-hidden flex items-center justify-center">
         <canvas ref={canvasRef} width={400} height={200} class="w-full h-full object-contain" />
 
         {/* Legend info in bottom right */}
-        <div class="absolute bottom-1.5 right-2 text-[9px] font-mono text-slate-500 pointer-events-none">
+        <div class="absolute bottom-1 right-2 text-[8px] font-mono text-muted-foreground pointer-events-none">
           t: {((state.currentFrame / Math.max(1, state.totalFrames - 1)) * 100).toFixed(0)}%
         </div>
       </div>
 
       {/* Curve description */}
-      <div class="mt-2 text-[10px] text-slate-400 italic flex items-center justify-between">
-        <span>{currentCurveInfo().desc}</span>
-        <span class="text-slate-500 font-mono text-[9px]">Normalized [0..1] domain</span>
+      <div class="mt-1 text-[9px] text-muted-foreground italic flex items-center justify-between shrink-0">
+        <span class="truncate">{currentCurveInfo().desc}</span>
+        <span class="font-mono text-[8px] shrink-0">[0..1]</span>
       </div>
     </div>
   );

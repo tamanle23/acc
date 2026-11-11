@@ -279,19 +279,39 @@ export function usePlaygroundEngine(initialPluginType = 'overlay/canvas_particle
     }
   };
 
-  // Draw Specular Split Divider with Drag Handle
+  // Draw Specular Split Divider with Drag Handle (Theme-Aware)
   const drawSplitDivider = (ctx: CanvasRenderingContext2D, splitX: number, height: number) => {
     ctx.save();
+
+    let accentColor = '#06b6d4';
+    let handleBg = 'rgba(15, 23, 42, 0.9)';
+    let handleBorder = 'rgba(255, 255, 255, 0.4)';
+    let textColor = '#ffffff';
+    let labelBg = 'rgba(0, 0, 0, 0.6)';
+
+    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+      const rootStyle = getComputedStyle(document.documentElement);
+      const themeAccent = rootStyle.getPropertyValue('--accent-primary').trim();
+      if (themeAccent) accentColor = themeAccent;
+      const isDark = document.documentElement.classList.contains('dark');
+      if (!isDark) {
+        handleBg = 'rgba(255, 255, 255, 0.95)';
+        handleBorder = 'rgba(0, 0, 0, 0.2)';
+        textColor = '#0f172a';
+        labelBg = 'rgba(255, 255, 255, 0.8)';
+      }
+    }
+
     // 1. Subtle drop shadow line
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.6)';
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.4)';
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.moveTo(splitX, 0);
     ctx.lineTo(splitX, height);
     ctx.stroke();
 
-    // 2. Specular neon core line
-    ctx.strokeStyle = '#00f0ff';
+    // 2. Specular neon core line (System Theme Accent)
+    ctx.strokeStyle = accentColor;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(splitX, 0);
@@ -305,8 +325,8 @@ export function usePlaygroundEngine(initialPluginType = 'overlay/canvas_particle
     const rx = splitX - handleW / 2;
     const ry = handleY - handleH / 2;
 
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.fillStyle = handleBg;
+    ctx.strokeStyle = handleBorder;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     if (typeof (ctx as any).roundRect === 'function') {
@@ -318,15 +338,15 @@ export function usePlaygroundEngine(initialPluginType = 'overlay/canvas_particle
     ctx.stroke();
 
     // 4. Chevron arrows inside handle
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = textColor;
     ctx.font = 'bold 11px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('⬌', splitX, handleY);
 
-    // 5. Watermark labels: ORIGINAL vs MODIFIED
-    ctx.font = 'bold 10px ui-monospace, SFMono-Regular, monospace';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+    // 5. Watermark labels: ORIGINAL vs MODIFIED with pill backdrop
+    ctx.font = 'bold 9px ui-monospace, SFMono-Regular, monospace';
+    ctx.fillStyle = textColor;
     ctx.textAlign = 'right';
     ctx.fillText('ORIGINAL', splitX - 12, 28);
     ctx.textAlign = 'left';

@@ -128,7 +128,7 @@ export function BentoHeroViewport(props: BentoHeroViewportProps) {
       {/* Central Viewport Area */}
       <div
         ref={containerRef}
-        class={`relative flex-1 min-h-0 min-w-0 flex items-center justify-center p-3 overflow-hidden bg-slate-950/40 ${
+        class={`relative flex-1 min-h-0 min-w-0 flex items-center justify-center p-3 overflow-hidden bg-background/50 ${
           state.isSplitEnabled ? 'cursor-ew-resize' : ''
         }`}
         onPointerDown={handlePointerDown}
@@ -138,7 +138,7 @@ export function BentoHeroViewport(props: BentoHeroViewportProps) {
         <canvas
           ref={canvasRef}
           data-testid="bento-hero-canvas"
-          class="rounded-xl shadow-2xl border border-white/10 max-w-full max-h-full object-contain transition-all"
+          class="rounded-xl shadow-2xl border border-glass-border max-w-full max-h-full object-contain transition-all"
         />
 
         {/* Floating Top-Left Telemetry Badges */}
@@ -295,7 +295,7 @@ export function BentoHeroViewport(props: BentoHeroViewportProps) {
 
           <div class="flex items-center gap-2">
             {/* Speed Pills */}
-            <div class="flex items-center rounded-lg bg-black/20 p-0.5 border border-white/10 text-[11px] font-mono">
+            <div class="flex items-center rounded-lg bg-background/40 p-0.5 border border-glass-border text-[11px] font-mono">
               {[0.25, 0.5, 1.0, 2.0].map((s) => (
                 <button
                   type="button"
@@ -312,7 +312,7 @@ export function BentoHeroViewport(props: BentoHeroViewportProps) {
             </div>
 
             {/* Aspect Ratio Pills */}
-            <div class="flex items-center rounded-lg bg-black/20 p-0.5 border border-white/10 text-[11px] font-mono">
+            <div class="flex items-center rounded-lg bg-background/40 p-0.5 border border-glass-border text-[11px] font-mono">
               {(['16:9', '9:16', '1:1'] as const).map((ratio) => (
                 <button
                   type="button"

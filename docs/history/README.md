@@ -160,3 +160,4 @@
 | 494 | [Structure-of-Arrays (SoA) VFX, Depth3D SRP Decomposition & Bounded Multi-Track Decoder Export](./494_soa_vfx_depth3d_srp_and_multitrack_stress.md) | Completed |
 | 495 | [IR Plugin & Modifier Visual Playground Modal](./495_ir_plugin_visual_playground_modal.md) | Completed |
 | 496 | [IR Plugin Visual Playground Bento Grid Upgrade](./496_bento_playground_layout.md) | Completed |
+| 497 | [Optimize Bento Playground Layout and System Theme Synchronization](./497_optimize_bento_layout_and_theme_synchronization.md) | Completed |

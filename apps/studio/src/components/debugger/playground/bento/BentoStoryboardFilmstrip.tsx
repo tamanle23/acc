@@ -99,24 +99,24 @@ export function BentoStoryboardFilmstrip(props: BentoStoryboardFilmstripProps) {
 
   return (
     <div
-      class={`flex flex-col rounded-2xl bg-slate-900/60 backdrop-blur-xl border border-white/10 shadow-xl overflow-hidden p-3.5 transition-all duration-200 ${
+      class={`flex flex-col h-full w-full min-h-0 min-w-0 glass-panel rounded-2xl border border-[var(--glass-border)] border-t-[var(--glass-border-highlight)] bg-glass-surface/50 backdrop-blur-xl shadow-lg p-2.5 transition-all duration-200 overflow-hidden select-none ${
         props.class || ''
       }`}
     >
       {/* Header */}
-      <div class="flex items-center justify-between gap-2 mb-2.5 px-1">
+      <div class="flex items-center justify-between gap-2 mb-2 px-1 shrink-0">
         <div class="flex items-center gap-2">
-          <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+          <div class="flex h-6 w-6 items-center justify-center rounded-md bg-accent-theme/15 text-accent-theme border border-accent-theme/30">
             <Film class="h-3.5 w-3.5" />
           </div>
           <div>
-            <div class="flex items-center gap-2">
-              <span class="text-xs font-semibold text-white tracking-wide">Storyboard Filmstrip</span>
-              <Badge variant="outline" class="text-[10px] py-0 px-1.5 h-4 text-indigo-400 border-indigo-500/30">
+            <div class="flex items-center gap-1.5">
+              <span class="text-xs font-bold text-foreground">Storyboard Filmstrip</span>
+              <Badge variant="outline" class="text-[9px] py-0 px-1.5 h-4 text-accent-theme border-accent-theme/30 bg-accent-theme/10">
                 5 Keyframes
               </Badge>
             </div>
-            <p class="text-[10px] text-slate-400">Direct zero-alloc keyframe sampling (0% to 100%)</p>
+            <p class="text-[9px] text-muted-foreground">Direct zero-alloc keyframe sampling (0% to 100%)</p>
           </div>
         </div>
 
@@ -124,35 +124,35 @@ export function BentoStoryboardFilmstrip(props: BentoStoryboardFilmstripProps) {
           <Button
             size="sm"
             variant="ghost"
-            class="h-7 text-xs px-2.5 text-slate-300 hover:text-white hover:bg-white/10 flex items-center gap-1.5 border border-white/5"
+            class="h-6 text-[10px] px-2 text-muted-foreground hover:text-foreground hover:bg-glass-surface flex items-center gap-1.5 border border-glass-border"
             onClick={exportCurrentFrameSnapshot}
             title="Download PNG Snapshot at Current Frame"
           >
-            <Show when={copiedNotification()} fallback={<Camera class="h-3 w-3 text-indigo-400" />}>
+            <Show when={copiedNotification()} fallback={<Camera class="h-3 w-3 text-accent-theme" />}>
               <Check class="h-3 w-3 text-emerald-400" />
             </Show>
-            <span class="text-[11px]">{copiedNotification() ? 'Downloaded' : 'Snapshot PNG'}</span>
+            <span>{copiedNotification() ? 'Downloaded' : 'Snapshot PNG'}</span>
           </Button>
         </div>
       </div>
 
       {/* Reel strip of 5 mini-canvases */}
-      <div class="grid grid-cols-5 gap-2.5 w-full flex-1">
+      <div class="grid grid-cols-5 gap-2 w-full flex-1 min-h-0">
         <For each={keyframes()}>
           {(kf) => {
             const isNearCurrent = () => Math.abs(state.currentFrame - kf.frame) <= 15;
             return (
               <div
-                class={`group relative flex flex-col rounded-xl overflow-hidden border transition-all duration-200 cursor-pointer bg-slate-950/70 hover:scale-[1.02] ${
+                class={`group relative flex flex-col rounded-xl overflow-hidden border transition-all duration-200 cursor-pointer bg-background/50 hover:scale-[1.02] ${
                   isNearCurrent()
-                    ? 'border-indigo-500 ring-2 ring-indigo-500/30 shadow-[0_0_15px_rgba(99,102,241,0.25)]'
-                    : 'border-white/10 hover:border-white/25 hover:shadow-lg'
+                    ? 'border-accent-theme ring-2 ring-accent-theme/30 shadow-accent-glow'
+                    : 'border-glass-border hover:border-accent-theme/40 hover:shadow-md'
                 }`}
                 onClick={() => props.engine.seek(kf.frame)}
                 title={`Seek to frame ${kf.frame} (${kf.pct}%)`}
               >
                 {/* Mini Canvas */}
-                <div class="relative w-full aspect-video bg-black/40 flex items-center justify-center overflow-hidden">
+                <div class="relative w-full aspect-video bg-background/80 flex items-center justify-center overflow-hidden">
                   <canvas
                     ref={(el) => (canvasRefs[kf.index] = el)}
                     width={160}
@@ -160,22 +160,22 @@ export function BentoStoryboardFilmstrip(props: BentoStoryboardFilmstripProps) {
                     class="w-full h-full object-contain pointer-events-none"
                   />
                   {/* Hover Overlay with Play Icon */}
-                  <div class="absolute inset-0 bg-indigo-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[1px]">
-                    <div class="h-7 w-7 rounded-full bg-indigo-500/80 text-white flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform">
-                      <Play class="h-3.5 w-3.5 fill-current ml-0.5" />
+                  <div class="absolute inset-0 bg-accent-theme/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[1px]">
+                    <div class="h-6 w-6 rounded-full bg-accent-theme text-primary-foreground flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform">
+                      <Play class="h-3 w-3 fill-current ml-0.5" />
                     </div>
                   </div>
                 </div>
 
                 {/* Footer metadata */}
-                <div class="flex items-center justify-between px-2 py-1.5 bg-slate-900/80 border-t border-white/5 text-[10px]">
+                <div class="flex items-center justify-between px-2 py-1 bg-glass-surface/80 border-t border-glass-border text-[9px]">
                   <span
-                    class={`font-mono font-medium ${isNearCurrent() ? 'text-indigo-400 font-bold' : 'text-slate-300'}`}
+                    class={`font-mono font-medium ${isNearCurrent() ? 'text-accent-theme font-bold' : 'text-foreground/90'}`}
                   >
                     {kf.pct}%
                   </span>
-                  <span class="font-mono text-slate-400 text-[9px]">{formatTimecode(kf.frame, state.fps)}</span>
-                  <span class="text-[9px] text-slate-500">f{kf.frame}</span>
+                  <span class="font-mono text-muted-foreground text-[8px]">{formatTimecode(kf.frame, state.fps)}</span>
+                  <span class="text-[8px] text-muted-foreground/70">f{kf.frame}</span>
                 </div>
               </div>
             );
