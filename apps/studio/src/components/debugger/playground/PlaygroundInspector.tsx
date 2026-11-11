@@ -1,4 +1,4 @@
-import { createSignal, createMemo, For, Show } from 'solid-js';
+import { createSignal, createMemo, createEffect, For, Show } from 'solid-js';
 import {
   Sliders,
   Code2,
@@ -47,6 +47,13 @@ export function PlaygroundInspector(props: PlaygroundInspectorProps) {
   const presets = createMemo(() => {
     const plugin = activePlugin();
     return getPresetsForPlugin(state.selectedPluginType, plugin?.schema);
+  });
+
+  const [selectedPresetName, setSelectedPresetName] = createSignal<string>(presets()[0]?.name || '');
+
+  createEffect(() => {
+    state.selectedPluginType;
+    setSelectedPresetName(presets()[0]?.name || '');
   });
 
   // Schema fields dictionary
@@ -378,6 +385,160 @@ export function PlaygroundInspector(props: PlaygroundInspectorProps) {
         );
       }
 
+      case 'group': {
+        const subfields = desc.fields || {};
+        const groupVal = () => (currentVal() as Record<string, any>) || {};
+        return (
+          <div class="flex flex-col gap-2 p-2.5 rounded-xl bg-glass-surface/40 border border-glass-border/60">
+            <span class="text-xs font-bold text-foreground flex items-center gap-1.5">
+              <Layers class="w-3.5 h-3.5 text-accent-theme" />
+              {desc.label || key}
+            </span>
+            <div class="flex flex-col gap-2 pl-1 border-l-2 border-accent-theme/30">
+              <For each={Object.entries(subfields)}>
+                {([subKey, subDesc]) => {
+                  return renderField(subKey, {
+                    ...subDesc,
+                    defaultValue: groupVal()[subKey] ?? subDesc.defaultValue,
+                  });
+                }}
+              </For>
+            </div>
+          </div>
+        );
+      }
+
+      case 'regions_array': {
+        const regions = () => (Array.isArray(currentVal()) ? (currentVal() as any[]) : []);
+        const subfields = desc.fields || {};
+
+        const updateRegion = (index: number, subKey: string, val: any) => {
+          const list = [...regions()];
+          list[index] = { ...list[index], [subKey]: val };
+          props.engine.setParam(key, list);
+        };
+
+        const addRegion = () => {
+          const newRegion: Record<string, any> = {};
+          for (const [k, f] of Object.entries(subfields)) {
+            newRegion[k] = f.defaultValue !== undefined ? f.defaultValue : f.min ?? 0;
+          }
+          props.engine.setParam(key, [...regions(), newRegion]);
+        };
+
+        const removeRegion = (index: number) => {
+          const list = regions().filter((_, i) => i !== index);
+          props.engine.setParam(key, list);
+        };
+
+        return (
+          <div class="flex flex-col gap-2 p-2.5 rounded-xl bg-glass-surface/40 border border-accent-theme/20">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-accent-theme flex items-center gap-1.5">
+                <Layers class="w-3.5 h-3.5" />
+                {desc.label || 'VFX Regions'} ({regions().length})
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                class="h-6 px-2 text-[10px] font-mono border-glass-border hover:bg-accent-theme/10 hover:text-accent-theme"
+                onClick={addRegion}
+              >
+                <PlusCircle class="w-3 h-3 mr-1" />
+                Add Region
+              </Button>
+            </div>
+
+            <For each={regions()}>
+              {(reg, idx) => (
+                <div class="p-2 rounded-lg bg-black/20 border border-white/5 flex flex-col gap-2">
+                  <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-semibold text-foreground font-mono">
+                      Region #{idx() + 1} ({reg.type || 'spotlight'})
+                    </span>
+                    <button
+                      type="button"
+                      class="text-[10px] text-rose-400 hover:text-rose-300 font-mono"
+                      onClick={() => removeRegion(idx())}
+                    >
+                      Delete
+                    </button>
+                  </div>
+
+                  <div class="grid grid-cols-2 gap-2 text-[11px]">
+                    <div class="flex flex-col gap-1">
+                      <span class="text-muted-foreground text-[10px]">Type</span>
+                      <Select
+                        value={reg.type || 'spotlight'}
+                        onChange={(v) => updateRegion(idx(), 'type', v)}
+                      >
+                        <SelectTrigger class="h-6 text-[10px] font-mono bg-background/50 border-glass-border">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent class="glass-panel border-glass-border">
+                          <SelectItem value="spotlight" class="text-xs font-mono">Spotlight</SelectItem>
+                          <SelectItem value="glitch" class="text-xs font-mono">Glitch</SelectItem>
+                          <SelectItem value="blur" class="text-xs font-mono">Blur</SelectItem>
+                          <SelectItem value="point_emitter" class="text-xs font-mono">Point Emitter</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div class="flex flex-col gap-1">
+                      <span class="text-muted-foreground text-[10px]">Color</span>
+                      <div class="flex items-center gap-1">
+                        <input
+                          type="color"
+                          value={reg.color || '#00d4ff'}
+                          onInput={(e) => updateRegion(idx(), 'color', e.currentTarget.value)}
+                          class="w-6 h-6 rounded border border-glass-border cursor-pointer bg-transparent"
+                        />
+                        <span class="font-mono text-[10px] uppercase truncate">{reg.color || '#00d4ff'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center gap-2">
+                    <span class="text-[10px] text-muted-foreground w-12">Pos X/Y</span>
+                    <Slider
+                      min={0}
+                      max={1}
+                      step={0.01}
+                      value={reg.x ?? 0.5}
+                      onChange={(v) => updateRegion(idx(), 'x', v[0])}
+                      class="flex-1"
+                    />
+                    <Slider
+                      min={0}
+                      max={1}
+                      step={0.01}
+                      value={reg.y ?? 0.5}
+                      onChange={(v) => updateRegion(idx(), 'y', v[0])}
+                      class="flex-1"
+                    />
+                  </div>
+
+                  <div class="flex items-center gap-2">
+                    <span class="text-[10px] text-muted-foreground w-12">Intensity</span>
+                    <Slider
+                      min={0.1}
+                      max={4.0}
+                      step={0.1}
+                      value={reg.intensity ?? 1.5}
+                      onChange={(v) => updateRegion(idx(), 'intensity', v[0])}
+                      class="flex-1"
+                    />
+                    <span class="font-mono text-[10px] text-accent-theme w-8 text-right">
+                      {(reg.intensity ?? 1.5).toFixed(1)}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </For>
+          </div>
+        );
+      }
+
       default: {
         // Fallback for novel/unmapped complex types
         return (
@@ -473,8 +634,9 @@ export function PlaygroundInspector(props: PlaygroundInspectorProps) {
               Curated Production Presets
             </label>
             <Select
-              value={presets()[0]?.name}
+              value={selectedPresetName()}
               onChange={(val) => {
+                setSelectedPresetName(val);
                 const target = presets().find((p) => p.name === val);
                 if (target) props.engine.loadPreset(target.params);
               }}

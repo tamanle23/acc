@@ -172,7 +172,8 @@ export function usePlaygroundEngine(initialPluginType = 'overlay/canvas_particle
       ctx.stroke();
 
       ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
-      ctx.font = 'bold 11px ui-monospace, SFMono-Regular, monospace';
+      const fontSize = Math.max(11, Math.round(height * 0.024));
+      ctx.font = `bold ${fontSize}px ui-monospace, SFMono-Regular, monospace`;
       ctx.textAlign = 'center';
       ctx.fillText('UNIVERSAL VIDEO-IR TEST PATTERN', width / 2, botY + botHeight / 2 + 4);
     }
@@ -209,7 +210,8 @@ export function usePlaygroundEngine(initialPluginType = 'overlay/canvas_particle
     }
 
     ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-    ctx.font = '10px ui-monospace, monospace';
+    const audioFontSize = Math.max(10, Math.round(height * 0.022));
+    ctx.font = `${audioFontSize}px ui-monospace, monospace`;
     ctx.fillText('AUDIO DSP SYNTHETIC OSCILLOSCOPE', 16, height - 16);
     ctx.restore();
   };
@@ -340,7 +342,7 @@ export function usePlaygroundEngine(initialPluginType = 'overlay/canvas_particle
 
   // Main RAF Animation Loop
   const rafLoop = (timestamp: number) => {
-    const elapsed = timestamp - lastRafTimestamp;
+    const elapsed = Math.min(250, timestamp - lastRafTimestamp);
     lastRafTimestamp = timestamp;
 
     // Calculate real FPS every 500ms

@@ -17,6 +17,55 @@ import {
 describe('IR Plugin & Modifier Visual Playground Verification', () => {
   let registry: ModifierPluginRegistry;
 
+  // Synthetic mock canvas 2D context
+  const createMockContext = () => {
+    let saveCalls = 0;
+    let restoreCalls = 0;
+
+    const mockCtx: any = {
+      save: () => {
+        saveCalls++;
+      },
+      restore: () => {
+        restoreCalls++;
+      },
+      beginPath: () => {},
+      closePath: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      arc: () => {},
+      rect: () => {},
+      roundRect: () => {},
+      fillRect: () => {},
+      strokeRect: () => {},
+      setLineDash: () => {},
+      getLineDash: () => [],
+      clearRect: () => {},
+      fill: () => {},
+      stroke: () => {},
+      fillText: () => {},
+      strokeText: () => {},
+      measureText: () => ({ width: 100 }),
+      scale: () => {},
+      translate: () => {},
+      rotate: () => {},
+      transform: () => {},
+      setTransform: () => {},
+      resetTransform: () => {},
+      createLinearGradient: () => ({ addColorStop: () => {} }),
+      createRadialGradient: () => ({ addColorStop: () => {} }),
+      drawImage: () => {},
+      getImageData: () => ({ data: new Uint8ClampedArray(400) }),
+      putImageData: () => {},
+      canvas: { width: 640, height: 360 },
+    };
+
+    return {
+      ctx: mockCtx,
+      getStackDelta: () => saveCalls - restoreCalls,
+    };
+  };
+
   beforeEach(() => {
     registry = ModifierPluginRegistry.createIsolated();
     registerCoreModifierPlugins(registry);
@@ -82,55 +131,6 @@ describe('IR Plugin & Modifier Visual Playground Verification', () => {
   });
 
   describe('3. Polymorphic Execution & Context Stack Delta Auditor', () => {
-    // Synthetic mock canvas 2D context
-    const createMockContext = () => {
-      let saveCalls = 0;
-      let restoreCalls = 0;
-
-      const mockCtx: any = {
-        save: () => {
-          saveCalls++;
-        },
-        restore: () => {
-          restoreCalls++;
-        },
-        beginPath: () => {},
-        closePath: () => {},
-        moveTo: () => {},
-        lineTo: () => {},
-        arc: () => {},
-        rect: () => {},
-        roundRect: () => {},
-        fillRect: () => {},
-        strokeRect: () => {},
-        setLineDash: () => {},
-        getLineDash: () => [],
-        clearRect: () => {},
-        fill: () => {},
-        stroke: () => {},
-        fillText: () => {},
-        strokeText: () => {},
-        measureText: () => ({ width: 100 }),
-        scale: () => {},
-        translate: () => {},
-        rotate: () => {},
-        transform: () => {},
-        setTransform: () => {},
-        resetTransform: () => {},
-        createLinearGradient: () => ({ addColorStop: () => {} }),
-        createRadialGradient: () => ({ addColorStop: () => {} }),
-        drawImage: () => {},
-        getImageData: () => ({ data: new Uint8ClampedArray(400) }),
-        putImageData: () => {},
-        canvas: { width: 640, height: 360 },
-      };
-
-      return {
-        ctx: mockCtx,
-        getStackDelta: () => saveCalls - restoreCalls,
-      };
-    };
-
     it('should execute renderClipSpace on TimeSpace plugins with zero stack leaks (Δ = 0)', () => {
       const timeSpaceTypes = [
         'time_space/callout_leader',
@@ -292,6 +292,37 @@ describe('IR Plugin & Modifier Visual Playground Verification', () => {
       expect(defaults.field_boolean).toBe(true);
       expect(defaults.field_string).toBe('test');
       expect(Object.keys(defaults).length).toBe(15);
+    });
+
+    it('should correctly resolve and execute vfx/partial with regions array', () => {
+      const plugin = registry.get('vfx/partial')!;
+      expect(plugin).toBeDefined();
+
+      const presets = getPresetsForPlugin('vfx/partial', plugin.schema);
+      expect(presets.length).toBeGreaterThanOrEqual(1);
+      expect(Array.isArray(presets[0].params.regions)).toBe(true);
+      expect(presets[0].params.regions[0].type).toBe('spotlight');
+
+      const { ctx, getStackDelta } = createMockContext();
+      const clipCtx: ClipRenderContext = {
+        canvas: ctx.canvas,
+        ctx,
+        frame: 10,
+        localFrame: 10,
+        width: 640,
+        height: 360,
+        sequence: {
+          id: 'seq-partial-test',
+          trackId: 'track-test',
+          type: 'overlay',
+          startFrame: 0,
+          endFrame: 180,
+          durationFrames: 180,
+        },
+      };
+
+      (plugin as any).renderClipSpace(clipCtx, presets[0].params);
+      expect(getStackDelta()).toBe(0);
     });
   });
 });

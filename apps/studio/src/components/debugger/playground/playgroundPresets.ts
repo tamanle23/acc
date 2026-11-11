@@ -327,26 +327,51 @@ export const PLAYGROUND_PRESETS: Record<string, PluginPresetDefinition[]> = {
   'vfx/partial': [
     {
       name: 'Cinematic Center Spotlight',
-      description: 'Radial brightness elevation with feathered dark vignette',
+      description: 'Radial specular beam lighting with cyan tint',
       params: {
-        effectType: 'spotlight',
-        centerX: 0.5,
-        centerY: 0.5,
-        radius: 0.45,
-        feather: 0.3,
-        intensity: 1.4,
+        regions: [
+          {
+            type: 'spotlight',
+            x: 0.5,
+            y: 0.5,
+            radius: 220,
+            intensity: 1.8,
+            color: '#00d4ff',
+          },
+        ],
       },
     },
     {
-      name: 'Edge Defocus Blur',
-      description: 'Keeps subject sharp while softening outer peripheral frame',
+      name: 'Chromatic Glitch Slices',
+      description: 'Localized RGB chromatic displacement slice',
       params: {
-        effectType: 'blur',
-        centerX: 0.5,
-        centerY: 0.5,
-        radius: 0.5,
-        feather: 0.25,
-        intensity: 8.0,
+        regions: [
+          {
+            type: 'glitch',
+            x: 0.5,
+            y: 0.35,
+            width: 0.8,
+            height: 0.15,
+            intensity: 2.0,
+            color: '#ff0055',
+          },
+        ],
+      },
+    },
+    {
+      name: 'Privacy Blur Zone',
+      description: 'Localized frosted blur obscuring sensitive regions',
+      params: {
+        regions: [
+          {
+            type: 'blur',
+            x: 0.5,
+            y: 0.5,
+            width: 0.4,
+            height: 0.25,
+            intensity: 1.5,
+          },
+        ],
       },
     },
   ],
@@ -416,39 +441,51 @@ export const PLAYGROUND_PRESETS: Record<string, PluginPresetDefinition[]> = {
 };
 
 /**
- * Extracts default parameter values from a ModifierParameterSchema
+ * Extracts default parameter values from a ModifierParameterSchema,
+ * supporting nested groups and region arrays recursively.
  */
 export function extractSchemaDefaults(schema?: ModifierParameterSchema): Record<string, any> {
   const defaults: Record<string, any> = {};
   if (!schema?.fields) return defaults;
 
-  for (const [key, field] of Object.entries(schema.fields)) {
-    if (field.defaultValue !== undefined) {
-      defaults[key] = field.defaultValue;
-    } else {
-      switch (field.type) {
-        case 'number':
-          defaults[key] = field.min ?? 0;
-          break;
-        case 'boolean':
-          defaults[key] = false;
-          break;
-        case 'string':
-          defaults[key] = '';
-          break;
-        case 'select':
-          defaults[key] = field.options?.[0]?.value ?? '';
-          break;
-        case 'color':
-          defaults[key] = '#00f0ff';
-          break;
-        case 'curve':
-          defaults[key] = 'easeInOutCubic';
-          break;
-        default:
-          defaults[key] = null;
-      }
+  const extractFieldDefault = (field: any): any => {
+    if (field.defaultValue !== undefined) return field.defaultValue;
+    switch (field.type) {
+      case 'number':
+        return field.min ?? 0;
+      case 'boolean':
+        return false;
+      case 'string':
+        return '';
+      case 'select':
+      case 'vision_depth_strategy':
+      case 'vision_segmentation_strategy':
+        return field.options?.[0]?.value ?? '';
+      case 'color':
+        return '#00f0ff';
+      case 'curve':
+        return 'easeInOutCubic';
+      case 'light_vector':
+        return { x: 0, y: 0 };
+      case 'regions_array':
+        return field.fields ? [extractFieldsDefaults(field.fields)] : [];
+      case 'group':
+        return field.fields ? extractFieldsDefaults(field.fields) : {};
+      default:
+        return null;
     }
+  };
+
+  const extractFieldsDefaults = (fields: Record<string, any>): Record<string, any> => {
+    const res: Record<string, any> = {};
+    for (const [k, f] of Object.entries(fields)) {
+      res[k] = extractFieldDefault(f);
+    }
+    return res;
+  };
+
+  for (const [key, field] of Object.entries(schema.fields)) {
+    defaults[key] = extractFieldDefault(field);
   }
 
   if (schema.resetDefaults) {

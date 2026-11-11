@@ -48,9 +48,11 @@ export function PlaygroundViewport(props: PlaygroundViewportProps) {
     if (!canvasRef || !containerRef) return;
     const dpr = window.devicePixelRatio || 1;
     const rect = containerRef.getBoundingClientRect();
-    
-    let targetWidth = rect.width;
-    let targetHeight = rect.height;
+    const availWidth = Math.max(120, rect.width - 32);
+    const availHeight = Math.max(120, rect.height - 32);
+
+    let targetWidth = availWidth;
+    let targetHeight = availHeight;
 
     // Calculate aspect ratio bounds inside container
     const ratio = state.aspectRatio;
@@ -58,11 +60,11 @@ export function PlaygroundViewport(props: PlaygroundViewportProps) {
     if (ratio === '9:16') desiredAspect = 9 / 16;
     if (ratio === '1:1') desiredAspect = 1;
 
-    const containerAspect = targetWidth / targetHeight;
+    const containerAspect = availWidth / availHeight;
     if (containerAspect > desiredAspect) {
-      targetWidth = targetHeight * desiredAspect;
+      targetWidth = availHeight * desiredAspect;
     } else {
-      targetHeight = targetWidth / desiredAspect;
+      targetHeight = availWidth / desiredAspect;
     }
 
     // Set physical buffer size
