@@ -12,8 +12,16 @@ import {
 import { IRStateManager } from '../../../lib/ir/irState';
 import { PLAYGROUND_PRESETS, getPresetsForPlugin, extractSchemaDefaults } from './playgroundPresets';
 
-export type ViewMode = 'trio' | 'focus' | 'code';
+export type ViewMode = 'bento' | 'trio' | 'focus' | 'code';
 export type BackdropMode = 'testcard' | 'dark' | 'white' | 'checkerboard';
+
+export interface ModifierStackItem {
+  id: string;
+  type: string;
+  name: string;
+  params: Record<string, any>;
+  enabled: boolean;
+}
 
 export interface PlaygroundTelemetry {
   latencyMs: number;
@@ -33,6 +41,9 @@ export interface PlaygroundEngineState {
   aspectRatio: '16:9' | '9:16' | '1:1';
   backdropMode: BackdropMode;
   viewMode: ViewMode;
+  isSplitEnabled: boolean;
+  splitPosition: number;
+  modifierStack: ModifierStackItem[];
   telemetry: PlaygroundTelemetry;
 }
 
@@ -53,7 +64,10 @@ export function usePlaygroundEngine(initialPluginType = 'overlay/canvas_particle
   const [speed, setSpeed] = createSignal<number>(1.0);
   const [aspectRatio, setAspectRatio] = createSignal<'16:9' | '9:16' | '1:1'>('16:9');
   const [backdropMode, setBackdropMode] = createSignal<BackdropMode>('testcard');
-  const [viewMode, setViewMode] = createSignal<ViewMode>('trio');
+  const [viewMode, setViewMode] = createSignal<ViewMode>('bento');
+  const [isSplitEnabled, setIsSplitEnabled] = createSignal<boolean>(false);
+  const [splitPosition, setSplitPosition] = createSignal<number>(0.5);
+  const [modifierStack, setModifierStack] = createSignal<ModifierStackItem[]>([]);
 
   // Telemetry Signals
   const [latencyMs, setLatencyMs] = createSignal<number>(0);
@@ -216,6 +230,111 @@ export function usePlaygroundEngine(initialPluginType = 'overlay/canvas_particle
     ctx.restore();
   };
 
+  // Helper to execute a single modifier strategy pass
+  const executeModifierStrategy = (
+    targetCtx: CanvasRenderingContext2D,
+    targetCanvas: any,
+    w: number,
+    h: number,
+    f: number,
+    targetPlugin: any,
+    targetParams: Record<string, any>,
+    seq: ResolvedSequence,
+    trk: ResolvedTrack
+  ) => {
+    if (typeof targetPlugin.renderClipSpace === 'function') {
+      const clipCtx: ClipRenderContext = {
+        canvas: targetCanvas,
+        ctx: targetCtx,
+        frame: f,
+        localFrame: f,
+        width: w,
+        height: h,
+        sequence: seq,
+      };
+      targetPlugin.renderClipSpace(clipCtx, targetParams);
+    } else if (typeof targetPlugin.renderStreamSpace === 'function') {
+      const streamCtx: StreamRenderContext = {
+        canvas: targetCanvas,
+        ctx: targetCtx,
+        frame: f,
+        width: w,
+        height: h,
+        track: trk,
+        activeSequences: [seq],
+      };
+      targetPlugin.renderStreamSpace(streamCtx, targetParams);
+    } else if (typeof targetPlugin.renderMasterComposite === 'function') {
+      const masterCtx: MasterCompositeContext = {
+        canvas: targetCanvas,
+        ctx: targetCtx,
+        frame: f,
+        width: w,
+        height: h,
+        pixelBuffer: new Uint8Array(0),
+      };
+      targetPlugin.renderMasterComposite(masterCtx, targetParams);
+    } else if (typeof targetPlugin.processAudioStream === 'function') {
+      renderAudioWaveform(targetCtx, w, h, f, targetParams);
+    }
+  };
+
+  // Draw Specular Split Divider with Drag Handle
+  const drawSplitDivider = (ctx: CanvasRenderingContext2D, splitX: number, height: number) => {
+    ctx.save();
+    // 1. Subtle drop shadow line
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.6)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(splitX, 0);
+    ctx.lineTo(splitX, height);
+    ctx.stroke();
+
+    // 2. Specular neon core line
+    ctx.strokeStyle = '#00f0ff';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(splitX, 0);
+    ctx.lineTo(splitX, height);
+    ctx.stroke();
+
+    // 3. Central Draggable Glass Handle Pill
+    const handleY = height / 2;
+    const handleW = 28;
+    const handleH = 44;
+    const rx = splitX - handleW / 2;
+    const ry = handleY - handleH / 2;
+
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    if (typeof (ctx as any).roundRect === 'function') {
+      (ctx as any).roundRect(rx, ry, handleW, handleH, 8);
+    } else {
+      ctx.rect(rx, ry, handleW, handleH);
+    }
+    ctx.fill();
+    ctx.stroke();
+
+    // 4. Chevron arrows inside handle
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('⬌', splitX, handleY);
+
+    // 5. Watermark labels: ORIGINAL vs MODIFIED
+    ctx.font = 'bold 10px ui-monospace, SFMono-Regular, monospace';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+    ctx.textAlign = 'right';
+    ctx.fillText('ORIGINAL', splitX - 12, 28);
+    ctx.textAlign = 'left';
+    ctx.fillText('MODIFIED', splitX + 12, 28);
+
+    ctx.restore();
+  };
+
   // Single Frame Render Pass
   const renderFrame = (frame: number) => {
     if (!canvasRef) return;
@@ -245,12 +364,48 @@ export function usePlaygroundEngine(initialPluginType = 'overlay/canvas_particle
     };
 
     try {
-      // 1. Clear & Draw Backdrop
+      // 1. Clear & Draw Backdrop across full canvas
       ctx.clearRect(0, 0, width, height);
       renderBackdrop(ctx, width, height, backdropMode());
 
-      if (plugin) {
-        // Construct Zero-Alloc Synthetic Sequence Context
+      const isSplit = isSplitEnabled();
+      const splitX = Math.round(width * splitPosition());
+
+      // If A/B Split enabled, isolate right side [splitX, width] via clipping
+      if (isSplit) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(splitX, 0, width - splitX, height);
+        ctx.clip();
+      }
+
+      // Execute modifier pass (either Multi-Stack pipeline or active single plugin)
+      const stack = modifierStack();
+      if (stack.length > 0) {
+        for (const layer of stack) {
+          if (!layer.enabled) continue;
+          const lPlugin = registry.get(layer.type);
+          if (lPlugin) {
+            const synthSeq: ResolvedSequence = {
+              id: 'playground-preview-sequence',
+              trackId: 'playground-track',
+              type: (lPlugin.allowedSequenceTypes?.[0] as any) || 'overlay',
+              startFrame: 0,
+              endFrame: totalFrames(),
+              durationFrames: totalFrames(),
+              trimInSec: 0,
+              speed: 1.0,
+              modifiers: [],
+            };
+            const synthTrk: ResolvedTrack = {
+              id: 'playground-track',
+              type: 'video',
+              sequences: [synthSeq],
+            };
+            executeModifierStrategy(ctx, canvas, width, height, frame, lPlugin, layer.params, synthSeq, synthTrk);
+          }
+        }
+      } else if (plugin) {
         const syntheticSeq: ResolvedSequence = {
           id: 'playground-preview-sequence',
           trackId: 'playground-track',
@@ -268,49 +423,17 @@ export function usePlaygroundEngine(initialPluginType = 'overlay/canvas_particle
             } as ModifierNode,
           ],
         };
-
         const syntheticTrack: ResolvedTrack = {
           id: 'playground-track',
           type: 'video',
           sequences: [syntheticSeq],
         };
+        executeModifierStrategy(ctx, canvas, width, height, frame, plugin, params, syntheticSeq, syntheticTrack);
+      }
 
-        // Polymorphic Dispatch based on available plugin methods
-        if (typeof (plugin as any).renderClipSpace === 'function') {
-          const clipCtx: ClipRenderContext = {
-            canvas,
-            ctx,
-            frame,
-            localFrame: frame,
-            width,
-            height,
-            sequence: syntheticSeq,
-          };
-          (plugin as any).renderClipSpace(clipCtx, params);
-        } else if (typeof (plugin as any).renderStreamSpace === 'function') {
-          const streamCtx: StreamRenderContext = {
-            canvas,
-            ctx,
-            frame,
-            width,
-            height,
-            track: syntheticTrack,
-            activeSequences: [syntheticSeq],
-          };
-          (plugin as any).renderStreamSpace(streamCtx, params);
-        } else if (typeof (plugin as any).renderMasterComposite === 'function') {
-          const masterCtx: MasterCompositeContext = {
-            canvas,
-            ctx,
-            frame,
-            width,
-            height,
-            pixelBuffer: new Uint8Array(0),
-          };
-          (plugin as any).renderMasterComposite(masterCtx, params);
-        } else if (typeof (plugin as any).processAudioStream === 'function') {
-          renderAudioWaveform(ctx, width, height, frame, params);
-        }
+      if (isSplit) {
+        ctx.restore();
+        drawSplitDivider(ctx, splitX, height);
       }
 
       setLastError(null);
@@ -422,6 +545,139 @@ export function usePlaygroundEngine(initialPluginType = 'overlay/canvas_particle
     } as ModifierNode;
   });
 
+  // A/B Split Controls
+  const toggleSplit = () => setIsSplitEnabled((prev) => !prev);
+  const setSplit = (enabled: boolean) => setIsSplitEnabled(enabled);
+  const updateSplitPosition = (pos: number) => {
+    setSplitPosition(Math.max(0.05, Math.min(0.95, pos)));
+    renderFrame(currentFrame());
+  };
+
+  // Stack Management Actions
+  const addModifierToStack = (type: string, initialParams?: Record<string, any>) => {
+    const plugin = registry.get(type);
+    const name =
+      plugin?.schema?.displayName ||
+      type
+        .split('/')
+        .pop()!
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+    const defaultParams = initialParams || extractSchemaDefaults(plugin?.schema);
+    const item: ModifierStackItem = {
+      id: `layer-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      type,
+      name,
+      params: defaultParams,
+      enabled: true,
+    };
+    setModifierStack((prev) => [...prev, item]);
+    renderFrame(currentFrame());
+  };
+
+  const removeModifierFromStack = (id: string) => {
+    setModifierStack((prev) => prev.filter((item) => item.id !== id));
+    renderFrame(currentFrame());
+  };
+
+  const toggleModifierEnabled = (id: string) => {
+    setModifierStack((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, enabled: !item.enabled } : item))
+    );
+    renderFrame(currentFrame());
+  };
+
+  const reorderModifier = (id: string, direction: 'up' | 'down') => {
+    setModifierStack((prev) => {
+      const idx = prev.findIndex((item) => item.id === id);
+      if (idx === -1) return prev;
+      const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+      if (targetIdx < 0 || targetIdx >= prev.length) return prev;
+      const next = [...prev];
+      const temp = next[idx];
+      next[idx] = next[targetIdx];
+      next[targetIdx] = temp;
+      return next;
+    });
+    renderFrame(currentFrame());
+  };
+
+  const setStackItemParam = (id: string, key: string, value: any) => {
+    setModifierStack((prev) =>
+      prev.map((item) =>
+        item.id === id ? { ...item, params: { ...item.params, [key]: value } } : item
+      )
+    );
+    renderFrame(currentFrame());
+  };
+
+  const clearStack = () => {
+    setModifierStack([]);
+    renderFrame(currentFrame());
+  };
+
+  // Direct Keyframe Snapshot Renderer for Storyboard
+  const renderKeyframeToCanvas = (
+    targetCanvas: HTMLCanvasElement | null,
+    targetFrame: number
+  ) => {
+    if (!targetCanvas) return;
+    const tCtx = targetCanvas.getContext('2d');
+    if (!tCtx) return;
+
+    const w = targetCanvas.width;
+    const h = targetCanvas.height;
+
+    tCtx.clearRect(0, 0, w, h);
+    renderBackdrop(tCtx, w, h, backdropMode());
+
+    const stack = modifierStack();
+    if (stack.length > 0) {
+      for (const layer of stack) {
+        if (!layer.enabled) continue;
+        const lPlugin = registry.get(layer.type);
+        if (lPlugin) {
+          const synthSeq: ResolvedSequence = {
+            id: 'playground-preview-sequence',
+            trackId: 'playground-track',
+            type: (lPlugin.allowedSequenceTypes?.[0] as any) || 'overlay',
+            startFrame: 0,
+            endFrame: totalFrames(),
+            durationFrames: totalFrames(),
+            trimInSec: 0,
+            speed: 1.0,
+            modifiers: [],
+          };
+          const synthTrk: ResolvedTrack = {
+            id: 'playground-track',
+            type: 'video',
+            sequences: [synthSeq],
+          };
+          executeModifierStrategy(tCtx, targetCanvas, w, h, targetFrame, lPlugin, layer.params, synthSeq, synthTrk);
+        }
+      }
+    } else if (activePlugin()) {
+      const plugin = activePlugin()!;
+      const syntheticSeq: ResolvedSequence = {
+        id: 'playground-preview-sequence',
+        trackId: 'playground-track',
+        type: (plugin.allowedSequenceTypes?.[0] as any) || 'overlay',
+        startFrame: 0,
+        endFrame: totalFrames(),
+        durationFrames: totalFrames(),
+        trimInSec: 0,
+        speed: 1.0,
+        modifiers: [],
+      };
+      const syntheticTrack: ResolvedTrack = {
+        id: 'playground-track',
+        type: 'video',
+        sequences: [syntheticSeq],
+      };
+      executeModifierStrategy(tCtx, targetCanvas, w, h, targetFrame, plugin, currentParams(), syntheticSeq, syntheticTrack);
+    }
+  };
+
   // Inject into Studio timeline or copy fallback
   const applyToActiveSequence = (): {
     success: boolean;
@@ -431,8 +687,43 @@ export function usePlaygroundEngine(initialPluginType = 'overlay/canvas_particle
     const manager = IRStateManager.getInstance();
     const state = manager.getState();
     const activeSeqId = state.selectedSequenceId;
-    const node = generatedModifierNode();
+    const stack = modifierStack();
 
+    // If in Multi-Stack Mode, apply all enabled layers sequentially
+    if (stack.length > 0) {
+      const enabledLayers = stack.filter((l) => l.enabled);
+      if (enabledLayers.length === 0) {
+        return { success: false, message: 'No enabled layers in the modifier stack to apply.' };
+      }
+
+      if (activeSeqId) {
+        for (const layer of enabledLayers) {
+          const lPlugin = registry.get(layer.type);
+          const target = (lPlugin?.defaultTarget || lPlugin?.allowedSequenceTypes?.[0] || 'overlay') as any;
+          manager.addModifier(activeSeqId, layer.type, layer.params, target);
+        }
+        return {
+          success: true,
+          message: `Applied ${enabledLayers.length} modifier layer(s) to sequence '${activeSeqId}' (Undoable via Ctrl+Z)`,
+        };
+      } else {
+        const fullStackNode = enabledLayers.map((l) => ({
+          type: l.type,
+          params: l.params,
+        }));
+        try {
+          navigator.clipboard.writeText(JSON.stringify(fullStackNode, null, 2));
+        } catch {}
+        return {
+          success: false,
+          message: `No active sequence selected. Batch of ${enabledLayers.length} modifier nodes copied to clipboard!`,
+          copiedFallback: true,
+        };
+      }
+    }
+
+    // Single Modifier Mode
+    const node = generatedModifierNode();
     if (activeSeqId) {
       manager.addModifier(
         activeSeqId,
@@ -445,12 +736,9 @@ export function usePlaygroundEngine(initialPluginType = 'overlay/canvas_particle
         message: `Applied '${node.type}' to sequence '${activeSeqId}' (Undoable via Ctrl+Z)`,
       };
     } else {
-      // Clipboard fallback
       try {
         navigator.clipboard.writeText(JSON.stringify(node, null, 2));
-      } catch {
-        // Fallback for non-secure contexts
-      }
+      } catch {}
       return {
         success: false,
         message: 'No active sequence selected in Studio timeline. Modifier JSON copied to clipboard!',
@@ -491,6 +779,15 @@ export function usePlaygroundEngine(initialPluginType = 'overlay/canvas_particle
       get viewMode() {
         return viewMode();
       },
+      get isSplitEnabled() {
+        return isSplitEnabled();
+      },
+      get splitPosition() {
+        return splitPosition();
+      },
+      get modifierStack() {
+        return modifierStack();
+      },
       get telemetry(): PlaygroundTelemetry {
         return {
           latencyMs: latencyMs(),
@@ -511,6 +808,16 @@ export function usePlaygroundEngine(initialPluginType = 'overlay/canvas_particle
     setAspectRatio,
     setBackdropMode,
     setViewMode,
+    toggleSplit,
+    setSplit,
+    updateSplitPosition,
+    addModifierToStack,
+    removeModifierFromStack,
+    toggleModifierEnabled,
+    reorderModifier,
+    setStackItemParam,
+    clearStack,
+    renderKeyframeToCanvas,
     resetDefaults,
     applyToActiveSequence,
     attachCanvas,

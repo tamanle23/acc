@@ -1,6 +1,7 @@
 import { createSignal, onMount, onCleanup, Show, Switch as MatchSwitch, Match } from 'solid-js';
 import {
   Sparkles,
+  LayoutDashboard,
   LayoutGrid,
   Maximize2,
   Code2,
@@ -21,6 +22,7 @@ import { usePlaygroundEngine, type ViewMode } from './playground/usePlaygroundEn
 import { PlaygroundViewport } from './playground/PlaygroundViewport';
 import { PlaygroundCatalog } from './playground/PlaygroundCatalog';
 import { PlaygroundInspector } from './playground/PlaygroundInspector';
+import { PlaygroundBentoLayout } from './playground/PlaygroundBentoLayout';
 
 export interface IrPluginPlaygroundModalProps {
   open: boolean;
@@ -57,6 +59,8 @@ export function IrPluginPlaygroundModal(props: IrPluginPlaygroundModalProps) {
       } else if (e.code === 'End') {
         e.preventDefault();
         engine.seek(engine.state.totalFrames - 1);
+      } else if (e.key === '0' || e.key === 'b') {
+        engine.setViewMode('bento');
       } else if (e.key === '1') {
         engine.setViewMode('trio');
       } else if (e.key === '2') {
@@ -80,7 +84,7 @@ export function IrPluginPlaygroundModal(props: IrPluginPlaygroundModalProps) {
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent
         data-testid="ir-plugin-playground-modal"
-        class="sm:max-w-none max-w-7xl w-[96vw] h-[90vh] flex flex-col glass-panel border border-[var(--glass-border)] border-t-[var(--glass-border-highlight)] p-0 rounded-2xl overflow-hidden shadow-2xl"
+        class="sm:max-w-none max-w-[1800px] w-[96vw] h-[92vh] flex flex-col glass-panel border border-[var(--glass-border)] border-t-[var(--glass-border-highlight)] p-0 rounded-2xl overflow-hidden shadow-2xl"
       >
         {/* Modal Header */}
         <DialogHeader class="flex flex-row items-center justify-between px-5 py-2.5 border-b border-glass-border shrink-0 bg-glass-surface/80 backdrop-blur-md">
@@ -110,6 +114,20 @@ export function IrPluginPlaygroundModal(props: IrPluginPlaygroundModalProps) {
           <div class="flex items-center gap-2">
             {/* View Mode Switcher */}
             <div class="flex items-center rounded-lg bg-black/20 p-0.5 border border-white/10 text-xs font-mono">
+              <button
+                type="button"
+                title="Bento Mode (0 / B): Modular Bento Grid Workbench"
+                class={`px-2 py-1 rounded-md transition-colors flex items-center gap-1 ${
+                  engine.state.viewMode === 'bento'
+                    ? 'bg-accent-theme/20 text-accent-theme font-bold'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+                onClick={() => engine.setViewMode('bento')}
+              >
+                <LayoutDashboard class="w-3.5 h-3.5" />
+                <span class="hidden sm:inline">Bento</span>
+              </button>
+
               <button
                 type="button"
                 title="Trio Mode (1): Catalog + Canvas + Inspector"
@@ -188,7 +206,12 @@ export function IrPluginPlaygroundModal(props: IrPluginPlaygroundModalProps) {
         {/* Dynamic Resizable Layout */}
         <div class="flex-1 min-h-0 min-w-0 overflow-hidden">
           <MatchSwitch>
-            {/* 1. Trio Mode (Default) */}
+            {/* 0. Bento Grid Mode (Default) */}
+            <Match when={engine.state.viewMode === 'bento'}>
+              <PlaygroundBentoLayout engine={engine} />
+            </Match>
+
+            {/* 1. Trio Mode */}
             <Match when={engine.state.viewMode === 'trio'}>
               <ResizablePanelGroup orientation="horizontal" class="h-full w-full">
                 <ResizablePanel defaultSize="260px" minSize="200px" maxSize="360px">
