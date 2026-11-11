@@ -18,6 +18,7 @@ import {
   Maximize2,
   Minimize2,
   MoreHorizontal,
+  Sparkles,
 } from 'lucide-solid';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -51,6 +52,9 @@ const IrVisualEditorModal = lazy(() =>
 );
 const OpfsExplorerModal = lazy(() =>
   import('./debugger/opfs/OpfsExplorerModal').then((m) => ({ default: m.OpfsExplorerModal }))
+);
+const IrPluginPlaygroundModal = lazy(() =>
+  import('./debugger/IrPluginPlaygroundModal').then((m) => ({ default: m.IrPluginPlaygroundModal }))
 );
 
 export interface TitlebarProps {
@@ -88,6 +92,7 @@ export function Titlebar(props: TitlebarProps) {
   const [isShortcutsOpen, setIsShortcutsOpen] = createSignal(false);
   const [isDebuggerOpen, setIsDebuggerOpen] = createSignal(false);
   const [isOpfsOpen, setIsOpfsOpen] = createSignal(false);
+  const [isPlaygroundOpen, setIsPlaygroundOpen] = createSignal(false);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = createSignal(false);
 
   onMount(() => {
@@ -100,6 +105,11 @@ export function Titlebar(props: TitlebarProps) {
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'o') {
         e.preventDefault();
         setIsOpfsOpen((prev) => !prev);
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'p') {
+        e.preventDefault();
+        setIsPlaygroundOpen((prev) => !prev);
         return;
       }
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
@@ -365,6 +375,19 @@ export function Titlebar(props: TitlebarProps) {
             </Button>
           </Tooltip>
 
+          <Tooltip content="IR Modifier & Plugin Visual Playground (Ctrl+Shift+P)">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsPlaygroundOpen(true)}
+              data-testid="titlebar-playground-btn"
+              class="gap-1.5 text-xs h-8 font-mono text-foreground border-border/50 bg-muted/40 hover:bg-muted/80 shadow-xs px-2 sm:px-3"
+            >
+              <Sparkles class="w-3.5 h-3.5 text-accent-theme" />
+              <span>Playground</span>
+            </Button>
+          </Tooltip>
+
           <Tooltip content="Inspect & Debug OPFS Files & Folders (Ctrl+Shift+O)">
             <Button
               variant="outline"
@@ -615,6 +638,22 @@ export function Titlebar(props: TitlebarProps) {
 
                 <button
                   type="button"
+                  data-testid="titlebar-playground-more-btn"
+                  onClick={() => {
+                    setIsPlaygroundOpen(true);
+                    setIsMoreMenuOpen(false);
+                  }}
+                  class="flex items-center justify-between px-2 py-1.5 rounded-lg border border-glass-border text-foreground hover:bg-foreground/5 transition-all cursor-pointer font-mono text-xs"
+                >
+                  <span class="flex items-center gap-1.5">
+                    <Sparkles class="w-3.5 h-3.5 text-accent-theme" />
+                    IR Playground
+                  </span>
+                  <span class="text-[9px] text-muted-foreground font-sans">^⇧P</span>
+                </button>
+
+                <button
+                  type="button"
                   data-testid="titlebar-opfs-debugger-btn"
                   onClick={() => {
                     setIsOpfsOpen(true);
@@ -724,6 +763,11 @@ export function Titlebar(props: TitlebarProps) {
       <Show when={isOpfsOpen()}>
         <Suspense fallback={<ModalProgressFallback title="Loading OPFS Explorer..." />}>
           <OpfsExplorerModal open={isOpfsOpen()} onOpenChange={setIsOpfsOpen} />
+        </Suspense>
+      </Show>
+      <Show when={isPlaygroundOpen()}>
+        <Suspense fallback={<ModalProgressFallback title="Loading IR Plugin Playground..." />}>
+          <IrPluginPlaygroundModal open={isPlaygroundOpen()} onOpenChange={setIsPlaygroundOpen} />
         </Suspense>
       </Show>
     </header>
