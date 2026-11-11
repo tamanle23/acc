@@ -67,9 +67,21 @@ export function PlaygroundViewport(props: PlaygroundViewportProps) {
       targetHeight = availWidth / desiredAspect;
     }
 
-    // Set physical buffer size
-    canvasRef.width = Math.round(targetWidth * dpr);
-    canvasRef.height = Math.round(targetHeight * dpr);
+    // Enforce Standard Definition (SD) physical buffer ceiling to prevent memory spikes
+    // 16:9 -> 640x360, 9:16 -> 360x640, 1:1 -> 480x480
+    let sdWidth = 640;
+    let sdHeight = 360;
+    if (ratio === '9:16') {
+      sdWidth = 360;
+      sdHeight = 640;
+    } else if (ratio === '1:1') {
+      sdWidth = 480;
+      sdHeight = 480;
+    }
+
+    // Set physical buffer size locked to SD quality
+    canvasRef.width = sdWidth;
+    canvasRef.height = sdHeight;
 
     // Set CSS display size
     canvasRef.style.width = `${Math.round(targetWidth)}px`;

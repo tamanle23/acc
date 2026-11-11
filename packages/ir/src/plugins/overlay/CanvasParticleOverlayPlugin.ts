@@ -265,11 +265,13 @@ export class CanvasParticleOverlayPlugin implements ModifierPlugin<CanvasParticl
 
     // 2. Post-Processing Shaders Pass
     if (params.shaders) {
-      // A. Bloom & Glow
+      // A. Bloom & Glow (Downsampled zero-alloc pass)
       if (params.shaders.bloom?.enabled) {
         let uScratch: any = null;
         try {
-          uScratch = UniversalCanvasProvider.acquireScratchCanvas(width, height);
+          const sW = Math.min(width, 160);
+          const sH = Math.min(height, 90);
+          uScratch = UniversalCanvasProvider.acquireScratchCanvas(sW, sH);
           const scratch = uScratch.getRawCanvas ? uScratch.getRawCanvas() : uScratch;
           const sCtx = uScratch.getContext('2d', { willReadFrequently: true });
           PostProcessingShaders.applyBloom(
@@ -279,7 +281,9 @@ export class CanvasParticleOverlayPlugin implements ModifierPlugin<CanvasParticl
             width,
             height,
             params.shaders.bloom.threshold ?? 0.7,
-            params.shaders.bloom.intensity ?? 0.5
+            params.shaders.bloom.intensity ?? 0.5,
+            sW,
+            sH
           );
         } catch { } finally {
           if (uScratch) {

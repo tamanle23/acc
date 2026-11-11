@@ -49,7 +49,6 @@ export function BentoHeroViewport(props: BentoHeroViewportProps) {
 
   const updateCanvasDimensions = () => {
     if (!canvasRef || !containerRef) return;
-    const dpr = window.devicePixelRatio || 1;
     const rect = containerRef.getBoundingClientRect();
     const availWidth = Math.max(120, rect.width - 24);
     const availHeight = Math.max(120, rect.height - 24);
@@ -69,8 +68,23 @@ export function BentoHeroViewport(props: BentoHeroViewportProps) {
       targetHeight = availWidth / desiredAspect;
     }
 
-    canvasRef.width = Math.round(targetWidth * dpr);
-    canvasRef.height = Math.round(targetHeight * dpr);
+    // Enforce Standard Definition (SD) physical buffer ceiling to prevent memory spikes
+    // 16:9 -> 640x360 (921 KB backing store vs 11MB+ on Retina/2x DPR)
+    // 9:16 -> 360x640, 1:1 -> 480x480
+    let sdWidth = 640;
+    let sdHeight = 360;
+    if (ratio === '9:16') {
+      sdWidth = 360;
+      sdHeight = 640;
+    } else if (ratio === '1:1') {
+      sdWidth = 480;
+      sdHeight = 480;
+    }
+
+    // Physical backing store locked to SD resolution
+    canvasRef.width = sdWidth;
+    canvasRef.height = sdHeight;
+    // Display layout scales smoothly to fill stage with GPU hardware scaling
     canvasRef.style.width = `${Math.round(targetWidth)}px`;
     canvasRef.style.height = `${Math.round(targetHeight)}px`;
 

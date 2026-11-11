@@ -20,6 +20,18 @@ export function BentoStoryboardFilmstrip(props: BentoStoryboardFilmstripProps) {
   const canvasRefs: (HTMLCanvasElement | null)[] = [null, null, null, null, null];
   const [copiedNotification, setCopiedNotification] = createSignal(false);
   let renderTimer: ReturnType<typeof setTimeout> | null = null;
+  let rafHandle: number | null = null;
+
+  const cancelPendingRenders = () => {
+    if (renderTimer) {
+      clearTimeout(renderTimer);
+      renderTimer = null;
+    }
+    if (rafHandle !== null && typeof cancelAnimationFrame !== 'undefined') {
+      cancelAnimationFrame(rafHandle);
+      rafHandle = null;
+    }
+  };
 
   const keyframes = (): KeyframeItem[] => {
     const total = Math.max(0, state.totalFrames - 1);
@@ -37,20 +49,37 @@ export function BentoStoryboardFilmstrip(props: BentoStoryboardFilmstripProps) {
     return `${s}.${String(f).padStart(2, '0')}s`;
   };
 
-  const renderAllThumbnails = () => {
+  // Staggered keyframe render pass: renders 1 thumbnail per requestAnimationFrame tick
+  // to eliminate synchronous burst allocations on modal open and parameter changes
+  const renderAllThumbnailsStaggered = () => {
+    cancelPendingRenders();
     const kfs = keyframes();
-    kfs.forEach((kf, idx) => {
-      const c = canvasRefs[idx];
-      if (c) {
-        props.engine.renderKeyframeToCanvas(c, kf.frame);
+    let currentIdx = 0;
+
+    const renderNext = () => {
+      if (currentIdx >= kfs.length) {
+        rafHandle = null;
+        return;
       }
-    });
+      const c = canvasRefs[currentIdx];
+      if (c) {
+        props.engine.renderKeyframeToCanvas(c, kfs[currentIdx].frame);
+      }
+      currentIdx++;
+      if (typeof requestAnimationFrame !== 'undefined') {
+        rafHandle = requestAnimationFrame(renderNext);
+      } else {
+        renderNext();
+      }
+    };
+
+    renderNext();
   };
 
   const scheduleRender = () => {
-    if (renderTimer) clearTimeout(renderTimer);
+    cancelPendingRenders();
     renderTimer = setTimeout(() => {
-      renderAllThumbnails();
+      renderAllThumbnailsStaggered();
     }, 150);
   };
 
@@ -67,12 +96,12 @@ export function BentoStoryboardFilmstrip(props: BentoStoryboardFilmstripProps) {
   });
 
   onMount(() => {
-    // Initial render
-    setTimeout(renderAllThumbnails, 50);
+    // Initial staggered render with a brief settle beat
+    renderTimer = setTimeout(renderAllThumbnailsStaggered, 60);
   });
 
   onCleanup(() => {
-    if (renderTimer) clearTimeout(renderTimer);
+    cancelPendingRenders();
   });
 
   const exportCurrentFrameSnapshot = () => {

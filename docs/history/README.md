@@ -162,3 +162,4 @@
 | 496 | [IR Plugin Visual Playground Bento Grid Upgrade](./496_bento_playground_layout.md) | Completed |
 | 497 | [Optimize Bento Playground Layout and System Theme Synchronization](./497_optimize_bento_layout_and_theme_synchronization.md) | Completed |
 | 498 | [Fix Canvas2D Readback and WAI-ARIA Hidden Console Warnings](./498_fix_canvas2d_readback_and_wai_aria_hidden_warnings.md) | Completed |
+| 499 | [Eliminate Playground Memory Spike with SD Quality Canvas and Complete Shiki Removal](./499_eliminate_playground_memory_spike_sd_canvas_and_shiki_removal.md) | Completed |
