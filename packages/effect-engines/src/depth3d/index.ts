@@ -98,15 +98,15 @@ async function loadAssetBytes(assetPathOrUri: string): Promise<Uint8Array | null
   }
 
   // 2. AssetProtocolRegistry (protocol URIs, custom schemes, OPFS, disk files)
-  if (AssetProtocolRegistry.getInstance().has(assetPathOrUri)) {
-    try {
-      const blob = AssetProtocolRegistry.getInstance().resolve(assetPathOrUri);
-      if (blob) {
-        const ab = await blob.arrayBuffer();
+  try {
+    const assetBlob = AssetProtocolRegistry.getInstance().resolve(assetPathOrUri);
+    if (assetBlob && typeof assetBlob.arrayBuffer === 'function') {
+      const ab = await assetBlob.arrayBuffer();
+      if (ab && ab.byteLength > 0) {
         return new Uint8Array(ab);
       }
-    } catch {}
-  }
+    }
+  } catch {}
 
   // 3. Web-standard fetch for HTTP/HTTPS/blob/data URLs
   if (typeof fetch === 'function' && /^(https?|blob|data):/i.test(assetPathOrUri)) {
@@ -125,7 +125,6 @@ async function loadAssetBytes(assetPathOrUri: string): Promise<Uint8Array | null
 export async function checkExists(p: string): Promise<boolean> {
   const cache = ContentCacheRegistry.namespace(CacheNamespace.Assets);
   if (await cache.has(p)) return true;
-  if (AssetProtocolRegistry.getInstance().has(p)) return true;
   try {
     const blob = AssetProtocolRegistry.getInstance().resolve(p);
     const ab = await blob.arrayBuffer();
@@ -135,9 +134,16 @@ export async function checkExists(p: string): Promise<boolean> {
   }
 }
 
+import { DepthScenePreprocessor, type PreprocessedDepthScene } from './DepthScenePreprocessor';
+import { DepthCanvasCompositor } from './DepthCanvasCompositor';
+import { MediaSinkStreamer } from './MediaSinkStreamer';
+
 export * from "./strategy";
 export * from "./renderers";
 export * from "./factory";
+export * from "./DepthScenePreprocessor";
+export * from "./DepthCanvasCompositor";
+export * from "./MediaSinkStreamer";
 
 export interface Depth3DSceneOptions {
   scene: ResolvedSceneConfig;
@@ -176,287 +182,18 @@ async function getStoryRootAndCacheDir(
 /**
  * Unified Runner for all 3D Depth & Visual Pop-Out rendering engines.
  * Pure isomorphic execution leveraging MediaEngineRegistry, ContentCacheRegistry, and UniversalCanvasProvider.
+ * Adheres strictly to Single Responsibility Principle via DepthScenePreprocessor, DepthCanvasCompositor, and MediaSinkStreamer.
  */
 export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<{ path: string; duration: number }> {
-  const {
-    scene,
-    duration,
-    config,
-    outputPath,
-    fallbackAudioPath,
-    paddingTime = 0,
-  } = options;
-  const { width, height, fps } = config.settings;
+  const { scene, config } = options;
+  const width = config.settings.width || 1080;
+  const height = config.settings.height || 1920;
   const depthConfig: Depth3DConfig = scene.depth3d ||
     config.settings.depth3d || { enabled: true, mode: "frame_breaker" };
-  const mode = depthConfig.mode || "frame_breaker";
 
-  const totalDuration = duration + paddingTime;
-  const totalFrames = Math.ceil(fps * totalDuration);
-
-  // 1. Read input image buffer isomorphically
-  const imgBuffer = await loadAssetBytes(scene.resolvedImage);
-  if (!imgBuffer) {
-    throw new Error(`[renderDepth3DScene] Asset not found or could not be loaded: ${scene.resolvedImage}`);
-  }
-
-  const img = await CanvasAssetLoader.loadImage(imgBuffer);
-  let subjectImg: any | null = null;
-  let subjectBBox: any = null;
-  const shouldAutoSegment =
-    depthConfig.autoSegment !== undefined
-      ? depthConfig.autoSegment
-      : mode === "frame_breaker" ||
-      mode === "volumetric_sandwich" ||
-      mode === "sandwich";
-
-  const segStrat = VisionEngineRegistry.getSegmentationStrategy(depthConfig?.segmentationStrategy);
-  // Load subject cutout if available
-  try {
-    const cutoutRes = await resolveSubjectCutout(scene.resolvedImage, depthConfig);
-    if (cutoutRes.subjectImg) {
-      subjectImg = cutoutRes.subjectImg;
-      subjectBBox = cutoutRes.subjectBBox;
-    }
-  } catch { }
-
-  // Auto-segmentation fallback
-  if (!subjectImg && shouldAutoSegment) {
-    try {
-      const segRes = await (segStrat as any).segment(imgBuffer);
-      const maskBuffer = (segRes as any)?.maskRgbaBuffer || (segRes as any)?.maskAlphaData;
-      if (maskBuffer) {
-        subjectImg = await CanvasAssetLoader.loadImage(maskBuffer);
-        subjectBBox = segRes.boundingBox;
-      }
-    } catch { }
-  }
-
-  // 2. Setup Mode-Specific Canvas Layers
-  let bgImg: any | null = null;
-  let particles: any[] = [];
-  let dustParticles: any[] = [];
-  let srcCanvas: ICanvasInstance | any | null = null;
-  let depthLayers: any = null;
-
-  if (mode === "parallax_25d" || mode === "parallax_dolly") {
-    particles = Array.from({ length: 28 }, (_, i) => ({
-      x: (Math.sin(i * 99) * 0.5 + 0.5) * width,
-      y: (Math.cos(i * 33) * 0.5 + 0.5) * height,
-      size: 3 + (i % 6) * 3,
-      speedX: (0.4 + (i % 3) * 0.3) * (i % 2 === 0 ? 1 : -1),
-      speedY: -0.5 - (i % 4) * 0.4,
-      opacity: 0.2 + (i % 5) * 0.15,
-      layer: i % 3,
-      parallaxFactor: 0.15 + (i % 4) * 0.1,
-    }));
-  }
-
-  // Depth-3D Depth Map loading
-  let loadedDepth = false;
-  const dCanvas = UniversalCanvasProvider.acquireScratchCanvas(width, height);
-  const dCtx = dCanvas.getContext("2d");
-
-  const sCanvas = UniversalCanvasProvider.acquireScratchCanvas(width, height);
-  const sCtx = sCanvas.getContext("2d");
-  drawImageCover(sCtx, img, 0, 0, width, height);
-
-  const depthStrat = VisionEngineRegistry.getDepthStrategy(depthConfig?.depthStrategy);
-  const depthStratName = (depthStrat.name || depthStrat.id || "depth").replace(/[^a-zA-Z0-9_-]/g, "_");
-
-  if (!loadedDepth && depthConfig.autoDepth) {
-    try {
-      const depthRes = await (depthStrat as any).estimateDepth(imgBuffer);
-      const depthBuffer = (depthRes as any)?.depth16Buffer || (depthRes as any)?.depth16Data;
-      if (depthBuffer && depthBuffer.length > 0) {
-        const dm = await CanvasAssetLoader.loadImage(depthBuffer);
-        drawImageCover(dCtx, dm, 0, 0, width, height);
-        loadedDepth = true;
-      }
-    } catch { }
-  }
-
-  if (!loadedDepth) {
-    const radGrad = dCtx.createRadialGradient(
-      width / 2,
-      height * 0.52,
-      width * 0.05,
-      width / 2,
-      height * 0.52,
-      width * 0.65,
-    );
-    radGrad.addColorStop(0, "rgb(255, 255, 255)");
-    radGrad.addColorStop(0.5, "rgb(180, 180, 180)");
-    radGrad.addColorStop(1, "rgb(30, 30, 30)");
-    dCtx.fillStyle = radGrad;
-    dCtx.fillRect(0, 0, width, height);
-  }
-
-  // Build Continuous Multi-Plane Depth Layers
-  try {
-    const depthDataFull = dCtx.getImageData(0, 0, width, height).data;
-    const srcDataFull = sCtx.getImageData(0, 0, width, height).data;
-
-    const mgCanvas = UniversalCanvasProvider.acquireScratchCanvas(width, height);
-    const mgCtx = mgCanvas.getContext("2d");
-    const mgImgData = mgCtx.createImageData(width, height);
-    const mgData = mgImgData.data;
-
-    const fgCanvas = UniversalCanvasProvider.acquireScratchCanvas(width, height);
-    const fgCtx = fgCanvas.getContext("2d");
-    const fgImgData = fgCtx.createImageData(width, height);
-    const fgData = fgImgData.data;
-
-    const bgC = UniversalCanvasProvider.acquireScratchCanvas(width, height);
-    const bgCctx = bgC.getContext("2d");
-    const bgImgData = bgCctx.createImageData(width, height);
-    const bgData = bgImgData.data;
-
-    const totalPixels = width * height;
-    for (let p = 0; p < totalPixels; p++) {
-      const idx = p * 4;
-      const dVal = depthDataFull[idx];
-      const r = srcDataFull[idx];
-      const g = srcDataFull[idx + 1];
-      const b = srcDataFull[idx + 2];
-      const a = srcDataFull[idx + 3];
-
-      if (dVal < 90) {
-        bgData[idx] = r;
-        bgData[idx + 1] = g;
-        bgData[idx + 2] = b;
-        bgData[idx + 3] = a;
-      } else if (dVal < 170) {
-        mgData[idx] = r;
-        mgData[idx + 1] = g;
-        mgData[idx + 2] = b;
-        mgData[idx + 3] = a;
-      } else {
-        fgData[idx] = r;
-        fgData[idx + 1] = g;
-        fgData[idx + 2] = b;
-        fgData[idx + 3] = a;
-      }
-    }
-
-    mgCtx.putImageData(mgImgData, 0, 0);
-    fgCtx.putImageData(fgImgData, 0, 0);
-    bgCctx.putImageData(bgImgData, 0, 0);
-
-    depthLayers = {
-      bg: bgC,
-      mg: mgCanvas,
-      fg: fgCanvas,
-    };
-  } catch { }
-
-  // 3. Resolve Video Sink via MediaEngineRegistry (Decoupled from native FFIVideoEncoder)
-  const canvas = UniversalCanvasProvider.createCanvas(width, height);
-  const ctx = canvas.getContext("2d");
-
-  let sink: IMediaFrameSink = options.sink!;
-  if (!sink) {
-    const rawEngine =
-      options.engine ||
-      depthConfig.engine ||
-      (config.settings as any)?.mediaEngine ||
-      (config.settings as any)?.engine;
-
-    const strategy = rawEngine && MediaEngineRegistry.has(rawEngine)
-      ? MediaEngineRegistry.get(rawEngine)
-      : MediaEngineRegistry.get();
-
-    sink = strategy.createVideoSink({
-      width,
-      height,
-      fps,
-      totalFrames,
-      durationSeconds: totalDuration,
-      outputPath,
-      audioPath: scene.resolvedAudio || fallbackAudioPath,
-    });
-  }
-
-  await sink.initialize({
-    width,
-    height,
-    fps,
-    totalFrames,
-    durationSeconds: totalDuration,
-    outputPath,
-    audioPath: scene.resolvedAudio || fallbackAudioPath,
-  });
-
-  const captionStrategy = new BoundedAcousticCaptionStrategy();
-  const renderer = Depth3DFactory.getRenderer(mode);
-
-  try {
-    // 4. Render and stream frames via sink
-    for (let frame = 0; frame < totalFrames; frame++) {
-      const progress = frame / totalFrames;
-      const timeSec = frame / fps;
-
-      ctx.clearRect(0, 0, width, height);
-
-      renderer.renderFrame(ctx, {
-        img,
-        subjectImg,
-        subjectBBox,
-        bgImg,
-        srcCanvas,
-        depthLayers,
-        width,
-        height,
-        frame,
-        totalFrames,
-        timeSec,
-        progress,
-        depthConfig,
-        captions: scene.captions,
-        particles,
-        dustParticles,
-      });
-
-      // Draw Canvas Subtitles / Captions isomorphically
-      if (scene.captions && scene.captions.length > 0) {
-        const snapshot: CaptionTrackSnapshot = captionStrategy.evaluate(
-          scene.captions,
-          timeSec,
-          config.settings.captions
-        );
-        drawCanvasCaptionsFromSnapshot(
-          ctx,
-          snapshot,
-          config.settings.captions,
-          width,
-          height,
-          config.settings.platform as any
-        );
-      }
-
-      // Ingest frame into sink
-      const frameData = canvas.data();
-      await sink.consumeFrame(frame, frameData);
-
-      if (frame % 15 === 0) {
-        await new Promise((r) => setTimeout(r, 0));
-      }
-    }
-  } finally {
-    // Release pre-allocated scratch canvases after rendering completes or aborts
-    try {
-      UniversalCanvasProvider.releaseScratchCanvas(dCanvas);
-      UniversalCanvasProvider.releaseScratchCanvas(sCanvas);
-      if (depthLayers) {
-        if (depthLayers.bg) UniversalCanvasProvider.releaseScratchCanvas(depthLayers.bg);
-        if (depthLayers.mg) UniversalCanvasProvider.releaseScratchCanvas(depthLayers.mg);
-        if (depthLayers.fg) UniversalCanvasProvider.releaseScratchCanvas(depthLayers.fg);
-      }
-    } catch {}
-  }
-
-  await sink.finalize();
-  return { path: outputPath, duration: totalDuration };
+  const preprocessed = await DepthScenePreprocessor.prepare(scene, depthConfig, width, height);
+  const compositor = new DepthCanvasCompositor();
+  return MediaSinkStreamer.streamScene(options, preprocessed, compositor);
 }
 
 /**

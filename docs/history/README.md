@@ -157,3 +157,4 @@
 | 491 | [Hexagonal Architecture & DDD Migration Final Closeout](./491_hexagonal_architecture_migration_closeout.md) | Completed |
 | 492 | [IR and Effect-Engines Remediation, WinterTC Conformance & Zero-Alloc Hardening](./492_ir_and_effect_engines_remediation_and_parity.md) | Completed |
 | 493 | [Fix FsObject Repository Primary Bean Ambiguity and MyBatis MapperScan Registration](./493_fix_fsobject_repository_primary_bean_and_mapperscan.md) | Completed |
+| 494 | [Structure-of-Arrays (SoA) VFX, Depth3D SRP Decomposition & Bounded Multi-Track Decoder Export](./494_soa_vfx_depth3d_srp_and_multitrack_stress.md) | Completed |

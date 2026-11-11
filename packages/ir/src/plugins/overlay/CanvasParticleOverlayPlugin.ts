@@ -4,6 +4,7 @@ import type { ModifierTargetScope } from '../../types/modifiers';
 import type { SequenceType } from '../../types/VideoIR';
 import {
   DeterministicParticleField,
+  SoAParticleComputeEngine,
   PostProcessingShaders,
 } from '@acc/effect-engines';
 
@@ -237,6 +238,15 @@ export class CanvasParticleOverlayPlugin implements ModifierPlugin<CanvasParticl
     };
   }
 
+  private soaEngine: SoAParticleComputeEngine | null = null;
+
+  private getSoAEngine(maxParticles = 2500): SoAParticleComputeEngine {
+    if (!this.soaEngine || this.soaEngine.maxParticles < maxParticles) {
+      this.soaEngine = new SoAParticleComputeEngine({ maxParticles });
+    }
+    return this.soaEngine;
+  }
+
   public renderClipSpace(ctx: ClipRenderContext, params: CanvasParticleOverlayParams): void {
     this.renderStreamSpace(ctx as any, params);
   }
@@ -244,8 +254,14 @@ export class CanvasParticleOverlayPlugin implements ModifierPlugin<CanvasParticl
   public renderStreamSpace(ctx: StreamRenderContext, params: CanvasParticleOverlayParams): void {
     const { ctx: canvasCtx, width, height, frame } = ctx;
 
-    // 1. Render 100% deterministic, stateless particle field
-    DeterministicParticleField.render(canvasCtx, width, height, frame, params);
+    // 1. Render particle field: route to high-throughput SoAParticleComputeEngine when useSIMD is requested
+    if (params.useSIMD) {
+      const engine = this.getSoAEngine(2500);
+      engine.computeStatelessFrame(frame, width, height, params);
+      engine.renderBatched(canvasCtx, width, height, params.opacity ?? 0.6);
+    } else {
+      DeterministicParticleField.render(canvasCtx, width, height, frame, params);
+    }
 
     // 2. Post-Processing Shaders Pass
     if (params.shaders) {

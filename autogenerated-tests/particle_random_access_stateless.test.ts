@@ -1,6 +1,7 @@
-import { describe, it, expect } from 'bun:test';
+import { describe, it, expect, beforeAll } from 'bun:test';
 import { CanvasParticleOverlayPlugin } from '../packages/ir/src/plugins/overlay/CanvasParticleOverlayPlugin';
 import { UniversalCanvasProvider } from '../packages/core-isomorphic';
+import { bootstrapNode } from '../packages/core/src/bootstrap';
 import { createHash } from 'crypto';
 
 function hashCanvas(canvasCtx: any, width: number, height: number): string {
@@ -9,6 +10,9 @@ function hashCanvas(canvasCtx: any, width: number, height: number): string {
 }
 
 describe('Iteration 12: Deterministic Random-Access Particle Overlay Tests', () => {
+  beforeAll(async () => {
+    await bootstrapNode();
+  });
   it('guarantees identical pixel hash at frame 45 regardless of seek trajectory', async () => {
     const plugin = new CanvasParticleOverlayPlugin();
     const width = 320;

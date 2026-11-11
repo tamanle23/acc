@@ -1,9 +1,36 @@
 import type { ModifierPlugin, ModifierContext, ClipRenderContext } from '../ModifierPluginRegistry';
 import type { SequenceType, TrackType } from '../../types/VideoIR';
 
+export type CrossfadeCurveMode = 'linear' | 'equal_power';
+
 export interface TransitionCrossfadeParams {
   durationFrames: number;
   overlapTarget?: string;
+  mode?: CrossfadeCurveMode;
+}
+
+/**
+ * Calculates dual-channel crossfade curves.
+ * - 'linear': Standard linear interpolation (alphaIn = t, alphaOut = 1 - t).
+ * - 'equal_power': Constant acoustic/optical power quarter-sine interpolation
+ *   (alphaIn = sin(pi/2 * t), alphaOut = cos(pi/2 * t) => sin^2 + cos^2 === 1.0).
+ */
+export function calculateCrossfadeAlpha(
+  rawProgress: number,
+  mode: CrossfadeCurveMode = 'linear'
+): { alphaIn: number; alphaOut: number } {
+  const t = Math.max(0, Math.min(1, rawProgress));
+  if (mode === 'equal_power') {
+    const theta = (Math.PI / 2) * t;
+    return {
+      alphaIn: Math.sin(theta),
+      alphaOut: Math.cos(theta),
+    };
+  }
+  return {
+    alphaIn: t,
+    alphaOut: 1 - t,
+  };
 }
 
 /**
@@ -37,6 +64,16 @@ export class TransitionCrossfadePlugin implements ModifierPlugin<TransitionCross
         type: 'string' as const,
         defaultValue: '',
       },
+      mode: {
+        key: 'mode',
+        label: 'Crossfade Curve Mode',
+        type: 'select' as const,
+        defaultValue: 'linear',
+        options: [
+          { label: 'Linear (Standard Video Dissolve)', value: 'linear' },
+          { label: 'Equal Power (Acoustic / Additive Power Preserving)', value: 'equal_power' },
+        ],
+      },
     },
   };
 
@@ -55,16 +92,19 @@ export class TransitionCrossfadePlugin implements ModifierPlugin<TransitionCross
       type: 'fade',
       durationFrames: params.durationFrames,
       overlapTarget: params.overlapTarget,
+      mode: params.mode || 'linear',
     };
   }
 
   public renderClipSpace(ctx: ClipRenderContext, params: TransitionCrossfadeParams): void {
-    const { ctx: canvasCtx, localFrame, sequence } = ctx;
+    const { ctx: canvasCtx, localFrame } = ctx;
     const dur = params.durationFrames;
 
     // Crossfade: incoming sequence smoothly fades in over the outgoing sequence
-    if (params.overlapTarget && localFrame < dur) {
-      canvasCtx.globalAlpha = Math.max(0, Math.min(1, localFrame / dur));
+    if (localFrame < dur) {
+      const progress = dur > 0 ? localFrame / dur : 1;
+      const { alphaIn } = calculateCrossfadeAlpha(progress, params.mode);
+      canvasCtx.globalAlpha = Math.max(0, Math.min(1, canvasCtx.globalAlpha * alphaIn));
     }
   }
 }
