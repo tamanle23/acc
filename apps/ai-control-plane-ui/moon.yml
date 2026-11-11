@@ -1,0 +1,21 @@
+$schema: "https://moonrepo.dev/schemas/project.json"
+language: "typescript"
+type: "application"
+stack: "frontend"
+project:
+  name: "ai-control-plane-ui"
+  description: "Enterprise Studio ReactJS + Shadcn UI + Tailwind CSS AI Inference & VieNeu-TTS v3 Turbo Playground"
+tasks:
+  build:
+    command: "pnpm exec vite build"
+    inputs: ["@group(sources)", "vite.config.ts", "package.json", "tsconfig.json", "tailwind.config.js"]
+    outputs: ["dist"]
+  dev:
+    command: "pnpm exec vite --port 3000"
+    local: true
+  typecheck:
+    command: "pnpm exec tsc --noEmit"
+    inputs: ["@group(sources)", "tsconfig.json"]
+  lint:
+    command: "pnpm exec tsc --noEmit"
+    inputs: ["@group(sources)"]

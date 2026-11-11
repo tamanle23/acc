@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
     "target": "ES2020",
     "useDefineForClassFields": true,
     "lib": [
@@ -19,17 +18,8 @@
     "jsx": "react-jsx",
     /* Alias */
     "paths": {
-      "react": [
-        "./node_modules/@types/react"
-      ],
       "@/*": [
         "./src/*"
-      ],
-      "@acc/client": [
-        "../../packages/client/src/index.ts"
-      ],
-      "@acc/sandbox": [
-        "../../packages/sandbox/src/index.ts"
       ],
       "@hookform/resolvers/zod": [
         "./src/lib/zod-resolver.ts"

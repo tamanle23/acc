@@ -1,0 +1,18 @@
+$schema: "https://moonrepo.dev/schemas/project.json"
+language: "typescript"
+type: "library"
+stack: "frontend"
+project:
+  name: "ai-control-plane-sdk"
+  description: "WinterTC (ECMA-429) Runtime-Agnostic TypeScript SDK & Edge Proxy for FastAPI + VieNeu-TTS v3 Turbo"
+tasks:
+  build:
+    command: "pnpm exec tsc -p tsconfig.json"
+    inputs: ["@group(sources)", "tsconfig.json", "package.json"]
+    outputs: ["dist"]
+  typecheck:
+    command: "pnpm exec tsc --noEmit"
+    inputs: ["@group(sources)", "tsconfig.json"]
+  lint:
+    command: "pnpm exec tsc --noEmit"
+    inputs: ["@group(sources)"]
