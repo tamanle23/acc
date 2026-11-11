@@ -41,7 +41,8 @@ import com.acc.presentation.context.UserAuditorAware;
     basePackages = {
         "com.acc.*.repository.mybatis",
         "com.acc.identity.infra.user.repository.mybatis",
-        "com.acc.workflow.infrastructure.adapters.outbound.persistence.mybatis"
+        "com.acc.workflow.infrastructure.adapters.outbound.persistence.mybatis",
+        "com.acc.fs.infrastructure.adapters.outbound.persistence.mybatis"
     },
     nameGenerator = BeanNameGenerator.class
 )

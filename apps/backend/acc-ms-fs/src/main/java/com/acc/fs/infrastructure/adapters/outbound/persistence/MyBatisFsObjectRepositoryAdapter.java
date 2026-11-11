@@ -4,6 +4,7 @@ import com.acc.fs.domain.model.FsObjectAggregate;
 import com.acc.fs.domain.model.valobj.FileId;
 import com.acc.fs.domain.repository.FsObjectRepositoryPort;
 import com.acc.fs.infrastructure.adapters.outbound.persistence.mybatis.FsObjectMyBatisMapper;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 
 import java.util.Collections;
@@ -13,6 +14,7 @@ import java.util.Optional;
 /**
  * Production Outbound Persistence Adapter for FsObjects using MyBatis.
  */
+@Primary
 @Repository("myBatisFsObjectRepositoryAdapter")
 public class MyBatisFsObjectRepositoryAdapter implements FsObjectRepositoryPort {
 
