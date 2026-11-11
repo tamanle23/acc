@@ -1,12 +1,5 @@
-import {
-  Input,
-  UrlSource,
-  BlobSource,
-  CanvasSink,
-  ALL_FORMATS,
-  type InputVideoTrack,
-} from 'mediabunny';
 import { ContentCacheRegistry, CacheNamespace } from '@acc/core-isomorphic';
+import { MediabunnyClientVideoDecoder } from '@acc/core-web';
 import { SequentialVideoReader } from './SequentialVideoReader';
 
 export interface MediabunnyReaderOptions {
@@ -20,7 +13,7 @@ export interface MediabunnyReaderOptions {
  * Runs in the preview.worker.ts thread to eliminate main-thread DOM seek thrashing.
  *
  * Responsibilities:
- * 1. Pure Decoder: fetches and decodes requested frames via WebCodecs CanvasSink.
+ * 1. Pure Decoder: fetches and decodes requested frames via MediabunnyClientVideoDecoder (WebCodecs CanvasSink).
  * 2. Zero Cache Double-Ownership: Frame caching and lifecycle disposal are owned
  *    exclusively by PreviewFrameMemoryManager.
  * 3. Fast scrub vs. idle refinement:
@@ -30,14 +23,14 @@ export interface MediabunnyReaderOptions {
 export class MediabunnyWorkerReader {
   public readonly src: string;
   public readonly assetId?: string;
-  private input: Input | null = null;
-  private videoTrack: InputVideoTrack | null = null;
-  private canvasSink: CanvasSink | null = null;
+  private decoder: MediabunnyClientVideoDecoder | null = null;
   private sequentialReader: SequentialVideoReader | null = null;
 
   private isInitialized = false;
   private isInitializing = false;
   private initPromise: Promise<boolean> | null = null;
+  private failedAt = 0;
+  private readonly RETRY_COOLDOWN_MS = 30_000;
 
   // Track metadata
   public durationSec = 0;
@@ -62,61 +55,58 @@ export class MediabunnyWorkerReader {
     this.fastScrubThrottleMs = 1000 / (options.fastScrubFps ?? 30);
   }
 
+  public isFailed(): boolean {
+    return this.failedAt > 0 && performance.now() - this.failedAt < this.RETRY_COOLDOWN_MS;
+  }
+
   public async init(): Promise<boolean> {
     if (this.isInitialized) return true;
+    if (this.isFailed()) return false;
     if (this.initPromise) return this.initPromise;
 
     this.isInitializing = true;
     this.initPromise = (async () => {
       try {
-        let source: any = new UrlSource(this.src);
-
-        // Zero-copy OPFS / cached Blob streaming resolution
-        try {
-          const cache = ContentCacheRegistry.namespace(CacheNamespace.Assets);
-          let cachedBlob: Blob | null = null;
-          if (this.assetId) {
-            cachedBlob = await cache.get(this.assetId);
+        // Prioritize cached media blob if available in ContentCacheRegistry; otherwise use network src
+        let uri = this.src;
+        if (this.assetId) {
+          try {
+            const cache = ContentCacheRegistry.namespace(CacheNamespace.Assets);
+            let cachedBlob = await cache.get(this.assetId);
+            if (!cachedBlob && this.src) {
+              cachedBlob = await cache.get(this.src);
+            }
+            if (cachedBlob) {
+              uri = this.assetId.startsWith('cache:') ? this.assetId : `cache:${this.assetId}`;
+            }
+          } catch {
+            // Cache miss: fall back directly to this.src
           }
-          if (!cachedBlob && this.src) {
-            cachedBlob = await cache.get(this.src);
-          }
-          if (cachedBlob) {
-            source = new BlobSource(cachedBlob);
-          }
-        } catch {
-          // Fallback to standard network UrlSource
         }
 
-        this.input = new Input({
-          formats: ALL_FORMATS,
-          source,
-        });
-
-        const track = await this.input.getPrimaryVideoTrack();
-        if (!track) {
-          console.warn(`[MediabunnyWorkerReader] No primary video track found for ${this.src}`);
+        this.decoder = new MediabunnyClientVideoDecoder(uri, 0, 0);
+        const ok = await this.decoder.open();
+        if (!ok) {
+          this.failedAt = performance.now();
+          console.warn(`[MediabunnyWorkerReader] Failed to initialize video ${this.src}`);
           this.isInitializing = false;
           return false;
         }
 
-        this.videoTrack = track;
-        this.width = (await track.getDisplayWidth().catch(() => 1920)) || 1920;
-        this.height = (await track.getDisplayHeight().catch(() => 1080)) || 1080;
+        this.width = this.decoder.width || 1920;
+        this.height = this.decoder.height || 1080;
+        this.durationSec = this.decoder.duration || 0;
 
-        // Bounded CanvasSink pool to eliminate uncollected OffscreenCanvas allocations
-        this.canvasSink = new CanvasSink(track, { poolSize: 2 });
-        this.sequentialReader = new SequentialVideoReader(this.canvasSink, this.width, this.height);
+        const sink = this.decoder.getCanvasSink();
+        if (sink) {
+          this.sequentialReader = new SequentialVideoReader(sink, this.width, this.height);
+        }
         this.isInitialized = true;
         this.isInitializing = false;
-
-        // Compute duration asynchronously in the background (zero impact on initial seek responsiveness)
-        this.input.computeDuration().then((dur) => {
-          this.durationSec = dur;
-        }).catch(() => {});
-
+        this.failedAt = 0;
         return true;
       } catch (err) {
+        this.failedAt = performance.now();
         console.warn(`[MediabunnyWorkerReader] Failed to initialize video ${this.src}:`, err);
         this.isInitializing = false;
         return false;
@@ -148,7 +138,7 @@ export class MediabunnyWorkerReader {
     }
 
     const execute = async (): Promise<ImageBitmap | null> => {
-      if (!this.isInitialized) {
+      if (!this.isInitialized || !this.decoder) {
         // Cold start or Evicted Standby: Fall back to OPFS poster keyframe if available
         if (this.assetId && typeof createImageBitmap === 'function') {
           try {
@@ -183,16 +173,16 @@ export class MediabunnyWorkerReader {
 
         this.activeDecodes++;
         try {
-          const wrappedCanvas = await this.canvasSink!.getCanvas(targetSec);
-          if (wrappedCanvas) {
-            const bmp = await this.toImageBitmap(wrappedCanvas);
+          const rawCanvas = await this.decoder.getFrameAtSeconds(targetSec);
+          if (rawCanvas) {
+            const bmp = await this.toImageBitmap(rawCanvas);
             if (bmp && this.assetId && !this.hasSavedPoster) {
               this.hasSavedPoster = true;
-              this.savePosterToCache(wrappedCanvas);
+              this.savePosterToCache(rawCanvas);
             }
             return bmp;
           }
-        } catch (err) {
+        } catch {
           // Graceful scrub skip
         } finally {
           this.activeDecodes = Math.max(0, this.activeDecodes - 1);
@@ -209,16 +199,16 @@ export class MediabunnyWorkerReader {
 
       this.activeDecodes++;
       try {
-        const wrappedCanvas = await this.canvasSink!.getCanvas(targetSec);
-        if (wrappedCanvas) {
-          const bmp = await this.toImageBitmap(wrappedCanvas);
+        const rawCanvas = await this.decoder.getFrameAtSeconds(targetSec);
+        if (rawCanvas) {
+          const bmp = await this.toImageBitmap(rawCanvas);
           if (bmp && this.assetId && !this.hasSavedPoster) {
             this.hasSavedPoster = true;
-            this.savePosterToCache(wrappedCanvas);
+            this.savePosterToCache(rawCanvas);
           }
           return bmp;
         }
-      } catch (err) {
+      } catch {
         // Decode error fallback
       } finally {
         this.activeDecodes = Math.max(0, this.activeDecodes - 1);
@@ -239,11 +229,14 @@ export class MediabunnyWorkerReader {
     frame: number,
     fps: number
   ): Promise<OffscreenCanvas | null> {
-    if (!this.isInitialized) {
+    if (!this.isInitialized || !this.decoder) {
       return null;
     }
-    if (!this.sequentialReader && this.canvasSink) {
-      this.sequentialReader = new SequentialVideoReader(this.canvasSink, this.width, this.height);
+    if (!this.sequentialReader) {
+      const sink = this.decoder.getCanvasSink();
+      if (sink) {
+        this.sequentialReader = new SequentialVideoReader(sink, this.width, this.height);
+      }
     }
     return this.sequentialReader ? this.sequentialReader.getFrameCanvas(frame, fps) : null;
   }
@@ -251,7 +244,6 @@ export class MediabunnyWorkerReader {
   private async toImageBitmap(wrappedCanvas: any): Promise<ImageBitmap | null> {
     if (!wrappedCanvas) return null;
 
-    // If wrappedCanvas has a canvas element or is one
     const raw = typeof wrappedCanvas.getRawCanvas === 'function'
       ? wrappedCanvas.getRawCanvas()
       : wrappedCanvas.canvas || wrappedCanvas;
@@ -291,9 +283,11 @@ export class MediabunnyWorkerReader {
 
   /**
    * Reacquires hardware decoder session if evicted.
+   * Returns false immediately if reader is in backoff cooldown to prevent retry storms.
    */
   public async reacquireHardwareDecoder(): Promise<boolean> {
     if (this.isInitialized) return true;
+    if (this.isFailed()) return false;
     this.initPromise = null;
     return this.init();
   }
@@ -316,44 +310,16 @@ export class MediabunnyWorkerReader {
       this.sequentialReader = null;
     }
 
-    if (this.canvasSink) {
-      this.canvasSink = null;
+    if (this.decoder) {
+      this.decoder.close();
+      this.decoder = null;
     }
 
-    if (this.input) {
-      try {
-        this.input.dispose();
-      } catch {}
-      this.input = null;
-    }
-
-    this.videoTrack = null;
     this.isInitialized = false;
     this.initPromise = null;
   }
 
   public dispose(): void {
-    if (this.scrubIdleTimer) {
-      clearTimeout(this.scrubIdleTimer);
-      this.scrubIdleTimer = null;
-    }
-
-    this.inFlightRequests.clear();
-    this.activeDecodes = 0;
-
-    if (this.input) {
-      try {
-        this.input.dispose();
-      } catch {}
-      this.input = null;
-    }
-
-    this.videoTrack = null;
-    if (this.sequentialReader) {
-      this.sequentialReader.dispose();
-      this.sequentialReader = null;
-    }
-    this.canvasSink = null;
-    this.isInitialized = false;
+    this.evictHardwareDecoder();
   }
 }

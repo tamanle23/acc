@@ -28,7 +28,7 @@ public class UserRepositoryImpl implements UserRepository {
 
     @Override
     public Optional<User> findByEmail(String email) {
-        return Optional.empty(); // Still omitted from underlying JPA impl for now
+        return Optional.ofNullable(jpaRepository.findByEmail(email));
     }
 
     @Override

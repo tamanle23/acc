@@ -8,6 +8,7 @@ import {
   ModifierPluginRegistry,
   type ModifierContext,
   type ResolvedTimeline,
+  TemporalCadenceResolver,
 } from '@acc/ir';
 import { IRPreviewEngine } from '../IRPreviewEngine';
 import {
@@ -194,7 +195,14 @@ async function renderCurrentFrame(
     const reader = videoReaders.get(seq.assetId);
     if (!reader) return;
 
-    const localFrame = Math.max(0, frame - (seq.startFrame ?? 0));
+    const cadence = TemporalCadenceResolver.resolve({
+      timelineFrame: frame,
+      timelineFps: currentFps,
+      sequenceStartFrame: seq.startFrame ?? 0,
+      trimInSec: seq.trimInSec,
+      speed: seq.speed,
+    });
+    const localFrame = cadence.sourceFrameIndex;
     const assetId = seq.assetId;
 
     const useSequential = isPlaying || isSequentialPlayback;

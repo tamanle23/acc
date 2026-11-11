@@ -236,11 +236,10 @@ export function OpfsExplorerModal(props: OpfsDebuggerModalProps) {
                 File Explorer
                 <Badge
                   variant="outline"
-                  class={`text-[10px] font-mono ${
-                    isSupported()
+                  class={`text-[10px] font-mono ${isSupported()
                       ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
                       : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                  }`}
+                    }`}
                 >
                   {isSupported() ? 'OPFS Active' : 'IndexedDB Fallback'}
                 </Badge>

@@ -1,8 +1,6 @@
 import { useContext } from 'react';
 import { useMutation, useQuery, QueryClientContext, QueryClient } from '@tanstack/react-query';
-import { springApiClient } from '@/features/spring-auth/api-client';
-import { useSandboxStore } from '@/core/sandbox/store/sandbox-store';
-import { useMetadataUiStore } from '@/features/metadata/store/use-metadata-ui-store';
+import { httpTaskDefinitionGateway } from '../infrastructure/adapters/http-task-def-gateway.adapter';
 import { taskContractRegistry } from '../components/studio/utils/contracts/task-contract-registry';
 import { toast } from 'sonner';
 
@@ -46,35 +44,15 @@ export interface SaveTaskDefinitionInput {
   changelogNote?: string;
 }
 
-// 1. Fetch Latest Task Definitions
+// 1. Fetch Latest Task Definitions via Driven Gateway
 export const useTaskDefinitions = () => {
   const queryContext = useContext(QueryClientContext);
   const clientToUse = queryContext || fallbackQueryClient;
 
-  const sandboxEnabled = useSandboxStore((s) => s.enabled);
-  const sandboxTenantId = useSandboxStore((s) => s.activeTenantId);
-  const metadataTenantId = useMetadataUiStore((s) => s.activeTenantId);
-  const effectiveTenantId = (sandboxEnabled ? sandboxTenantId : metadataTenantId) || sandboxTenantId || 'tenant-acme';
-
   return useQuery({
-    queryKey: ['workflows', 'task-definitions', effectiveTenantId, sandboxEnabled],
-    queryFn: async (): Promise<TaskDefinitionRecord[]> => {
-      try {
-        const res = await springApiClient.get('/v1/workflow/task-definitions');
-        if (res.status === 200) {
-          const list = Array.isArray(res.data)
-            ? res.data
-            : Array.isArray(res.data?.body)
-              ? res.data.body
-              : res.data?.data || [];
-          taskContractRegistry.preload(list);
-          return list;
-        }
-        return [];
-      } catch (err) {
-        console.warn('Failed to fetch task definitions from backend:', err);
-        return [];
-      }
+    queryKey: ['workflows', 'task-definitions'],
+    queryFn: async ({ signal }): Promise<TaskDefinitionRecord[]> => {
+      return await httpTaskDefinitionGateway.listLatest({ signal });
     },
     staleTime: 30 * 1000,
     refetchOnMount: 'always',
@@ -86,31 +64,11 @@ export const useTaskDefinitionVersions = (taskName?: string) => {
   const queryContext = useContext(QueryClientContext);
   const clientToUse = queryContext || fallbackQueryClient;
 
-  const sandboxEnabled = useSandboxStore((s) => s.enabled);
-  const sandboxTenantId = useSandboxStore((s) => s.activeTenantId);
-  const metadataTenantId = useMetadataUiStore((s) => s.activeTenantId);
-  const effectiveTenantId = (sandboxEnabled ? sandboxTenantId : metadataTenantId) || sandboxTenantId || 'tenant-acme';
-
   return useQuery({
-    queryKey: ['workflows', 'task-definitions', effectiveTenantId, taskName, 'versions'],
-    queryFn: async (): Promise<TaskDefinitionRecord[]> => {
+    queryKey: ['workflows', 'task-definitions', taskName, 'versions'],
+    queryFn: async ({ signal }): Promise<TaskDefinitionRecord[]> => {
       if (!taskName) return [];
-      try {
-        const res = await springApiClient.get(`/v1/workflow/task-definitions/${taskName}/versions`);
-        if (res.status === 200) {
-          const list = Array.isArray(res.data)
-            ? res.data
-            : Array.isArray(res.data?.body)
-              ? res.data.body
-              : res.data?.data || [];
-          taskContractRegistry.preload(list);
-          return list;
-        }
-        return [];
-      } catch (err) {
-        console.warn(`Failed to fetch version history for task ${taskName}:`, err);
-        return [];
-      }
+      return await httpTaskDefinitionGateway.getVersions(taskName, { signal });
     },
     enabled: Boolean(taskName),
     staleTime: 30 * 1000,
@@ -124,11 +82,7 @@ export const useSaveTaskDefinitionDraft = () => {
 
   return useMutation({
     mutationFn: async (input: SaveTaskDefinitionInput): Promise<TaskDefinitionRecord> => {
-      const res = await springApiClient.post('/v1/workflow/task-definitions', input);
-      if (res.status === 200 || res.status === 201) {
-        return res.data?.body || res.data;
-      }
-      throw new Error(`Failed to save task definition draft: HTTP ${res.status}`);
+      return await httpTaskDefinitionGateway.saveDraft(input);
     },
     onSuccess: (data) => {
       clientToUse.invalidateQueries({ queryKey: ['workflows', 'task-definitions'] });
@@ -147,11 +101,7 @@ export const usePublishTaskDefinition = () => {
 
   return useMutation({
     mutationFn: async ({ name, version }: { name: string; version: number }): Promise<TaskDefinitionRecord> => {
-      const res = await springApiClient.post(`/v1/workflow/task-definitions/${name}/versions/${version}/publish`, {});
-      if (res.status === 200) {
-        return res.data?.body || res.data;
-      }
-      throw new Error(`Failed to publish task definition: HTTP ${res.status}`);
+      return await httpTaskDefinitionGateway.publishVersion(name, version);
     },
     onSuccess: (data) => {
       clientToUse.invalidateQueries({ queryKey: ['workflows', 'task-definitions'] });
@@ -179,8 +129,7 @@ export const useUpgradeNodeTaskDef = () => {
       taskDefName: string;
       targetVersion: number;
     }) => {
-      const res = await springApiClient.get(`/v1/workflow/task-definitions/${taskDefName}/versions`);
-      const versions: TaskDefinitionRecord[] = Array.isArray(res.data) ? res.data : res.data?.body || [];
+      const versions = await httpTaskDefinitionGateway.getVersions(taskDefName);
       const targetRecord = versions.find((v) => v.version === targetVersion);
       if (!targetRecord) {
         throw new Error(`Target task definition version ${targetVersion} not found for ${taskDefName}`);
@@ -203,11 +152,7 @@ export const useDeleteTaskDefinitionDraft = () => {
 
   return useMutation({
     mutationFn: async ({ name, version }: { name: string; version: number }): Promise<boolean> => {
-      const res = await springApiClient.delete(`/v1/workflow/task-definitions/${name}/versions/${version}`);
-      if (res.status === 200 || res.status === 204) {
-        return true;
-      }
-      throw new Error(`Failed to delete draft: HTTP ${res.status}`);
+      return await httpTaskDefinitionGateway.deleteDraftVersion(name, version);
     },
     onSuccess: (_, { name, version }) => {
       clientToUse.invalidateQueries({ queryKey: ['workflows', 'task-definitions'] });

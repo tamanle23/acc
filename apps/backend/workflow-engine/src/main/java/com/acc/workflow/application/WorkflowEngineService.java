@@ -904,4 +904,29 @@ public class WorkflowEngineService {
     public TaskLeaseWatchdog getTaskLeaseWatchdog() {
         return taskLeaseWatchdog;
     }
+
+    public int executeManualCompensation(WorkflowDefinition def, WorkflowSnapshot snapshot, long now) {
+        var compensator = new SagaCompensator();
+        var compCommands = compensator.planCompensation(def, snapshot, now);
+
+        for (var compCmd : compCommands) {
+            persistencePort.saveTaskExecution(
+                compCmd.taskId(), snapshot.workflowId(), snapshot.tenantId(), snapshot.workspaceId(),
+                compCmd.referenceName(), compCmd.taskType(), compCmd.domain(),
+                TaskStatus.SCHEDULED, compCmd.attempt(), compCmd.input(),
+                Collections.emptyMap(), null, compCmd.responseTimeoutMs(), now
+            );
+            persistencePort.enqueueTask(
+                compCmd.taskId(), snapshot.workflowId(), snapshot.tenantId(), snapshot.workspaceId(),
+                compCmd.taskType(), compCmd.domain(), 0, compCmd.visibleAtEpochMs()
+            );
+        }
+
+        persistencePort.updateWorkflowStatus(
+            snapshot.workflowId(), WorkflowStatus.COMPENSATED_FAILED, snapshot.outputPayload(),
+            "Manual reverse compensation triggered", now
+        );
+
+        return compCommands.size();
+    }
 }

@@ -158,10 +158,12 @@ export class RelationalDAGCompiler {
 
     const adj = new Map<string, string[]>();
     const inDegree = new Map<string, number>();
+    const itemsById = new Map<string, { seq: IRSequence; trackId: string }>();
 
-    for (const { seq } of standardItems) {
-      adj.set(seq.id, []);
-      inDegree.set(seq.id, 0);
+    for (const item of standardItems) {
+      itemsById.set(item.seq.id, item);
+      adj.set(item.seq.id, []);
+      inDegree.set(item.seq.id, 0);
     }
 
     for (const { seq } of standardItems) {
@@ -187,7 +189,7 @@ export class RelationalDAGCompiler {
       const currId = queue.shift()!;
       processedCount++;
 
-      const item = standardItems.find(i => i.seq.id === currId)!;
+      const item = itemsById.get(currId)!;
       const seq = item.seq;
       let dur = Math.round(5.0 * fps); // default 5s
 
@@ -238,10 +240,12 @@ export class RelationalDAGCompiler {
   ): void {
     const adj = new Map<string, string[]>();
     const inDegree = new Map<string, number>();
+    const itemsById = new Map<string, { seq: IRSequence; trackId: string }>();
 
-    for (const { seq } of items) {
-      adj.set(seq.id, []);
-      inDegree.set(seq.id, 0);
+    for (const item of items) {
+      itemsById.set(item.seq.id, item);
+      adj.set(item.seq.id, []);
+      inDegree.set(item.seq.id, 0);
     }
 
     for (const { seq } of items) {
@@ -269,7 +273,7 @@ export class RelationalDAGCompiler {
       const currId = queue.shift()!;
       processedCount++;
 
-      const item = items.find(i => i.seq.id === currId)!;
+      const item = itemsById.get(currId)!;
       const seq = item.seq;
       const duration = durationMap.get(currId) ?? 0;
       let startFrame = 0;

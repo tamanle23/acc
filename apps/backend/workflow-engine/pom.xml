@@ -12,6 +12,20 @@
   </parent>
 
   <dependencies>
+    <!-- Pure Shared DDD Kernel -->
+    <dependency>
+      <groupId>com.acc</groupId>
+      <artifactId>acc-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.acc</groupId>
+      <artifactId>acc-fw</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.modulith</groupId>
+      <artifactId>spring-modulith-api</artifactId>
+    </dependency>
+
     <!-- Jackson for Canonical IR JSON Serialization / Memento Snapshots -->
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
@@ -45,6 +59,18 @@
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>1.20.4</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>1.20.4</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

@@ -38,7 +38,8 @@
     "desktop:build": "pnpm --filter @acc/supervisor-desktop build",
     "worker:dev": "bun --cwd apps/worker dev",
     "studio:dev": "bun --cwd apps/studio dev",
-    "studio:build": "bun --cwd apps/studio build"
+    "studio:build": "bun --cwd apps/studio build",
+    "ai-control-plane:dev": "turbo run dev --filter=@acc/ai-control-plane --filter=@acc/ai-control-plane-ui"
   },
   "devDependencies": {
     "@types/bun": "latest",
@@ -50,7 +51,7 @@
     "turbo": "^2.11.7",
     "typescript": "^6.0.3"
   },
-  "packageManager": "pnpm@9.0.0",
+  "packageManager": "pnpm@10.6.0",
   "workspaces": [
     "apps/*",
     "packages/*"

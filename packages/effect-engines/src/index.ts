@@ -17,6 +17,7 @@ export * from './subtitles/SafeZoneManager';
 export * from './subtitles/BoundedAcousticCaptionStrategy';
 export * from './subtitles/captions-canvas';
 export * from './overlay-effects/simulators/DeterministicParticleField';
+export * from './overlay-effects/simulators/SoAParticleComputeEngine';
 export * from './overlay-effects/simulators/PostProcessingShaders';
 export * from './styles/ColorGradingEngine';
 export * from './depth3d/strategy';

@@ -122,8 +122,9 @@ export function drawParallaxFrame(ctx: any, state: ParallaxState) {
       const curY = (p.y + p.speedY * frame * 2.0 * intensity) % (height + 60);
       const actualY = curY < 0 ? height + curY : curY;
 
-      const pulse = Math.sin(timeSec * p.pulseSpeed) * 0.2 + 0.8;
-      const alpha = p.opacity * pulse;
+      const pulseSpeed = p.pulseSpeed ?? (1.5 + (p.layer || 0) * 0.5);
+      const pulse = Math.sin(timeSec * pulseSpeed) * 0.2 + 0.8;
+      const alpha = Math.max(0, Math.min(1, (p.opacity || 0.5) * pulse));
 
       const grad = ctx.createRadialGradient(curX, actualY, 0, curX, actualY, p.size * 2);
       grad.addColorStop(0, `rgba(255, 245, 200, ${alpha * 1.2})`);

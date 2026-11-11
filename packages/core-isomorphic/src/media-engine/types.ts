@@ -96,13 +96,24 @@ export interface DecodedVideoFrame {
   ctx: ICanvasContext2D;
 }
 
+export interface VideoDecoderOptions {
+  strict?: boolean;
+  debugMode?: boolean;
+}
+
 export interface IVideoDecoder {
   open(): Promise<boolean>;
   close(): void;
   readNextFrame(): Promise<any>;
   getNextFrame?(): Promise<DecodedVideoFrame | null>;
   seek?(targetFrame: number): Promise<boolean>;
+  seekTimestamp?(targetSeconds: number): Promise<any>;
   getFrame?(frameIndex: number): Promise<DecodedVideoFrame | null>;
+  readonly width?: number;
+  readonly height?: number;
+  readonly duration?: number;
+  [Symbol.dispose]?(): void;
+  [Symbol.asyncDispose]?(): Promise<void>;
 }
 
 export interface DecodedAudioPCM {
@@ -124,7 +135,7 @@ export interface IMediaEngineStrategy {
 
   validatePrerequisites(): void;
   createVideoSink(options?: SinkInitMetadata): IMediaFrameSink;
-  createVideoDecoder?(filePath: string, targetWidth: number, targetHeight: number): IVideoDecoder;
+  createVideoDecoder?(filePathOrUri: string, targetWidth: number, targetHeight: number, options?: VideoDecoderOptions): IVideoDecoder;
   createAudioDecoder?(): IAudioDecoder;
   getProbeStrategy(): IMediaProbeStrategy;
   getConcatStrategy(): IMediaConcatStrategy;

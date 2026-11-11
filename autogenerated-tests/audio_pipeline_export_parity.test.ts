@@ -50,10 +50,9 @@ describe('Audio Pipeline & Export Parity (History 412)', () => {
     expect(activeNonZero).toBeGreaterThan(sampleRate * 0.9);
 
     // 3. The first sample at t = 5.0s should match the first sample of the asset (sample 0)
-    // pcm[10] = sin(2*pi*440*10/44100), scaled by cos(pi/4) pan and soft limiter Math.tanh()
-    const expectedRaw10 = pcm[10] * Math.cos(Math.PI / 4); // default pan angle
-    const expectedSample10 = Math.tanh(expectedRaw10); // analog master limiter
-    expect(activeSlice.left[10]).toBeCloseTo(expectedSample10, 4);
+    // pcm[10] = sin(2*pi*440*10/44100), scaled by cos(pi/4) pan and transparent master limiter
+    const expectedRaw10 = pcm[10] * Math.cos(Math.PI / 4); // default pan angle with transparent master bus
+    expect(activeSlice.left[10]).toBeCloseTo(expectedRaw10, 4);
   });
 
   it('DecodedPcmSource clamps to asset duration and outputs silence past asset length', () => {

@@ -1,0 +1,7 @@
+[test]
+# Enable browser resolution condition for SolidJS client-side testing
+preload = []
+
+# Top-level jsx parsing for SolidJS
+jsx = "solid"
+jsxImportSource = "solid-js"

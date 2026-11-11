@@ -3,7 +3,6 @@ package com.acc.aio.controller.workflow;
 import com.acc.workflow.application.AuditLedgerService;
 import com.acc.workflow.application.WorkflowEngineService;
 import com.acc.workflow.core.model.WorkflowAuditRecord;
-import com.acc.workflow.ports.PersistencePort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -24,35 +23,32 @@ import java.util.List;
 public class AuditLedgerController {
 
     private final AuditLedgerService auditLedgerService;
-    private final PersistencePort persistencePort;
     private final WorkflowEngineService engineService;
 
     public AuditLedgerController(
         AuditLedgerService auditLedgerService,
-        PersistencePort persistencePort,
         WorkflowEngineService engineService
     ) {
         this.auditLedgerService = auditLedgerService;
-        this.persistencePort = persistencePort;
         this.engineService = engineService;
     }
 
     @GetMapping("/{workflowId}")
     public ResponseEntity<List<WorkflowAuditRecord>> getAuditRecords(@PathVariable("workflowId") String workflowId) {
-        if (persistencePort.getWorkflowSnapshot(workflowId).isEmpty()) {
+        List<WorkflowAuditRecord> records = auditLedgerService.getAuditRecords(workflowId);
+        if (records.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.ok(persistencePort.listAuditRecords(workflowId));
+        return ResponseEntity.ok(records);
     }
 
     @GetMapping("/{workflowId}/verify")
     public ResponseEntity<AuditLedgerService.AuditVerificationResult> verifyAuditChain(@PathVariable("workflowId") String workflowId) {
-        if (persistencePort.getWorkflowSnapshot(workflowId).isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-        List<WorkflowAuditRecord> records = persistencePort.listAuditRecords(workflowId);
-        AuditLedgerService.AuditVerificationResult result = auditLedgerService.verifyChain(records);
+        AuditLedgerService.AuditVerificationResult result = auditLedgerService.verifyAuditChainForWorkflow(workflowId);
         if (!result.verified()) {
+            if (("Workflow not found: " + workflowId).equals(result.details())) {
+                return ResponseEntity.notFound().build();
+            }
             // Immediately freeze and hold workflow execution
             engineService.quarantineTamperedWorkflow(workflowId, result.details());
             return ResponseEntity.status(HttpStatus.CONFLICT).body(result);

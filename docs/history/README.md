@@ -143,3 +143,23 @@
 | 477 | [Fix Sidecar Worker Single Warmup Dispatch & Passive Barrier](./477_fix_sidecar_worker_single_warmup_dispatch.md) | Completed |
 | 478 | [Establish 100% Isomorphic and WinterTC Compliant Architecture in @acc/effect-engines](./478_fully_isomorphic_effect_engines.md) | Completed |
 | 479 | [Unified Decoupled Audio Mixing and Hardware Rate Negotiation](./479_unified_audio_mixing_and_hardware_rate_negotiation.md) | Completed |
+| 480 | [Fix Audio Export Distortion and Preview Playback Gaps](./480_fix_audio_export_distortion_and_preview_playback_gaps.md) | Completed |
+| 481 | [Unified Media Asset Conformance Engine](./481_media_asset_quality_conformation_engine.md) | Completed |
+| 482 | [Temporal Cadence Preview Worker Integration & Video Decoder Strategy Parity](./482_temporal_cadence_and_video_decoder_parity.md) | Completed |
+| 483 | [Isomorphic Asset Protocol Resolution & Video Decoder Strategy Parity](./483_isomorphic_asset_protocol_and_video_decoder_parity.md) | Completed |
+| 484 | [Fix MediabunnyClient Cache Fetch Error & Sidecar Warmup Deduplication](./484_fix_mediabunny_client_cache_fetch_and_sidecar_warmup_deduplication.md) | Completed |
+| 485 | [Fix Video Decoder Retry Storm, Negative Caching & Dead Getty Images Demo URL](./485_fix_video_decoder_retry_storm_and_negative_caching.md) | Completed |
+| 486 | [Enterprise Hexagonal Architecture & DDD Ports-and-Adapters Migration](./486_enterprise_hexagonal_architecture_and_ddd_migration.md) | Completed |
+| 487 | [Fix Backend Dev Sandbox Startup and Hexagonal Adapters](./487_fix_backend_dev_sandbox_startup_and_hexagonal_adapters.md) | Completed |
+| 488 | [Hexagonal Worker Outbox & Sagas Architecture](./488_hexagonal_worker_outbox_and_sagas_architecture.md) | Completed |
+| 489 | [Spring Modulith Package Encapsulation & Named Interfaces](./489_spring_modulith_package_encapsulation_and_named_interfaces.md) | Completed |
+| 490 | [Tier 3 PostgreSQL Contract Tests & MyBatis Repositories Verification](./490_tier3_postgresql_contract_tests_and_mybatis_verification.md) | Completed |
+| 491 | [Hexagonal Architecture & DDD Migration Final Closeout](./491_hexagonal_architecture_migration_closeout.md) | Completed |
+| 492 | [IR and Effect-Engines Remediation, WinterTC Conformance & Zero-Alloc Hardening](./492_ir_and_effect_engines_remediation_and_parity.md) | Completed |
+| 493 | [Fix FsObject Repository Primary Bean Ambiguity and MyBatis MapperScan Registration](./493_fix_fsobject_repository_primary_bean_and_mapperscan.md) | Completed |
+| 494 | [Structure-of-Arrays (SoA) VFX, Depth3D SRP Decomposition & Bounded Multi-Track Decoder Export](./494_soa_vfx_depth3d_srp_and_multitrack_stress.md) | Completed |
+| 495 | [IR Plugin & Modifier Visual Playground Modal](./495_ir_plugin_visual_playground_modal.md) | Completed |
+| 496 | [IR Plugin Visual Playground Bento Grid Upgrade](./496_bento_playground_layout.md) | Completed |
+| 497 | [Optimize Bento Playground Layout and System Theme Synchronization](./497_optimize_bento_layout_and_theme_synchronization.md) | Completed |
+| 498 | [Fix Canvas2D Readback and WAI-ARIA Hidden Console Warnings](./498_fix_canvas2d_readback_and_wai_aria_hidden_warnings.md) | Completed |
+| 499 | [Eliminate Playground Memory Spike with SD Quality Canvas and Complete Shiki Removal](./499_eliminate_playground_memory_spike_sd_canvas_and_shiki_removal.md) | Completed |

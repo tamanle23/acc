@@ -174,21 +174,24 @@ export function evaluateSequenceMotion(
 ): InterpolatedTransformState {
   const tp = transformParams || {};
 
-  // If explicit keyframes exist on any property, prioritize TemporalKeyframeEvaluator
-  const hasKeyframes =
-    (tp.x && typeof tp.x === 'object' && tp.x.keyframes?.length) ||
-    (tp.y && typeof tp.y === 'object' && tp.y.keyframes?.length) ||
-    (tp.scale && typeof tp.scale === 'object' && tp.scale.keyframes?.length) ||
-    (tp.rotation && typeof tp.rotation === 'object' && tp.rotation.keyframes?.length) ||
-    (tp.opacity && typeof tp.opacity === 'object' && tp.opacity.keyframes?.length);
+  const isTemporalCurve = (prop: any) =>
+    Boolean(prop && typeof prop === 'object' && (prop.keyframes?.length || prop.intro || prop.outro || prop.steady));
 
-  if (hasKeyframes) {
+  // If explicit keyframes or temporal curves exist on any property, prioritize TemporalKeyframeEvaluator
+  const hasCurves =
+    isTemporalCurve(tp.x) ||
+    isTemporalCurve(tp.y) ||
+    isTemporalCurve(tp.scale) ||
+    isTemporalCurve(tp.rotation) ||
+    isTemporalCurve(tp.opacity);
+
+  if (hasCurves) {
     return {
-      x: TemporalKeyframeEvaluator.evaluateNumeric(tp.x, localSec, 0),
-      y: TemporalKeyframeEvaluator.evaluateNumeric(tp.y, localSec, 0),
-      scale: TemporalKeyframeEvaluator.evaluateNumeric(tp.scale, localSec, 1.0),
-      rotation: TemporalKeyframeEvaluator.evaluateNumeric(tp.rotation, localSec, 0),
-      opacity: TemporalKeyframeEvaluator.evaluateNumeric(tp.opacity, localSec, 1.0),
+      x: TemporalKeyframeEvaluator.evaluateNumeric(tp.x, localSec, 0, durationSec),
+      y: TemporalKeyframeEvaluator.evaluateNumeric(tp.y, localSec, 0, durationSec),
+      scale: TemporalKeyframeEvaluator.evaluateNumeric(tp.scale, localSec, 1.0, durationSec),
+      rotation: TemporalKeyframeEvaluator.evaluateNumeric(tp.rotation, localSec, 0, durationSec),
+      opacity: TemporalKeyframeEvaluator.evaluateNumeric(tp.opacity, localSec, 1.0, durationSec),
     };
   }
 

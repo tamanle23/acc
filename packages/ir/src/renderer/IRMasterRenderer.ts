@@ -14,9 +14,12 @@ import {
   CacheNamespace,
   NativeResourceManager,
   AssetProtocolRegistry,
+  UniversalLogger,
 } from '@acc/core-isomorphic';
 import type { IVideoDecoder, IMediaEngineStrategy, MediaEngineType, INamespacedCache } from '@acc/core-isomorphic';
 import { IRCanvasCompositor, type IAssetSourceResolver } from './shared/IRCanvasCompositor';
+import { TemporalCadenceResolver } from './shared/TemporalCadenceResolver';
+import { BoundedDecoderPool } from './BoundedDecoderPool';
 
 export interface IRMasterPrepareOptions {
   baseDir?: string;
@@ -60,6 +63,7 @@ function isAbsolutePath(p: string): boolean {
     p.startsWith('https://') ||
     p.startsWith('data:') ||
     p.startsWith('blob:') ||
+    p.startsWith('cache:') ||
     /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(p) ||
     /^[a-zA-Z]:[\\/]/.test(p) ||
     p.startsWith('\\\\')
@@ -164,11 +168,14 @@ export class IRMasterRenderer implements Disposable {
   // Cached assets to prevent disk/network re-reads in render loop
   private imageCache: Map<string, any> = new Map();
   private videoDecoders: Map<string, IVideoDecoder> = new Map();
+  private decoderPool: BoundedDecoderPool = new BoundedDecoderPool(4);
+  private assetResolvedPaths: Map<string, string> = new Map();
 
   // Lookahead asset lifespan tracking for sliding hybrid sequence eviction
   private assetLastEndFrame: Map<string, number> = new Map();
   private sequencesByAssetKey: Map<string, ResolvedSequence[]> = new Map();
   private evictedAssetKeys: Set<string> = new Set();
+  private lastMediaSecByAsset: Map<string, number> = new Map();
 
   constructor(
     timeline: ResolvedTimeline,
@@ -270,14 +277,10 @@ export class IRMasterRenderer implements Disposable {
               }
             }
 
-            if (seq.assetId && this.videoDecoders.has(seq.assetId)) {
-              const dec = this.videoDecoders.get(seq.assetId);
+            if (seq.assetId) {
+              this.decoderPool.release(seq.assetId);
               this.videoDecoders.delete(seq.assetId);
-              if (dec) {
-                try {
-                  dec.close();
-                } catch { }
-              }
+              this.lastMediaSecByAsset.delete(seq.assetId);
             }
           }
         }
@@ -328,14 +331,19 @@ export class IRMasterRenderer implements Disposable {
               const img = await CanvasAssetLoader.loadImage(await blobData.bytes());
               this.imageCache.set(assetId, img);
             } else if (['.mp4', '.mov', '.mkv', '.webm', '.avi'].includes(ext) || assetDef.type === 'video') {
+              this.assetResolvedPaths.set(assetId, resolvedPath);
               if (strategy && typeof strategy.createVideoDecoder === 'function') {
-                const decoder = strategy.createVideoDecoder(
-                  resolvedPath,
-                  this.timeline.meta.canvasSize.w,
-                  this.timeline.meta.canvasSize.h
-                );
-                if (await decoder.open()) {
-                  this.videoDecoders.set(assetId, decoder);
+                if (this.decoderPool.getActiveCount() < this.decoderPool.getMaxConcurrent()) {
+                  const decoder = await this.decoderPool.acquire(
+                    assetId,
+                    resolvedPath,
+                    this.timeline.meta.canvasSize.w,
+                    this.timeline.meta.canvasSize.h,
+                    strategy
+                  );
+                  if (decoder) {
+                    this.videoDecoders.set(assetId, decoder);
+                  }
                 }
               }
             }
@@ -576,12 +584,8 @@ export class IRMasterRenderer implements Disposable {
       }
     }
 
-    // Close all open video decoders
-    for (const decoder of this.videoDecoders.values()) {
-      try {
-        decoder.close();
-      } catch { }
-    }
+    // Close all open video decoders via pool
+    this.decoderPool.closeAll();
     this.videoDecoders.clear();
 
     return {
@@ -621,34 +625,87 @@ export class IRMasterRenderer implements Disposable {
   ): Promise<void> {
     const frameScope = this.resourceManager.createFrameScope(`master-frame-${t}`);
 
-    // 1. Asynchronously pre-fetch next frame from active video decoders if required
+    // 1. Asynchronously resolve active video sequences and lease decoders from BoundedDecoderPool
     const activeVideoFrames = new Map<string, any>();
-    for (const [assetId, decoder] of this.videoDecoders) {
+    const fps = this.timeline.meta.globalFps || 30;
+
+    // Scan timeline tracks to find active video sequences on frame t
+    const activeVideoSequences: Array<{ seq: ResolvedSequence; assetId: string; priority: number }> = [];
+    let trackIdx = 0;
+    for (const track of this.timeline.tracks.values()) {
+      if (track.type === 'video' || (track.type as string) === 'overlay') {
+        for (const seq of track.sequences) {
+          if (seq.assetId && t >= seq.startFrame && t < seq.endFrame) {
+            const priority = trackIdx * 1000 - Math.abs(t - seq.startFrame);
+            activeVideoSequences.push({ seq, assetId: seq.assetId, priority });
+          }
+        }
+      }
+      trackIdx++;
+    }
+
+    for (const { seq: activeSeq, assetId, priority } of activeVideoSequences) {
       try {
-        const frame = await decoder.readNextFrame();
+        let decoder = this.decoderPool.get(assetId);
+        if (!decoder && this.mediaEngineStrategy) {
+          const resolvedPath =
+            this.assetResolvedPaths.get(assetId) ||
+            this.timeline.assets?.[assetId]?.src ||
+            assetId;
+          decoder =
+            (await this.decoderPool.acquire(
+              assetId,
+              resolvedPath,
+              this.timeline.meta.canvasSize.w,
+              this.timeline.meta.canvasSize.h,
+              this.mediaEngineStrategy,
+              priority
+            )) ?? undefined;
+          if (decoder) {
+            this.videoDecoders.set(assetId, decoder);
+          }
+        }
+
+        if (!decoder) continue;
+
+        let frame: any = null;
+        const lastSec = this.lastMediaSecByAsset.get(assetId) ?? -1;
+        const cadence = TemporalCadenceResolver.resolve(
+          {
+            timelineFrame: t,
+            timelineFps: fps,
+            sequenceStartFrame: activeSeq.startFrame,
+            trimInSec: activeSeq.trimInSec,
+            speed: activeSeq.speed,
+          },
+          lastSec
+        );
+
+        if (cadence.shouldSeek && typeof (decoder as any).seekTimestamp === 'function') {
+          frame = await (decoder as any).seekTimestamp(cadence.targetMediaSec);
+        } else {
+          frame = await decoder.readNextFrame();
+        }
+        this.lastMediaSecByAsset.set(assetId, cadence.targetMediaSec);
+
         if (frame) {
           activeVideoFrames.set(assetId, frame);
           this.resourceManager.register(`video-frame-${t}-${assetId}`, frame, {
             scope: frameScope,
           });
         }
-      } catch { }
+      } catch (err: any) {
+        UniversalLogger.warn('IRMasterRenderer', `Failed to decode video frame for asset "${assetId}": ${err?.message || err}`);
+      }
     }
 
     // 2. Build asset source resolver combining static imageCache and dynamic activeVideoFrames
     const assetResolver: IAssetSourceResolver = {
       has: (id: string) => activeVideoFrames.has(id) || this.imageCache.has(id),
       get: (id: string) => activeVideoFrames.get(id) || this.imageCache.get(id),
-      onAssetDrawn: (assetId: string) => {
-        if (activeVideoFrames.has(assetId)) {
-          const frame = activeVideoFrames.get(assetId);
-          activeVideoFrames.delete(assetId);
-          try {
-            if (frame && typeof frame.close === 'function') {
-              frame.close();
-            }
-          } catch { }
-        }
+      onAssetDrawn: (_assetId: string) => {
+        // Multi-track frame retention: frames are preserved across all sequences during frame t
+        // and deterministically closed and cleared in the finally block below.
       },
     };
 
@@ -701,11 +758,7 @@ export class IRMasterRenderer implements Disposable {
     }
     this.imageCache.clear();
 
-    for (const dec of this.videoDecoders.values()) {
-      try {
-        dec.close();
-      } catch { }
-    }
+    this.decoderPool.closeAll();
     this.videoDecoders.clear();
   }
 

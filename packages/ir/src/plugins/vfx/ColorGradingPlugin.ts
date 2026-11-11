@@ -351,7 +351,7 @@ export class ColorGradingPlugin implements ModifierPlugin<ColorGradingParams> {
 
     const scratch = UniversalCanvasProvider.acquireScratchCanvas(width, height);
     const scratchCanvas = scratch.getRawCanvas ? scratch.getRawCanvas() : scratch;
-    const scratchCtx = scratchCanvas.getContext('2d');
+    const scratchCtx = scratchCanvas.getContext('2d', { willReadFrequently: true });
     if (!scratchCtx) {
       UniversalCanvasProvider.releaseScratchCanvas(scratch);
       return;

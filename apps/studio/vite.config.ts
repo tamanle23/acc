@@ -27,9 +27,6 @@ export default defineConfig({
           if (id.includes('node_modules/onnxruntime-web/') || id.includes('node_modules/onnxruntime-common/')) {
             return 'vendor-onnx';
           }
-          if (id.includes('node_modules/shiki/')) {
-            return 'vendor-shiki';
-          }
           if (id.includes('node_modules/wavesurfer.js/')) {
             return 'vendor-wavesurfer';
           }

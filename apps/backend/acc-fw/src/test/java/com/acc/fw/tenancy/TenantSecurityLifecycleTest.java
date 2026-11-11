@@ -83,8 +83,8 @@ class TenantSecurityLifecycleTest {
         authorities.forEach(a -> authorityNames.add(a.getAuthority()));
 
         assertTrue(authorityNames.contains("ROLE_OPERATOR"));
-        assertTrue(authorityNames.contains("METADATA_RECORD_READ"));
-        assertTrue(authorityNames.contains("METADATA_RECORD_WRITE"));
+        assertTrue(authorityNames.contains("metadata_record_read"));
+        assertTrue(authorityNames.contains("metadata_record_write"));
     }
 
     @Test

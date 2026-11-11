@@ -1,0 +1,32 @@
+$schema: "https://moonrepo.dev/schemas/project.json"
+language: "python"
+type: "application"
+stack: "backend"
+project:
+  name: "ai-control-plane"
+  description: "Enterprise FastAPI AI Inference Backend with VieNeu-TTS v3 Turbo, Circuit Breakers, Adaptive Micro-Batching, and uv Isolation"
+tasks:
+  sync-env:
+    command: "uv sync --package ai-inference-backend"
+    inputs: ["pyproject.toml", "/uv.lock"]
+  lint:
+    command: "uv run ruff check src tests"
+    deps: ["~:sync-env"]
+    inputs: ["@group(sources)", "@group(tests)", "pyproject.toml"]
+  typecheck:
+    command: "uv run mypy src"
+    deps: ["~:sync-env"]
+    inputs: ["@group(sources)", "pyproject.toml"]
+  test:
+    command: "uv run pytest tests -v"
+    deps: ["~:sync-env"]
+    inputs: ["@group(sources)", "@group(tests)", "pyproject.toml"]
+  build:
+    command: "uv build --package ai-inference-backend --out-dir dist"
+    deps: ["~:sync-env"]
+    inputs: ["@group(sources)", "pyproject.toml"]
+    outputs: ["dist"]
+  dev:
+    command: "node scripts/run-backend.mjs dev"
+    deps: ["~:sync-env"]
+    local: true

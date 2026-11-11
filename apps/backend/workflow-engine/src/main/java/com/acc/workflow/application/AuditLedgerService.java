@@ -1,5 +1,6 @@
 package com.acc.workflow.application;
 
+import com.acc.workflow.ports.PersistencePort;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.acc.workflow.core.model.WorkflowAuditRecord;
@@ -18,13 +19,34 @@ import java.util.Map;
 public class AuditLedgerService {
 
     private final ObjectMapper objectMapper;
+    private final PersistencePort persistencePort;
 
     public AuditLedgerService() {
-        this(new ObjectMapper());
+        this(new ObjectMapper(), null);
     }
 
     public AuditLedgerService(ObjectMapper objectMapper) {
+        this(objectMapper, null);
+    }
+
+    public AuditLedgerService(ObjectMapper objectMapper, PersistencePort persistencePort) {
         this.objectMapper = objectMapper;
+        this.persistencePort = persistencePort;
+    }
+
+    public List<WorkflowAuditRecord> getAuditRecords(String workflowId) {
+        if (persistencePort == null || persistencePort.getWorkflowSnapshot(workflowId).isEmpty()) {
+            return Collections.emptyList();
+        }
+        return persistencePort.listAuditRecords(workflowId);
+    }
+
+    public AuditVerificationResult verifyAuditChainForWorkflow(String workflowId) {
+        if (persistencePort == null || persistencePort.getWorkflowSnapshot(workflowId).isEmpty()) {
+            return new AuditVerificationResult(false, 0, null, "Workflow not found: " + workflowId);
+        }
+        List<WorkflowAuditRecord> records = persistencePort.listAuditRecords(workflowId);
+        return verifyChain(records);
     }
 
     public String computeHash(

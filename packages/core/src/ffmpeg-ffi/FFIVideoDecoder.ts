@@ -117,6 +117,17 @@ export class FFIVideoDecoder implements IVideoDecoder {
   }
 
   /**
+   * Seeks to target timestamp in seconds and decodes the frame.
+   */
+  public async seekTimestamp(targetSeconds: number): Promise<ICanvasInstance | null> {
+    if (!this.isOpened) return null;
+    const targetTs = BigInt(Math.max(0, Math.round(targetSeconds * 1000000)));
+    FFI.avformat.av_seek_frame(this.vInFmt, -1, targetTs, 1);
+    FFI.avcodec.avcodec_flush_buffers(this.decCtx);
+    return this.readNextFrame();
+  }
+
+  /**
    * Reads next frame from video file. Loops back to start if end of video reached.
    */
   public async readNextFrame(): Promise<ICanvasInstance | null> {
@@ -200,5 +211,13 @@ export class FFIVideoDecoder implements IVideoDecoder {
       FFI.avformat.avformat_close_input(ptr(pVIn.buffer));
     }
     this.isOpened = false;
+  }
+
+  public [Symbol.dispose](): void {
+    this.close();
+  }
+
+  public async [Symbol.asyncDispose](): Promise<void> {
+    this.close();
   }
 }

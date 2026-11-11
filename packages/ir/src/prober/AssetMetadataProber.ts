@@ -6,6 +6,9 @@ export interface AssetMetadata {
   durationFrames: number;
   width?: number;
   height?: number;
+  fps?: number;
+  pixelAspectRatio?: number;
+  colorSpace?: string;
   sampleRate?: number;
   channels?: number;
   hasAudio?: boolean;
@@ -89,15 +92,18 @@ export class AssetMetadataProber implements IAssetMetadataProber {
   private probeWavHeaderSync(fs: any, filePath: string): number | null {
     const fd = fs.openSync(filePath, 'r');
     try {
-      const headerBuf = Buffer.alloc(44);
+      const headerBuf = new Uint8Array(44);
       fs.readSync(fd, headerBuf, 0, 44, 0);
 
-      // Check "RIFF" and "WAVE"
-      if (headerBuf.toString('ascii', 0, 4) !== 'RIFF' || headerBuf.toString('ascii', 8, 12) !== 'WAVE') {
+      // Check "RIFF" (0x52, 0x49, 0x46, 0x46) and "WAVE" (0x57, 0x41, 0x56, 0x45)
+      const isRiff = headerBuf[0] === 0x52 && headerBuf[1] === 0x49 && headerBuf[2] === 0x46 && headerBuf[3] === 0x46;
+      const isWave = headerBuf[8] === 0x57 && headerBuf[9] === 0x41 && headerBuf[10] === 0x56 && headerBuf[11] === 0x45;
+      if (!isRiff || !isWave) {
         return null;
       }
 
-      const byteRate = headerBuf.readUInt32LE(28);
+      const view = new DataView(headerBuf.buffer, headerBuf.byteOffset, headerBuf.byteLength);
+      const byteRate = view.getUint32(28, true); // little-endian
       // Chunk size in RIFF is at offset 4
       const fileSize = fs.statSync(filePath).size;
       const dataSize = Math.max(0, fileSize - 44);

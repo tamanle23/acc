@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.acc.workflow.infrastructure.adapters.outbound.persistence.mybatis.TaskDefinitionMyBatisMapper">
+
+  <resultMap id="TaskDefAggregateResultMap" type="com.acc.workflow.domain.taskdef.model.TaskDefinitionAggregate">
+    <constructor>
+      <idArg column="task_def_id" javaType="com.acc.workflow.domain.taskdef.valobj.TaskDefId"
+             typeHandler="com.acc.workflow.infrastructure.adapters.outbound.persistence.mybatis.TaskDefIdTypeHandler"/>
+      <arg column="tenant_id" javaType="java.lang.String"/>
+      <arg column="name" javaType="java.lang.String"/>
+      <arg column="version" javaType="int"/>
+      <arg column="status" javaType="com.acc.workflow.domain.taskdef.valobj.TaskStatus"
+           typeHandler="com.acc.workflow.infrastructure.adapters.outbound.persistence.mybatis.TaskStatusTypeHandler"/>
+      <arg column="description" javaType="java.lang.String"/>
+      <arg column="retry_count" javaType="int"/>
+      <arg column="retry_delay_seconds" javaType="int"/>
+      <arg column="backoff_rate" javaType="double"/>
+      <arg column="timeout_seconds" javaType="int"/>
+      <arg column="input_schema" javaType="java.util.Map"
+           typeHandler="com.acc.fw.mybatis.typehandler.MapJsonbTypeHandler"/>
+      <arg column="output_schema" javaType="java.util.Map"
+           typeHandler="com.acc.fw.mybatis.typehandler.MapJsonbTypeHandler"/>
+      <arg column="execution_contract" javaType="java.util.Map"
+           typeHandler="com.acc.fw.mybatis.typehandler.MapJsonbTypeHandler"/>
+      <arg column="changelog_note" javaType="java.lang.String"/>
+      <arg column="created_at_ms" javaType="long"/>
+      <arg column="updated_at_ms" javaType="long"/>
+    </constructor>
+  </resultMap>
+
+  <sql id="TaskDefColumns">
+    task_def_id, tenant_id, name, version, status, description, 
+    retry_count, retry_delay_seconds, backoff_rate, timeout_seconds, 
+    input_schema, output_schema, '{}'::jsonb AS execution_contract,
+    COALESCE(changelog_note, '') AS changelog_note,
+    created_at_ms, updated_at_ms
+  </sql>
+
+  <select id="selectById" resultMap="TaskDefAggregateResultMap">
+    SELECT <include refid="TaskDefColumns"/>
+    FROM workflow_task_definitions
+    WHERE task_def_id = #{id}
+    LIMIT 1
+  </select>
+
+  <select id="selectLatestByName" resultMap="TaskDefAggregateResultMap">
+    SELECT <include refid="TaskDefColumns"/>
+    FROM workflow_task_definitions
+    WHERE tenant_id = #{tenantId} AND name = #{name}
+    ORDER BY version DESC
+    LIMIT 1
+  </select>
+
+  <select id="selectByNameAndVersion" resultMap="TaskDefAggregateResultMap">
+    SELECT <include refid="TaskDefColumns"/>
+    FROM workflow_task_definitions
+    WHERE tenant_id = #{tenantId} AND name = #{name} AND version = #{version}
+    LIMIT 1
+  </select>
+
+  <select id="selectActiveByName" resultMap="TaskDefAggregateResultMap">
+    SELECT <include refid="TaskDefColumns"/>
+    FROM workflow_task_definitions
+    WHERE tenant_id = #{tenantId} AND name = #{name} AND status = 'ACTIVE'
+    LIMIT 1
+  </select>
+
+  <select id="selectVersions" resultMap="TaskDefAggregateResultMap">
+    SELECT <include refid="TaskDefColumns"/>
+    FROM workflow_task_definitions
+    WHERE tenant_id = #{tenantId} AND name = #{name}
+    ORDER BY version ASC
+  </select>
+
+  <select id="selectLatestDefinitions" resultMap="TaskDefAggregateResultMap">
+    SELECT DISTINCT ON (name) <include refid="TaskDefColumns"/>
+    FROM workflow_task_definitions
+    WHERE tenant_id = #{tenantId}
+    ORDER BY name, version DESC
+  </select>
+
+  <update id="deprecateActiveVersionsExcept">
+    UPDATE workflow_task_definitions
+    SET status = 'DEPRECATED', updated_at_ms = #{nowEpochMs}
+    WHERE tenant_id = #{tenantId} 
+      AND name = #{name} 
+      AND status = 'ACTIVE' 
+      AND task_def_id != #{excludedId}
+  </update>
+
+  <insert id="upsertTaskDefinition">
+    INSERT INTO workflow_task_definitions (
+      task_def_id, tenant_id, name, version, status, description, 
+      retry_count, retry_delay_seconds, backoff_rate, timeout_seconds, 
+      input_schema, output_schema, changelog_note, created_at_ms, updated_at_ms
+    ) VALUES (
+      #{id.value}, #{tenantId}, #{name}, #{version}, 
+      #{status, typeHandler=com.acc.workflow.infrastructure.adapters.outbound.persistence.mybatis.TaskStatusTypeHandler}, 
+      #{description}, #{retryCount}, #{retryDelaySeconds}, #{backoffRate}, #{timeoutSeconds},
+      #{inputSchema, typeHandler=com.acc.fw.mybatis.typehandler.MapJsonbTypeHandler},
+      #{outputSchema, typeHandler=com.acc.fw.mybatis.typehandler.MapJsonbTypeHandler},
+      #{changelogNote}, #{createdAtEpochMs}, #{updatedAtEpochMs}
+    )
+    ON CONFLICT (tenant_id, name, version) DO UPDATE SET
+      status = EXCLUDED.status,
+      description = EXCLUDED.description,
+      retry_count = EXCLUDED.retry_count,
+      retry_delay_seconds = EXCLUDED.retry_delay_seconds,
+      backoff_rate = EXCLUDED.backoff_rate,
+      timeout_seconds = EXCLUDED.timeout_seconds,
+      input_schema = EXCLUDED.input_schema,
+      output_schema = EXCLUDED.output_schema,
+      changelog_note = EXCLUDED.changelog_note,
+      updated_at_ms = EXCLUDED.updated_at_ms
+  </insert>
+
+</mapper>

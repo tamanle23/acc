@@ -2,6 +2,7 @@ export * from './PipelineIR';
 
 // Universal Video IR V1.0-Stable Exports
 export * from './types/VideoIR';
+export * from './types/conformance';
 export * from './standards/VideoStandardsCatalog';
 export * from './types/modifiers';
 export * from './types/FineGrainedVideoDirectorConfig';

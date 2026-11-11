@@ -240,7 +240,7 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
 
           // If relighting is requested, compute surface normal map and persist as Blob in ContentCacheRegistry
           if (params.relighting?.enabled && depthData?.srcCanvas) {
-            const dCtx = depthData.srcCanvas.getContext('2d');
+            const dCtx = depthData.srcCanvas.getContext('2d', { willReadFrequently: true });
             const depthImgData = dCtx.getImageData(0, 0, width, height);
             const normalMap = SurfaceNormalGenerator.generateFromDepth(
               depthImgData.data,
@@ -322,7 +322,7 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
         try {
           const uBgCanvas = UniversalCanvasProvider.createCanvas(width, height);
           bgCanvas = uBgCanvas.getRawCanvas ? uBgCanvas.getRawCanvas() : uBgCanvas;
-          const bgCtx = bgCanvas.getContext('2d');
+          const bgCtx = bgCanvas.getContext('2d', { willReadFrequently: true });
           bgCtx.fillStyle = '#06060c';
           bgCtx.fillRect(0, 0, width, height);
 
@@ -428,7 +428,7 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
         try {
           const uBaseCanvas = UniversalCanvasProvider.createCanvas(width, height);
           baseCanvas = uBaseCanvas.getRawCanvas ? uBaseCanvas.getRawCanvas() : uBaseCanvas;
-          const bCtx = baseCanvas.getContext('2d');
+          const bCtx = baseCanvas.getContext('2d', { willReadFrequently: true });
           bCtx.drawImage(baseAsset, 0, 0, baseAsset.width, baseAsset.height, 0, 0, width, height);
           NativeResourceManager.getInstance().register('wiggle_base', baseCanvas, { scope: seqScope });
         } catch {}
@@ -500,7 +500,7 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
         if (normalMap) {
           const uRelightCanvas = UniversalCanvasProvider.acquireScratchCanvas(width, height);
           const relightCanvas = uRelightCanvas.getRawCanvas ? uRelightCanvas.getRawCanvas() : uRelightCanvas;
-          const rCtx = relightCanvas.getContext('2d');
+          const rCtx = relightCanvas.getContext('2d', { willReadFrequently: true });
 
           try {
             rCtx.clearRect(0, 0, width, height);
@@ -590,7 +590,7 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
           try {
             const uCanvas = UniversalCanvasProvider.acquireScratchCanvas(width, height);
             const rawScratch = uCanvas.getRawCanvas ? uCanvas.getRawCanvas() : uCanvas;
-            const sCtx = rawScratch.getContext('2d');
+            const sCtx = rawScratch.getContext('2d', { willReadFrequently: true });
             const imgData = sCtx.createImageData(width, height);
             const normals = normalMap.normals;
             const totalPixels = width * height;

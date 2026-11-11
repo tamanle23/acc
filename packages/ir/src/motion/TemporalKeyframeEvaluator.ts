@@ -50,7 +50,8 @@ export class TemporalKeyframeEvaluator {
   public static evaluateNumeric(
     curveOrScalar: number | TemporalCurve<number> | undefined,
     timeSec: number,
-    defaultValue: number = 0
+    defaultValue: number = 0,
+    durationSec?: number
   ): number {
     if (curveOrScalar === undefined || curveOrScalar === null) {
       return defaultValue;
@@ -66,10 +67,11 @@ export class TemporalKeyframeEvaluator {
     }
 
     // 2. Evaluate intro/steady/outro lifecycle if keyframes are not present
-    let currentVal = defaultValue;
     const intro = curveOrScalar.intro;
+    const steady = curveOrScalar.steady;
     const outro = curveOrScalar.outro;
 
+    // Intro Stage
     if (intro && timeSec < intro.durationSec) {
       const t = timeSec / Math.max(0.001, intro.durationSec);
       const easedT = evaluateEasingProgress(t, intro.ease);
@@ -77,7 +79,25 @@ export class TemporalKeyframeEvaluator {
       return intro.from + (target - intro.from) * easedT;
     }
 
-    return currentVal;
+    // Outro Stage (if sequence duration is known)
+    if (outro && typeof durationSec === 'number' && outro.durationSec > 0) {
+      const outroStart = Math.max(0, durationSec - outro.durationSec);
+      if (timeSec >= outroStart) {
+        const t = (timeSec - outroStart) / Math.max(0.001, outro.durationSec);
+        const easedT = evaluateEasingProgress(t, outro.ease);
+        const steadyVal = intro?.to !== undefined ? intro.to : defaultValue;
+        return steadyVal + (outro.to - steadyVal) * easedT;
+      }
+    }
+
+    // Steady Stage
+    const steadyVal = intro?.to !== undefined ? intro.to : defaultValue;
+    if (steady?.type === 'pulse') {
+      const intensity = steady.intensity ?? 0.1;
+      return steadyVal * (1.0 + Math.sin(timeSec * Math.PI * 2) * intensity);
+    }
+
+    return steadyVal;
   }
 
   /**

@@ -9,6 +9,8 @@ export interface WorkerRenderOptions {
   debugMode?: 'none' | 'depth_heatmap' | 'normals' | 'alpha';
 }
 
+const GLOBAL_BRIDGE_KEY = Symbol.for('@acc/studio/PreviewWorkerBridge');
+
 export class PreviewWorkerBridge implements Disposable {
   private static instance: PreviewWorkerBridge | null = null;
   private worker: Worker | null = null;
@@ -20,8 +22,17 @@ export class PreviewWorkerBridge implements Disposable {
   private workerMessageListeners = new Set<(e: MessageEvent) => void>();
 
   public static getInstance(): PreviewWorkerBridge {
+    const g = typeof globalThis !== 'undefined' ? (globalThis as any) : null;
+    if (g && g[GLOBAL_BRIDGE_KEY]) {
+      PreviewWorkerBridge.instance = g[GLOBAL_BRIDGE_KEY];
+      return PreviewWorkerBridge.instance!;
+    }
+
     if (!PreviewWorkerBridge.instance) {
       PreviewWorkerBridge.instance = new PreviewWorkerBridge();
+      if (g) {
+        g[GLOBAL_BRIDGE_KEY] = PreviewWorkerBridge.instance;
+      }
     }
     return PreviewWorkerBridge.instance;
   }

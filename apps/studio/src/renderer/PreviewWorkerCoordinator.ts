@@ -28,6 +28,8 @@ export interface SidecarPreflightOptions {
   lookaheadSec?: number;
 }
 
+const GLOBAL_COORDINATOR_KEY = Symbol.for('@acc/studio/PreviewWorkerCoordinator');
+
 export class PreviewWorkerCoordinator {
   private static instance: PreviewWorkerCoordinator | null = null;
   private bridge: PreviewWorkerBridge | null = null;
@@ -51,6 +53,10 @@ export class PreviewWorkerCoordinator {
   private warmupResolvers: Array<(warmed: boolean) => void> = [];
 
   constructor(customWorkerUrl?: URL) {
+    const g = typeof globalThis !== 'undefined' ? (globalThis as any) : null;
+    if (!customWorkerUrl && (PreviewWorkerCoordinator.instance || (g && g[GLOBAL_COORDINATOR_KEY]))) {
+      return (PreviewWorkerCoordinator.instance || g[GLOBAL_COORDINATOR_KEY]) as PreviewWorkerCoordinator;
+    }
     this.initWorker(customWorkerUrl);
   }
 
@@ -63,8 +69,17 @@ export class PreviewWorkerCoordinator {
       throw new Error('[PreviewWorkerCoordinator] Must not be instantiated in a Web Worker realm.');
     }
 
+    const g = typeof globalThis !== 'undefined' ? (globalThis as any) : null;
+    if (g && g[GLOBAL_COORDINATOR_KEY]) {
+      PreviewWorkerCoordinator.instance = g[GLOBAL_COORDINATOR_KEY];
+      return PreviewWorkerCoordinator.instance!;
+    }
+
     if (!PreviewWorkerCoordinator.instance) {
       PreviewWorkerCoordinator.instance = new PreviewWorkerCoordinator();
+      if (g) {
+        g[GLOBAL_COORDINATOR_KEY] = PreviewWorkerCoordinator.instance;
+      }
     }
     return PreviewWorkerCoordinator.instance;
   }
@@ -78,6 +93,12 @@ export class PreviewWorkerCoordinator {
     }
     return false;
   }
+
+  private handleBridgeMessage = (event: MessageEvent): void => {
+    if (event.data && typeof event.data === 'object' && 'type' in event.data) {
+      this.handleWorkerMessage(event.data as WorkerResponse);
+    }
+  };
 
   private initWorker(customWorkerUrl?: URL): void {
     // Strictly prevent worker initialization if inside another worker
@@ -97,11 +118,7 @@ export class PreviewWorkerCoordinator {
           // to eliminate secondary duplicate worker allocation (~500MB RAM saving).
           this.bridge = PreviewWorkerBridge.getInstance();
           this.worker = this.bridge.getWorker();
-          this.bridge.addMessageListener((event: MessageEvent) => {
-            if (event.data && typeof event.data === 'object' && 'type' in event.data) {
-              this.handleWorkerMessage(event.data as WorkerResponse);
-            }
-          });
+          this.bridge.addMessageListener(this.handleBridgeMessage);
         }
 
         if (this.worker) {
@@ -197,9 +214,9 @@ export class PreviewWorkerCoordinator {
         this.isWarmedUp = true;
         if (alreadyWarmed) {
           Logger.warn('PreviewWorkerCoordinator.ts', 'Duplicate WARMED_UP response received from sidecar worker.');
-        } else {
-          Logger.info('PreviewWorkerCoordinator.ts', 'Sidecar worker successfully warmed up.');
+          break;
         }
+        Logger.info('PreviewWorkerCoordinator.ts', 'Sidecar worker successfully warmed up.');
         this.notifyWarmupResolvers(true);
         break;
       }

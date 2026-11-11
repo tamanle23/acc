@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.acc.fs.infrastructure.adapters.outbound.persistence.mybatis.FsObjectMyBatisMapper">
+
+  <resultMap id="FsObjectAggregateResultMap" type="com.acc.fs.domain.model.FsObjectAggregate">
+    <constructor>
+      <idArg column="uid" javaType="com.acc.fs.domain.model.valobj.FileId" 
+             typeHandler="com.acc.fs.infrastructure.adapters.outbound.persistence.mybatis.FileIdTypeHandler"/>
+      <arg column="tenant_id" javaType="java.lang.String"/>
+      <arg column="workspace_id" javaType="java.lang.String"/>
+      <arg column="name" javaType="java.lang.String"/>
+      <arg column="parent_uid" javaType="java.lang.String"/>
+      <arg column="is_directory" javaType="boolean"/>
+      <arg column="size_bytes" javaType="long"/>
+      <arg column="content_type" javaType="java.lang.String"/>
+      <arg column="storage_path" javaType="java.lang.String"/>
+      <arg column="checksum_sha256" javaType="java.lang.String"/>
+      <arg column="created_at_epoch_ms" javaType="long"/>
+      <arg column="updated_at_epoch_ms" javaType="long"/>
+    </constructor>
+  </resultMap>
+
+  <sql id="FsObjectSelectColumns">
+    f.uid,
+    COALESCE(f.owner_uid, 'system') AS tenant_id,
+    'default' AS workspace_id,
+    f.name,
+    rel.parent_uid AS parent_uid,
+    COALESCE(f.is_directory, false) AS is_directory,
+    COALESCE(f.size, 0) AS size_bytes,
+    COALESCE(f.content_type, 'application/octet-stream') AS content_type,
+    COALESCE(f.root_location, '') AS storage_path,
+    f.checksum AS checksum_sha256,
+    COALESCE(EXTRACT(EPOCH FROM f.createddate) * 1000, 0)::bigint AS created_at_epoch_ms,
+    COALESCE(EXTRACT(EPOCH FROM f.lastupdateddate) * 1000, 0)::bigint AS updated_at_epoch_ms
+  </sql>
+
+  <select id="selectById" resultMap="FsObjectAggregateResultMap">
+    SELECT <include refid="FsObjectSelectColumns"/>
+    FROM unipost_fs_object f
+    LEFT JOIN (
+      SELECT child_uid, parent_uid FROM unipost_fs_objectrelation
+    ) rel ON f.uid = rel.child_uid
+    WHERE f.uid = #{id} AND f.deleteddate IS NULL
+    LIMIT 1
+  </select>
+
+  <select id="selectAllByParentUid" resultMap="FsObjectAggregateResultMap">
+    SELECT <include refid="FsObjectSelectColumns"/>
+    FROM unipost_fs_object f
+    INNER JOIN unipost_fs_objectrelation rel ON f.uid = rel.child_uid
+    WHERE rel.parent_uid = #{parentUid}
+      AND (f.owner_uid = #{tenantId} OR #{tenantId} IS NULL)
+      AND f.deleteddate IS NULL
+    ORDER BY f.name ASC
+  </select>
+
+  <select id="selectAllDirectories" resultMap="FsObjectAggregateResultMap">
+    SELECT <include refid="FsObjectSelectColumns"/>
+    FROM unipost_fs_object f
+    LEFT JOIN (
+      SELECT child_uid, parent_uid FROM unipost_fs_objectrelation
+    ) rel ON f.uid = rel.child_uid
+    WHERE f.is_directory = true
+      AND (f.owner_uid = #{tenantId} OR #{tenantId} IS NULL)
+      AND (
+        (#{parentUid} IS NULL AND rel.parent_uid IS NULL) OR
+        (rel.parent_uid = #{parentUid})
+      )
+      AND f.deleteddate IS NULL
+    ORDER BY f.name ASC
+  </select>
+
+  <insert id="upsertFsObject">
+    INSERT INTO unipost_fs_object (
+      uid, owner_uid, name, is_directory, size, content_type, root_location, checksum,
+      createddate, lastupdateddate
+    ) VALUES (
+      #{id.value}, #{tenantId}, #{name}, #{isDirectory}, #{sizeBytes}, #{contentType},
+      #{storagePath}, #{checksumSha256},
+      TO_TIMESTAMP(#{createdAtEpochMs} / 1000.0),
+      TO_TIMESTAMP(#{updatedAtEpochMs} / 1000.0)
+    )
+    ON CONFLICT (uid) DO UPDATE SET
+      name = EXCLUDED.name,
+      is_directory = EXCLUDED.is_directory,
+      size = EXCLUDED.size,
+      content_type = EXCLUDED.content_type,
+      root_location = EXCLUDED.root_location,
+      checksum = EXCLUDED.checksum,
+      lastupdateddate = EXCLUDED.lastupdateddate
+  </insert>
+
+  <update id="deleteById">
+    UPDATE unipost_fs_object
+    SET deleteddate = CURRENT_TIMESTAMP
+    WHERE uid = #{id}
+  </update>
+
+  <insert id="insertRelation">
+    INSERT INTO unipost_fs_objectrelation (parent_uid, child_uid, owner_uid)
+    VALUES (#{parentUid}, #{childUid}, #{tenantId})
+  </insert>
+
+</mapper>

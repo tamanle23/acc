@@ -42,7 +42,15 @@ export interface AudioMixerClip {
 }
 
 function resolveAssetPath(baseDir: string, assetSrc: string): string {
-  if (/^([a-zA-Z]:[\\/]|\\\\|\/)/.test(assetSrc) || assetSrc.startsWith('http://') || assetSrc.startsWith('https://') || assetSrc.startsWith('blob:')) {
+  if (
+    /^([a-zA-Z]:[\\/]|\\\\|\/)/.test(assetSrc) ||
+    assetSrc.startsWith('http://') ||
+    assetSrc.startsWith('https://') ||
+    assetSrc.startsWith('blob:') ||
+    assetSrc.startsWith('data:') ||
+    assetSrc.startsWith('cache:') ||
+    assetSrc.startsWith('opfs:')
+  ) {
     return assetSrc;
   }
   const cleanBase = baseDir.replace(/[\\/]+$/, '');
@@ -135,15 +143,29 @@ export class UniversalAudioMixer {
 
     let hasVoice = false;
     for (const clip of this.clips) {
-      if (clip.type === 'voice' || clip.modifiers?.some((m) => m.type === 'sfx/dynamic_ducking')) {
+      const hasDuckingMod = clip.modifiers?.some((m) => m.type === 'sfx/dynamic_ducking');
+      if (clip.type === 'voice' || hasDuckingMod) {
         hasVoice = true;
         const startIdx = Math.max(0, Math.floor(clip.startTimeSec * this.timelineDuckingRate));
         const endIdx = Math.min(
           totalEnvSamples,
           Math.ceil((clip.startTimeSec + clip.durationSec) * this.timelineDuckingRate)
         );
-        for (let i = startIdx; i < endIdx; i++) {
-          voicePcm[i] = Math.max(voicePcm[i], 0.25);
+        const clipDuration = clip.durationSec;
+        const clipEnvSamples = endIdx - startIdx;
+
+        if (clip.audioSource && clip.audioSource.isReady() && clipEnvSamples > 0) {
+          // Query real audio waveform energy to duck only when speech/vocals are actively sounding
+          const { left, right } = clip.audioSource.sample(0, clipDuration, this.timelineDuckingRate);
+          for (let i = 0; i < clipEnvSamples; i++) {
+            const energy = Math.max(Math.abs(left[i] || 0), Math.abs(right[i] || 0));
+            voicePcm[startIdx + i] = Math.max(voicePcm[startIdx + i], energy);
+          }
+        } else {
+          // Synthetic or explicit modifier fallback
+          for (let i = startIdx; i < endIdx; i++) {
+            voicePcm[i] = Math.max(voicePcm[i], 0.25);
+          }
         }
       }
     }
@@ -386,9 +408,14 @@ export class UniversalAudioMixer {
       masterLeft[i] = voiceLeft[i] + sfxLeft[i] + bgmLeft[i] * bgmFactor;
       masterRight[i] = voiceRight[i] + sfxRight[i] + bgmRight[i] * bgmFactor;
 
-      // Soft analog limiter on master bus
-      masterLeft[i] = Math.tanh(masterLeft[i]);
-      masterRight[i] = Math.tanh(masterRight[i]);
+      // Transparent master limiter: bit-exact unity pass-through below 0 dBFS (<= 1.0),
+      // soft proportional gain reduction only when multi-bus sum exceeds full scale.
+      const maxPeak = Math.max(Math.abs(masterLeft[i]), Math.abs(masterRight[i]));
+      if (maxPeak > 1.0) {
+        const gainReduction = Math.tanh(maxPeak) / maxPeak;
+        masterLeft[i] *= gainReduction;
+        masterRight[i] *= gainReduction;
+      }
     }
 
     // 4. Measure Peak and RMS levels

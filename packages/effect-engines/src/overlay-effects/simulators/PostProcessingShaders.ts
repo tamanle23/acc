@@ -11,6 +11,16 @@
  */
 
 export class PostProcessingShaders {
+  private static scanlineRed: Uint8Array = new Uint8Array(4096);
+  private static scanlineBlue: Uint8Array = new Uint8Array(4096);
+
+  private static ensureScanlineCapacity(width: number): void {
+    if (this.scanlineRed.length < width) {
+      this.scanlineRed = new Uint8Array(Math.max(width, this.scanlineRed.length * 2));
+      this.scanlineBlue = new Uint8Array(Math.max(width, this.scanlineBlue.length * 2));
+    }
+  }
+
   /**
    * Applies chromatic aberration in-place to an RGBA pixel buffer.
    *
@@ -28,12 +38,14 @@ export class PostProcessingShaders {
     const shift = Math.round(offsetPx);
     if (shift <= 0) return;
 
+    this.ensureScanlineCapacity(width);
+    const lineRed = this.scanlineRed;
+    const lineBlue = this.scanlineBlue;
+
     for (let y = 0; y < height; y++) {
       const rowStart = y * width * 4;
 
-      // Temporary scanline copy for red and blue channels to prevent in-place overwrite
-      const lineRed = new Uint8Array(width);
-      const lineBlue = new Uint8Array(width);
+      // Reusable scanline copy for red and blue channels to prevent in-place overwrite
       for (let x = 0; x < width; x++) {
         lineRed[x] = rgba[rowStart + x * 4];
         lineBlue[x] = rgba[rowStart + x * 4 + 2];
@@ -69,15 +81,21 @@ export class PostProcessingShaders {
     width: number,
     height: number,
     threshold: number = 0.7,
-    intensity: number = 0.5
+    intensity: number = 0.5,
+    sampleWidth?: number,
+    sampleHeight?: number
   ): void {
     if (intensity <= 0.01) return;
 
-    // 1. Draw snapshot to scratch canvas
-    scratchCtx.clearRect(0, 0, width, height);
-    scratchCtx.drawImage(ctx.canvas, 0, 0);
+    // Use downsampled buffer (default 160x90) for high-performance zero-lag diffuse glow
+    const sW = sampleWidth ?? Math.min(width, 160);
+    const sH = sampleHeight ?? Math.min(height, 90);
 
-    const imgData = scratchCtx.getImageData(0, 0, width, height);
+    // 1. Draw snapshot downsampled to scratch canvas
+    scratchCtx.clearRect(0, 0, sW, sH);
+    scratchCtx.drawImage(ctx.canvas, 0, 0, sW, sH);
+
+    const imgData = scratchCtx.getImageData(0, 0, sW, sH);
     const data = imgData.data;
     const len = data.length;
 
@@ -104,12 +122,12 @@ export class PostProcessingShaders {
 
     scratchCtx.putImageData(imgData, 0, 0);
 
-    // 3. Composite back with screen blending
+    // 3. Composite back with screen blending and hardware bilinear upsampling
     ctx.save();
     try {
       ctx.globalAlpha = Math.min(1.0, intensity);
       ctx.globalCompositeOperation = 'screen';
-      ctx.drawImage(scratchCanvas, 0, 0);
+      ctx.drawImage(scratchCanvas, 0, 0, sW, sH, 0, 0, width, height);
     } finally {
       ctx.restore();
     }

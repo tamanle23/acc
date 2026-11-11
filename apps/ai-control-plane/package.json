@@ -1,0 +1,15 @@
+{
+  "name": "@acc/ai-control-plane",
+  "version": "2.0.0",
+  "private": true,
+  "scripts": {
+    "sync-env": "node scripts/run-backend.mjs sync-env",
+    "lint": "node scripts/run-backend.mjs lint",
+    "typecheck": "node scripts/run-backend.mjs typecheck",
+    "test": "node scripts/run-backend.mjs test",
+    "build": "node scripts/run-backend.mjs sync-env",
+    "dev": "node scripts/run-backend.mjs dev",
+    "start": "node scripts/run-backend.mjs start",
+    "provision-gpu": "node scripts/run-backend.mjs provision-gpu"
+  }
+}

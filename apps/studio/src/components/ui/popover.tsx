@@ -3,7 +3,8 @@ import * as PopoverPrimitive from "@kobalte/core/popover";
 import { cn } from "cn";
 
 function Popover(props: ComponentProps<typeof PopoverPrimitive.Root> & { [key: string]: any }) {
-  return <PopoverPrimitive.Root data-slot="popover" {...props} />;
+  const [local, rest] = splitProps(props, ["modal"]);
+  return <PopoverPrimitive.Root data-slot="popover" modal={local.modal ?? false} {...rest} />;
 }
 
 function PopoverTrigger(props: ComponentProps<typeof PopoverPrimitive.Trigger> & { class?: string; className?: string; asChild?: boolean; [key: string]: any }) {

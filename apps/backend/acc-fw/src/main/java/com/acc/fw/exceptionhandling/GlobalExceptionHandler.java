@@ -1,5 +1,9 @@
 package com.acc.fw.exceptionhandling;
 
+import com.acc.core.domain.exception.DomainException;
+import com.acc.core.domain.exception.DomainValidationException;
+import com.acc.core.domain.exception.EntityNotFoundException;
+import com.acc.core.domain.exception.ImmutableVersionConflictException;
 import com.acc.core.exception.BusinessException;
 import com.acc.core.exception.ErrorCodes;
 import com.acc.core.io.Error;
@@ -45,6 +49,40 @@ public class GlobalExceptionHandler {
       this.logger.error("Access denied error: ", ex);
     }
     return responseBuilder.error(HttpStatus.FORBIDDEN, Error.builder().code(ErrorCodes.ERROR_ACCESS_DENIED.name()).message(ErrorCodes.ERROR_ACCESS_DENIED.getMessage()).build());
+  }
+
+  @ExceptionHandler(value = { EntityNotFoundException.class })
+  protected ResponseEntity<ResponseWrapper<ContextHeader, Object>> handleEntityNotFoundException(EntityNotFoundException ex) {
+    if (this.logger.isWarnEnabled()) {
+      this.logger.warn("Domain entity not found: {}", ex.getMessage());
+    }
+    return responseBuilder.error(HttpStatus.NOT_FOUND, Error.builder().code(ex.getErrorCode().getCode()).message(ex.getMessage()).build());
+  }
+
+  @ExceptionHandler(value = { ImmutableVersionConflictException.class })
+  protected ResponseEntity<ResponseWrapper<ContextHeader, Object>> handleImmutableVersionConflictException(ImmutableVersionConflictException ex) {
+    if (this.logger.isWarnEnabled()) {
+      this.logger.warn("Domain version conflict: {}", ex.getMessage());
+    }
+    return responseBuilder.error(HttpStatus.CONFLICT, Error.builder().code(ex.getErrorCode().getCode()).message(ex.getMessage()).build());
+  }
+
+  @ExceptionHandler(value = { DomainValidationException.class })
+  protected ResponseEntity<ResponseWrapper<ContextHeader, Object>> handleDomainValidationException(DomainValidationException ex) {
+    if (this.logger.isWarnEnabled()) {
+      this.logger.warn("Domain validation failure: {}", ex.getMessage());
+    }
+    return responseBuilder.fail(HttpStatus.UNPROCESSABLE_ENTITY, Error.builder().code(ex.getErrorCode().getCode()).message(ex.getMessage()).build());
+  }
+
+  @ExceptionHandler(value = { DomainException.class })
+  protected ResponseEntity<ResponseWrapper<ContextHeader, Object>> handleDomainException(DomainException ex) {
+    if (this.logger.isWarnEnabled()) {
+      this.logger.warn("Domain rule violation: {}", ex.getMessage());
+    }
+    HttpStatus status = HttpStatus.resolve(ex.getErrorCode().getHttpStatus());
+    if (status == null) status = HttpStatus.BAD_REQUEST;
+    return responseBuilder.fail(status, Error.builder().code(ex.getErrorCode().getCode()).message(ex.getMessage()).build());
   }
 
   @ExceptionHandler(value = { RuntimeException.class})

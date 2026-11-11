@@ -42,6 +42,7 @@ import type {
   IRSequence,
   IRTrack,
 } from './generated-ir-types';
+import type { FitMode, NormalizedCrop } from './conformance';
 
 export interface TrackStyle {
   opacity?: number;
@@ -77,6 +78,10 @@ export interface ResolvedSequence {
   endFrame: number;
   durationFrames: number;
   blendMode?: BlendMode;
+  fitMode?: FitMode;
+  crop?: NormalizedCrop;
+  speed?: number;
+  trimInSec?: number;
   cues?: TimedTextCue[];
   modifiers?: ModifierNode[];
 }
