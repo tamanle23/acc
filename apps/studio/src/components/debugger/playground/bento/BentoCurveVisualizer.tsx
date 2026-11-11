@@ -63,7 +63,7 @@ export function BentoCurveVisualizer(props: BentoCurveVisualizerProps) {
 
   const drawGraph = () => {
     if (!canvasRef) return;
-    const ctx = canvasRef.getContext('2d');
+    const ctx = canvasRef.getContext('2d', { willReadFrequently: true });
     if (!ctx) return;
 
     const width = canvasRef.width;

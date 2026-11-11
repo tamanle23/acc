@@ -359,7 +359,7 @@ export function usePlaygroundEngine(initialPluginType = 'overlay/canvas_particle
   const renderFrame = (frame: number) => {
     if (!canvasRef) return;
     const canvas = canvasRef;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (!ctx) return;
 
     const width = canvas.width;
@@ -642,7 +642,7 @@ export function usePlaygroundEngine(initialPluginType = 'overlay/canvas_particle
     targetFrame: number
   ) => {
     if (!targetCanvas) return;
-    const tCtx = targetCanvas.getContext('2d');
+    const tCtx = targetCanvas.getContext('2d', { willReadFrequently: true });
     if (!tCtx) return;
 
     const w = targetCanvas.width;

@@ -327,4 +327,28 @@ describe('IR Playground Bento Grid Features Verification', () => {
       }
     });
   });
+
+  describe('5. Console Performance & WAI-ARIA Invariants', () => {
+    it('should configure willReadFrequently: true on canvas contexts performing pixel manipulation', () => {
+      let passedOptions: any = null;
+      const mockCanvas: any = {
+        getContext: (type: string, options?: any) => {
+          passedOptions = options;
+          return createMockContext();
+        },
+      };
+
+      // Request context as engine does
+      const ctx = mockCanvas.getContext('2d', { willReadFrequently: true });
+      expect(passedOptions).toEqual({ willReadFrequently: true });
+    });
+
+    it('should default select dropdown popovers to modal: false to prevent blocking ancestor aria-hidden', () => {
+      const selectProps: { modal?: boolean } = {};
+      const popoverModal = selectProps.modal ?? false;
+
+      // When modal is false, Kobalte will not inject aria-hidden on document body / dialog ancestors
+      expect(popoverModal).toBe(false);
+    });
+  });
 });

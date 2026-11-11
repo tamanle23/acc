@@ -271,7 +271,7 @@ export class CanvasParticleOverlayPlugin implements ModifierPlugin<CanvasParticl
         try {
           uScratch = UniversalCanvasProvider.acquireScratchCanvas(width, height);
           const scratch = uScratch.getRawCanvas ? uScratch.getRawCanvas() : uScratch;
-          const sCtx = uScratch.getContext('2d');
+          const sCtx = uScratch.getContext('2d', { willReadFrequently: true });
           PostProcessingShaders.applyBloom(
             canvasCtx,
             scratch,

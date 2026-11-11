@@ -197,8 +197,8 @@ export class Camera3DPlugin implements ModifierPlugin<Camera3DPluginParams> {
           const nearBlurCanvas = uNear.getRawCanvas ? uNear.getRawCanvas() : uNear;
           const farBlurCanvas = uFar.getRawCanvas ? uFar.getRawCanvas() : uFar;
 
-          const nbCtx = nearBlurCanvas.getContext('2d');
-          const fbCtx = farBlurCanvas.getContext('2d');
+          const nbCtx = nearBlurCanvas.getContext('2d', { willReadFrequently: true });
+          const fbCtx = farBlurCanvas.getContext('2d', { willReadFrequently: true });
 
           // Draw base image with multi-pass box blur simulation
           this.drawFastBlurred(nbCtx, sharpCanvas, width, height, 8);
@@ -323,8 +323,8 @@ export class Camera3DPlugin implements ModifierPlugin<Camera3DPluginParams> {
             const rawNear = uNear.getRawCanvas ? uNear.getRawCanvas() : uNear;
             const rawFar = uFar.getRawCanvas ? uFar.getRawCanvas() : uFar;
 
-            const nCtx = rawNear.getContext('2d');
-            const fCtx = rawFar.getContext('2d');
+            const nCtx = rawNear.getContext('2d', { willReadFrequently: true });
+            const fCtx = rawFar.getContext('2d', { willReadFrequently: true });
 
             const nImgData = nCtx.createImageData(width, height);
             nImgData.data.set(nearBytes);
@@ -403,7 +403,7 @@ export class Camera3DPlugin implements ModifierPlugin<Camera3DPluginParams> {
     const uTiny = UniversalCanvasProvider.acquireScratchCanvas(downW, downH);
     try {
       const tinyCanvas = uTiny.getRawCanvas ? uTiny.getRawCanvas() : uTiny;
-      const tCtx = tinyCanvas.getContext('2d');
+      const tCtx = tinyCanvas.getContext('2d', { willReadFrequently: true });
 
       // Downscale with bilinear filter
       tCtx.drawImage(srcCanvas, 0, 0, downW, downH);

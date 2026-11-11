@@ -85,6 +85,7 @@ function Select(props: SelectProps) {
         open={isOpen()}
         onOpenChange={handleOpenChange}
         sameWidth
+        modal={props.modal ?? false}
       >
         {props.children}
       </PopoverPrimitive.Root>
@@ -139,18 +140,27 @@ function SelectContent(props: ComponentProps<"div"> & {
   class?: string;
   className?: string;
   children?: JSX.Element;
+  mount?: Node;
   [key: string]: any;
 }) {
-  const [local, rest] = splitProps(props, ["class", "className", "children"]);
+  const [local, rest] = splitProps(props, ["class", "className", "children", "mount", "onFocusOutside"]);
 
   return (
-    <PopoverPrimitive.Portal>
+    <PopoverPrimitive.Portal mount={local.mount}>
       <PopoverPrimitive.Content
         data-slot="select-content"
         class={cn(
           "relative z-50 max-h-96 min-w-36 overflow-x-hidden overflow-y-auto rounded-2xl bg-popover text-popover-foreground shadow-lg ring-1 ring-foreground/5 duration-100 p-1 dark:ring-foreground/10 outline-none",
           local.class || local.className
         )}
+        onFocusOutside={(e: any) => {
+          const target = e.detail?.originalEvent?.target as HTMLElement | undefined;
+          if (target && (e.currentTarget?.contains?.(target) || target.closest?.('[data-slot="select-content"]'))) {
+            e.preventDefault();
+            return;
+          }
+          local.onFocusOutside?.(e);
+        }}
         {...rest}
       >
         <div class="p-1 outline-none">{local.children}</div>
