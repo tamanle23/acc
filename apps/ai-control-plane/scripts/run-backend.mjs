@@ -238,23 +238,7 @@ if (mode === "dev") {
     "src",
     ...extraArgs.filter((_, idx) => idx !== portIndex && idx !== portIndex + 1),
   ];
-} else if (mode === "start") {
-  targetModule = "uvicorn";
-  const portIndex = extraArgs.indexOf("--port");
-  const targetPort = portIndex !== -1 && extraArgs[portIndex + 1] ? Number(extraArgs[portIndex + 1]) : Number(process.env.PORT || 8000);
-  releasePortIfOccupied(targetPort);
-
-  moduleArgs = [
-    "-m",
-    "uvicorn",
-    "api.main:app",
-    "--host",
-    process.env.HOST || "0.0.0.0",
-    "--port",
-    String(targetPort),
-    ...extraArgs.filter((_, idx) => idx !== portIndex && idx !== portIndex + 1),
-  ];
-} else if (mode === "test") {
+}  else if (mode === "test") {
   targetModule = "unittest";
   moduleArgs = ["-m", "unittest", "discover", "-s", "tests", "-v", ...extraArgs];
 } else if (mode === "lint") {
@@ -266,10 +250,6 @@ if (mode === "dev") {
 } else if (mode === "provision-gpu") {
   targetModule = "";
   moduleArgs = ["-m", "infrastructure.uv_manager", "--gpu", ...extraArgs];
-} else if (mode === "sync-env") {
-  const py = findBestPython("");
-  console.log(`[ai-control-plane] Active Python interpreter: ${py}`);
-  process.exit(0);
 } else {
   console.error(`Unknown mode: ${mode}`);
   process.exit(1);

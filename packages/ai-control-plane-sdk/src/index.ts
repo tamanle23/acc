@@ -32,13 +32,6 @@ export interface URLPatternResult {
   hash: URLPatternComponentResult;
 }
 
-declare global {
-  class URLPattern {
-    constructor(input?: string | URLPatternInit, baseURL?: string);
-    test(input?: string | URLPatternInit, baseURL?: string): boolean;
-    exec(input?: string | URLPatternInit, baseURL?: string): URLPatternResult | null;
-  }
-}
 
 export type ModalityFamily =
   | "tts"

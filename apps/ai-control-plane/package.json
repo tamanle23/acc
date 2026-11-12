@@ -7,9 +7,10 @@
     "lint": "node scripts/run-backend.mjs lint",
     "typecheck": "node scripts/run-backend.mjs typecheck",
     "test": "node scripts/run-backend.mjs test",
-    "build": "node scripts/run-backend.mjs sync-env",
-    "dev": "node scripts/run-backend.mjs dev",
-    "start": "node scripts/run-backend.mjs start",
-    "provision-gpu": "node scripts/run-backend.mjs provision-gpu"
+    "_dev": "node scripts/run-backend.mjs dev",
+    "build": ".venv\\Scripts\\python.exe -m build",
+    "dev": ".venv\\Scripts\\python.exe -m uvicorn api.main:app --app-dir src --reload",
+    "provision-gpu": "node scripts/run-backend.mjs provision-gpu",
+    "postinstall": "node scripts/install-uv.js"
   }
 }
