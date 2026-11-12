@@ -61,6 +61,6 @@ A phased 4-phase, 4-tier migration was architected and executed to completion:
 
 ## Walkthrough & Architectural Artifacts
 - Master Plan: [`master_implementation_plan_iteration_87.md`](file:///c:/Users/Admin/workspace/git/acc/docs/iterations/master_implementation_plan_iteration_87.md)
-- Backend Plan: [`apps/backend/doc/implementation_plan_166.md`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/doc/implementation_plan_166.md)
+- Backend Plan: [`apps/api/doc/implementation_plan_166.md`](file:///c:/Users/Admin/workspace/git/acc/apps/api/doc/implementation_plan_166.md)
 - Console Plan: [`apps/console/doc/implementation_plan_176.md`](file:///c:/Users/Admin/workspace/git/acc/apps/console/doc/implementation_plan_176.md)
 - Technical Specification Artifact: [`hexagonal_architecture_and_ddd_migration_plan.md`](file:///c:/Users/Admin/.gemini/antigravity/brain/f10cce1a-c362-4eb9-b89a-360213e357f4/hexagonal_architecture_and_ddd_migration_plan.md)

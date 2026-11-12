@@ -17,12 +17,12 @@ Prior to this recalibration:
 6. **Purge References & Verification**: Scrub remaining references, update test suites, and verify via `tsc` and `vitest`.
 
 ## Changes Made
-- `apps/backend/acc-fw/src/main/java/com/acc/fw/core/jwt/JwtAuthenticationTokenFilter.java`: Reject tokens with missing/empty tenantId.
-- `apps/backend/acc-fw/src/main/java/com/acc/service/MetadataService.java`: Enforce non-null tenant ID.
-- `apps/backend/acc-fw/src/main/java/com/acc/service/SchemaValidationService.java`: Enforce tenant ID in cache keys.
-- `apps/backend/acc-fw/src/main/java/com/acc/fw/tenancy/ratelimit/*`: Purged `"default-tenant"` fallbacks.
-- `apps/backend/acc-fw/src/main/java/com/acc/domain/metadata/*`: Removed default field initialization.
-- `apps/backend/acc-fw/src/test/java/com/acc/service/SchemaValidationServiceTest.java`: Tested explicitly against `"tenant-acme"`.
+- `apps/api/acc-fw/src/main/java/com/acc/fw/core/jwt/JwtAuthenticationTokenFilter.java`: Reject tokens with missing/empty tenantId.
+- `apps/api/acc-fw/src/main/java/com/acc/service/MetadataService.java`: Enforce non-null tenant ID.
+- `apps/api/acc-fw/src/main/java/com/acc/service/SchemaValidationService.java`: Enforce tenant ID in cache keys.
+- `apps/api/acc-fw/src/main/java/com/acc/fw/tenancy/ratelimit/*`: Purged `"default-tenant"` fallbacks.
+- `apps/api/acc-fw/src/main/java/com/acc/domain/metadata/*`: Removed default field initialization.
+- `apps/api/acc-fw/src/test/java/com/acc/service/SchemaValidationServiceTest.java`: Tested explicitly against `"tenant-acme"`.
 - `apps/console/src/features/spring-auth/components/ProtectedRoute.tsx`: Unassigned tenant intervention screen.
 - `apps/console/src/core/sandbox/handlers/auth-sandbox-handler.ts`: Replaced default-tenant with commercial tenant mappings.
 - `apps/console/src/stores/profile-store.ts`: Added `isDefault` support, personal user default resolution, and `setUserDefault`.

@@ -7,7 +7,7 @@ Phase 44 enhances the Acc metadata engine's **Adaptive Read-Time Resolution Engi
 
 ## 2. Key Components Delivered
 
-### A. Backend Domain & SQL Pushdown Compiler (`apps/backend/acc-fw`)
+### A. Backend Domain & SQL Pushdown Compiler (`apps/api/acc-fw`)
 - **Domain Records**:
   - `CompositeRollup.java`: Immutable record defining `alias`, `targetNodeAlias`, `aggregateFunction` (`SUM`, `COUNT`, `AVG`, `MIN`, `MAX`), `targetField`, and `filterPredicate`.
   - `CompositeSpec.java` & `CompositeNode.java`: Extended with `@JsonProperty("rollups") List<CompositeRollup> rollups`.

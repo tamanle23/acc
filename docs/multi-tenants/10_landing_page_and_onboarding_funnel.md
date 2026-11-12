@@ -2,7 +2,7 @@
 
 **Series:** Multi-Tenant Architecture Blueprint Series (Document 10 of N)  
 **Document Level:** Front-End Architecture, Product Design & Onboarding Funnel Specification  
-**Target Systems:** `@acc/console` (React 19 / Vite 8 / TanStack Router / Liquid Glass Design System), `@acc/backend` (Spring Modulith / payOS)  
+**Target Systems:** `@acc/console` (React 19 / Vite 8 / TanStack Router / Liquid Glass Design System), `@acc/api` (Spring Modulith / payOS)  
 **Scope:** Public Marketing Landing Page, Dynamic Product Showcase, Tiered Subscription Cards (Basic/Pro/Pro Max), Integrated Register/Login Modal & Flow, Instant payOS VietQR Checkout  
 **Status:** Canonical Living Architecture Document  
 

@@ -2,7 +2,7 @@
 
 **Series:** Multi-Tenant Architecture Blueprint Series (Document 07 of N)  
 **Document Level:** Core Data Modeling & Schema Resolution Architecture  
-**Target Systems:** `@acc/backend` (Spring Modulith / Java 21 / PostgreSQL 16+), `@acc/console` (React 19 / Vite 8)  
+**Target Systems:** `@acc/api` (Spring Modulith / Java 21 / PostgreSQL 16+), `@acc/console` (React 19 / Vite 8)  
 **Scope:** Universal Core Entities (`tenant_id = 'SYSTEM'`), Tenant Overlay Attributes, RLS Read-Inheritance Policies, Dual-Layer Draft-07 JSON Schema Compilation, Immutability Guards  
 **Status:** Canonical Living Architecture Document  
 

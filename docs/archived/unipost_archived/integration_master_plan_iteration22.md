@@ -1,7 +1,7 @@
 # Integration Master Plan: Iteration 22 - Enterprise Hardening & Resilience Architecture for Master Database Schema & Metadata Engine
 
 **Target Systems:**  
-- `@acc/backend` (`apps/backend/acc-fw`, `apps/backend/acc-ms-aio`, `apps/backend/acc-db`)  
+- `@acc/api` (`apps/api/acc-fw`, `apps/api/acc-ms-aio`, `apps/api/acc-db`)  
 - `@acc/console` (`apps/console/src/features/metadata`, `apps/console/src/core/sandbox`)  
 **Lead Systems Architect:** Principal Polyglot Architect, Spring Boot Backend Specialist & UI/UX Systems Specialist  
 **Standards:** PostgreSQL 16+ RLS, Liquibase Unified Master, Spring Modulith, React 19, WCAG 2.2 AA, Liquid Glass Design Tokens  
@@ -12,7 +12,7 @@
 ## 1. Executive Summary & Problem Statement
 
 This master plan elevates [`docs/master_database_schema_architecture.md`](master_database_schema_architecture.md) from a static schema reference to an **Enterprise-Grade, Resilient, and Regression-Free Architectural Master Specification (v1.2.0)**. 
-It captures the active, production-grade resilience mechanisms implemented across `apps/backend/acc-fw` and `@acc/console` that prevent catastrophic regressions, security exploits, and performance bottlenecks in dynamic metadata execution.
+It captures the active, production-grade resilience mechanisms implemented across `apps/api/acc-fw` and `@acc/console` that prevent catastrophic regressions, security exploits, and performance bottlenecks in dynamic metadata execution.
 
 ```
 +---------------------------------------------------------------------------------------------------+

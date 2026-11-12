@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-25  
 **Author:** Principal Software Engineer & Lead Systems Architect  
-**Scope:** `apps/backend/acc-db`, `apps/backend/acc-fw`, `packages/client`, `apps/console`, `docs/`  
+**Scope:** `apps/api/acc-db`, `apps/api/acc-fw`, `packages/client`, `apps/console`, `docs/`  
 **Status:** Complete & Verified  
 
 ---
@@ -19,7 +19,7 @@ The platform required an enterprise-grade identity, authentication, and authoriz
 
 ## 2. Implementation Plan & Execution
 
-### 2.1. Database Migration Layer (`apps/backend/acc-db`)
+### 2.1. Database Migration Layer (`apps/api/acc-db`)
 - Created `changelog-000.000.00016.xml` in `db/acc/` containing:
   - Fail-fast SQL assertion checking `${SOVEREIGN_*_PASSWORD_HASH}` properties.
   - Adding `role_scope` and `min_plan_tier` columns to `UNIPOST_IDENTITY_ROLE`.
@@ -33,7 +33,7 @@ The platform required an enterprise-grade identity, authentication, and authoriz
 - Registered `changelog-000.000.00016.xml` in `changelog-master.xml`.
 - Configured default fallback test password hashes in `application.yml`.
 
-### 2.2. Backend Controller & Service Layer (`apps/backend/acc-fw`)
+### 2.2. Backend Controller & Service Layer (`apps/api/acc-fw`)
 - In `SystemFleetController.java`:
   - Harmonized `@PreAuthorize` annotations on `/tenants`, `/roles`, `/users` to require `hasAnyAuthority('ROLE_SYSTEM_ROOT', 'ROLE_SYSTEM_SUPPORT', 'platform:fleet:read')` and specific permission atoms, eliminating `ROLE_SYSTEM_CUSTODIAN`.
 - In `SystemFleetService.java`:
@@ -79,8 +79,8 @@ The platform required an enterprise-grade identity, authentication, and authoriz
 ---
 
 ## 4. Key Artifacts Generated
-- Migration: `apps/backend/acc-db/src/main/resources/db/acc/changelog-000.000.00016.xml`
-- Walkthrough: `apps/backend/doc/walkthrough_48.md`
+- Migration: `apps/api/acc-db/src/main/resources/db/acc/changelog-000.000.00016.xml`
+- Walkthrough: `apps/api/doc/walkthrough_48.md`
 - Walkthrough: `apps/console/doc/walkthrough_100.md`
 - Master Architecture: `docs/master_database_schema_architecture.md`
 - Master Plan: `docs/integration_master_plan_iteration23.md`

@@ -28,7 +28,7 @@ The dynamic metadata persistence engine and multi-tenant schema architecture req
   - Documented Section 8: Composite Caching Fabric with Hazelcast cluster synchronization and eviction topics.
   - Renumbered Sections 9 through 12 to maintain comprehensive, cohesive coverage.
 - **Backend Artifacts & Documentation**:
-  - Created [`apps/backend/doc/implementation_plan_46.md`](../../apps/backend/doc/implementation_plan_46.md) tracking backend enterprise resilience implementation steps.
+  - Created [`apps/api/doc/implementation_plan_46.md`](../../apps/api/doc/implementation_plan_46.md) tracking backend enterprise resilience implementation steps.
 
 ## Verification
 - Java compilation verified via `./mvnw test-compile -q` exiting 0.

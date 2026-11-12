@@ -1,8 +1,8 @@
 # History Entry 487: Fix Backend Dev Sandbox Startup and Hexagonal Adapters
 
 ## Problem
-Running `pnpm --filter @acc/backend dev:sandbox` failed to start the Spring Boot ApplicationContext with multiple cascaded failures:
-1. **Poisoned IDE Bytecode Artifacts**: Background Eclipse/JDT LS compiler generated invalid `.class` files containing synthetic `java.lang.Error: Unresolved compilation problems: CreatePaymentLinkRequest cannot be resolved to a type` across `apps/backend/*/target`, preventing Spring BeanPostProcessors (`ObservationAutoConfiguration`, `ProxyTransactionManagementConfiguration`) from resolving aspect methods.
+Running `pnpm --filter @acc/api dev:sandbox` failed to start the Spring Boot ApplicationContext with multiple cascaded failures:
+1. **Poisoned IDE Bytecode Artifacts**: Background Eclipse/JDT LS compiler generated invalid `.class` files containing synthetic `java.lang.Error: Unresolved compilation problems: CreatePaymentLinkRequest cannot be resolved to a type` across `apps/api/*/target`, preventing Spring BeanPostProcessors (`ObservationAutoConfiguration`, `ProxyTransactionManagementConfiguration`) from resolving aspect methods.
 2. **Missing MyBatis Mapper Scanning**: `MasterDatabaseConfiguration.java` `@MapperScan` was restricted to `com.acc.*.repository.mybatis`, omitting `com.acc.identity.infra.user.repository.mybatis` and `com.acc.workflow.infrastructure.adapters.outbound.persistence.mybatis`, and `application.yml` only scanned `classpath*:mappers/*.xml` instead of `classpath*:mapper/**/*.xml`.
 3. **Broken Reactor Compilation Fork**: Spring Boot's multi-module run goal triggered `testCompile` on reactor dependencies (`acc-ms-fs`), where `acc-fw` was missing an explicit `<version>` tag in `acc-ms-fs/pom.xml`, and poisoned `.class` files in `acc-ms-fs` caused false missing-symbol errors in `FileServiceImplPerformanceTest.java`.
 4. **Syntax and Contract Mismatches**:
@@ -19,35 +19,35 @@ Running `pnpm --filter @acc/backend dev:sandbox` failed to start the Spring Boot
    - `FileSystemBlobStorageAdapter` implementing `BlobStoragePort`.
    - `JpaFsObjectRepositoryAdapter` implementing `FsObjectRepositoryPort`.
 5. Verify clean multi-module build via `mvn compile` and `mvn test-compile`.
-6. Run `pnpm --filter @acc/backend dev:sandbox`, verifying Embedded PostgreSQL, Hikari connection pools, Liquibase migrations, Jetty server binding on port 8080, and HTTP actuator health checks.
+6. Run `pnpm --filter @acc/api dev:sandbox`, verifying Embedded PostgreSQL, Hikari connection pools, Liquibase migrations, Jetty server binding on port 8080, and HTTP actuator health checks.
 
 ## Changes
-- **`apps/backend/acc-fw/src/main/java/com/acc/boot/config/MasterDatabaseConfiguration.java`**:
+- **`apps/api/acc-fw/src/main/java/com/acc/boot/config/MasterDatabaseConfiguration.java`**:
   - Expanded `@MapperScan` to include `com.acc.identity.infra.user.repository.mybatis` and `com.acc.workflow.infrastructure.adapters.outbound.persistence.mybatis`.
-- **`apps/backend/acc-ms-aio/src/main/resources/application.yml`**:
+- **`apps/api/acc-ms-aio/src/main/resources/application.yml`**:
   - Expanded `mybatis.mapper-locations` to include `classpath*:mapper/**/*.xml`.
-- **`apps/backend/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/AuditLedgerController.java`**:
+- **`apps/api/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/AuditLedgerController.java`**:
   - Fixed syntax error in `verifyAuditChain`.
-- **`apps/backend/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/WorkflowExecutionController.java`**:
+- **`apps/api/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/WorkflowExecutionController.java`**:
   - Used returned scheduled compensation count from `WorkflowEngineService`.
-- **`apps/backend/workflow-engine/src/main/java/com/acc/workflow/application/WorkflowEngineService.java`**:
+- **`apps/api/workflow-engine/src/main/java/com/acc/workflow/application/WorkflowEngineService.java`**:
   - Updated `executeManualCompensation` to return `int` (scheduled compensation count).
-- **`apps/backend/acc-ms-aio/src/test/java/com/acc/aio/controller/workflow/AuditLedgerControllerTest.java`**:
+- **`apps/api/acc-ms-aio/src/test/java/com/acc/aio/controller/workflow/AuditLedgerControllerTest.java`**:
   - Aligned constructor invocation with hexagonal service dependencies.
-- **`apps/backend/acc-ms-fs/pom.xml`**:
+- **`apps/api/acc-ms-fs/pom.xml`**:
   - Added explicit `<version>${project.version}</version>` to `acc-fw` dependency.
-- **`apps/backend/acc-ms-fs/src/main/java/com/acc/fs/infrastructure/adapters/outbound/storage/FileSystemBlobStorageAdapter.java`**:
+- **`apps/api/acc-ms-fs/src/main/java/com/acc/fs/infrastructure/adapters/outbound/storage/FileSystemBlobStorageAdapter.java`**:
   - Implemented `BlobStoragePort` with zero heap cloning, direct `InputStream` streaming via `StandardCopyOption.REPLACE_EXISTING`.
-- **`apps/backend/acc-ms-fs/src/main/java/com/acc/fs/infrastructure/adapters/outbound/persistence/JpaFsObjectRepositoryAdapter.java`**:
+- **`apps/api/acc-ms-fs/src/main/java/com/acc/fs/infrastructure/adapters/outbound/persistence/JpaFsObjectRepositoryAdapter.java`**:
   - Implemented `FsObjectRepositoryPort` mapping `FsObjectAggregate` to/from JPA `FsObject` entities and directory relations.
 
 ## Verification
 1. **Bytecode Hygiene**: Verified 0 poisoned `.class` files across all 9 modules.
 2. **Build Success**:
-   - `mvn compile -f apps/backend/pom.xml -DskipTests=true` -> BUILD SUCCESS in 9.6s across all 9 reactor modules.
-   - `mvn test-compile -f apps/backend/pom.xml -DskipTests=true` -> BUILD SUCCESS in 18.6s across all 9 reactor modules.
+   - `mvn compile -f apps/api/pom.xml -DskipTests=true` -> BUILD SUCCESS in 9.6s across all 9 reactor modules.
+   - `mvn test-compile -f apps/api/pom.xml -DskipTests=true` -> BUILD SUCCESS in 18.6s across all 9 reactor modules.
 3. **Runtime dev:sandbox Boot**:
-   - `pnpm --filter @acc/backend dev:sandbox` successfully started:
+   - `pnpm --filter @acc/api dev:sandbox` successfully started:
      - Zonky Embedded PostgreSQL on port 54329.
      - HikariCP pool `HikariPool-WorkflowEngine` and Master pool.
      - Liquibase migrations executed cleanly.

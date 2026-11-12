@@ -2,7 +2,7 @@
 
 **Series:** Multi-Tenant Architecture Blueprint Series (Document 08 of N)  
 **Document Level:** Enterprise Compliance, Data Portability & Lifecycle Management Specification  
-**Target Systems:** `@acc/backend` (Spring Modulith / Java 21 / PostgreSQL 16+ / S3/MinIO), `@acc/console` (React 19 / Vite 8)  
+**Target Systems:** `@acc/api` (Spring Modulith / Java 21 / PostgreSQL 16+ / S3/MinIO), `@acc/console` (React 19 / Vite 8)  
 **Scope:** Tenant-Isolated Portable Data Bundles, Chunked Streaming Export (JSON/Parquet/NDJSON), Cryptographic Erasure & Cascading Hard-Purge, Audit & Compliance Guarantees (GDPR Art. 17 / Art. 20, SOC 2 Type II)  
 **Status:** Canonical Living Architecture Document  
 

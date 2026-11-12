@@ -1,7 +1,7 @@
 # 108. Phase 35.4: Polyglot End-to-End Orchestration & Automated Saga Verification
 
 **Date:** 2026-10-15  
-**Scope:** `apps/backend/workflow-engine`, `apps/backend/acc-ms-aio`, `packages/worker`  
+**Scope:** `apps/api/workflow-engine`, `apps/api/acc-ms-aio`, `packages/worker`  
 **Status:** Completed  
 
 ---
@@ -19,22 +19,22 @@ In distributed microservices, failures after partial task completion cannot simp
 7. Verify all suites pass.
 
 ## 3. Changes
-- **`apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/model/WorkflowStatus.java`**:
+- **`apps/api/workflow-engine/src/main/java/com/acc/workflow/core/model/WorkflowStatus.java`**:
   - Added `COMPENSATED_FAILED` terminal status.
-- **`apps/backend/workflow-engine/src/main/java/com/acc/workflow/application/WorkflowEngineService.java`**:
+- **`apps/api/workflow-engine/src/main/java/com/acc/workflow/application/WorkflowEngineService.java`**:
   - Automatic `SagaCompensator` invocation upon workflow failure, scheduling compensating tasks and setting `COMPENSATED_FAILED`.
-- **`apps/backend/workflow-engine/src/main/java/com/acc/workflow/application/SagaCompensator.java`**:
+- **`apps/api/workflow-engine/src/main/java/com/acc/workflow/application/SagaCompensator.java`**:
   - Enriched compensation task inputs with resolved runtime inputs from `executedSnapshot.inputData()`.
-- **`apps/backend/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/WorkflowExecutionController.java`**:
+- **`apps/api/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/WorkflowExecutionController.java`**:
   - Added `POST /{id}/compensate` endpoint.
 - **Tests & Artifacts**:
   - Created `WorkflowSagaPolyglotIntegrationTest.java` in `acc-ms-aio`.
   - Created `saga-compensation.test.ts` in `@acc/worker`.
-  - Created `apps/backend/doc/implementation_plan_38.md` and `apps/backend/doc/walkthrough_38.md`.
+  - Created `apps/api/doc/implementation_plan_38.md` and `apps/api/doc/walkthrough_38.md`.
 
 ## 4. Verification
-- `cd apps/backend; ./mvnw.cmd test -pl acc-ms-aio`: 5/5 test classes passed (including `WorkflowSagaPolyglotIntegrationTest`).
-- `cd apps/backend; ./mvnw.cmd test -pl workflow-engine`: 42/42 unit tests passed.
+- `cd apps/api; ./mvnw.cmd test -pl acc-ms-aio`: 5/5 test classes passed (including `WorkflowSagaPolyglotIntegrationTest`).
+- `cd apps/api; ./mvnw.cmd test -pl workflow-engine`: 42/42 unit tests passed.
 - `pnpm --filter @acc/worker test`: 6/6 tests passed.
 - `pnpm --filter @acc/console test`: 43/43 test files passed (206/206 tests).
 

@@ -1,7 +1,7 @@
 # Master Plan: Enterprise Full-Stack Automated Testing & >=90% Coverage Pipeline (Iteration 7)
 
 ## 1. Goal & Architecture Overview
-Establish an enterprise-grade automated testing ecosystem that achieves **>=90% line and branch test coverage** across the core monorepo production stack (`@acc/backend`, `@acc/console`, and `packages/sandbox`), enforced by hard-gated CI checks, progressive coverage ratcheting, and comprehensive browser automation.
+Establish an enterprise-grade automated testing ecosystem that achieves **>=90% line and branch test coverage** across the core monorepo production stack (`@acc/api`, `@acc/console`, and `packages/sandbox`), enforced by hard-gated CI checks, progressive coverage ratcheting, and comprehensive browser automation.
 
 ### Test Pyramid Distribution (Balanced Pragmatic Model)
 - **40% Unit Tests**: Fast, deterministic unit tests for AST dynamic query compilers, state machines, zustand stores, pure utility functions, validation decorators, and algorithmic models.
@@ -32,7 +32,7 @@ Establish an enterprise-grade automated testing ecosystem that achieves **>=90% 
 > [!IMPORTANT]
 > **Decision 1: Progressive Ratchet Coverage Enforcement**
 > - **Phase 1**: Enable coverage tooling (JaCoCo and `@vitest/coverage-v8`) with HTML/lcov reporting without failing builds immediately.
-> - **Phase 2**: Activate strict 90% hard gate in JaCoCo (`check` goal with `0.90` instruction & branch coverage ratio on `apps/backend/acc-fw`) once backend test sprints land.
+> - **Phase 2**: Activate strict 90% hard gate in JaCoCo (`check` goal with `0.90` instruction & branch coverage ratio on `apps/api/acc-fw`) once backend test sprints land.
 > - **Phase 3**: Activate strict 90% hard gate in Vitest (`90%` thresholds across lines, branches, functions, and statements on `apps/console` and `packages/sandbox`) once frontend test sprints land.
 > - Any subsequent PR or build dropping below 90% fails fast with a non-zero exit code.
 
@@ -62,7 +62,7 @@ Establish an enterprise-grade automated testing ecosystem that achieves **>=90% 
 
 ### Phase 1: Tooling, Coverage Instrumentation & Dual-Mode Playwright Configuration
 1. **Backend JaCoCo Configuration**:
-   - Add `jacoco-maven-plugin` (version 0.8.12) to `apps/backend/pom.xml` and `apps/backend/acc-fw/pom.xml`.
+   - Add `jacoco-maven-plugin` (version 0.8.12) to `apps/api/pom.xml` and `apps/api/acc-fw/pom.xml`.
    - Configure execution goals `prepare-agent` (for test argLine) and `report` in the `verify` lifecycle phase (reporting active; threshold check staged for Phase 2).
    - Configure exclusions for auto-generated DTOs, JPA metamodels, and configuration classes without business logic.
 2. **Frontend `@vitest/coverage-v8` Setup**:
@@ -81,7 +81,7 @@ Establish an enterprise-grade automated testing ecosystem that achieves **>=90% 
 ---
 
 ### Phase 2: Backend >=90% Coverage Sprint (Unit + Spring Modulith Integration)
-1. **Unit Testing Expansion (`apps/backend/acc-fw/src/test/java/`)**:
+1. **Unit Testing Expansion (`apps/api/acc-fw/src/test/java/`)**:
    - `DynamicQueryCompilerTest`: 100% branch coverage across all join patterns (Pattern A Embedded, Pattern B FK, Pattern C Association), companion rollups (SUM, COUNT, AVG, MIN, MAX), child slice pagination, parameterized sorting, and fuzzing vectors.
    - `RecordMutationPipelineTest`: OCC validation, ETag generation, optimistic locking conflicts, 3-way auto-merging, and delete cascades.
    - `CompositeRecordServiceTest`: Cache miss/hit resolution, Hazelcast serialization, and fallback to DataLoaderBatchResolver.
@@ -93,7 +93,7 @@ Establish an enterprise-grade automated testing ecosystem that achieves **>=90% 
    - `TenantOnboardingControllerIntegrationTest`: Atomic provisioning, domain blueprint cloning, and schema pre-warming.
    - `BillingPayOsControllerIntegrationTest`: Webhook HMAC-SHA256 signature verification, idempotent transaction processing, and feature entitlement activation.
 3. **JaCoCo 90% Hard Gate Activation**:
-   - Activate JaCoCo `check` execution with `<minimum>0.90</minimum>` in `apps/backend/acc-fw/pom.xml`.
+   - Activate JaCoCo `check` execution with `<minimum>0.90</minimum>` in `apps/api/acc-fw/pom.xml`.
    - Run `mvn verify` and verify that the build passes with instruction and branch coverage >= 90%.
 
 ---
@@ -147,7 +147,7 @@ Implement the complete 10-spec suite of Golden E2E Browser Journeys (`apps/conso
 ### Automated Commands
 ```powershell
 # 1. Backend Verification & JaCoCo Coverage Check
-& "C:\Users\Admin\.m2\wrapper\dists\apache-maven-3.9.9-bin\6gbr3tfuiv8aocduf5pro8ephc\apache-maven-3.9.9\bin\mvn.cmd" clean verify -f apps/backend/pom.xml -q
+& "C:\Users\Admin\.m2\wrapper\dists\apache-maven-3.9.9-bin\6gbr3tfuiv8aocduf5pro8ephc\apache-maven-3.9.9\bin\mvn.cmd" clean verify -f apps/api/pom.xml -q
 
 # 2. Console & Sandbox Vitest Coverage Verification
 pnpm --filter @acc/sandbox test:coverage

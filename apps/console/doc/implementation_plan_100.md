@@ -13,7 +13,7 @@ It equips the platform with:
 
 ## 2. Architecture & Contracts
 
-### 2.1 Backend Engine (`apps/backend/workflow-engine` & `acc-ms-aio`)
+### 2.1 Backend Engine (`apps/api/workflow-engine` & `acc-ms-aio`)
 - **TaskStatus Enum**: Add `WAITING_FOR_APPROVAL` (non-terminal).
 - **HumanNodeStrategy**: Transitions `TaskStatus` to `WAITING_FOR_APPROVAL` on first evaluation. When resolved with `COMPLETED`, merges `formData` into `outputData`. When resolved with `FAILED`, triggers Saga compensation.
 - **REST Endpoints (`TaskWorkerController`)**:

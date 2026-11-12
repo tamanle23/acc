@@ -9,13 +9,13 @@ In the workflow orchestration engine, Tasks serve as unaware Units of Work. Howe
 
 ## Plan
 1. **Extend `TaskDefinition` Model**:
-   - Add `Map<String, Object> inputSchema` with builder support and backward-compatible constructors to [`TaskDefinition.java`](../../apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/model/TaskDefinition.java).
-   - Add pre-dispatch schema validation in [`SimpleTaskStrategy.java`](../../apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/decider/strategy/SimpleTaskStrategy.java).
+   - Add `Map<String, Object> inputSchema` with builder support and backward-compatible constructors to [`TaskDefinition.java`](../../apps/api/workflow-engine/src/main/java/com/acc/workflow/core/model/TaskDefinition.java).
+   - Add pre-dispatch schema validation in [`SimpleTaskStrategy.java`](../../apps/api/workflow-engine/src/main/java/com/acc/workflow/core/decider/strategy/SimpleTaskStrategy.java).
 2. **Canonical Built-in Contract Catalog**:
-   - Create [`TaskTypeContract.java`](../../apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/schema/TaskTypeContract.java) and [`BuiltInTaskContracts.java`](../../apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/schema/BuiltInTaskContracts.java) covering all 24 `TaskType` values.
-   - Expose `GET /api/v1/tasks/contracts` and `GET /api/v1/tasks/contracts/{taskType}` via [`TaskContractController.java`](../../apps/backend/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/TaskContractController.java).
+   - Create [`TaskTypeContract.java`](../../apps/api/workflow-engine/src/main/java/com/acc/workflow/core/schema/TaskTypeContract.java) and [`BuiltInTaskContracts.java`](../../apps/api/workflow-engine/src/main/java/com/acc/workflow/core/schema/BuiltInTaskContracts.java) covering all 24 `TaskType` values.
+   - Expose `GET /api/v1/tasks/contracts` and `GET /api/v1/tasks/contracts/{taskType}` via [`TaskContractController.java`](../../apps/api/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/TaskContractController.java).
 3. **Seeder & Universal Sandbox Synchronization**:
-   - Embed complete Draft 7 `inputSchema` and `outputSchema` on all task nodes in [`SandboxWorkflowSeeder.java`](../../apps/backend/acc-sandbox/src/main/java/com/acc/sandbox/seed/SandboxWorkflowSeeder.java) and [`workflow-handler.ts`](../../packages/sandbox/src/handlers/workflow-handler.ts).
+   - Embed complete Draft 7 `inputSchema` and `outputSchema` on all task nodes in [`SandboxWorkflowSeeder.java`](../../apps/api/acc-sandbox/src/main/java/com/acc/sandbox/seed/SandboxWorkflowSeeder.java) and [`workflow-handler.ts`](../../packages/sandbox/src/handlers/workflow-handler.ts).
    - Add `/tasks/contracts` route handler in the universal sandbox simulator.
 4. **Visual DAG Studio 2.0 Integration**:
    - Implement `resolveInputSchema`, `getInputParameters`, and `convertParamsToJsonSchema` in [`task-contract-registry.ts`](../../apps/console/src/features/workflows/components/studio/utils/contracts/task-contract-registry.ts).
@@ -25,12 +25,12 @@ In the workflow orchestration engine, Tasks serve as unaware Units of Work. Howe
 ## Changes
 
 ### 1. Backend Engine & Web Layer
-- `apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/model/TaskDefinition.java`: Added `inputSchema`.
-- `apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/decider/strategy/SimpleTaskStrategy.java`: Added pre-dispatch input schema validation.
-- `apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/schema/TaskTypeContract.java`: Defined canonical contract record.
-- `apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/schema/BuiltInTaskContracts.java`: Defined Draft 7 schemas for all 24 `TaskType` values.
-- `apps/backend/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/TaskContractController.java`: Added `/api/v1/tasks/contracts` REST controller.
-- `apps/backend/acc-sandbox/src/main/java/com/acc/sandbox/seed/SandboxWorkflowSeeder.java`: Added node-level schemas to seeded workflows.
+- `apps/api/workflow-engine/src/main/java/com/acc/workflow/core/model/TaskDefinition.java`: Added `inputSchema`.
+- `apps/api/workflow-engine/src/main/java/com/acc/workflow/core/decider/strategy/SimpleTaskStrategy.java`: Added pre-dispatch input schema validation.
+- `apps/api/workflow-engine/src/main/java/com/acc/workflow/core/schema/TaskTypeContract.java`: Defined canonical contract record.
+- `apps/api/workflow-engine/src/main/java/com/acc/workflow/core/schema/BuiltInTaskContracts.java`: Defined Draft 7 schemas for all 24 `TaskType` values.
+- `apps/api/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/TaskContractController.java`: Added `/api/v1/tasks/contracts` REST controller.
+- `apps/api/acc-sandbox/src/main/java/com/acc/sandbox/seed/SandboxWorkflowSeeder.java`: Added node-level schemas to seeded workflows.
 
 ### 2. Universal Frontend Sandbox
 - `packages/sandbox/src/handlers/workflow-handler.ts`: Added `/tasks/contracts` route handler and node schemas.

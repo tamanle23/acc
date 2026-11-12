@@ -25,13 +25,13 @@ In accordance with architectural grilling decisions and the authoritative Monore
 
 ## 2. Proposed Changes
 
-### A. Database Layer (`apps/backend/acc-db`)
+### A. Database Layer (`apps/api/acc-db`)
 - Create Liquibase migration `changelog-000.000.00011.xml`:
   - Add `is_composite BOOLEAN NOT NULL DEFAULT FALSE` to `UNIPOST_ENTITY_TYPES`.
   - Add `composite_spec JSONB NULL` to `UNIPOST_ENTITY_TYPES`.
   - Register `changelog-000.000.00011.xml` in `changelog-master.xml`.
 
-### B. Domain & Service Layer (`apps/backend/acc-fw`)
+### B. Domain & Service Layer (`apps/api/acc-fw`)
 - **Domain Models**:
   - Update `EntityType.java` with `isComposite` and `compositeSpec`.
   - Create `CompositeSpec.java`, `CompositeNode.java`, `CompositeField.java`, `CompositeJoinPattern.java`.
@@ -50,7 +50,7 @@ In accordance with architectural grilling decisions and the authoritative Monore
 - **Hazelcast Distributed Cache Invariant**:
   - Integrate composite JSON Schema compilation into `SchemaValidationService` using `schema:{tenantId}:{entityTypeId}:v{version}` key pattern.
 
-### C. Backend API & Testing (`apps/backend/acc-ms-aio`)
+### C. Backend API & Testing (`apps/api/acc-ms-aio`)
 - Expose composite entity creation and retrieval in metadata endpoints.
 - Provide comprehensive JUnit 5 test suite `CompositeEntityTypeVerificationTest.java`:
   - Verifies AST compilation to JSON Schema.
@@ -84,7 +84,7 @@ In accordance with architectural grilling decisions and the authoritative Monore
 
 ## 3. Verification Plan
 1. **Automated Backend Tests**:
-   - Execute Maven quiet tests: `mvn test -pl apps/backend/acc-ms-aio -Dtest=CompositeEntityTypeVerificationTest -q`.
+   - Execute Maven quiet tests: `mvn test -pl apps/api/acc-ms-aio -Dtest=CompositeEntityTypeVerificationTest -q`.
 2. **Automated Frontend Tests**:
    - Run Vitest: `pnpm --filter @acc/console test run src/features/metadata/components/studio/composite/composite-bento-studio.test.tsx`.
 3. **Type & Lint Checking**:

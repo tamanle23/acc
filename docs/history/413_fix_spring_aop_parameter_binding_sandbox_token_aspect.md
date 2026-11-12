@@ -22,11 +22,11 @@ When compiled without `-parameters` metadata preserved for aspect advice paramet
 4. Verify tests pass.
 
 ## Changes
-- `apps/backend/acc-sandbox/src/main/java/com/acc/sandbox/auth/SandboxTokenAspect.java`:
+- `apps/api/acc-sandbox/src/main/java/com/acc/sandbox/auth/SandboxTokenAspect.java`:
   Removed `&& args(request)` pointcut clause and extracted `request` cleanly from `pjp.getArgs()`.
-- `apps/backend/acc-sandbox/src/test/java/com/acc/sandbox/auth/SandboxTokenAspectTest.java`:
+- `apps/api/acc-sandbox/src/test/java/com/acc/sandbox/auth/SandboxTokenAspectTest.java`:
   Updated test cases to mock `pjp.getArgs()` with the input `RequestWrapper`.
 
 ## Verification
-- Ran `node apps/backend/mvnw.cjs -pl acc-sandbox -Dtest=SandboxTokenAspectTest test`:
+- Ran `node apps/api/mvnw.cjs -pl acc-sandbox -Dtest=SandboxTokenAspectTest test`:
   3/3 tests passed with 0 errors.

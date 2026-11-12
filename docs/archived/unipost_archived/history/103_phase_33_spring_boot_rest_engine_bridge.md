@@ -1,10 +1,10 @@
 # History Log 103: Phase 33 - Spring Boot REST Engine Bridge & Enterprise Persistence Wiring
 
 ## 1. Problem
-The high-performance, DAG-based workflow engine implemented in phases 26–29 existed as an isolated Java module (`apps/backend/workflow-engine`) with zero coupling to Spring Framework. To enable real-world execution, integration testing, and client orchestration from `@acc/console`, the engine needed to be wired into the primary Spring Boot runtime service (`apps/backend/acc-ms-aio`) with production-grade REST APIs, dependency injection, and automated background task lease sweeping.
+The high-performance, DAG-based workflow engine implemented in phases 26–29 existed as an isolated Java module (`apps/api/workflow-engine`) with zero coupling to Spring Framework. To enable real-world execution, integration testing, and client orchestration from `@acc/console`, the engine needed to be wired into the primary Spring Boot runtime service (`apps/api/acc-ms-aio`) with production-grade REST APIs, dependency injection, and automated background task lease sweeping.
 
 ## 2. Plan
-1. Add `workflow-engine` as a project dependency to `apps/backend/acc-ms-aio/pom.xml`.
+1. Add `workflow-engine` as a project dependency to `apps/api/acc-ms-aio/pom.xml`.
 2. Implement `WorkflowEngineConfiguration` declaring Spring beans:
    - `PersistencePort` (with Postgres DataSource or InMemory thread-safe fallback)
    - `PureDecider`
@@ -20,26 +20,26 @@ The high-performance, DAG-based workflow engine implemented in phases 26–29 ex
 6. Fix any lifecycle discrepancies encountered during end-to-end task execution.
 
 ## 3. Changes
-- **`apps/backend/acc-ms-aio/pom.xml`**:
+- **`apps/api/acc-ms-aio/pom.xml`**:
   - Added `<dependency><groupId>com.acc</groupId><artifactId>workflow-engine</artifactId></dependency>`.
-- **`apps/backend/acc-ms-aio/src/main/java/com/acc/aio/config/WorkflowEngineConfiguration.java`**:
+- **`apps/api/acc-ms-aio/src/main/java/com/acc/aio/config/WorkflowEngineConfiguration.java`**:
   - Configured `PersistencePort`, `PureDecider`, `WorkflowDefinitionRegistry`, `WorkflowEngineService`, and `ScheduledLeaseSweeper`.
-- **`apps/backend/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/`**:
+- **`apps/api/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/`**:
   - `WorkflowDefinitionController.java`
   - `WorkflowExecutionController.java`
   - `TaskWorkerController.java`
-- **`apps/backend/workflow-engine/src/main/java/com/acc/workflow/application/WorkflowEngineService.java`**:
+- **`apps/api/workflow-engine/src/main/java/com/acc/workflow/application/WorkflowEngineService.java`**:
   - Fixed workflow execution registration: now passes `definition.workflowKey()` rather than `definition.name()`, ensuring registry lookups succeed during worker callback processing.
-- **`apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/model/TaskSnapshot.java`**:
+- **`apps/api/workflow-engine/src/main/java/com/acc/workflow/core/model/TaskSnapshot.java`**:
   - Added `workflowId()` helper to parse parent execution ID from taskId convention (`{workflowId}_{refName}_{seq}`).
-- **`apps/backend/acc-ms-aio/src/test/java/com/acc/aio/controller/workflow/WorkflowEngineRestApiTest.java`**:
+- **`apps/api/acc-ms-aio/src/test/java/com/acc/aio/controller/workflow/WorkflowEngineRestApiTest.java`**:
   - Full end-to-end REST API controller test covering registration, start, polling, heartbeat, result reporting, and termination.
 - **Artifacts**:
-  - Created `apps/backend/doc/implementation_plan_34.md` and `apps/backend/doc/walkthrough_34.md`.
+  - Created `apps/api/doc/implementation_plan_34.md` and `apps/api/doc/walkthrough_34.md`.
 
 ## 4. Verification
-- `apps/backend/workflow-engine`: compiled and installed via `mvn install -pl workflow-engine -DskipTests`.
-- `apps/backend/acc-ms-aio`: executed `.\mvnw.cmd test -pl acc-ms-aio -Dtest=WorkflowEngineRestApiTest`.
+- `apps/api/workflow-engine`: compiled and installed via `mvn install -pl workflow-engine -DskipTests`.
+- `apps/api/acc-ms-aio`: executed `.\mvnw.cmd test -pl acc-ms-aio -Dtest=WorkflowEngineRestApiTest`.
   - All test steps executed cleanly with 0 failures, 0 errors, and elapsed time under 0.3s.
 
 ## 5. Walkthrough

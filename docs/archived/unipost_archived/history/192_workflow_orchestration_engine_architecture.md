@@ -48,7 +48,7 @@ To ensure long-term architectural stability, seamless developer onboarding, and 
 ## 4. Verification
 - `pnpm --filter @acc/console exec tsc --noEmit` (Exited 0, clean frontend type check).
 - `pnpm --filter @acc/console test -- run src/features/workflows src/features/workflow-executions` (25 test files, 105 tests passing).
-- `./mvnw.cmd test-compile -q` in `apps/backend` (Exited 0, clean Java 21 / Spring compilation).
+- `./mvnw.cmd test-compile -q` in `apps/api` (Exited 0, clean Java 21 / Spring compilation).
 
 ---
 

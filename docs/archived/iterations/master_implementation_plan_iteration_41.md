@@ -18,7 +18,7 @@ graph TD
     subgraph Client_Applications["Client Apps & Workers"]
         StudioUI["@acc/studio (UI / LeftSidebar / Timeline)"]
         PreviewWorker["preview.worker.ts (OffscreenCanvas Compositor)"]
-        BackendEngine["@acc/backend & CLI Pipelines"]
+        BackendEngine["@acc/api & CLI Pipelines"]
     end
 
     subgraph Isomorphic_Cache_Subsystem["@acc/core-isomorphic (packages/core-isomorphic/src/cache/)"]

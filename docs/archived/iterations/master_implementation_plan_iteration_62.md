@@ -46,7 +46,7 @@ flowchart TD
 
     subgraph CLIENTS["Monorepo Consumers"]
         STUDIO["apps/studio\n(Inspector & Preview Engine)"]
-        BACKEND["apps/backend\n(Render Workers & Exporters)"]
+        BACKEND["apps/api\n(Render Workers & Exporters)"]
     end
 
     SOT --> GEN_SCRIPT

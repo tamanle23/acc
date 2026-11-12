@@ -19,7 +19,7 @@ Following the initial rollout of the Sovereign SYSTEM Tenant Cockpit (History Lo
 
 ## Changes
 - **Backend**:
-  - Created `apps/backend/acc-fw/src/main/java/com/acc/system/dto/CreateRoleRequest.java`.
+  - Created `apps/api/acc-fw/src/main/java/com/acc/system/dto/CreateRoleRequest.java`.
   - Added `createRole` method to `SystemFleetService.java`.
   - Added `@PostMapping("/roles")` endpoint to `SystemFleetController.java`.
   - Added dual-context detection (`actor_tid`) to `JwtAuthenticationTokenFilter.java`.

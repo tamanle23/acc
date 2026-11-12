@@ -17,13 +17,13 @@ When clients connected to `/api/v1/notifications/stream` or workflow execution e
 6. Verify via TypeScript compilation (`tsc --noEmit`) and Vitest test suites.
 
 ## Changes
-- **Backend Security & Controller (`apps/backend/`):**
-  - `apps/backend/acc-fw/src/main/java/com/acc/boot/config/SecurityConfiguration.java`: Added `/api/v1/notifications/stream` to `.permitAll()` matchers.
-  - `apps/backend/acc-ms-aio/src/main/resources/application-local.yml`: Added `/api/v1/notifications/stream` to `application.security.permitAlls`.
-  - `apps/backend/acc-fw/src/main/java/com/acc/fw/core/jwt/JwtAuthenticationTokenFilter.java`:
+- **Backend Security & Controller (`apps/api/`):**
+  - `apps/api/acc-fw/src/main/java/com/acc/boot/config/SecurityConfiguration.java`: Added `/api/v1/notifications/stream` to `.permitAll()` matchers.
+  - `apps/api/acc-ms-aio/src/main/resources/application-local.yml`: Added `/api/v1/notifications/stream` to `application.security.permitAlls`.
+  - `apps/api/acc-fw/src/main/java/com/acc/fw/core/jwt/JwtAuthenticationTokenFilter.java`:
     - Added query parameter extraction for `token` or `access_token` (RFC 6750 §2.3) as a fallback when header and cookie are absent.
     - Added permitAll fallback: if token parsing/validation fails on a permitted endpoint, clear security context and let the request proceed as guest instead of forcing 401.
-  - `apps/backend/acc-fw/src/main/java/com/acc/presentation/NotificationSseController.java`:
+  - `apps/api/acc-fw/src/main/java/com/acc/presentation/NotificationSseController.java`:
     - Added `@RequestParam(required = false) String token` parameter.
     - Added backward-compatible overload `streamNotifications(String tenantId)`.
 - **Frontend Clients (`apps/console/`):**

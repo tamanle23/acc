@@ -45,12 +45,12 @@ Elevate the **Visual DAG Studio** across both **Workflow Definition Authoring (`
 
 ### Workstream 3: Designer Dry-Run Simulation Harness
 
-#### [MODIFY] `apps/backend/workflow-engine/src/main/java/com/acc/workflow/application/WorkflowEngineService.java`
+#### [MODIFY] `apps/api/workflow-engine/src/main/java/com/acc/workflow/application/WorkflowEngineService.java`
 - Implement `simulateExecution(WorkflowDefinition definition, Map<String, Object> inputPayload)`:
   - Runs pure decider steps in-memory.
   - Returns simulated node statuses and variable maps without invoking database `saveWorkflowExecution`.
 
-#### [MODIFY] `apps/backend/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/WorkflowDefinitionController.java`
+#### [MODIFY] `apps/api/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/WorkflowDefinitionController.java`
 - Expose `POST /api/v1/workflow/definitions/simulate` accepting workflow IR and mock input parameters.
 
 #### [NEW] `apps/console/src/features/metadata/components/studio/workflow-dry-run-modal.tsx`
@@ -76,7 +76,7 @@ Elevate the **Visual DAG Studio** across both **Workflow Definition Authoring (`
 ### Automated Tests
 ```bash
 # 1. Backend tests for simulate execution
-cd apps/backend && node mvnw.cjs test -pl workflow-engine,acc-ms-aio -q
+cd apps/api && node mvnw.cjs test -pl workflow-engine,acc-ms-aio -q
 
 # 2. Console unit tests across studio and execution components
 pnpm --filter @acc/console exec vitest run src/features/metadata/components/studio/

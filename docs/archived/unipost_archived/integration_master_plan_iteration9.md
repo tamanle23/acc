@@ -1,7 +1,7 @@
 # Master Plan: Comprehensive Backend Unified Sandbox Guide (Iteration 9)
 
 ## 1. Goal & Architecture Overview
-Author an authoritative, comprehensive 360° technical and developer guide in `apps/backend/acc-sandbox/README.md` explaining how to configure, run, and develop against the **Backend Unified Sandbox Platform**, covering both zero-database persona JWT authentication and database-seeded user credentials.
+Author an authoritative, comprehensive 360° technical and developer guide in `apps/api/acc-sandbox/README.md` explaining how to configure, run, and develop against the **Backend Unified Sandbox Platform**, covering both zero-database persona JWT authentication and database-seeded user credentials.
 
 ---
 
@@ -20,7 +20,7 @@ Author an authoritative, comprehensive 360° technical and developer guide in `a
 
 ---
 
-## 3. Outline of the Comprehensive Guide (`apps/backend/acc-sandbox/README.md`)
+## 3. Outline of the Comprehensive Guide (`apps/api/acc-sandbox/README.md`)
 
 1. **Executive Overview & Philosophy**:
    - Zero-stub mandate: Why fake mocks and synthetic pass-throughs are prohibited.
@@ -44,7 +44,7 @@ Author an authoritative, comprehensive 360° technical and developer guide in `a
 
 4. **Developer Run Commands & CLI Recipes**:
    - Monorepo root shortcuts: `pnpm dev:sandbox`, `pnpm dev:backend:sandbox`, `pnpm dev:console:sandbox`, `pnpm test:e2e:live`.
-   - Backend package scripts: `pnpm --filter @acc/backend dev:sandbox`, `dev:sandbox:persistent`, `dev:sandbox:pristine`, `dev:sandbox:test`, `test:sandbox`.
+   - Backend package scripts: `pnpm --filter @acc/api dev:sandbox`, `dev:sandbox:persistent`, `dev:sandbox:pristine`, `dev:sandbox:test`, `test:sandbox`.
    - Maven CLI direct invocation commands with JVM arguments (`-Djava.net.preferIPv4Stack=true`).
 
 5. **Boundary Simulators Reference**:

@@ -1,7 +1,7 @@
 # 430 - Clean Cross-Stack Authorization & User Profile Architecture
 
 ## Problem
-Prior to this implementation, the authorization and identity models between `@acc/backend` (Spring Boot / Modulith) and `@acc/console` (React 19 / Vite 8) exhibited architectural drift, legacy alias baggage, and security leaks:
+Prior to this implementation, the authorization and identity models between `@acc/api` (Spring Boot / Modulith) and `@acc/console` (React 19 / Vite 8) exhibited architectural drift, legacy alias baggage, and security leaks:
 1. **JWT Claim Asymmetry & Client Token Cracking**: The client application cracked open JWT tokens using browser `atob` (`decodeJwt`) to extract claims, violating zero-client-trust principles and failing when backend claims changed.
 2. **Legacy Alias Baggage**: The backend retained legacy permission tokens (e.g. `METADATA_RECORD_READ`, `METADATA_SCHEMA_WRITE`, `metadata:record:read`) across SpEL expressions (`@PreAuthorize`) and evaluation pipelines.
 3. **Roles vs Permissions Confusion**: Roles (`ROLE_*`) and granular permission atoms were conflated in authorization checks.
@@ -25,21 +25,21 @@ Prior to this implementation, the authorization and identity models between `@ac
 - `packages/client/src/contracts/auth.ts`: Defined `CanonicalRole`, `CanonicalPermission` (39 atoms), `AuthenticationProfile`, `AuthenticationToken`, `LoginResponse`.
 - `packages/client/src/contracts/users.ts`: Defined `UserProfileDto`, `UpdateUserProfileRequest`, `UserPreferences`.
 
-### 2. Backend (`@acc/backend`)
-- `apps/backend/acc-core/src/main/java/com/acc/core/constant/CanonicalPermissions.java`: Created constant catalog of all 39 atoms across 7 planes.
-- `apps/backend/acc-core/src/main/java/com/acc/core/constant/CanonicalRoles.java`: Created 6 standard canonical roles (`ROLE_SYSTEM_ROOT`, `ROLE_SYSTEM_SUPPORT`, `ROLE_WORKSPACE_OWNER`, `ROLE_OPERATIONS_MANAGER`, `ROLE_STANDARD_MEMBER`, `ROLE_AUDITOR`).
-- `apps/backend/acc-fw/src/main/java/com/acc/system/dto/AuthenticationProfileDto.java`: Added session DTO for `/api/auth/me`.
-- `apps/backend/acc-fw/src/main/java/com/acc/system/dto/UserProfileDto.java` & `UpdateUserProfileRequest.java`: DTOs for `/api/v1/user/profile`.
-- `apps/backend/acc-fw/src/main/java/com/acc/user/model/User.java`: Added `preferences` text column.
-- `apps/backend/acc-fw/src/main/java/com/acc/user/service/UserProfileService.java` & `UserProfileServiceImpl.java`: Service implementation for user profile read and update.
-- `apps/backend/acc-fw/src/main/java/com/acc/presentation/UserProfileController.java`: Endpoints `GET` and `PUT` on `/api/v1/user/profile`.
-- `apps/backend/acc-fw/src/main/java/com/acc/user/controller/AuthenticationController.java`: Added `GET /api/auth/me` calling `TokenService.getAuthenticationProfile()`.
-- `apps/backend/acc-fw/src/main/java/com/acc/user/service/TokenService.java` & `TokenServiceImpl.java`: Implemented `getAuthenticationProfile(username)` resolving roles, permissions, and active features.
-- `apps/backend/acc-fw/src/main/java/com/acc/fw/security/CustomPermissionEvaluator.java`: Supported colon-separated permission atoms (`hasAuthority(permission.toLowerCase())`).
-- `apps/backend/acc-fw/src/main/java/com/acc/user/service/impl/UserDetailsServiceImpl.java`: Maintained lowercase canonical atoms in granted authorities.
-- `apps/backend/acc-fw/src/main/java/com/acc/presentation/CompositeEntityController.java`, `MetadataController.java`, `WorkspaceController.java`, `SystemFleetController.java`, `TenantBillingController.java`, `TenantDataLifecycleController.java`: Replaced legacy SpEL strings with canonical permission atoms (`hasAuthority('entity:record:read')`, `hasAuthority('metadata:schema:write')`, etc.).
-- `apps/backend/acc-fw/src/main/java/com/acc/system/service/SystemFleetService.java`: Seeded canonical roles without Quorum.
-- `apps/backend/acc-fw/src/main/java/com/acc/fw/core/jwt/JwtTokenHelper.java`: Serialized `roles` and `permissions` in claims; preserved lowercase canonical atoms.
+### 2. Backend (`@acc/api`)
+- `apps/api/acc-core/src/main/java/com/acc/core/constant/CanonicalPermissions.java`: Created constant catalog of all 39 atoms across 7 planes.
+- `apps/api/acc-core/src/main/java/com/acc/core/constant/CanonicalRoles.java`: Created 6 standard canonical roles (`ROLE_SYSTEM_ROOT`, `ROLE_SYSTEM_SUPPORT`, `ROLE_WORKSPACE_OWNER`, `ROLE_OPERATIONS_MANAGER`, `ROLE_STANDARD_MEMBER`, `ROLE_AUDITOR`).
+- `apps/api/acc-fw/src/main/java/com/acc/system/dto/AuthenticationProfileDto.java`: Added session DTO for `/api/auth/me`.
+- `apps/api/acc-fw/src/main/java/com/acc/system/dto/UserProfileDto.java` & `UpdateUserProfileRequest.java`: DTOs for `/api/v1/user/profile`.
+- `apps/api/acc-fw/src/main/java/com/acc/user/model/User.java`: Added `preferences` text column.
+- `apps/api/acc-fw/src/main/java/com/acc/user/service/UserProfileService.java` & `UserProfileServiceImpl.java`: Service implementation for user profile read and update.
+- `apps/api/acc-fw/src/main/java/com/acc/presentation/UserProfileController.java`: Endpoints `GET` and `PUT` on `/api/v1/user/profile`.
+- `apps/api/acc-fw/src/main/java/com/acc/user/controller/AuthenticationController.java`: Added `GET /api/auth/me` calling `TokenService.getAuthenticationProfile()`.
+- `apps/api/acc-fw/src/main/java/com/acc/user/service/TokenService.java` & `TokenServiceImpl.java`: Implemented `getAuthenticationProfile(username)` resolving roles, permissions, and active features.
+- `apps/api/acc-fw/src/main/java/com/acc/fw/security/CustomPermissionEvaluator.java`: Supported colon-separated permission atoms (`hasAuthority(permission.toLowerCase())`).
+- `apps/api/acc-fw/src/main/java/com/acc/user/service/impl/UserDetailsServiceImpl.java`: Maintained lowercase canonical atoms in granted authorities.
+- `apps/api/acc-fw/src/main/java/com/acc/presentation/CompositeEntityController.java`, `MetadataController.java`, `WorkspaceController.java`, `SystemFleetController.java`, `TenantBillingController.java`, `TenantDataLifecycleController.java`: Replaced legacy SpEL strings with canonical permission atoms (`hasAuthority('entity:record:read')`, `hasAuthority('metadata:schema:write')`, etc.).
+- `apps/api/acc-fw/src/main/java/com/acc/system/service/SystemFleetService.java`: Seeded canonical roles without Quorum.
+- `apps/api/acc-fw/src/main/java/com/acc/fw/core/jwt/JwtTokenHelper.java`: Serialized `roles` and `permissions` in claims; preserved lowercase canonical atoms.
 
 ### 3. Unified Sandbox (`@acc/sandbox`)
 - `packages/sandbox/src/handlers/auth-sandbox-handler.ts`:
@@ -65,7 +65,7 @@ Prior to this implementation, the authorization and identity models between `@ac
 - `apps/console/src/features/settings/profile/profile-form.tsx`: Connected profile form to `/api/v1/user/profile` API.
 
 ## Verification
-- **Backend Compilation**: `pnpm --filter @acc/backend check-types` (`mvn test-compile -DskipTests`) passed across all 9 modules with exit code 0.
+- **Backend Compilation**: `pnpm --filter @acc/api check-types` (`mvn test-compile -DskipTests`) passed across all 9 modules with exit code 0.
 - **Backend Tests**: `JwtTokenHelperTest` and `SystemFleetServiceTest` (15 tests) passed with exit code 0.
 - **Sandbox Tests**: `pnpm --filter @acc/sandbox test` passed all 11 test suites (103 tests passed).
 - **Console Unit Tests**:

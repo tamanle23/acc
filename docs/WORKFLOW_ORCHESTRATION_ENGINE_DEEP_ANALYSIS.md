@@ -2,7 +2,7 @@
 
 **Document Version:** 3.0.0 (Enterprise Resilient Edition)  
 **Status:** Approved Architectural Baseline  
-**Scope:** `@acc/backend` (`apps/backend/workflow-engine`, `apps/backend/acc-ms-aio`), `@acc/console` (`apps/console/src/features/workflows`, `apps/console/src/features/workflow-executions`), `packages/sandbox`  
+**Scope:** `@acc/api` (`apps/api/workflow-engine`, `apps/api/acc-ms-aio`), `@acc/console` (`apps/console/src/features/workflows`, `apps/console/src/features/workflow-executions`), `packages/sandbox`  
 **Classification:** Internal Core Architecture Specification
 
 ---
@@ -115,7 +115,7 @@ The decider traverses the workflow's task definitions using topological readines
 
 ### 2.3 Graph Validation & Topological Acyclicity Guard (`AcyclicityGuard.java`)
 
-Before a workflow definition can be saved or executed, [`AcyclicityGuard`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/graph/AcyclicityGuard.java) validates structural integrity:
+Before a workflow definition can be saved or executed, [`AcyclicityGuard`](file:///c:/Users/Admin/workspace/git/acc/apps/api/workflow-engine/src/main/java/com/acc/workflow/core/graph/AcyclicityGuard.java) validates structural integrity:
 - **Depth-First Search (DFS) Cycle Detection**: Uses three-color recursion tracking (`WHITE` = unvisited, `GRAY` = active stack, `BLACK` = completed). Encountering a `GRAY` node indicates a cycle and throws `IllegalArgumentException`.
 - **Implicit Edge Resolution**: When `joinOn` is empty across tasks, sequential dependencies are automatically inferred.
 - **FORK/JOIN Pairing Verification**: Ensures every `FORK_JOIN` node has a matching convergence join barrier in the graph.
@@ -177,7 +177,7 @@ sequenceDiagram
 
 ### 3.1 Distributed Saga Reverse Compensation
 When a workflow fails:
-1. [`SagaCompensator`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/workflow-engine/src/main/java/com/acc/workflow/application/SagaCompensator.java) inspects all `COMPLETED` tasks in the workflow snapshot in reverse chronological and topological order.
+1. [`SagaCompensator`](file:///c:/Users/Admin/workspace/git/acc/apps/api/workflow-engine/src/main/java/com/acc/workflow/application/SagaCompensator.java) inspects all `COMPLETED` tasks in the workflow snapshot in reverse chronological and topological order.
 2. If a completed task definition declares a `compensateTask`, a compensation task instance is scheduled (`taskId = originalTaskId + "_compensate"`).
 3. The compensation tasks run sequentially or concurrently according to reverse dependencies to restore consistency across external services.
 
@@ -336,7 +336,7 @@ erDiagram
 ## 7. Edge Control Plane & Real-Time SSE Streaming
 
 ### 7.1 Dual-Mode Pagination & API Contracts
-[`WorkflowExecutionController`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/WorkflowExecutionController.java) exposes dual-mode pagination:
+[`WorkflowExecutionController`](file:///c:/Users/Admin/workspace/git/acc/apps/api/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/WorkflowExecutionController.java) exposes dual-mode pagination:
 - **Spring Page Envelope Mode**: For traditional data tables (`content`, `totalElements`, `totalPages`, `size`, `number`).
 - **Keyset / Cursor Mode**: For high-volume log streams (`cursor`, `hasMore`).
 

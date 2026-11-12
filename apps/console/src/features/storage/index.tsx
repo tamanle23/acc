@@ -145,7 +145,7 @@ export function StorageIntegration() {
           <p className='text-muted-foreground'>
             {t(
               'storage.description',
-              'Manage your Cloud Storage services for @acc/backend file uploads!'
+              'Manage your Cloud Storage services for @acc/api file uploads!'
             )}
           </p>
         </div>

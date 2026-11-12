@@ -33,7 +33,7 @@ Following successful authentication (`POST /api/auth/token`), the frontend conso
    - Run type checks and backend unit tests.
 
 ## Changes
-### Backend (`apps/backend/acc-fw`, `apps/backend/acc-ms-aio`)
+### Backend (`apps/api/acc-fw`, `apps/api/acc-ms-aio`)
 - `UserDetailsImpl.java`: Added `getTenantId()` getter.
 - `UserDetailsServiceImpl.java`: Populate `"tenantId"` in `userMap` during user details assembly.
 - `JwtTokenHelper.java`:
@@ -59,7 +59,7 @@ Following successful authentication (`POST /api/auth/token`), the frontend conso
 
 ## Verification
 - Backend Unit Tests:
-  - `mvn -f apps/backend/pom.xml test -pl acc-fw "-Dtest=JwtTokenHelperTest,UserDetailsImplTest" -q` (All 7 unit tests passed with 0 errors).
+  - `mvn -f apps/api/pom.xml test -pl acc-fw "-Dtest=JwtTokenHelperTest,UserDetailsImplTest" -q` (All 7 unit tests passed with 0 errors).
 - Console Unit Tests:
   - `pnpm --filter @acc/console test src/features/spring-auth/ src/features/auth/ --reporter=basic` (All 8 test files, 31 tests passed).
 - TypeScript Typecheck:

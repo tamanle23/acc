@@ -37,7 +37,7 @@ In accordance with architectural grilling decisions:
 
 ## 2. Proposed Changes
 
-### A. Domain & Contracts Layer (`packages/client` & `apps/backend/acc-fw`)
+### A. Domain & Contracts Layer (`packages/client` & `apps/api/acc-fw`)
 - **Domain Records**:
   - Create `CompositeRollup.java`:
     - `alias` (String)
@@ -51,7 +51,7 @@ In accordance with architectural grilling decisions:
     - Add `rollups?: CompositeRollup[]` to `CompositeSpec` and `CompositeNode`.
     - Define `ChildQueryFilter` and `ChildQueryParams` contract.
 
-### B. SQL Compiler & Service Layer (`apps/backend/acc-fw`)
+### B. SQL Compiler & Service Layer (`apps/api/acc-fw`)
 - **Query Parameter DTOs**:
   - Create `ChildFilterCriteria.java` (`op`, `value`) and `ChildQueryOptions.java` (`limit`, `offset`, `sort`, `filters`).
 - **`DynamicQueryCompiler.java`**:

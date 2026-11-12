@@ -4,7 +4,7 @@
 In previous iterations, the workflow orchestration subsystem treated node connectors and port topology uniformly: every task displayed standard single input and single output handles, while control flow (branching, loops, compensation) was inferred implicitly or stubbed in modal settings.
 
 To elevate both the visual DAG studio and the execution engine to enterprise-grade rigor:
-1. **24 Concrete Node Types**: Formalized all 24 node types across `@acc/backend`, `@acc/console`, and `packages/sandbox`, introducing canonical `END_WORKFLOW` to symmetrically pair with `START_WORKFLOW`.
+1. **24 Concrete Node Types**: Formalized all 24 node types across `@acc/api`, `@acc/console`, and `packages/sandbox`, introducing canonical `END_WORKFLOW` to symmetrically pair with `START_WORKFLOW`.
 2. **Mathematical Back-Edge Elimination for DAG Cycles**: A cycle created by returning to a loop entry node (`DO_WHILE`) violates Kahn's topological sort unless cleanly partitioned. We define $E = E_{\text{forward}} \cup E_{\text{back}}$, where $E_{\text{back}} = \{ (u, v) \in E \mid v.\text{type} = \text{DO\_WHILE} \land \text{targetPort} = \text{'loop-back'} \}$. Topological sorting runs over the forward DAG $G_{\text{DAG}} = (V, E_{\text{forward}})$, while loop-body reachability and origin verification are enforced independently.
 3. **Dedicated Multi-Port Pin Layouts**:
    - `DO_WHILE`: 4 distinct ports (Left: input entry, Top: loop-back entry, Right-Top: loop-body exit, Right-Bottom: loop-exit).
@@ -91,4 +91,4 @@ To elevate both the visual DAG studio and the execution engine to enterprise-gra
 - **Unified Sandbox Tests**:
   - `pnpm --filter @acc/sandbox test`: 11 test files passed, 103 tests passed.
 - **Backend Tests**:
-  - `pnpm --filter @acc/backend exec node mvnw.cjs -am -pl acc-ms-aio test "-Dtest=WorkflowEngineRestApiTest,AcyclicityGuardTest,PureDeciderTest"`: All unit and sliced integration tests passed (`BUILD SUCCESS`).
+  - `pnpm --filter @acc/api exec node mvnw.cjs -am -pl acc-ms-aio test "-Dtest=WorkflowEngineRestApiTest,AcyclicityGuardTest,PureDeciderTest"`: All unit and sliced integration tests passed (`BUILD SUCCESS`).

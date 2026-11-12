@@ -24,8 +24,8 @@ Following the implementation of Phase 44 (Composite Computed Rollups & Deep Chil
 
 ## 3. Changes Made
 - **Backend Tests**:
-  - `apps/backend/acc-fw/src/test/java/com/acc/service/CompositeQueryPerformanceBenchmarkTest.java`: 1,000 queries, 32 threads, persistent markdown report generator.
-  - `apps/backend/acc-fw/src/test/java/com/acc/service/CompositeChaosResilienceTest.java`: 4 fault injection test cases covering failover, depth limits, tenant isolation, and SQLi fuzzing.
+  - `apps/api/acc-fw/src/test/java/com/acc/service/CompositeQueryPerformanceBenchmarkTest.java`: 1,000 queries, 32 threads, persistent markdown report generator.
+  - `apps/api/acc-fw/src/test/java/com/acc/service/CompositeChaosResilienceTest.java`: 4 fault injection test cases covering failover, depth limits, tenant isolation, and SQLi fuzzing.
 - **Frontend Tests**:
   - `apps/console/src/features/metadata/components/data-explorer/composite-data-explorer.test.tsx`: 5 integration tests covering full composite data explorer workflow.
   - `apps/console/e2e/composite-entities.spec.ts`: End-to-end browser test with AxeBuilder accessibility audit.

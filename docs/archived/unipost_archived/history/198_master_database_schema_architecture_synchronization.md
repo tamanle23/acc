@@ -26,7 +26,7 @@ Ratified via `/grill-me` alignment and documented in [`docs/integration_master_p
   - Added Section 9: UI/UX Design System Integration, Dynamic Form Widget Token Mapping, 5-State Component Matrix, and WCAG 2.2 AA compliance rules.
 - **Iteration & App Planning**:
   - Authored [`docs/integration_master_plan_iteration21.md`](../integration_master_plan_iteration21.md).
-  - Updated [`apps/backend/doc/implementation_plan_45.md`](../../apps/backend/doc/implementation_plan_45.md).
+  - Updated [`apps/api/doc/implementation_plan_45.md`](../../apps/api/doc/implementation_plan_45.md).
 
 ## 4. Verification
 - Backend compilation: `./mvnw test-compile -q` PASSED.

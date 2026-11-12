@@ -7,15 +7,15 @@ This iteration resolves the lack of predefined task node schemas across both the
 ## Key Changes
 
 ### 1. Backend Engine & Schema Models
-- [`TaskDefinition.java`](../../../../apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/model/TaskDefinition.java):
+- [`TaskDefinition.java`](../../../../apps/api/workflow-engine/src/main/java/com/acc/workflow/core/model/TaskDefinition.java):
   - Added first-class `Map<String, Object> inputSchema` property with builder support and backward-compatible constructors.
-- [`SimpleTaskStrategy.java`](../../../../apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/decider/strategy/SimpleTaskStrategy.java):
+- [`SimpleTaskStrategy.java`](../../../../apps/api/workflow-engine/src/main/java/com/acc/workflow/core/decider/strategy/SimpleTaskStrategy.java):
   - Added pre-dispatch gate validating `resolvedInput` against `taskDef.inputSchema()` before emitting `ScheduleTask`.
-- [`TaskTypeContract.java`](../../../../apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/schema/TaskTypeContract.java) & [`BuiltInTaskContracts.java`](../../../../apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/schema/BuiltInTaskContracts.java):
+- [`TaskTypeContract.java`](../../../../apps/api/workflow-engine/src/main/java/com/acc/workflow/core/schema/TaskTypeContract.java) & [`BuiltInTaskContracts.java`](../../../../apps/api/workflow-engine/src/main/java/com/acc/workflow/core/schema/BuiltInTaskContracts.java):
   - Defined canonical Draft 7 schemas and parameter descriptors for all 24 `TaskType` values.
-- [`TaskContractController.java`](../../../../apps/backend/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/TaskContractController.java):
+- [`TaskContractController.java`](../../../../apps/api/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/TaskContractController.java):
   - Exposed `/api/v1/tasks/contracts` and `/api/v1/tasks/contracts/{taskType}` returning unified built-in and worker contracts.
-- [`SandboxWorkflowSeeder.java`](../../../../apps/backend/acc-sandbox/src/main/java/com/acc/sandbox/seed/SandboxWorkflowSeeder.java):
+- [`SandboxWorkflowSeeder.java`](../../../../apps/api/acc-sandbox/src/main/java/com/acc/sandbox/seed/SandboxWorkflowSeeder.java):
   - Pre-warmed explicit node-level `inputSchema` and `outputSchema` on all tasks in `order-fulfillment-pipeline` and `order-fulfillment-v1`.
 
 ### 2. Universal Frontend Sandbox

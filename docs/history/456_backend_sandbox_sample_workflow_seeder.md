@@ -23,13 +23,13 @@ Furthermore, during end-to-end verification of strict schema pipelines, `EndWork
 ## Changes
 
 ### 1. Backend Sandbox
-- `apps/backend/acc-sandbox/pom.xml`: Added dependency on `workflow-engine` with `provided` scope.
-- `apps/backend/acc-sandbox/src/main/java/com/acc/sandbox/seed/SandboxWorkflowSeeder.java`: Created seeder component building `order-fulfillment-pipeline` and `order-fulfillment-v1` definitions with Draft 7 schemas, variable bindings, and layout metadata.
-- `apps/backend/acc-sandbox/src/main/java/com/acc/sandbox/config/SandboxAutoConfiguration.java`: Added `SandboxWorkflowSeeder.class` to configuration `@Import`.
-- `apps/backend/acc-sandbox/src/main/java/com/acc/sandbox/seed/SandboxDataPreWarmer.java`: Injected `SandboxWorkflowSeeder` provider and triggered `seedSampleWorkflowsIfMissing()` during startup.
+- `apps/api/acc-sandbox/pom.xml`: Added dependency on `workflow-engine` with `provided` scope.
+- `apps/api/acc-sandbox/src/main/java/com/acc/sandbox/seed/SandboxWorkflowSeeder.java`: Created seeder component building `order-fulfillment-pipeline` and `order-fulfillment-v1` definitions with Draft 7 schemas, variable bindings, and layout metadata.
+- `apps/api/acc-sandbox/src/main/java/com/acc/sandbox/config/SandboxAutoConfiguration.java`: Added `SandboxWorkflowSeeder.class` to configuration `@Import`.
+- `apps/api/acc-sandbox/src/main/java/com/acc/sandbox/seed/SandboxDataPreWarmer.java`: Injected `SandboxWorkflowSeeder` provider and triggered `seedSampleWorkflowsIfMissing()` during startup.
 
 ### 2. Workflow Engine Decider Strategy
-- `apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/decider/strategy/EndWorkflowStrategy.java`:
+- `apps/api/workflow-engine/src/main/java/com/acc/workflow/core/decider/strategy/EndWorkflowStrategy.java`:
   - Enforced strict output resolution: when `inputParameters` are specified on `END_WORKFLOW`, populate `resolvedOutput` strictly from resolving those mappings; fall back to `snapshot.outputPayload()` only if `inputParameters` is empty. Prevents accumulator pollution under `additionalProperties: false`.
 
 ### 3. Universal Frontend Sandbox
@@ -38,10 +38,10 @@ Furthermore, during end-to-end verification of strict schema pipelines, `EndWork
   - Added `order-fulfillment-pipeline` and upgraded `order-fulfillment-v1` with Draft 7 schemas and canonical boundary nodes.
 
 ### 4. Tests
-- `apps/backend/acc-sandbox/src/test/java/com/acc/sandbox/seed/SandboxWorkflowSeederTest.java`: Verified seeder builds valid definitions, registers across tenants in `DEV` mode, and skips in `TEST` mode.
-- `apps/backend/acc-sandbox/src/test/java/com/acc/sandbox/seed/SandboxDataPreWarmerTest.java`: Updated pre-warmer test assertions with `SandboxWorkflowSeeder`.
-- `apps/backend/workflow-engine/src/test/java/com/acc/workflow/core/decider/strategy/EndWorkflowStrategyValidationTest.java`: Added test asserting intermediate variables do not leak into terminal output when schema has `additionalProperties: false`.
-- `apps/backend/acc-ms-aio/src/test/java/com/acc/aio/controller/workflow/WorkflowEngineRestApiTest.java`: Added `testSandboxSampleWorkflowFullEndToEndExecution()` covering definition retrieval, trigger, worker dispatch, step results, and terminal exit gate validation.
+- `apps/api/acc-sandbox/src/test/java/com/acc/sandbox/seed/SandboxWorkflowSeederTest.java`: Verified seeder builds valid definitions, registers across tenants in `DEV` mode, and skips in `TEST` mode.
+- `apps/api/acc-sandbox/src/test/java/com/acc/sandbox/seed/SandboxDataPreWarmerTest.java`: Updated pre-warmer test assertions with `SandboxWorkflowSeeder`.
+- `apps/api/workflow-engine/src/test/java/com/acc/workflow/core/decider/strategy/EndWorkflowStrategyValidationTest.java`: Added test asserting intermediate variables do not leak into terminal output when schema has `additionalProperties: false`.
+- `apps/api/acc-ms-aio/src/test/java/com/acc/aio/controller/workflow/WorkflowEngineRestApiTest.java`: Added `testSandboxSampleWorkflowFullEndToEndExecution()` covering definition retrieval, trigger, worker dispatch, step results, and terminal exit gate validation.
 
 ## Verification
 - `SandboxWorkflowSeederTest` & `SandboxDataPreWarmerTest`: Passed (Exit code 0).

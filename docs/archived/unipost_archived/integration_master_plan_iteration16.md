@@ -1,7 +1,7 @@
 # Integration Master Plan - Iteration 16: Pure Blank Workflow Canvas & Full Control Flow Node Architecture
 
 ## 1. Executive Summary
-This iteration addresses canvas initialization for newly created workflows and the end-to-end architectural alignment of **Control Flow** nodes between the `@acc/console` Visual DAG Studio and the `@acc/backend` Workflow Engine, inspired by Netflix/Orkes Conductor OSS standards.
+This iteration addresses canvas initialization for newly created workflows and the end-to-end architectural alignment of **Control Flow** nodes between the `@acc/console` Visual DAG Studio and the `@acc/api` Workflow Engine, inspired by Netflix/Orkes Conductor OSS standards.
 
 ---
 

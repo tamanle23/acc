@@ -2,7 +2,7 @@
 
 **App:** `@acc/console`  
 **Master Plan Reference:** [`docs/iterations/master_implementation_plan_iteration_38.md`](file:///c:/Users/Admin/workspace/git/acc/docs/iterations/master_implementation_plan_iteration_38.md)  
-**Backend Companion Plan:** [`apps/backend/doc/implementation_plan_49.md`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/doc/implementation_plan_49.md)  
+**Backend Companion Plan:** [`apps/api/doc/implementation_plan_49.md`](file:///c:/Users/Admin/workspace/git/acc/apps/api/doc/implementation_plan_49.md)  
 
 ---
 

@@ -6,10 +6,10 @@
 In modern enterprise workflow engines, a fundamental axiom is the **Unaware Unit of Work**: a Task is an isolated, reusable function that knows nothing about workflow context, upstream nodes, or variable resolution expressions (`${...}`). To enable zero-guesswork DAG authoring, pre-flight semantic linting, automatic parameter binding, and strict runtime contract enforcement, **every node type (both built-in system nodes and custom domain workers) must have a predefined, deterministic input and output schema (JSON Schema Draft 7)**.
 
 Currently, several architectural gaps prevent predefined node schemas from being visible or enforced:
-1. **Data Model Omission**: [`TaskDefinition.java`](../../apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/model/TaskDefinition.java) and [`WorkflowTaskIR`](../../apps/console/src/features/workflows/components/studio/utils/workflow-ir-converter.ts) only contain `outputSchema` and `inputParameters`, omitting a first-class `inputSchema` property.
+1. **Data Model Omission**: [`TaskDefinition.java`](../../apps/api/workflow-engine/src/main/java/com/acc/workflow/core/model/TaskDefinition.java) and [`WorkflowTaskIR`](../../apps/console/src/features/workflows/components/studio/utils/workflow-ir-converter.ts) only contain `outputSchema` and `inputParameters`, omitting a first-class `inputSchema` property.
 2. **Visual DAG Studio Inspector Blind Spot**: [`dag-property-inspector.tsx`](../../apps/console/src/features/workflows/components/studio/inspectors/dag-property-inspector.tsx) hardcodes its input requirement checklist to `matchedWorkerDescriptor?.inputSchema`. For all 20+ built-in system node types (`HTTP`, `LLM_CHAT_COMPLETE`, `SWITCH`, etc.) and unlinked `SIMPLE` nodes, `matchedWorkerDescriptor` is `undefined`, causing the inspector to return `null` and show zero predefined requirements.
-3. **Missing Public Task Contract Catalog API**: While [`WorkerFleetController.java`](../../apps/backend/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/WorkerFleetController.java) provides worker capabilities via `/api/v1/workers/catalog`, there is no unified endpoint serving canonical Draft 7 schemas for all 24 built-in and worker task types.
-4. **Decider Input Contract Gate**: [`SimpleTaskStrategy.java`](../../apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/decider/strategy/SimpleTaskStrategy.java) resolves `inputParameters` but does not validate them against `taskDef.inputSchema()` prior to emitting `ScheduleTask`.
+3. **Missing Public Task Contract Catalog API**: While [`WorkerFleetController.java`](../../apps/api/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/WorkerFleetController.java) provides worker capabilities via `/api/v1/workers/catalog`, there is no unified endpoint serving canonical Draft 7 schemas for all 24 built-in and worker task types.
+4. **Decider Input Contract Gate**: [`SimpleTaskStrategy.java`](../../apps/api/workflow-engine/src/main/java/com/acc/workflow/core/decider/strategy/SimpleTaskStrategy.java) resolves `inputParameters` but does not validate them against `taskDef.inputSchema()` prior to emitting `ScheduleTask`.
 
 Iteration 74 delivers end-to-end parity for predefined node input and output schemas across the backend execution engine, REST APIs, and Visual DAG Studio 2.0.
 
@@ -37,13 +37,13 @@ graph TD
         Linter["DAG Semantic Linter (dag-semantic-linter.ts)"]
     end
 
-    subgraph Backend_Gateway["Backend API & Catalog (apps/backend/acc-ms-aio)"]
+    subgraph Backend_Gateway["Backend API & Catalog (apps/api/acc-ms-aio)"]
         TaskContractCtrl["TaskContractController (/api/v1/tasks/contracts)"]
         WorkerFleetCtrl["WorkerFleetController (/api/v1/workers/catalog)"]
         DefinitionCtrl["WorkflowExecutionController (/api/v1/workflows/definitions)"]
     end
 
-    subgraph Backend_Engine["Workflow Engine Core (apps/backend/workflow-engine)"]
+    subgraph Backend_Engine["Workflow Engine Core (apps/api/workflow-engine)"]
         TaskDef["TaskDefinition (inputSchema + outputSchema)"]
         PureDecider["PureDecider (Evaluation Loop)"]
         SimpleStrat["SimpleTaskStrategy (Pre-Dispatch Input Gate)"]
@@ -179,8 +179,8 @@ export class TaskContractRegistry {
   - Implement input validation gate in `SimpleTaskStrategy.java` prior to `ScheduleTask`.
   - Add unit tests in `TaskDefinitionTest.java` and `SimpleTaskStrategyTest.java`.
 - **Phase 2: Backend Task Contract Catalog API**
-  - Implement `TaskContractRegistry` in `apps/backend/workflow-engine` with canonical Draft 7 schemas for all 24 `TaskType` values.
-  - Expose `GET /api/v1/tasks/contracts` in `apps/backend/acc-ms-aio`.
+  - Implement `TaskContractRegistry` in `apps/api/workflow-engine` with canonical Draft 7 schemas for all 24 `TaskType` values.
+  - Expose `GET /api/v1/tasks/contracts` in `apps/api/acc-ms-aio`.
   - Enrich `SandboxWorkflowSeeder.java` to seed complete node-level `inputSchema` and `outputSchema`.
 - **Phase 3: Universal Sandbox Synchronization**
   - Update `packages/sandbox/src/handlers/workflow-handler.ts` to support `inputSchema` on `WorkflowTaskIR`.

@@ -20,21 +20,21 @@ In a multi-tenant dynamic schema architecture, compliance regulations mandate tw
 
 ## Changes Made
 - **Domain Records:**
-  - `apps/backend/acc-fw/src/main/java/com/acc/tenant/export/TenantExportManifest.java`
-  - `apps/backend/acc-fw/src/main/java/com/acc/tenant/purge/CertificateOfErasure.java`
+  - `apps/api/acc-fw/src/main/java/com/acc/tenant/export/TenantExportManifest.java`
+  - `apps/api/acc-fw/src/main/java/com/acc/tenant/purge/CertificateOfErasure.java`
 - **Repositories Updated:**
-  - `apps/backend/acc-fw/src/main/java/com/acc/repository/jpa/EntityRecordRepository.java`: added tenant finder/counter methods.
-  - `apps/backend/acc-fw/src/main/java/com/acc/repository/jpa/EntityRelationshipRepository.java`: added tenant finder/counter methods.
-  - `apps/backend/acc-fw/src/main/java/com/acc/repository/jpa/EntityTypeRepository.java`: added tenant finder/counter methods.
-  - `apps/backend/acc-fw/src/main/java/com/acc/repository/jpa/AttributeDefinitionRepository.java`: added tenant finder/counter methods.
-  - `apps/backend/acc-fw/src/main/java/com/acc/repository/jpa/RelationshipTypeRepository.java`: added tenant finder/counter methods.
+  - `apps/api/acc-fw/src/main/java/com/acc/repository/jpa/EntityRecordRepository.java`: added tenant finder/counter methods.
+  - `apps/api/acc-fw/src/main/java/com/acc/repository/jpa/EntityRelationshipRepository.java`: added tenant finder/counter methods.
+  - `apps/api/acc-fw/src/main/java/com/acc/repository/jpa/EntityTypeRepository.java`: added tenant finder/counter methods.
+  - `apps/api/acc-fw/src/main/java/com/acc/repository/jpa/AttributeDefinitionRepository.java`: added tenant finder/counter methods.
+  - `apps/api/acc-fw/src/main/java/com/acc/repository/jpa/RelationshipTypeRepository.java`: added tenant finder/counter methods.
 - **Services & Controller:**
-  - `apps/backend/acc-fw/src/main/java/com/acc/tenant/export/TenantExportService.java`
-  - `apps/backend/acc-fw/src/main/java/com/acc/tenant/purge/TenantPurgeService.java`
-  - `apps/backend/acc-fw/src/main/java/com/acc/presentation/TenantDataLifecycleController.java`
+  - `apps/api/acc-fw/src/main/java/com/acc/tenant/export/TenantExportService.java`
+  - `apps/api/acc-fw/src/main/java/com/acc/tenant/purge/TenantPurgeService.java`
+  - `apps/api/acc-fw/src/main/java/com/acc/presentation/TenantDataLifecycleController.java`
 - **Unit Tests:**
-  - `apps/backend/acc-fw/src/test/java/com/acc/tenant/export/TenantExportServiceTest.java`
-  - `apps/backend/acc-fw/src/test/java/com/acc/tenant/purge/TenantPurgeServiceTest.java`
+  - `apps/api/acc-fw/src/test/java/com/acc/tenant/export/TenantExportServiceTest.java`
+  - `apps/api/acc-fw/src/test/java/com/acc/tenant/purge/TenantPurgeServiceTest.java`
 
 ## Verification
 - Unit & regression tests executed:
@@ -44,6 +44,6 @@ In a multi-tenant dynamic schema architecture, compliance regulations mandate tw
   All tests passed (`BUILD SUCCESS` across all 10 modules).
 
 ## Walkthrough & Artifacts
-- Plan: `apps/backend/doc/implementation_plan_22.md`
-- Walkthrough: `apps/backend/doc/walkthrough_22.md`
+- Plan: `apps/api/doc/implementation_plan_22.md`
+- Walkthrough: `apps/api/doc/walkthrough_22.md`
 - History: `docs/history/010_streaming_export_and_gdpr_hard_purge_pipeline.md`

@@ -11,20 +11,20 @@
 1. Implement `MixedCaseQuotingPhysicalNamingStrategy` extending Hibernate's `PhysicalNamingStrategyStandardImpl`:
    - Keep column names quoted if they contain mixed uppercase and lowercase letters (`createdBy_uid`, `lastUpdatedBy_uid`, etc.).
    - Explicitly leave table names unquoted so PostgreSQL folds them naturally and resolves relations created via unquoted DDL case-insensitively.
-2. Configure `spring.jpa.hibernate.naming.physical-strategy` in `apps/backend/acc-ms-aio/src/main/resources/application.yml`.
+2. Configure `spring.jpa.hibernate.naming.physical-strategy` in `apps/api/acc-ms-aio/src/main/resources/application.yml`.
 3. Provide unit test suite `MixedCaseQuotingPhysicalNamingStrategyTest` in `acc-fw`.
 
 ## Changes
-- `apps/backend/acc-fw/src/main/java/com/acc/fw/jpa/MixedCaseQuotingPhysicalNamingStrategy.java`:
+- `apps/api/acc-fw/src/main/java/com/acc/fw/jpa/MixedCaseQuotingPhysicalNamingStrategy.java`:
   Custom physical naming strategy preserving mixed-case column quoting while ensuring table names remain unquoted unless pre-quoted in mapping.
-- `apps/backend/acc-fw/src/test/java/com/acc/fw/jpa/MixedCaseQuotingPhysicalNamingStrategyTest.java`:
+- `apps/api/acc-fw/src/test/java/com/acc/fw/jpa/MixedCaseQuotingPhysicalNamingStrategyTest.java`:
   Unit tests asserting mixed-case column quoting and verifying unquoted behavior for both all-caps (`UNIPOST_ENTITY_TYPES`) and mixed-case (`UNIPOST_IDENTITY_user`) table identifiers.
-- `apps/backend/acc-ms-aio/src/main/resources/application.yml`:
+- `apps/api/acc-ms-aio/src/main/resources/application.yml`:
   Wired `com.acc.fw.jpa.MixedCaseQuotingPhysicalNamingStrategy` under `spring.jpa.hibernate.naming.physical-strategy`.
 
 ## Verification
 - Unit test execution:
-  `node apps/backend/mvnw.cjs -pl acc-fw -Dtest=MixedCaseQuotingPhysicalNamingStrategyTest test` (2/2 tests pass).
+  `node apps/api/mvnw.cjs -pl acc-fw -Dtest=MixedCaseQuotingPhysicalNamingStrategyTest test` (2/2 tests pass).
 
 ## Walkthrough & Tasks
 - Companion document: Registered in history record `411_postgresql_mixed_case_naming_strategy.md`.

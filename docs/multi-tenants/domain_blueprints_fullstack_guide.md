@@ -95,19 +95,19 @@ Once a blueprint is provisioned, the frontend requires **zero manual configurati
 
 ---
 
-## 3. Part 2: How Backend Uses Domain Blueprints (`@acc/backend`)
+## 3. Part 2: How Backend Uses Domain Blueprints (`@acc/api`)
 
 The backend acts as the authoritative engine enforcing isolation, pre-warming, and immutability.
 
 ### 1. Dynamic Catalog Discovery (Classpath Scanning)
-- **Service:** [`BlueprintCatalogService.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/tenant/blueprint/BlueprintCatalogService.java)
+- **Service:** [`BlueprintCatalogService.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/acc-fw/src/main/java/com/acc/tenant/blueprint/BlueprintCatalogService.java)
 - **Behavior:**
   - On Spring Boot startup, `PathMatchingResourcePatternResolver` scans `classpath:metadata/blueprints/*.json`.
   - JSON manifests are parsed into memory records (`BlueprintManifest`).
   - **Why this matters:** Adding a new industry blueprint (e.g., *Hospital Clinic*, *E-Commerce Store*) requires **only dropping a JSON file into resources**. No database migrations, no Java code changes, and zero schema locks.
 
 ### 2. Transactional Deep-Cloning Pipeline
-- **Service:** [`TenantProvisioningService.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/tenant/service/TenantProvisioningService.java)
+- **Service:** [`TenantProvisioningService.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/acc-fw/src/main/java/com/acc/tenant/service/TenantProvisioningService.java)
 - **Pipeline Execution:**
   ```java
   // Step 1: Bind Security Context

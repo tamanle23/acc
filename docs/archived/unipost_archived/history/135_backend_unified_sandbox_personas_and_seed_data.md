@@ -15,7 +15,7 @@ In Phase 3 of Iteration 8 ("Backend Unified Sandbox Platform"), developers and a
 
 ## Changes
 
-### `apps/backend/acc-sandbox`
+### `apps/api/acc-sandbox`
 - **`com.acc.sandbox.auth.SandboxPersona`**:
   - Immutable record defining `id`, `name`, `username`, `defaultTenantId`, `actorTenantId`, `roles`, `authorities`, and `uid`.
 - **`com.acc.sandbox.auth.SandboxPersonaRegistry`**:
@@ -30,7 +30,7 @@ In Phase 3 of Iteration 8 ("Backend Unified Sandbox Platform"), developers and a
 - **`com.acc.sandbox.config.SandboxAutoConfiguration`**:
   - Registered `SandboxPersonaRegistry`, `SandboxTokenAspect`, and `SandboxDataPreWarmer` beans.
 
-### `apps/backend/acc-ms-identity`
+### `apps/api/acc-ms-identity`
 - **`AuthenticationRequestBody`**:
   - Added `@JsonAlias({"username", "user_name"})` on `userName`.
 
@@ -40,14 +40,14 @@ In Phase 3 of Iteration 8 ("Backend Unified Sandbox Platform"), developers and a
   - `SandboxTokenAspectTest`: 3 test cases passing.
   - `SandboxDataPreWarmerTest`: 2 test cases passing.
   - `SandboxDecouplingIntegrationTest`: 3 test cases passing.
-  - `mvn clean test -f apps/backend/acc-sandbox/pom.xml -q`: 26/26 tests passing in 8s.
+  - `mvn clean test -f apps/api/acc-sandbox/pom.xml -q`: 26/26 tests passing in 8s.
 - **Full Backend Regression Suite**:
-  - `mvn test -f apps/backend/pom.xml -q`: 300+ tests passing across all backend modules with JaCoCo $\ge 90\%$.
+  - `mvn test -f apps/api/pom.xml -q`: 300+ tests passing across all backend modules with JaCoCo $\ge 90\%$.
 - **Playwright E2E Verification**:
   - `pnpm --filter @acc/console exec playwright test e2e/01-auth-and-personas.spec.ts --reporter=line`: 1/1 passed in 5.6s.
 
 ## Walkthrough
-Refer to [`apps/backend/doc/walkthrough_43.md`](../../apps/backend/doc/walkthrough_43.md) for full architectural details and code samples.
+Refer to [`apps/api/doc/walkthrough_43.md`](../../apps/api/doc/walkthrough_43.md) for full architectural details and code samples.
 
 ## Tasks
 - [x] Establish persona specifications and claims matrix

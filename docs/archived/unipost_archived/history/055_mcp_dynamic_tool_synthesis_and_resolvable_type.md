@@ -13,7 +13,7 @@ In Iteration 1, autonomous LLM agents had no standardized way to introspect dyna
      - `acc_create_entity`: Validates attributes against server schema and creates records.
    - Implement `compileDraft07Schema()` mapping schema definitions into Draft-07 JSON Schema documents.
    - Implement `McpServer` class handling `tools/list` and `tools/call` JSON-RPC 2.0 requests over the universal `AccClient`.
-2. **Spring Modulith `ResolvableType` Dynamic Command Dispatch (`apps/backend/acc-core`)**:
+2. **Spring Modulith `ResolvableType` Dynamic Command Dispatch (`apps/api/acc-core`)**:
    - Implement `DynamicCommandDispatcher` utilizing Spring Framework's `org.springframework.core.ResolvableType` to resolve target generic command parameters safely across CGLIB proxies.
    - Safely deserialize heterogeneous JSONB attribute maps into strongly typed command records via `ObjectMapper`.
    - Add unit test suite in `DynamicCommandDispatcherTest`.
@@ -24,9 +24,9 @@ In Iteration 1, autonomous LLM agents had no standardized way to introspect dyna
    - Run Playwright E2E suite (`pnpm --filter @acc/console test:e2e`).
 
 ## Changes
-- **`apps/backend/acc-core/src/main/java/com/acc/core/mediator/DynamicCommandDispatcher.java`**: Implemented type-safe `DynamicCommandDispatcher` with `ResolvableType` validation and dynamic payload deserialization.
-- **`apps/backend/acc-core/src/test/java/com/acc/core/mediator/DynamicCommandDispatcherTest.java`**: Added tests for direct command dispatch, dynamic JSONB payload dispatch, and argument validation.
-- **`apps/backend/acc-core/pom.xml`**: Added `spring-boot-starter-test` dependency for test execution.
+- **`apps/api/acc-core/src/main/java/com/acc/core/mediator/DynamicCommandDispatcher.java`**: Implemented type-safe `DynamicCommandDispatcher` with `ResolvableType` validation and dynamic payload deserialization.
+- **`apps/api/acc-core/src/test/java/com/acc/core/mediator/DynamicCommandDispatcherTest.java`**: Added tests for direct command dispatch, dynamic JSONB payload dispatch, and argument validation.
+- **`apps/api/acc-core/pom.xml`**: Added `spring-boot-starter-test` dependency for test execution.
 - **`packages/client/src/mcp/types.ts`**: Defined MCP JSON-RPC 2.0 types and tool definition contracts.
 - **`packages/client/src/mcp/synthesizer.ts`**: Implemented `synthesizeMcpManifest()` and `compileDraft07Schema()`.
 - **`packages/client/src/mcp/server.ts`**: Implemented `McpServer` orchestrating dynamic tool execution over `AccClient`.
@@ -35,7 +35,7 @@ In Iteration 1, autonomous LLM agents had no standardized way to introspect dyna
 - **`packages/client/src/__tests__/mcp-server.test.ts`**: Added comprehensive test coverage for MCP server and JSON-RPC dispatch.
 
 ## Verification
-- `apps/backend/acc-core` Maven test: **3/3 passed** (0 failures, 0 errors).
+- `apps/api/acc-core` Maven test: **3/3 passed** (0 failures, 0 errors).
 - `packages/client` Vitest: **3 test files, 18/18 passed** (100% green).
 - `pnpm turbo run check-types`: **4/4 passed** (0 errors).
 - `pnpm turbo run test`: **6/6 passed** (All backend Spring Modulith, Console, Client, Sandbox, Tokens, Mobile suites green).

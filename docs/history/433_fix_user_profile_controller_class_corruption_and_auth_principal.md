@@ -1,7 +1,7 @@
 # 433: Fix UserProfileController Bytecode Corruption and Authentication Principal Resolution
 
 ## Problem
-During backend startup (`@acc/backend:dev:sandbox`), Spring container initialization failed with:
+During backend startup (`@acc/api:dev:sandbox`), Spring container initialization failed with:
 ```
 org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'userProfileController': Resolution of declared constructors on bean Class [com.acc.presentation.UserProfileController] from ClassLoader failed
 Caused by: java.lang.NoClassDefFoundError: ResponseEntityBuilder
@@ -24,11 +24,11 @@ Two underlying root causes were identified:
    - Perform a clean compile across `acc-core` and `acc-fw` using Maven javac (`mvn clean compile -am -pl acc-fw`).
    - Disassemble `UserProfileController.class` to confirm the constructor accurately resolves to `(com.acc.user.service.UserProfileService, com.acc.fw.ResponseEntityBuilder)`.
 3. **Formal Unit Testing**:
-   - Create `UserProfileControllerTest.java` in `apps/backend/acc-fw/src/test/java/com/acc/presentation/` verifying constructor instantiation, `getProfile` with standard authentication and UserDetails, and `updateProfile`.
+   - Create `UserProfileControllerTest.java` in `apps/api/acc-fw/src/test/java/com/acc/presentation/` verifying constructor instantiation, `getProfile` with standard authentication and UserDetails, and `updateProfile`.
    - Verify all tests pass with Maven 3.9.9.
 
 ## Changes
-### Backend (`apps/backend/acc-fw`)
+### Backend (`apps/api/acc-fw`)
 - `UserProfileController.java`:
   - Replaced `@AuthenticationPrincipal UserDetailsImpl userDetails` with `Authentication authentication`.
   - Added private `resolveUsername(Authentication authentication)` supporting both `UserDetails` and principal string names, with graceful fallback.
@@ -39,7 +39,7 @@ Two underlying root causes were identified:
 - Clean Maven Compile:
   - `mvn clean compile -am -pl acc-fw` passed (Reactor build order: `acc`, `acc-core`, `acc-fw` all `SUCCESS`).
 - Bytecode Verification:
-  - `javap -cp "apps/backend/acc-fw/target/classes" com.acc.presentation.UserProfileController` verified constructor signature:
+  - `javap -cp "apps/api/acc-fw/target/classes" com.acc.presentation.UserProfileController` verified constructor signature:
     `public com.acc.presentation.UserProfileController(com.acc.user.service.UserProfileService, com.acc.fw.ResponseEntityBuilder);`
 - Test Execution:
   - `mvn test -pl acc-fw "-Dtest=UserProfileControllerTest,JwtTokenHelperTest,UserDetailsImplTest" -q` passed with 0 failures (10/10 tests passed).

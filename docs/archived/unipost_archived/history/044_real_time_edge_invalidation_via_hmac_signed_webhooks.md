@@ -11,8 +11,8 @@ In static/ISR architectures, readers on `tekgo-ui` must wait for timer-based rev
 5. Verify via unit tests in `WebhookDeliveryServiceTest` and Next.js build.
 
 ## Changes
-- `apps/backend/acc-ms-worker/src/main/java/com/acc/worker/service/WebhookDeliveryService.java`: HMAC-SHA256 webhook delivery service.
-- `apps/backend/acc-ms-worker/src/test/java/com/acc/worker/service/WebhookDeliveryServiceTest.java`: Unit tests verifying HMAC calculation and HTTP dispatch.
+- `apps/api/acc-ms-worker/src/main/java/com/acc/worker/service/WebhookDeliveryService.java`: HMAC-SHA256 webhook delivery service.
+- `apps/api/acc-ms-worker/src/test/java/com/acc/worker/service/WebhookDeliveryServiceTest.java`: Unit tests verifying HMAC calculation and HTTP dispatch.
 - `apps/tekgo-ui/app/api/revalidate/route.ts`: On-demand edge cache invalidation route with timestamp replay prevention and HMAC validation.
 
 ## Verification

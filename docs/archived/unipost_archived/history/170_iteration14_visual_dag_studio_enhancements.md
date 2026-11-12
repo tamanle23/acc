@@ -26,8 +26,8 @@ Execute `docs/integration_master_plan_iteration14.md`:
 - **`apps/console/src/features/metadata/components/studio/visual-dag-studio.tsx`**: Added Graph vs. Timeline view toggle buttons in the execution mode toolbar, rendering either `ReactFlow` or `WorkflowExecutionFlamegraph`.
 
 ### 3. Designer Dry-Run Simulator Harness
-- **`apps/backend/workflow-engine/src/main/java/com/acc/workflow/application/WorkflowEngineService.java`**: Implemented `simulateExecution(WorkflowDefinition definition, Map<String, Object> inputPayload, long nowEpochMs)` evaluating execution logic purely in-memory without persistence calls.
-- **`apps/backend/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/WorkflowDefinitionController.java`**: Added `POST /api/v1/workflow/definitions/simulate` endpoint.
+- **`apps/api/workflow-engine/src/main/java/com/acc/workflow/application/WorkflowEngineService.java`**: Implemented `simulateExecution(WorkflowDefinition definition, Map<String, Object> inputPayload, long nowEpochMs)` evaluating execution logic purely in-memory without persistence calls.
+- **`apps/api/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/WorkflowDefinitionController.java`**: Added `POST /api/v1/workflow/definitions/simulate` endpoint.
 - **`apps/console/src/features/workflows/api/workflow-api.ts`**: Added `useSimulateWorkflowDefinition` TanStack Query mutation hook.
 - **`apps/console/src/features/metadata/components/studio/workflow-dry-run-modal.tsx`**: Created simulation modal with `VisualJsonEditor` for mock input payloads.
 - **`apps/console/src/features/metadata/components/studio/visual-dag-studio.tsx`**: Added "Dry Run" button (`data-testid="dag-dry-run-btn"`) in authoring toolbar and wired simulation results to update canvas node states.

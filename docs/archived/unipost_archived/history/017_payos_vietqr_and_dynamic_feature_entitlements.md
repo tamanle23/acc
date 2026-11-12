@@ -20,23 +20,23 @@ In the Domain Blueprints Full-Stack Ecosystem, commercialization and feature acc
 
 ## 3. Changes
 - **Backend Migrations & Entities**:
-  - `apps/backend/acc-db/src/main/resources/db/acc/changelog-000.000.00006.xml`
-  - `apps/backend/acc-db/src/main/resources/db/acc/changelog-master.xml`
-  - `apps/backend/acc-fw/src/main/java/com/acc/domain/billing/TenantBilling.java`
-  - `apps/backend/acc-fw/src/main/java/com/acc/domain/billing/TenantFeature.java`
-  - `apps/backend/acc-fw/src/main/java/com/acc/repository/jpa/TenantBillingRepository.java`
-  - `apps/backend/acc-fw/src/main/java/com/acc/repository/jpa/TenantFeatureRepository.java`
+  - `apps/api/acc-db/src/main/resources/db/acc/changelog-000.000.00006.xml`
+  - `apps/api/acc-db/src/main/resources/db/acc/changelog-master.xml`
+  - `apps/api/acc-fw/src/main/java/com/acc/domain/billing/TenantBilling.java`
+  - `apps/api/acc-fw/src/main/java/com/acc/domain/billing/TenantFeature.java`
+  - `apps/api/acc-fw/src/main/java/com/acc/repository/jpa/TenantBillingRepository.java`
+  - `apps/api/acc-fw/src/main/java/com/acc/repository/jpa/TenantFeatureRepository.java`
 - **Backend Services & Controllers**:
-  - `apps/backend/acc-fw/src/main/java/com/acc/tenant/billing/RequireFeature.java`
-  - `apps/backend/acc-fw/src/main/java/com/acc/tenant/billing/FeatureNotEntitledException.java`
-  - `apps/backend/acc-fw/src/main/java/com/acc/tenant/billing/TenantEntitlementService.java`
-  - `apps/backend/acc-fw/src/main/java/com/acc/tenant/billing/DefaultTenantEntitlementService.java`
-  - `apps/backend/acc-fw/src/main/java/com/acc/tenant/billing/FeatureEntitlementAspect.java`
-  - `apps/backend/acc-fw/src/main/java/com/acc/tenant/billing/PayOsBillingService.java`
-  - `apps/backend/acc-fw/src/main/java/com/acc/presentation/TenantBillingController.java`
-  - `apps/backend/acc-ms-aio/src/main/resources/application-local.yml`
+  - `apps/api/acc-fw/src/main/java/com/acc/tenant/billing/RequireFeature.java`
+  - `apps/api/acc-fw/src/main/java/com/acc/tenant/billing/FeatureNotEntitledException.java`
+  - `apps/api/acc-fw/src/main/java/com/acc/tenant/billing/TenantEntitlementService.java`
+  - `apps/api/acc-fw/src/main/java/com/acc/tenant/billing/DefaultTenantEntitlementService.java`
+  - `apps/api/acc-fw/src/main/java/com/acc/tenant/billing/FeatureEntitlementAspect.java`
+  - `apps/api/acc-fw/src/main/java/com/acc/tenant/billing/PayOsBillingService.java`
+  - `apps/api/acc-fw/src/main/java/com/acc/presentation/TenantBillingController.java`
+  - `apps/api/acc-ms-aio/src/main/resources/application-local.yml`
 - **Backend Tests**:
-  - `apps/backend/acc-fw/src/test/java/com/acc/tenant/billing/PayOsBillingAndEntitlementsTest.java`
+  - `apps/api/acc-fw/src/test/java/com/acc/tenant/billing/PayOsBillingAndEntitlementsTest.java`
 - **Frontend Components & Sandbox**:
   - `apps/console/src/features/metadata/api/use-billing.ts`
   - `apps/console/src/features/metadata/components/billing/payos-qr-modal.tsx`

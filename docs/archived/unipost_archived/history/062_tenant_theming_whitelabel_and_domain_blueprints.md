@@ -17,7 +17,7 @@ Enterprises utilizing the UniPost platform require:
 2. **Wire Dynamic Theming into `@acc/console`**:
    - In `apps/console/src/features/metadata/store/use-metadata-ui-store.ts`, update `setActiveTenant` to automatically inject CSS variable overrides corresponding to the active tenant.
 3. **Backend & Frontend Domain Blueprints**:
-   - Provision `healthcare-records-blueprint.json` and `real-estate-mls-blueprint.json` in `apps/backend/acc-fw/src/main/resources/metadata/blueprints/`.
+   - Provision `healthcare-records-blueprint.json` and `real-estate-mls-blueprint.json` in `apps/api/acc-fw/src/main/resources/metadata/blueprints/`.
    - Update `apps/console/src/features/metadata/data/mock-blueprints.ts` and `blueprint-card.tsx` to display Healthcare and Real Estate manifests with their respective Lucide icons (`HeartPulse`, `Home`).
 4. **Testing & Verification**:
    - Unit tests in `@acc/tokens` verifying token contracts, WCAG contrast compliance, and `applyTenantThemeOverrides`.
@@ -27,8 +27,8 @@ Enterprises utilizing the UniPost platform require:
 - `packages/tokens/src/index.ts`: Added `TenantThemeConfig`, `defaultTenantThemes`, and `applyTenantThemeOverrides`.
 - `packages/tokens/src/index.test.ts`: Added test coverage for theme overrides and preset validation.
 - `apps/console/src/features/metadata/store/use-metadata-ui-store.ts`: Wired `applyTenantThemeOverrides` inside `setActiveTenant`.
-- `apps/backend/acc-fw/src/main/resources/metadata/blueprints/healthcare-records-blueprint.json`: Added complete Healthcare blueprint with entities, attributes, and relationships.
-- `apps/backend/acc-fw/src/main/resources/metadata/blueprints/real-estate-mls-blueprint.json`: Added Real Estate MLS blueprint with entities, attributes, and relationships.
+- `apps/api/acc-fw/src/main/resources/metadata/blueprints/healthcare-records-blueprint.json`: Added complete Healthcare blueprint with entities, attributes, and relationships.
+- `apps/api/acc-fw/src/main/resources/metadata/blueprints/real-estate-mls-blueprint.json`: Added Real Estate MLS blueprint with entities, attributes, and relationships.
 - `apps/console/src/features/metadata/data/mock-blueprints.ts`: Synchronized frontend mock manifests with Healthcare and Real Estate blueprints.
 - `apps/console/src/features/metadata/components/blueprint-gallery/blueprint-card.tsx`: Added `HeartPulse` and `Home` Lucide icons.
 - `apps/console/src/features/metadata/__tests__/tenant-blueprints-and-theming.test.ts`: Added unit test suite covering blueprint manifests and store theming.

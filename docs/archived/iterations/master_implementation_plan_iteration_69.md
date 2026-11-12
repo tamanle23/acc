@@ -4,9 +4,9 @@
 ## 1. Executive Summary
 
 ### 1.1 Problem Statement & Background
-Following the completion of client-side authorization safeguards and sandbox persona synchronization across `@acc/console` and `@acc/sandbox`, the backend (`apps/backend`) has three foundational architectural challenges:
+Following the completion of client-side authorization safeguards and sandbox persona synchronization across `@acc/console` and `@acc/sandbox`, the backend (`apps/api`) has three foundational architectural challenges:
 1. **Spring Modulith Boundary Violations (Track 1)**:
-   - Running `pnpm --filter @acc/backend test:modulith` fails with `org.springframework.modulith.core.Violations`.
+   - Running `pnpm --filter @acc/api test:modulith` fails with `org.springframework.modulith.core.Violations`.
    - Cyclic dependency between slices: `com.acc.aio.config` <-> `com.acc.aio.worker` <-> `com.acc.aio.controller`.
    - `SystemTaskWorkerPool` directly couples to `ExecutionStreamBroadcaster` in the presentation/controller slice.
    - `WorkflowDefinitionRegistry` and `ScheduledLeaseSweeper` are defined as nested static inner classes inside `@Configuration WorkflowEngineConfiguration`, creating an inverted dependency where workers and controllers depend on configuration.
@@ -215,7 +215,7 @@ Purge all `or hasRole('ADMIN')`, `ROLE_SYSTEM_ROOT`, and redundant aliases from:
 - Refactor `SystemTaskWorkerPool` to use `ApplicationEventPublisher`.
 - Annotate `ExecutionStreamBroadcaster` with `@EventListener`.
 - Update all 8 test files importing definition registry.
-- Verify: `pnpm --filter @acc/backend test:modulith` passes with 0 violations.
+- Verify: `pnpm --filter @acc/api test:modulith` passes with 0 violations.
 
 ### Phase 2: Workflow Engine Durability, Renaming & Audit Quarantine (Track 2)
 - Rename `WorkflowStatus` to `WorkflowExecutionStatus` across all domain, engine, and controller files.
@@ -237,12 +237,12 @@ Purge all `or hasRole('ADMIN')`, `ROLE_SYSTEM_ROOT`, and redundant aliases from:
 
 | Test Suite / Target | Command | Verification Scope | Success Criteria |
 | :--- | :--- | :--- | :--- |
-| **Spring Modulith Boundaries** | `pnpm --filter @acc/backend test:modulith` | `ModularityTests.createsApplicationModules` | 0 violations; 100% clean slice boundaries |
+| **Spring Modulith Boundaries** | `pnpm --filter @acc/api test:modulith` | `ModularityTests.createsApplicationModules` | 0 violations; 100% clean slice boundaries |
 | **Worker Event Publishing** | `node mvnw.cjs -pl acc-ms-aio test -Dtest=SystemTaskWorkerPoolTest` | Virtual thread execution & event publication | All tests pass without direct broadcaster mock |
 | **Audit Ledger Verification & Quarantine** | `node mvnw.cjs -pl workflow-engine test -Dtest=AuditLedgerServiceTest,PureDeciderTest` | SHA-256 chain verification & TAMPERED status | 100% pass |
 | **Ad-Hoc DLQ Operations** | `node mvnw.cjs -pl acc-ms-aio test -Dtest=WorkflowDlqRestApiTest` | Replay, discard & platform:dlq:manage | 100% pass |
 | **Controller Method Security** | `node mvnw.cjs -pl acc-fw test -Dtest=*ControllerTest` | Canonical permissions & 403 Forbidden enforcement | Zero role-based bypasses; 100% pass |
-| **Sandbox Parity** | `pnpm --filter @acc/backend test:sandbox` | PostgreSQL embedded & persona integration | 53/53 tests pass |
+| **Sandbox Parity** | `pnpm --filter @acc/api test:sandbox` | PostgreSQL embedded & persona integration | 53/53 tests pass |
 
 ---
 

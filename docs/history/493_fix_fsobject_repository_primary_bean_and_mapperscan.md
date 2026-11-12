@@ -1,7 +1,7 @@
 # 493. Fix FsObject Repository Primary Bean Ambiguity and MyBatis MapperScan Registration
 
 ## Problem Statement
-During backend dev/sandbox startup (`pnpm --filter @acc/backend dev:sandbox`), Spring ApplicationContext failed with `NoUniqueBeanDefinitionException` / `BeanCreationException`:
+During backend dev/sandbox startup (`pnpm --filter @acc/api dev:sandbox`), Spring ApplicationContext failed with `NoUniqueBeanDefinitionException` / `BeanCreationException`:
 ```
 Parameter 1 of constructor in com.acc.fs.application.service.UploadFileApplicationService required a single bean, but 2 were found:
   - jpaFsObjectRepositoryAdapter: defined in file [JpaFsObjectRepositoryAdapter.class]
@@ -15,9 +15,9 @@ During the Hexagonal Architecture and DDD migration (Iteration 87), the new `MyB
 3. Verify test compilation and PostgreSQL contract test `FsObjectRepositoryMyBatisTest`.
 
 ## Changes
-- `apps/backend/acc-ms-fs/src/main/java/com/acc/fs/infrastructure/adapters/outbound/persistence/MyBatisFsObjectRepositoryAdapter.java`:
+- `apps/api/acc-ms-fs/src/main/java/com/acc/fs/infrastructure/adapters/outbound/persistence/MyBatisFsObjectRepositoryAdapter.java`:
   - Added `@Primary` annotation to designate `MyBatisFsObjectRepositoryAdapter` as the primary bean for `FsObjectRepositoryPort`.
-- `apps/backend/acc-fw/src/main/java/com/acc/boot/config/MasterDatabaseConfiguration.java`:
+- `apps/api/acc-fw/src/main/java/com/acc/boot/config/MasterDatabaseConfiguration.java`:
   - Added `"com.acc.fs.infrastructure.adapters.outbound.persistence.mybatis"` to `@MapperScan.basePackages`.
 
 ## Verification

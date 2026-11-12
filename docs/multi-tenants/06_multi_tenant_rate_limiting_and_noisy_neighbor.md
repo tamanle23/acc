@@ -2,7 +2,7 @@
 
 **Series:** Multi-Tenant Architecture Blueprint Series (Document 06 of N)  
 **Document Level:** Systems Engineering & Infrastructure Reliability Specification  
-**Target Systems:** `@acc/backend` (Spring Modulith / Java 21 / Redis / Hazelcast), PostgreSQL 16+  
+**Target Systems:** `@acc/api` (Spring Modulith / Java 21 / Redis / Hazelcast), PostgreSQL 16+  
 **Scope:** Distributed Token-Bucket Rate Limiting, JSON Schema Protection (ReDoS Guards, Recursion Limits), Storage Quotas, Dynamic Query Guardrails  
 **Status:** Canonical Living Architecture Document  
 

@@ -1,7 +1,7 @@
 # Integration Master Plan: Iteration 11 - WCAG 2.2 AA, Liquid Glass Fine-Tuning, DataTable Unification & Full-Stack Defect Resolution
 
 ## Goal Description
-Iteration 11 elevates the acc ecosystem to enterprise visual maturity and accessibility compliance while executing production bug fixing across `@acc/console`, `tekgo-ui`, `mobile-ui`, and `@acc/backend`.
+Iteration 11 elevates the acc ecosystem to enterprise visual maturity and accessibility compliance while executing production bug fixing across `@acc/console`, `tekgo-ui`, `mobile-ui`, and `@acc/api`.
 
 It consolidates four core workstreams:
 1. **Workstream 1: Liquid Glass Optical Presets & Ambient Accents**
@@ -170,7 +170,7 @@ flowchart TD
 #### [MODIFY] [`apps/console/src/features/workflows/components/fleet-migration-modal.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/workflows/components/fleet-migration-modal.tsx)
 - Fix the React Compiler memoization dependency discrepancy.
 
-#### [MODIFY] [`apps/backend/acc-core/src/main/java/com/acc/core/exception/GlobalExceptionHandler.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-core/src/main/java/com/acc/core/exception/GlobalExceptionHandler.java)
+#### [MODIFY] [`apps/api/acc-core/src/main/java/com/acc/core/exception/GlobalExceptionHandler.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/acc-core/src/main/java/com/acc/core/exception/GlobalExceptionHandler.java)
 - Ensure all uncaught exceptions produce standardized RFC-7807 JSON error responses.
 
 ---
@@ -180,7 +180,7 @@ flowchart TD
 ### Automated Tests
 1. **Monorepo Linting**: `pnpm lint` (must pass across backend, console, and tekgo-ui with 0 plugin conflicts).
 2. **Console Vitest Suite**: `pnpm --filter @acc/console test` (all 298+ unit and component tests passing, including migrated tables).
-3. **Backend Sandbox & Modulith**: `pnpm test:backend:sandbox` and `pnpm --filter @acc/backend test:modulith`.
+3. **Backend Sandbox & Modulith**: `pnpm test:backend:sandbox` and `pnpm --filter @acc/api test:modulith`.
 4. **Playwright Mode 1 E2E**: `pnpm test:e2e` (all 15/15 tests passing, verifying zero regression on appearance and WCAG).
 5. **Playwright Mode 2 Live E2E**: `pnpm test:e2e:live` (all 15/15 tests passing against live Spring Boot backend).
 

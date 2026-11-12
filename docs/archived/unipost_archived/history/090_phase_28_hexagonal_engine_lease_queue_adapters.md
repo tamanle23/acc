@@ -3,7 +3,7 @@
 **Date**: 2026-10-14  
 **Author**: Lead Systems Architect  
 **Category**: feat(backend)  
-**Scope**: `apps/backend/workflow-engine`
+**Scope**: `apps/api/workflow-engine`
 
 ---
 
@@ -29,14 +29,14 @@ Phase 28 of [`docs/integration_master_plan_iteration_3.md`](file:///c:/Users/Adm
 ---
 
 ## 3. Changes Made
-- [`apps/backend/workflow-engine/pom.xml`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/workflow-engine/pom.xml): Added `sqlite-jdbc`.
-- [`PersistencePort.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/workflow-engine/src/main/java/com/acc/workflow/ports/PersistencePort.java), [`UnitOfWork.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/workflow-engine/src/main/java/com/acc/workflow/ports/UnitOfWork.java), [`WorkerTransportPort.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/workflow-engine/src/main/java/com/acc/workflow/ports/WorkerTransportPort.java): Core hexagonal ports.
-- [`schema-sqlite.sql`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/workflow-engine/src/main/resources/db/schema-sqlite.sql), [`schema-postgres.sql`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/workflow-engine/src/main/resources/db/schema-postgres.sql): DDL definitions.
-- [`InMemoryPersistenceAdapter.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/workflow-engine/src/main/java/com/acc/workflow/adapters/storage/InMemoryPersistenceAdapter.java), [`SqliteJdbcPersistenceAdapter.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/workflow-engine/src/main/java/com/acc/workflow/adapters/storage/SqliteJdbcPersistenceAdapter.java), [`PostgresJdbcPersistenceAdapter.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/workflow-engine/src/main/java/com/acc/workflow/adapters/storage/PostgresJdbcPersistenceAdapter.java): Storage adapters.
-- [`InProcessTransportAdapter.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/workflow-engine/src/main/java/com/acc/workflow/adapters/transport/InProcessTransportAdapter.java): Transport adapter.
-- [`WorkflowEngineService.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/workflow-engine/src/main/java/com/acc/workflow/application/WorkflowEngineService.java): Imperative shell.
+- [`apps/api/workflow-engine/pom.xml`](file:///c:/Users/Admin/workspace/git/acc/apps/api/workflow-engine/pom.xml): Added `sqlite-jdbc`.
+- [`PersistencePort.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/workflow-engine/src/main/java/com/acc/workflow/ports/PersistencePort.java), [`UnitOfWork.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/workflow-engine/src/main/java/com/acc/workflow/ports/UnitOfWork.java), [`WorkerTransportPort.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/workflow-engine/src/main/java/com/acc/workflow/ports/WorkerTransportPort.java): Core hexagonal ports.
+- [`schema-sqlite.sql`](file:///c:/Users/Admin/workspace/git/acc/apps/api/workflow-engine/src/main/resources/db/schema-sqlite.sql), [`schema-postgres.sql`](file:///c:/Users/Admin/workspace/git/acc/apps/api/workflow-engine/src/main/resources/db/schema-postgres.sql): DDL definitions.
+- [`InMemoryPersistenceAdapter.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/workflow-engine/src/main/java/com/acc/workflow/adapters/storage/InMemoryPersistenceAdapter.java), [`SqliteJdbcPersistenceAdapter.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/workflow-engine/src/main/java/com/acc/workflow/adapters/storage/SqliteJdbcPersistenceAdapter.java), [`PostgresJdbcPersistenceAdapter.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/workflow-engine/src/main/java/com/acc/workflow/adapters/storage/PostgresJdbcPersistenceAdapter.java): Storage adapters.
+- [`InProcessTransportAdapter.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/workflow-engine/src/main/java/com/acc/workflow/adapters/transport/InProcessTransportAdapter.java): Transport adapter.
+- [`WorkflowEngineService.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/workflow-engine/src/main/java/com/acc/workflow/application/WorkflowEngineService.java): Imperative shell.
 - Tests: `PersistenceContractTest.java`, `InMemoryPersistenceTest.java`, `SqlitePersistenceTest.java`, `WorkflowEngineServiceTest.java`.
-- Documentation: [`apps/backend/doc/implementation_plan_32.md`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/doc/implementation_plan_32.md), [`apps/backend/doc/walkthrough_32.md`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/doc/walkthrough_32.md).
+- Documentation: [`apps/api/doc/implementation_plan_32.md`](file:///c:/Users/Admin/workspace/git/acc/apps/api/doc/implementation_plan_32.md), [`apps/api/doc/walkthrough_32.md`](file:///c:/Users/Admin/workspace/git/acc/apps/api/doc/walkthrough_32.md).
 
 ---
 

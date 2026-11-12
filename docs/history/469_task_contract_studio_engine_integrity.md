@@ -23,7 +23,7 @@ Following the decoupling of Task Definitions and establishment of Backend SSOT (
   - `dag-quick-insert-popover.tsx`: Integrate `useTaskDefinitions()`, add `Custom` category filter, fix key collisions with `taskdef-${taskDefName}`.
   - `dag-property-inspector.tsx`: Add Task Definition banner, upgrade trigger, and dynamic schema parameters form with inline variable pickers.
   - Unit tests updated: `task-contract-registry.test.ts`, `dag-palette.test.tsx`, `dag-quick-insert-popover.test.tsx`, `dag-property-inspector.test.tsx`, `dag-semantic-linter.test.ts`.
-- **Backend Workflow Engine (`apps/backend/workflow-engine`)**:
+- **Backend Workflow Engine (`apps/api/workflow-engine`)**:
   - `WorkflowEngineService.java`: Enforce `outputSchema` validation in `reportTaskResult(...)` before marking COMPLETED.
   - `SimpleTaskStrategy.java`: Defensively validate `existing.outputData()` against `taskDef.outputSchema()` when processing COMPLETED status.
   - `SimpleTaskStrategyValidationTest.java`: Added tests for output schema validation pass and fail scenarios.
@@ -36,7 +36,7 @@ Following the decoupling of Task Definitions and establishment of Backend SSOT (
 
 ## Walkthrough
 - Console Walkthrough: `apps/console/doc/walkthrough_175.md`
-- Backend Walkthrough: `apps/backend/doc/walkthrough_165.md`
+- Backend Walkthrough: `apps/api/doc/walkthrough_165.md`
 - Master Plan: `docs/iterations/master_implementation_plan_iteration_79.md`
 
 ## Tasks

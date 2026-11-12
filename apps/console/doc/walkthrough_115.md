@@ -8,14 +8,14 @@ In **Phase 45**, enterprise resilience, multi-tenant isolation under stress, par
 ## 2. Key Verifications & Tests Added
 
 ### 2.1 Backend Quad-Chaos Resilience Suite
-- File: [`CompositeChaosResilienceTest.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/test/java/com/acc/service/CompositeChaosResilienceTest.java)
+- File: [`CompositeChaosResilienceTest.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/acc-fw/src/test/java/com/acc/service/CompositeChaosResilienceTest.java)
 - **Fault 1 (Statement Timeout Tripping)**: Simulates PostgreSQL `statement_timeout` exceeded (1500ms) on `JdbcTemplate` execution. Verifies automatic, zero-downtime failover to `DataLoaderBatchResolver` with `response.engineUsed() == 'dataloader-batch-resolver'`.
 - **Fault 2 (Adversarial Recursion Depth Ceiling)**: Constructs an adversarial 5-level deep cyclic tree. Asserts fast rejection with `IllegalArgumentException: Composite specification recursion exceeds maximum allowed depth of 4`.
 - **Fault 3 (Cross-Tenant Concurrency Storm)**: Executes 300 concurrent requests across 3 tenants (`tenant-alpha`, `tenant-beta`, `tenant-gamma`) through 16 worker threads. Asserts 100% tenant blindness with 0 cross-tenant parameter or data leakage.
 - **Fault 4 (SQL Injection & Parameter Fuzzing)**: Injects adversarial payloads into `childQueries` (`DROP TABLE`, `pg_sleep`, malformed operators). Asserts proper parameter binding (`:childFilter_1_cost`), rejection of malformed attributes, and sanitization of negative offsets.
 
 ### 2.2 Backend Multi-Threaded Benchmark Harness
-- File: [`CompositeQueryPerformanceBenchmarkTest.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/test/java/com/acc/service/CompositeQueryPerformanceBenchmarkTest.java)
+- File: [`CompositeQueryPerformanceBenchmarkTest.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/acc-fw/src/test/java/com/acc/service/CompositeQueryPerformanceBenchmarkTest.java)
 - Drives 1,000 concurrent queries over 32 worker threads testing:
   - 50% Single-Record Lookups with companion lateral rollups (`SUM(cost)`, `COUNT(*)`)
   - 25% Deep Child Filtering (`cost >= 100`, `status = 'ACTIVE'`)

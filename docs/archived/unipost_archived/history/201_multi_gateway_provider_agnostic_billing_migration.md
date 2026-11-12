@@ -23,8 +23,8 @@ Following the release of persistence specification v1.2.0, the physical database
 
 ## Key Changes
 - **Liquibase Schema Migration**:
-  - Added `apps/backend/acc-db/src/main/resources/db/acc/changelog-000.000.00015.xml`.
-  - Updated `apps/backend/acc-db/src/main/resources/db/acc/changelog-master.xml`.
+  - Added `apps/api/acc-db/src/main/resources/db/acc/changelog-000.000.00015.xml`.
+  - Updated `apps/api/acc-db/src/main/resources/db/acc/changelog-master.xml`.
 - **Domain Persistence Layer**:
   - Modified `TenantBilling.java` with `@Column(name = "payment_provider")`, `@Column(name = "provider_customer_ref")`, `@Column(name = "current_order_ref")`, `@Column(name = "currency")`, and `@Column(name = "billing_metadata", columnDefinition = "jsonb")`.
   - Added finders `findByPaymentProviderAndCurrentOrderRef` and `findByPaymentProviderAndProviderCustomerRef` in `TenantBillingRepository.java`.

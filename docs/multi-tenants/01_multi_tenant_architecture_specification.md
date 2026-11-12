@@ -2,7 +2,7 @@
 
 **Series:** Multi-Tenant Architecture Blueprint Series (Document 01 of N)  
 **Document Level:** High-Level Architecture (HLA) & System Blueprint  
-**Target Systems:** `@acc/backend` (Spring Modulith / Java 21), `@acc/console` (React 19 / Vite 8), `mobile-ui` (Expo SDK 57), `tekgo-ui` (Next.js 15)  
+**Target Systems:** `@acc/api` (Spring Modulith / Java 21), `@acc/console` (React 19 / Vite 8), `mobile-ui` (Expo SDK 57), `tekgo-ui` (Next.js 15)  
 **Foundational Paradigm:** Pure Tenant-Isolated Dynamic Metadata & Data Engine  
 **Status:** Canonical Living Architecture Document  
 
@@ -39,7 +39,7 @@ The Acc platform serves a diverse spectrum of tenants ranging from large multi-d
                         │ HTTPS (Bearer JWT with tenant_id, user_id, roles)│
                         ▼                                                  ▼
 ┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                       @acc/backend GATEWAY                                         │
+│                                       @acc/api GATEWAY                                         │
 │                                                                                                        │
 │   ┌────────────────────────────────────────────────────────────────────────────────────────────────┐   │
 │   │ TenantSecurityFilter: Cryptographic JWT Verification -> Extract Claims -> Bind TenantContext   │   │

@@ -1,6 +1,6 @@
 # Implementation Plan 53 - Metadata Module Alignment in Console & Embedded Hazelcast Cache Migration
 
-Scope: `@acc/console` (Frontend UI alignment) and `@acc/backend` (`acc-fw` embedded Hazelcast cache engine).
+Scope: `@acc/console` (Frontend UI alignment) and `@acc/api` (`acc-fw` embedded Hazelcast cache engine).
 
 ---
 
@@ -49,7 +49,7 @@ However:
                                 |
                                 v
 +------------------------------------------------------------------------------+
-|                           @acc/backend                                  |
+|                           @acc/api                                  |
 |                                                                              |
 |  [ MetadataController ]                                                      |
 |         |                                                                    |
@@ -82,7 +82,7 @@ However:
 
 ### Phase 1: Backend Embedded Hazelcast Migration
 1. **Dependency Management**:
-   - Add `com.hazelcast:hazelcast-spring` to `apps/backend/acc-fw/pom.xml`.
+   - Add `com.hazelcast:hazelcast-spring` to `apps/api/acc-fw/pom.xml`.
 2. **Hazelcast Configuration**:
    - Create `com.acc.boot.config.HazelcastConfiguration`:
      - Configure embedded `HazelcastInstance` with cluster name `acc-cluster`.

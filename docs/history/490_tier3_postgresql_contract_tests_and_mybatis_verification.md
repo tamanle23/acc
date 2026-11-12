@@ -22,19 +22,19 @@ In accordance with `hexagonal_architecture_and_ddd_migration_plan.md` (Tier 3 Co
    - Implemented `FsObjectRepositoryMyBatisTest.java` verifying file creation, directory handling, parent-child tree queries, and soft deletion.
 
 ## Changes
-- `apps/backend/acc-fw/src/main/java/com/acc/identity/domain/user/model/UserAggregate.java`: Overloaded boxed constructor.
-- `apps/backend/acc-fw/src/main/resources/mapper/UserMapper.xml`: Target `unipost_identity_user` table.
-- `apps/backend/acc-fw/src/test/java/com/acc/identity/infra/user/repository/mybatis/UserRepositoryMyBatisTest.java`: PostgreSQL contract test.
-- `apps/backend/workflow-engine/pom.xml`: Test dependencies for Testcontainers.
-- `apps/backend/workflow-engine/src/main/java/com/acc/workflow/domain/taskdef/model/TaskDefinitionAggregate.java`: Overloaded boxed constructor and JavaBean getters.
-- `apps/backend/workflow-engine/src/test/java/com/acc/workflow/infrastructure/adapters/outbound/persistence/mybatis/TaskDefRepositoryMyBatisTest.java`: PostgreSQL contract test.
-- `apps/backend/acc-ms-fs/pom.xml`: Test dependencies for Testcontainers.
-- `apps/backend/acc-ms-fs/src/main/java/com/acc/fs/domain/model/FsObjectAggregate.java`: Overloaded boxed constructor and JavaBean getters.
-- `apps/backend/acc-ms-fs/src/main/java/com/acc/fs/infrastructure/adapters/outbound/persistence/mybatis/FileIdTypeHandler.java`: MyBatis type handler for `FileId`.
-- `apps/backend/acc-ms-fs/src/main/java/com/acc/fs/infrastructure/adapters/outbound/persistence/mybatis/FsObjectMyBatisMapper.java`: MyBatis mapper interface.
-- `apps/backend/acc-ms-fs/src/main/resources/mapper/FsObjectMapper.xml`: MyBatis SQL mappings for `unipost_fs_object`.
-- `apps/backend/acc-ms-fs/src/main/java/com/acc/fs/infrastructure/adapters/outbound/persistence/MyBatisFsObjectRepositoryAdapter.java`: Production outbound adapter implementing `FsObjectRepositoryPort`.
-- `apps/backend/acc-ms-fs/src/test/java/com/acc/fs/infrastructure/adapters/outbound/persistence/mybatis/FsObjectRepositoryMyBatisTest.java`: PostgreSQL contract test.
+- `apps/api/acc-fw/src/main/java/com/acc/identity/domain/user/model/UserAggregate.java`: Overloaded boxed constructor.
+- `apps/api/acc-fw/src/main/resources/mapper/UserMapper.xml`: Target `unipost_identity_user` table.
+- `apps/api/acc-fw/src/test/java/com/acc/identity/infra/user/repository/mybatis/UserRepositoryMyBatisTest.java`: PostgreSQL contract test.
+- `apps/api/workflow-engine/pom.xml`: Test dependencies for Testcontainers.
+- `apps/api/workflow-engine/src/main/java/com/acc/workflow/domain/taskdef/model/TaskDefinitionAggregate.java`: Overloaded boxed constructor and JavaBean getters.
+- `apps/api/workflow-engine/src/test/java/com/acc/workflow/infrastructure/adapters/outbound/persistence/mybatis/TaskDefRepositoryMyBatisTest.java`: PostgreSQL contract test.
+- `apps/api/acc-ms-fs/pom.xml`: Test dependencies for Testcontainers.
+- `apps/api/acc-ms-fs/src/main/java/com/acc/fs/domain/model/FsObjectAggregate.java`: Overloaded boxed constructor and JavaBean getters.
+- `apps/api/acc-ms-fs/src/main/java/com/acc/fs/infrastructure/adapters/outbound/persistence/mybatis/FileIdTypeHandler.java`: MyBatis type handler for `FileId`.
+- `apps/api/acc-ms-fs/src/main/java/com/acc/fs/infrastructure/adapters/outbound/persistence/mybatis/FsObjectMyBatisMapper.java`: MyBatis mapper interface.
+- `apps/api/acc-ms-fs/src/main/resources/mapper/FsObjectMapper.xml`: MyBatis SQL mappings for `unipost_fs_object`.
+- `apps/api/acc-ms-fs/src/main/java/com/acc/fs/infrastructure/adapters/outbound/persistence/MyBatisFsObjectRepositoryAdapter.java`: Production outbound adapter implementing `FsObjectRepositoryPort`.
+- `apps/api/acc-ms-fs/src/test/java/com/acc/fs/infrastructure/adapters/outbound/persistence/mybatis/FsObjectRepositoryMyBatisTest.java`: PostgreSQL contract test.
 
 ## Verification
 1. **Tier 3 Master Contract Tests**:

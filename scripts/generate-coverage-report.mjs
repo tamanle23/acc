@@ -58,7 +58,7 @@ if (shouldRun) {
   console.log('🚀 [Coverage Generator] --run specified: Executing monorepo test coverage suites...');
   try {
     console.log('📦 Running backend JaCoCo coverage (mvn test jacoco:report)...');
-    execSync('mvn test jacoco:report -f apps/backend/acc-fw/pom.xml -q', {
+    execSync('mvn test jacoco:report -f apps/api/acc-fw/pom.xml -q', {
       cwd: ROOT_DIR,
       stdio: 'inherit',
     });
@@ -94,19 +94,19 @@ console.log('🔍 [Coverage Generator] Discovering coverage artifacts across rep
 // ==========================================
 function parseJacocoBackend() {
   const possibleCsvPaths = [
-    path.join(ROOT_DIR, 'apps/backend/acc-fw/target/site/jacoco/jacoco.csv'),
-    path.join(ROOT_DIR, 'apps/backend/target/site/jacoco/jacoco.csv'),
+    path.join(ROOT_DIR, 'apps/api/acc-fw/target/site/jacoco/jacoco.csv'),
+    path.join(ROOT_DIR, 'apps/api/target/site/jacoco/jacoco.csv'),
   ];
   const possibleXmlPaths = [
-    path.join(ROOT_DIR, 'apps/backend/acc-fw/target/site/jacoco/jacoco.xml'),
-    path.join(ROOT_DIR, 'apps/backend/target/site/jacoco/jacoco.xml'),
+    path.join(ROOT_DIR, 'apps/api/acc-fw/target/site/jacoco/jacoco.xml'),
+    path.join(ROOT_DIR, 'apps/api/target/site/jacoco/jacoco.xml'),
   ];
 
   let csvPath = possibleCsvPaths.find((p) => fs.existsSync(p));
   let xmlPath = possibleXmlPaths.find((p) => fs.existsSync(p));
 
   if (!csvPath) {
-    console.warn('ℹ️ No JaCoCo CSV found at apps/backend/**/target/site/jacoco/jacoco.csv');
+    console.warn('ℹ️ No JaCoCo CSV found at apps/api/**/target/site/jacoco/jacoco.csv');
     return null;
   }
 
@@ -216,7 +216,7 @@ function parseJacocoBackend() {
 
     const javaSourcePath = path.join(
       ROOT_DIR,
-      'apps/backend/acc-fw/src/main/java',
+      'apps/api/acc-fw/src/main/java',
       pkgName.replace(/\./g, '/'),
       sourceFileName
     );
@@ -235,7 +235,7 @@ function parseJacocoBackend() {
       name: className,
       sourceFileName,
       packageName: pkgName,
-      moduleName: '@acc/backend',
+      moduleName: '@acc/api',
       javaSourcePath: fs.existsSync(javaSourcePath) ? path.relative(ROOT_DIR, javaSourcePath) : null,
       instructionCovered: ic,
       instructionMissed: im,
@@ -273,7 +273,7 @@ function parseJacocoBackend() {
 
   return {
     id: 'backend',
-    name: '@acc/backend',
+    name: '@acc/api',
     type: 'java',
     engine: 'JaCoCo 0.8.12',
     instructionCovered: totalIc,
@@ -481,7 +481,7 @@ const modules = [backendModule, consoleModule, sandboxModule].filter(Boolean);
 if (modules.length === 0) {
   console.error('❌ [Coverage Generator Error] No coverage reports found in repository!');
   console.error('Please run test coverage first:');
-  console.error('  1. mvn test jacoco:report -f apps/backend/acc-fw/pom.xml');
+  console.error('  1. mvn test jacoco:report -f apps/api/acc-fw/pom.xml');
   console.error('  2. pnpm --filter @acc/sandbox test:coverage');
   console.error('  3. pnpm --filter @acc/console test:coverage');
   process.exit(1);

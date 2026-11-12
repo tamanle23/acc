@@ -7,7 +7,7 @@
 
 Moving from a **working prototype or functioning software** to an **enterprise-grade quality system** requires shifting focus from feature delivery to operational excellence, multi-tenant database isolation, zero-downtime resilience, deterministic security, high observability, and strict architectural governance.
 
-In the context of the **`@acc` monorepo**—comprising Java 21 / Spring Modulith backends (`@acc/backend`), React 19 / Vite web apps (`@acc/console`), Next.js portals (`tekgo-ui`), Expo mobile apps (`mobile-ui`), Electrobun desktop apps (`@acc/desktop`), and shared Liquid Glass UI packages (`@acc/ui`)—the design strategy rests on six core pillars:
+In the context of the **`@acc` monorepo**—comprising Java 21 / Spring Modulith backends (`@acc/api`), React 19 / Vite web apps (`@acc/console`), Next.js portals (`tekgo-ui`), Expo mobile apps (`mobile-ui`), Electrobun desktop apps (`@acc/desktop`), and shared Liquid Glass UI packages (`@acc/ui`)—the design strategy rests on six core pillars:
 
 ### Pillar I: Zero-Trust & Defensive System Boundaries
 * **Strict Decoupling via Facades & Mediators**: Frontends must never directly tie UI components to network APIs or raw state stores. All data access must pass through typed Facades (custom TanStack Query hooks) and Zustand Mediators.
@@ -20,7 +20,7 @@ In the context of the **`@acc` monorepo**—comprising Java 21 / Spring Modulith
 * **System Immutability Guards**: Guard common system-level schemas (`tenant_id IS NULL` or `SYSTEM` scope) with read-only badges and modification protection across API endpoints and UI controllers.
 
 ### Pillar III: Resilient Modulith & Dynamic Metadata Engine
-* **Spring Modulith Boundaries**: Enforce strict package boundaries in `@acc/backend` (`ApplicationModules.verify()`) to eliminate cyclic cross-module dependencies.
+* **Spring Modulith Boundaries**: Enforce strict package boundaries in `@acc/api` (`ApplicationModules.verify()`) to eliminate cyclic cross-module dependencies.
 * **Dual-Layer Composite Cache Fabric**: Maintain dual-layered schema caching with composite version keys (`schema:{tid}:{type}:v{tVer}_s{sVer}`) combining L1 in-memory `ConcurrentHashMap` with L2 Redis caching and Spring Modulith event invalidation.
 * **Hybrid Dynamic Metadata Invariants**: Partial unique indexes conditioned on `WHERE "deletedDate" IS NULL` ensure sub-millisecond dynamic attribute lookups without soft-delete collisions.
 
@@ -201,7 +201,7 @@ The enterprise transformation strategy is structured into nine completed and evo
 To ensure the system is **open for extension but closed for modification**, the architecture incorporates explicit open-extension points across all layers:
 
 ### 1. Domain Blueprint Catalog Extension
-* **Extension Mechanism**: Introducing new industry domain blueprints requires only adding a JSON manifest file under `apps/backend/acc-fw/src/main/resources/metadata/blueprints/`.
+* **Extension Mechanism**: Introducing new industry domain blueprints requires only adding a JSON manifest file under `apps/api/acc-fw/src/main/resources/metadata/blueprints/`.
 * **OCP Compliance**: The `BlueprintCatalogService` automatically discovers, validates, and registers new blueprints at startup without altering core provisioning or backend logic.
 
 ### 2. Dynamic Attribute & Widget Registry Engine

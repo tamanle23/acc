@@ -2,7 +2,7 @@
 
 **Series:** Multi-Tenant Architecture Blueprint Series (Document 09 of N)  
 **Document Level:** FinOps, Subscription Architecture & Feature Gate Specification  
-**Target Systems:** `@acc/backend` (Spring Modulith / Java 21 / payOS Vietnam SDK/API), `@acc/console` (React 19 / Vite 8)  
+**Target Systems:** `@acc/api` (Spring Modulith / Java 21 / payOS Vietnam SDK/API), `@acc/console` (React 19 / Vite 8)  
 **Scope:** Simple Cadence Subscriptions (Monthly / Yearly), payOS Checkout Integration (VietQR / Napas / Banking), Webhook Signature Verification, Dynamic Feature Entitlements Engine, In-App Capability Gating  
 **Status:** Canonical Living Architecture Document  
 
@@ -186,7 +186,7 @@ payOS notifies the backend via webhook when a QR transfer is confirmed. To preve
 
 ```
 ┌─────────────────┐                                      ┌───────────────────────┐
-│ payOS Gateway   │                                      │   @acc/backend    │
+│ payOS Gateway   │                                      │   @acc/api    │
 └────────┬────────┘                                      └───────────┬───────────┘
          │                                                           │
          │ POST /api/v1/billing/payos/webhook                        │

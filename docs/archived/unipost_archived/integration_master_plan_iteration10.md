@@ -59,7 +59,7 @@ Iteration 8 and 9 established the **Backend Unified Sandbox Platform** (`acc-san
 
 ### Phase 2: Live Backend E2E Pipeline Hardening (`test:e2e:live`)
 1. **Automated Backend Pre-Flight in `playwright.config.ts`**:
-   - Enhance `global-setup.ts` to support optional auto-spawn of `@acc/backend` via `dev:sandbox` when offline, or provide crystal-clear diagnostic instructions if port 8000 is not reachable within 5 seconds.
+   - Enhance `global-setup.ts` to support optional auto-spawn of `@acc/api` via `dev:sandbox` when offline, or provide crystal-clear diagnostic instructions if port 8000 is not reachable within 5 seconds.
 2. **Controller & Endpoint Alignment for Live E2E**:
    - Verify `/api/auth/token`, `/api/v1/metadata/entity-types`, `/api/v1/metadata/entity-types/{id}/records`, `/api/v1/billing/checkout`, and `/system/tenants` behave identically under Mode 2 as in Mode 1.
    - Ensure CORS and proxy routing (`/api` -> `http://localhost:8000`) in `apps/console/vite.config.ts` pass all authentication and tenant headers (`X-Tenant-Id`, `Authorization`, `clientType`).
@@ -98,10 +98,10 @@ Iteration 8 and 9 established the **Backend Unified Sandbox Platform** (`acc-san
 pnpm --filter @acc/console test
 
 # 2. Verify Backend Sandbox Suite
-pnpm --filter @acc/backend test:sandbox
+pnpm --filter @acc/api test:sandbox
 
 # 3. Verify Spring Modulith Architecture
-pnpm --filter @acc/backend test:modulith
+pnpm --filter @acc/api test:modulith
 
 # 4. Verify Mode 1 Playwright E2E Tests (Autonomous Mocks)
 pnpm test:e2e

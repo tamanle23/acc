@@ -5,7 +5,7 @@ Developers, automated test engineers, and AI agents needed a clear, authoritativ
 
 ## Plan
 1. Capture detailed requirements and architecture in `docs/integration_master_plan_iteration9.md`.
-2. Author the comprehensive operational guide directly inside the sandbox module at `apps/backend/acc-sandbox/README.md`.
+2. Author the comprehensive operational guide directly inside the sandbox module at `apps/api/acc-sandbox/README.md`.
 3. Document:
    - Zero-stub mandate and PostgreSQL embedded engine (`pglite-spring-boot-test`).
    - Dual operating modes (`DEV` vs `TEST`).
@@ -22,7 +22,7 @@ Developers, automated test engineers, and AI agents needed a clear, authoritativ
 
 ## Changes
 - **`docs/integration_master_plan_iteration9.md`**: Master integration plan and architecture specification for Iteration 9.
-- **`apps/backend/acc-sandbox/README.md`**: The authoritative 360° developer and architecture guide for the Backend Unified Sandbox Platform.
+- **`apps/api/acc-sandbox/README.md`**: The authoritative 360° developer and architecture guide for the Backend Unified Sandbox Platform.
 
 ## Verification
 - Verified all property keys match `SandboxProperties.java`.
@@ -32,5 +32,5 @@ Developers, automated test engineers, and AI agents needed a clear, authoritativ
 
 ## Tasks
 - [x] Author `docs/integration_master_plan_iteration9.md`
-- [x] Author comprehensive 360° guide at `apps/backend/acc-sandbox/README.md`
+- [x] Author comprehensive 360° guide at `apps/api/acc-sandbox/README.md`
 - [x] Create history record and git commit

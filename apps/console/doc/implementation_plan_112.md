@@ -113,7 +113,7 @@ All architectural decisions were grilled and agreed upon:
    - `CompositeRecordServiceTest`: Happy path pushdown, child pagination slicing, and DataLoader fallback on timeout.
    - Run via:
      ```powershell
-     & "C:\Users\Admin\.m2\wrapper\dists\apache-maven-3.9.9-bin\6gbr3tfuiv8aocduf5pro8ephc\apache-maven-3.9.9\bin\mvn.cmd" test -f apps/backend/pom.xml -pl acc-fw "-Dtest=*Composite*,DynamicQueryCompilerTest" -q
+     & "C:\Users\Admin\.m2\wrapper\dists\apache-maven-3.9.9-bin\6gbr3tfuiv8aocduf5pro8ephc\apache-maven-3.9.9\bin\mvn.cmd" test -f apps/api/pom.xml -pl acc-fw "-Dtest=*Composite*,DynamicQueryCompilerTest" -q
      ```
 2. **Frontend Tests**:
    - `composite-master-detail-row.test.tsx`: Master-detail expansion, child collection tabs, and micro-pagination interaction.

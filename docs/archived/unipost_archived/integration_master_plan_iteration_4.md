@@ -24,7 +24,7 @@ Building directly upon the battle-tested, zero-I/O distributed workflow engine e
      - Input/output payload inspection with one-click **"View in Visual DAG Studio"** cross-navigation.
      - Dual-mode filter toggle between **Workflow Tasks** and **Manual Backlog Tasks**.
 3. **Spring Boot REST & Application Lifecycle Bridge**:
-   - Promote `apps/backend/workflow-engine` from a standalone library into the active Spring Boot runtime graph in `apps/backend`.
+   - Promote `apps/api/workflow-engine` from a standalone library into the active Spring Boot runtime graph in `apps/api`.
    - Implement `WorkflowDefinitionController`, `WorkflowExecutionController`, and `TaskWorkerController` exposing REST APIs.
    - Wire Spring Data DataSource / TransactionManager into the PostgreSQL/SQLite `PersistencePort` and launch background lease sweeping as managed Spring lifecycle beans.
 4. **Live React Query Client Integration**:
@@ -50,7 +50,7 @@ Building directly upon the battle-tested, zero-I/O distributed workflow engine e
 | :---: | :--- | :--- | :--- |
 | **Phase 31** | **Visual DAG Studio: Drag-and-Drop Canvas & Workflow Executions Ledger** | Draggable Task Palette (`SIMPLE`, `SWITCH`, `FORK_JOIN`, `DYNAMIC_FORK`, `WAIT`, `DO_WHILE`); drag-and-drop drop handler with viewport coordinate projection; **Refactor `/tasks` screen & schema** into Workflow Executions Ledger (`workflowId`, `taskReferenceName`, `taskType`, worker lease telemetry) with direct bidirectional cross-navigation to Visual DAG Studio; lifecycle status tabs (**All**, **In Progress**, **Completed**, **Failed**); **Synchronize `@acc/sandbox`** tasks repository with mock workflow executions. | Vitest tests in `@acc/console` and `@acc/sandbox` verifying palette drag-drop, node creation, and `/tasks` execution ledger rendering with workflow links. |
 | **Phase 32** | **Visual DAG Studio: Task Property Inspector, Payload Drawer & Bidirectional IR Synchronizer** | Slide-over Property Inspector drawer for selected nodes; input parameter editor with auto-completion for `${workflow.input.*}` and `${taskRef.output.*}`; bidirectional JSON IR import/export with schema validation; Workflow Execution Instance Details dialog in `/tasks`; **Unified Sandbox mock workflow definitions catalog** (`/api/v1/workflow/definitions`). | Vitest tests verifying node attribute mutations, JSON IR compilation, sandbox definition storage, and round-trip fidelity without coordinate loss. |
-| **Phase 33** | **Spring Boot REST Engine Bridge & Enterprise Persistence Wiring** | Spring Boot Controllers (`WorkflowDefinitionController`, `WorkflowExecutionController`, `TaskWorkerController`) in `apps/backend`; Spring Bean configuration wiring `PersistencePort`, `WorkflowEngineService`, and lease sweeper scheduler into active app graph. | MockMvc integration tests verifying workflow registration, execution start, worker task polling, and heartbeat reporting under active Spring security context. |
+| **Phase 33** | **Spring Boot REST Engine Bridge & Enterprise Persistence Wiring** | Spring Boot Controllers (`WorkflowDefinitionController`, `WorkflowExecutionController`, `TaskWorkerController`) in `apps/api`; Spring Bean configuration wiring `PersistencePort`, `WorkflowEngineService`, and lease sweeper scheduler into active app graph. | MockMvc integration tests verifying workflow registration, execution start, worker task polling, and heartbeat reporting under active Spring security context. |
 | **Phase 34** | **Live Console API Client, Server-Sent Events (SSE) & Sandbox Mock Stream** | `@tanstack/react-query` hooks (`useWorkflows`, `useWorkflowExecution`, `useStartWorkflow`) in console; SSE/WebSocket execution stream adapter; **Unified Sandbox mock SSE event stream** simulating real-time task progress; live canvas node pulsing during execution (`PENDING` $\to$ `IN_PROGRESS` $\to$ `COMPLETED`). | Integration tests with Unified Sandbox & live API client verifying execution stream message handling and node badge updates. |
 | **Phase 35** | **Polyglot End-to-End Orchestration & Automated Saga Verification** | Full end-to-end integration scenario (E-commerce fulfillment DAG): visual authoring $\to$ API registration $\to$ Java worker inventory check $\to$ TypeScript worker label generation $\to$ simulated payment failure $\to$ reverse Saga compensation; **Sandbox Dock master reset** clearing all polyglot executions. | Automated end-to-end multi-worker test validating cross-language task completion, audit logs, and successful rollback of state. |
 
@@ -128,8 +128,8 @@ Building directly upon the battle-tested, zero-I/O distributed workflow engine e
 
 ### Phase 33: Spring Boot REST Engine Bridge & Enterprise Persistence Wiring
 
-- **Module Integration (`apps/backend`)**:
-  - Include `workflow-engine` as a compile dependency in `apps/backend/pom.xml`.
+- **Module Integration (`apps/api`)**:
+  - Include `workflow-engine` as a compile dependency in `apps/api/pom.xml`.
   - Create configuration class `WorkflowEngineConfiguration` declaring Spring beans:
     - `PersistencePort` (autowiring `PostgresJdbcPersistenceAdapter` when Postgres is active or `SqliteJdbcPersistenceAdapter` when SQLite is active).
     - `WorkflowEngineService` singleton.

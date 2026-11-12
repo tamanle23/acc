@@ -4,7 +4,7 @@
 > **Iteration:** 1 (Enterprise Baseline)  
 > **Classification:** Master Systems Architecture Specification & Monorepo Integration Standard  
 > **Authors:** Lead Systems Architect & Full-Stack Engineering Team  
-> **Target Scope:** `@acc/backend`, `@acc/console`, `@acc/desktop`, `mobile-ui`, `tekgo-ui`, and `packages/*`  
+> **Target Scope:** `@acc/api`, `@acc/console`, `@acc/desktop`, `mobile-ui`, `tekgo-ui`, and `packages/*`  
 > **Synthesized Authoritative Sources:**  
 > - `docs/brainstorming/multi_tier_monorepo_alignment_blueprint.md`  
 > - `docs/brainstorming/unlocking_full_potential_of_dynamic_metadata.md`  
@@ -195,7 +195,7 @@ When a reader accesses a cache key within its revalidation threshold, a single r
 If a cold cache miss occurs, the backend acquires a distributed Hazelcast `FencedLock`:
 
 ```java
-// apps/backend/acc-fw/src/main/java/com/acc/cache/ResilientCacheManager.java
+// apps/api/acc-fw/src/main/java/com/acc/cache/ResilientCacheManager.java
 public CompiledSchema getCompiledSchema(String tenantId, String entityTypeId) {
     String cacheKey = CompositeCacheKey.of(tenantId, entityTypeId);
     CompiledSchema cached = l1Cache.get(cacheKey);
@@ -703,8 +703,8 @@ graph TD
 ### Phase 7: Backend Public Ingestion Gateway & Publishable Key Protocol
 - **Objective:** Allow public readers on `tekgo-ui` to read published content safely without credentials.
 - **Affected Files:**
-  - `apps/backend/acc-fw/src/main/java/com/acc/presentation/PublicCmsGatewayController.java`
-  - `apps/backend/acc-fw/src/main/java/com/acc/security/PublishableKeyFilter.java`
+  - `apps/api/acc-fw/src/main/java/com/acc/presentation/PublicCmsGatewayController.java`
+  - `apps/api/acc-fw/src/main/java/com/acc/security/PublishableKeyFilter.java`
 - **Technical Design:**
   - Generates scoped publishable keys: `pk_live_{tenantSlug}_{hash}`.
   - Exposes `GET /api/v1/public/tenants/{tenantId}/cms/records?entityType=article`.
@@ -729,7 +729,7 @@ graph TD
 ### Phase 9: Real-Time Edge Invalidation via HMAC Signed Webhooks
 - **Objective:** Instantaneously update `tekgo-ui` reader views when an article is published.
 - **Affected Files:**
-  - `apps/backend/acc-ms-worker/src/main/java/com/acc/worker/service/WebhookDeliveryService.java`
+  - `apps/api/acc-ms-worker/src/main/java/com/acc/worker/service/WebhookDeliveryService.java`
   - Create `apps/tekgo-ui/app/api/revalidate/route.ts`
 - **Technical Design:**
   - Outbound webhook with `x-acc-signature: HMAC-SHA256(secret, timestamp + "." + body)`.
@@ -741,8 +741,8 @@ graph TD
 ### Phase 10: Backend OCC & 3-Way Auto-Merge Engine
 - **Objective:** Eliminate silent data overwrites (last-write-wins) during concurrent edits.
 - **Affected Files:**
-  - `apps/backend/acc-fw/src/main/java/com/acc/service/EntityRecordService.java`
-  - `apps/backend/acc-db/src/main/resources/db/migration/V..._add_occ_version.sql`
+  - `apps/api/acc-fw/src/main/java/com/acc/service/EntityRecordService.java`
+  - `apps/api/acc-db/src/main/resources/db/migration/V..._add_occ_version.sql`
 - **Technical Design:**
   - Adds integer `version` and `updated_date` columns to `UNIPOST_ENTITY_RECORDS`.
   - In `updateEntityRecord()`, checks `WHERE id = :id AND version = :expectedVersion`.
@@ -755,8 +755,8 @@ graph TD
 - **Objective:** Guarantee at-least-once event delivery without distributed transactions.
 - **Affected Files:**
   - Create `UNIPOST_EVENT_OUTBOX` table via Flyway migration.
-  - `apps/backend/acc-fw/src/main/java/com/acc/outbox/OutboxEventPublisher.java`
-  - `apps/backend/acc-ms-worker/src/main/java/com/acc/worker/outbox/OutboxPollingJob.java`
+  - `apps/api/acc-fw/src/main/java/com/acc/outbox/OutboxEventPublisher.java`
+  - `apps/api/acc-ms-worker/src/main/java/com/acc/worker/outbox/OutboxPollingJob.java`
 - **Technical Design:**
   - Record mutations and outbox entries committed in the same PostgreSQL transaction.
   - `acc-ms-worker` polls `UNIPOST_EVENT_OUTBOX` using `SELECT ... FOR UPDATE SKIP LOCKED` with backoff and DLQ.
@@ -767,13 +767,13 @@ graph TD
 ### Phase 12: Declarative FSM State Machine & Action Bars (Track 2 Integration)
 - **Objective:** Implement complete metadata-driven state machine lifecycle enforcement across Backend, Console, and Mobile.
 - **Affected Files:**
-  - `apps/backend/acc-fw/src/main/java/com/acc/domain/metadata/LifecycleConfig.java`
-  - `apps/backend/acc-fw/src/main/java/com/acc/domain/metadata/TransitionConfig.java`
-  - `apps/backend/acc-fw/src/main/java/com/acc/domain/metadata/EntityStateChangedEvent.java`
-  - `apps/backend/acc-fw/src/main/java/com/acc/service/workflow/EntityLifecycleService.java`
-  - `apps/backend/acc-fw/src/main/java/com/acc/service/workflow/SpelGuardEvaluator.java`
-  - `apps/backend/acc-fw/src/main/java/com/acc/service/workflow/GuardEvaluatorStrategy.java`
-  - `apps/backend/acc-fw/src/main/java/com/acc/presentation/MetadataController.java`
+  - `apps/api/acc-fw/src/main/java/com/acc/domain/metadata/LifecycleConfig.java`
+  - `apps/api/acc-fw/src/main/java/com/acc/domain/metadata/TransitionConfig.java`
+  - `apps/api/acc-fw/src/main/java/com/acc/domain/metadata/EntityStateChangedEvent.java`
+  - `apps/api/acc-fw/src/main/java/com/acc/service/workflow/EntityLifecycleService.java`
+  - `apps/api/acc-fw/src/main/java/com/acc/service/workflow/SpelGuardEvaluator.java`
+  - `apps/api/acc-fw/src/main/java/com/acc/service/workflow/GuardEvaluatorStrategy.java`
+  - `apps/api/acc-fw/src/main/java/com/acc/presentation/MetadataController.java`
   - Create `apps/mobile-ui/src/components/lifecycle/RecordLifecycleActionBar.tsx`
   - `apps/console/src/features/metadata/components/designer/LifecycleWorkflowEditor.tsx`
 - **Technical Design:**
@@ -848,7 +848,7 @@ Synthesizing the foundational enterprise directives from `docs/enterprise_transf
 ---
 
 ### 12.3 Spring Modulith Dynamic Dispatch via `ResolvableType`
-In `@acc/backend`, generic CQRS command handlers resolve target types using `org.springframework.core.ResolvableType` rather than raw reflection, preventing CGLIB proxy breakages on Spring `@Transactional` beans.
+In `@acc/api`, generic CQRS command handlers resolve target types using `org.springframework.core.ResolvableType` rather than raw reflection, preventing CGLIB proxy breakages on Spring `@Transactional` beans.
 
 ---
 

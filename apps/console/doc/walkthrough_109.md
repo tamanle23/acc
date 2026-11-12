@@ -43,13 +43,13 @@ Delivered full operational transparency and high-concurrency resilience for Acc 
 | **i18n** | `apps/console/src/locales/en/console.json` & `vi/console.json` | Added `workerFleet` translation keys for English and Vietnamese. |
 | **Sandbox** | `apps/console/src/core/sandbox/handlers/worker-sandbox-handler.ts` | Unified Sandbox route handler with mock polyglot fleet and reset capability. |
 | **Sandbox** | `apps/console/src/core/sandbox/index.ts` | Registered `workerSandboxHandler` in `sandboxRegistry`. |
-| **Backend** | `apps/backend/acc-ms-aio/.../workflow/WorkerRegistry.java` | In-memory thread-safe worker registry with heartbeat aging and drain lifecycle. |
-| **Backend** | `apps/backend/acc-ms-aio/.../workflow/WorkerFleetController.java` | REST API for `GET /api/v1/workflow/workers`, heartbeat, and drain actions. |
+| **Backend** | `apps/api/acc-ms-aio/.../workflow/WorkerRegistry.java` | In-memory thread-safe worker registry with heartbeat aging and drain lifecycle. |
+| **Backend** | `apps/api/acc-ms-aio/.../workflow/WorkerFleetController.java` | REST API for `GET /api/v1/workflow/workers`, heartbeat, and drain actions. |
 | **Testing** | `apps/console/src/features/workflows/components/__tests__/execution-time-travel-scrubber.test.tsx` | Vitest suite for time-travel scrubber controls and live buffer pill. |
 | **Testing** | `apps/console/src/features/workflows/components/__tests__/payload-diff-viewer.test.tsx` | Vitest suite for variable diff classifications and search filters. |
 | **Testing** | `apps/console/src/features/workers/__tests__/worker-fleet.test.tsx` | Vitest suite for worker fleet dashboard and sandbox handler. |
-| **Testing** | `apps/backend/acc-ms-aio/.../workflow/WorkerFleetControllerTest.java` | JUnit 5 suite for worker fleet endpoints and aging logic. |
-| **Testing** | `apps/backend/acc-ms-aio/.../workflow/WorkflowChaosStressVerificationTest.java` | 1,000-concurrent execution stress suite and cascading Saga fault injection. |
+| **Testing** | `apps/api/acc-ms-aio/.../workflow/WorkerFleetControllerTest.java` | JUnit 5 suite for worker fleet endpoints and aging logic. |
+| **Testing** | `apps/api/acc-ms-aio/.../workflow/WorkflowChaosStressVerificationTest.java` | 1,000-concurrent execution stress suite and cascading Saga fault injection. |
 
 ---
 

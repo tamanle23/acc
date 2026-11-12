@@ -3,7 +3,7 @@ import { createHmac, timingSafeEqual } from 'crypto';
 
 /**
  * Formal Verification Suite: Backend Security, Pure HMAC-SHA256 & Zero-Stub Invariant
- * Target: apps/backend/acc-fw/.../PayOsBillingService.java
+ * Target: apps/api/acc-fw/.../PayOsBillingService.java
  * Standards: ZERO-STUB-PROHIBITION, Constant-Time Verification, Bit-Identical Cryptographic Parity
  */
 describe('Phase 1: Backend Cryptographic Security & Zero-Stub Invariant', () => {

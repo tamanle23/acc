@@ -44,7 +44,7 @@ Upgrade the **"RBAC Matrix & Global Users"** screen (`apps/console/src/routes/_a
 ## 3. Architecture & Proposed File Changes
 
 ```
-apps/backend/
+apps/api/
 ├── acc-db/src/main/resources/db/acc/
 │   └── changelog-000.000.00017.xml                 # [NEW] UNIPOST_IDENTITY_USERPERMISSION table + role tenant_id
 ├── acc-fw/src/main/java/com/acc/

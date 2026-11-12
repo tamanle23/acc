@@ -8,7 +8,7 @@ Prior to Phase 42, base entity record mutations lacked a standardized, atomic mu
    - Add `cascade_policy VARCHAR(20) DEFAULT 'RESTRICT' NOT NULL` to `UNIPOST_RELATIONSHIP_TYPES` via Liquibase.
    - Provision `UNIPOST_RECORD_AUDIT_LOG` table with PostgreSQL range partitioning on `created_at`, default catch-all partition, rolling monthly partitions, composite index, and Row-Level Security (`RLS`).
 2. **Modular Mutation Pipeline Engine**:
-   - Develop `RecordMutationPipeline` in `apps/backend/acc-fw` orchestrating the 6-stage lifecycle within `@Transactional` boundaries.
+   - Develop `RecordMutationPipeline` in `apps/api/acc-fw` orchestrating the 6-stage lifecycle within `@Transactional` boundaries.
    - Dual-mode OCC & ETag: HTTP `If-Match` request header & `ETag: "\"{version}\""` response header with fallback to body `version`; 3-way auto-merge on version mismatch if `baseAttributes` supplied, else `409 Conflict`.
    - Declarative Delete Cascades: Pattern B (`UNIPOST_ATTRIBUTE_DEFINITIONS.options->>'cascadePolicy'`) & Pattern C (`UNIPOST_RELATIONSHIP_TYPES.cascade_policy`). Child cascade deletes execute via set-based bulk SQL (`UPDATE UNIPOST_ENTITIES ...`) for high throughput with a single root audit log entry.
    - Strict Tenant Blindness: Foreign references to records of other tenants treated as non-existent (`404 Not Found`).
@@ -20,8 +20,8 @@ Prior to Phase 42, base entity record mutations lacked a standardized, atomic mu
 
 ## Changes Made
 - **Database Migrations**:
-  - `apps/backend/acc-db/src/main/resources/db/acc/changelog-000.000.00012.xml`: Defined partitioned audit table and relationship cascade column.
-  - `apps/backend/acc-db/src/main/resources/db/acc/changelog-master.xml`: Registered changelog 12.
+  - `apps/api/acc-db/src/main/resources/db/acc/changelog-000.000.00012.xml`: Defined partitioned audit table and relationship cascade column.
+  - `apps/api/acc-db/src/main/resources/db/acc/changelog-master.xml`: Registered changelog 12.
 - **Backend Domain, Repositories & Engine**:
   - `RelationshipType.java`: Added `cascadePolicy` column.
   - `RecordAuditLog.java`, `RecordAuditLogId.java`: Partitioned composite entity and key.

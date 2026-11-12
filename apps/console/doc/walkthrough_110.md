@@ -8,11 +8,11 @@ Phase 41 delivers the **Composite Entity Type Registry & Specification DSL** acr
 ## Changes Implemented
 
 ### 1. Database Migration (Liquibase)
-- Added `apps/backend/acc-db/src/main/resources/db/acc/changelog-000.000.00011.xml`:
+- Added `apps/api/acc-db/src/main/resources/db/acc/changelog-000.000.00011.xml`:
   - Extended `UNIPOST_ENTITY_TYPES` with:
     - `is_composite BOOLEAN DEFAULT FALSE NOT NULL`
     - `composite_spec JSONB`
-- Registered changelog in `apps/backend/acc-db/src/main/resources/db/acc/changelog-master.xml`.
+- Registered changelog in `apps/api/acc-db/src/main/resources/db/acc/changelog-master.xml`.
 
 ### 2. Domain & Specification AST (Java 21)
 - Created AST records in `com.acc.domain.metadata`:
@@ -64,7 +64,7 @@ Phase 41 delivers the **Composite Entity Type Registry & Specification DSL** acr
 ### 1. Backend Verification Test Suite
 Command:
 ```bash
-mvn test -f apps/backend/pom.xml -pl acc-fw "-Dtest=CompositeEntityTypeVerificationTest" -q
+mvn test -f apps/api/pom.xml -pl acc-fw "-Dtest=CompositeEntityTypeVerificationTest" -q
 ```
 Results:
 - `testCompositeValidation_Success`: Passed.

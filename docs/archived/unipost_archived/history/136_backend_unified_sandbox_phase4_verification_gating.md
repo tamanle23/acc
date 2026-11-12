@@ -11,11 +11,11 @@ In Phase 4 of Iteration 8 ("Backend Unified Sandbox Platform"), we needed to ens
 1. Add `application.sandbox.dev.pristine` configuration property in `SandboxProperties`.
 2. Implement directory wiping logic in `PgLiteDatasourceConfiguration` when `isDevMode() && isPristine()`.
 3. Create `PgLiteRlsIntegrationTest` in `acc-sandbox` verifying ephemeral test datasource, persistent vs pristine dev datasource, and `TenantSessionAspect` SQL commands.
-4. Execute full multi-module backend test suite (`mvn test -f apps/backend/pom.xml -q`) and Playwright E2E suites.
+4. Execute full multi-module backend test suite (`mvn test -f apps/api/pom.xml -q`) and Playwright E2E suites.
 
 ## Changes
 
-### `apps/backend/acc-sandbox`
+### `apps/api/acc-sandbox`
 - **`com.acc.sandbox.config.SandboxProperties`**:
   - Added `DevSimulationProperties` with `boolean pristine = false;`.
   - Added `isDevMode()` and `isTestMode()` convenience methods.
@@ -27,14 +27,14 @@ In Phase 4 of Iteration 8 ("Backend Unified Sandbox Platform"), we needed to ens
 
 ## Verification
 - **`acc-sandbox` Suite**:
-  - `mvn clean test -f apps/backend/acc-sandbox/pom.xml -q`: 31/31 tests passing in 8s.
+  - `mvn clean test -f apps/api/acc-sandbox/pom.xml -q`: 31/31 tests passing in 8s.
 - **Full Backend Regression Suite**:
-  - `mvn test -f apps/backend/pom.xml -q`: 300+ tests passing across all 7 modules with JaCoCo $\ge 90\%$ test coverage.
+  - `mvn test -f apps/api/pom.xml -q`: 300+ tests passing across all 7 modules with JaCoCo $\ge 90\%$ test coverage.
 - **Playwright E2E Suite**:
   - Flows 01 and 08 passed offline against Unified Sandbox in 7.7s.
 
 ## Walkthrough
-Refer to [`apps/backend/doc/walkthrough_44.md`](../../apps/backend/doc/walkthrough_44.md) for full architectural details and code snippets.
+Refer to [`apps/api/doc/walkthrough_44.md`](../../apps/api/doc/walkthrough_44.md) for full architectural details and code snippets.
 
 ## Tasks
 - [x] Add dev.pristine flag to SandboxProperties

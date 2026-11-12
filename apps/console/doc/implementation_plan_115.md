@@ -24,12 +24,12 @@ In accordance with architectural grilling decisions and the `/automated-testing`
 
 ## 2. Proposed Changes
 
-### A. Backend Benchmark & Chaos Test Suites (`apps/backend/acc-fw`)
-- Create `apps/backend/acc-fw/src/test/java/com/acc/service/CompositeQueryPerformanceBenchmarkTest.java`:
+### A. Backend Benchmark & Chaos Test Suites (`apps/api/acc-fw`)
+- Create `apps/api/acc-fw/src/test/java/com/acc/service/CompositeQueryPerformanceBenchmarkTest.java`:
   - 1,000 concurrent queries over single-record lookups, root pagination, child slice pagination, dynamic child filters, and companion lateral rollups.
   - Generates `docs/benchmarks/phase_45_benchmark_report.md`.
   - Asserts p95 latency ceiling and 100% request success rate.
-- Create `apps/backend/acc-fw/src/test/java/com/acc/service/CompositeChaosResilienceTest.java`:
+- Create `apps/api/acc-fw/src/test/java/com/acc/service/CompositeChaosResilienceTest.java`:
   - Quad-chaos test methods: `testStatementTimeoutFallback()`, `testAdversarialRecursionAndCycleRejection()`, `testCrossTenantIsolationStorm()`, `testChildQueryFuzzingAndSqlInjectionSafety()`.
 
 ### B. Frontend Vitest Integration Suite (`apps/console`)
@@ -54,7 +54,7 @@ In accordance with architectural grilling decisions and the `/automated-testing`
 
 1. **Backend Maven Execution**:
    - Run benchmark and chaos test suites:
-     `mvn test -f apps/backend/pom.xml -pl acc-fw "-Dtest=CompositeQueryPerformanceBenchmarkTest,CompositeChaosResilienceTest,DynamicQueryCompilerTest,CompositeRecordServiceTest,CompositeEntityTypeVerificationTest,RecordMutationPipelineTest" -q`
+     `mvn test -f apps/api/pom.xml -pl acc-fw "-Dtest=CompositeQueryPerformanceBenchmarkTest,CompositeChaosResilienceTest,DynamicQueryCompilerTest,CompositeRecordServiceTest,CompositeEntityTypeVerificationTest,RecordMutationPipelineTest" -q`
 2. **Frontend Vitest Suites**:
    - Run all console metadata test suites:
      `pnpm --filter @acc/console test run`

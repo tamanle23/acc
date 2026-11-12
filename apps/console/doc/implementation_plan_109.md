@@ -16,7 +16,7 @@ Deliver full operational transparency and high-concurrency resilience for Acc Wo
 
 ## 2. Proposed Changes & Architecture
 
-### Backend (`apps/backend/acc-ms-aio` & `workflow-engine`)
+### Backend (`apps/api/acc-ms-aio` & `workflow-engine`)
 
 #### Worker Registry & Telemetry Service
 - **`com.acc.aio.worker.WorkerRegistry`**:
@@ -83,7 +83,7 @@ Deliver full operational transparency and high-concurrency resilience for Acc Wo
    - `pnpm --filter @acc/console test -- run src/features/workflows/components/__tests__/payload-diff-viewer.test.tsx`
    - `pnpm --filter @acc/console test -- run src/features/workers/__tests__/worker-fleet.test.tsx`
 2. **Backend JUnit / Maven Suite**:
-   - `mvn test -pl apps/backend/acc-ms-aio -Dtest=WorkerFleetControllerTest,WorkflowChaosStressVerificationTest -q`
+   - `mvn test -pl apps/api/acc-ms-aio -Dtest=WorkerFleetControllerTest,WorkflowChaosStressVerificationTest -q`
 3. **End-to-End Build & Lint Integrity**:
    - `pnpm --filter @acc/console check-types`
    - `pnpm --filter @acc/console build`

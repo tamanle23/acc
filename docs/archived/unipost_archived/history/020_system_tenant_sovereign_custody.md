@@ -8,7 +8,7 @@ The multi-tenant architecture previously treated the `SYSTEM` tenant with identi
 
 ## Execution Plan & Implementation Steps
 - **Phase 1: DB & Backend Tenancy Core**:
-  - Liquibase migration `changelog-000.000.00007.xml` in `apps/backend/acc-db` registered in `changelog-master.xml` resolving PostgreSQL RLS Write Paradox.
+  - Liquibase migration `changelog-000.000.00007.xml` in `apps/api/acc-db` registered in `changelog-master.xml` resolving PostgreSQL RLS Write Paradox.
   - Refactored `TenantContextHolder.java` with Dual-Context Principal (`actorTenantId` vs. `effectiveTenantId`, `setDualContext()`, `isImpersonating()`, `isSovereignActor()`).
   - Updated `TenantSessionAspect.java` setting `SET LOCAL app.is_system_custodian = 'true'` when actor is `SYSTEM`.
   - Added caller-aware guards in `MetadataService.java` allowing `SYSTEM` to mutate canonical schemas while commercial tenants remain blocked.

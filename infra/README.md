@@ -38,7 +38,7 @@ Run these commands from the **root** of the monorepo to build the optimized Turb
 ```bash
 docker build -t acc/tekgo-ui:latest -f apps/tekgo-ui/Dockerfile .
 docker build -t acc/console:latest -f apps/console/Dockerfile .
-docker build -t acc/backend:latest -f apps/backend/acc-ms-aio/deloyment/Dockerfile .
+docker build -t acc/backend:latest -f apps/api/acc-ms-aio/deloyment/Dockerfile .
 ```
 
 ### Step 2: Spin Up Cluster & Load Images

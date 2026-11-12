@@ -19,9 +19,9 @@
 - **Master-Detail Row Inspector Drawer**:
   - Created `apps/console/src/features/metadata/components/data-explorer/master-detail-row-inspector.tsx` with `j`/`k` row traversal keyboard navigation, Enter to open, Escape to close.
 
-### Phase 2: Complete Zero-Stub Hardening & Backend Integrity in `@acc/backend`
+### Phase 2: Complete Zero-Stub Hardening & Backend Integrity in `@acc/api`
 - **Springdoc Reflection Hardening**:
-  - Configured `acc-ms-aio/src/main/resources/application.yml` and `application-local.yml` (`show-spring-data-pageable: false`, `show-spring-data-rest: false`) and permanently purged stub `apps/backend/acc-fw/src/main/java/org/springframework/data/util/TypeInformation.java`.
+  - Configured `acc-ms-aio/src/main/resources/application.yml` and `application-local.yml` (`show-spring-data-pageable: false`, `show-spring-data-rest: false`) and permanently purged stub `apps/api/acc-fw/src/main/java/org/springframework/data/util/TypeInformation.java`.
 - **BaseModelService Completion**:
   - Fully implemented `findAll(PageRequest pageable)` with real persistence, audit population, and tenant isolation; removed `// TODO Auto-generated method stub`.
 - **JestRepository Swallowed Exceptions**:

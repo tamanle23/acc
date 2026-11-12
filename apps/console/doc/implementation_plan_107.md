@@ -8,7 +8,7 @@ In mission-critical enterprise environments, workflow definitions evolve continu
 4. The Visual DAG Studio lacks a visual graph diff viewer overlay to compare topology across versions and inspect changes before performing hot migration.
 
 ## 2. Solution Architecture
-### A. Backend Data & Core Model (`apps/backend/workflow-engine`)
+### A. Backend Data & Core Model (`apps/api/workflow-engine`)
 1. **Semantic Definition Versioning & Schema**:
    - `UNIPOST_WORKFLOW_DEFINITIONS` table in `schema-postgres.sql` and `schema-sqlite.sql`:
      - `definition_id` VARCHAR(128) PRIMARY KEY
@@ -47,7 +47,7 @@ In mission-critical enterprise environments, workflow definitions evolve continu
    - `WorkflowEngineService.migrateExecution(workflowId, targetVersion, dryRun)`:
      - If `dryRun == true`: returns validation report `{ compatible: boolean, issues: string[], remappedNodes: string[] }`.
      - If `dryRun == false`: rewires execution definition snapshot to `v2`, updates version, appends `HOT_MIGRATION` audit log, and preserves atomic state.
-4. **REST Controllers (`apps/backend/acc-ms-aio`)**:
+4. **REST Controllers (`apps/api/acc-ms-aio`)**:
    - Versioning endpoints:
      - `GET /api/v1/workflow/definitions/{key}/versions`
      - `GET /api/v1/workflow/definitions/{key}/versions/{version}`

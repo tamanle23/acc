@@ -17,7 +17,7 @@ java.net.SocketException: Invalid argument: setsockopt
 - In dev and sandbox mode, clustering across remote machines is not needed; Hazelcast is used for in-process L2 metadata schema caching and near-cache invalidation on the local machine.
 
 ## Solution Applied
-In `apps/backend/acc-fw/src/main/java/com/acc/boot/config/HazelcastConfiguration.java`:
+In `apps/api/acc-fw/src/main/java/com/acc/boot/config/HazelcastConfiguration.java`:
 1. Explicitly disabled auto-detection: `config.getNetworkConfig().getJoin().getAutoDetectionConfig().setEnabled(false)`.
 2. Disabled multicast and TCP/IP cluster join:
    ```java

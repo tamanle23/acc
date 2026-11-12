@@ -11,12 +11,12 @@ Execute **Phase 30** of [`docs/integration_master_plan_iteration_3.md`](file:///
   - Implement `workflowSandboxHandler` registered in `sandboxRegistry`.
   - In-memory simulation of decider cycles, task leases, and mock worker polling.
   - Full integration with `SandboxDock` state resets and active tenant switching.
-- **Part 3: Chaos Verification & Golden Trace Replay Suite (`apps/backend/workflow-engine`)**:
+- **Part 3: Chaos Verification & Golden Trace Replay Suite (`apps/api/workflow-engine`)**:
   - `GoldenTraceReplayTest.java`: Replays historical execution traces against `PureDecider` verifying deterministic outputs.
   - `ChaosWorkflowIntegrationTest.java`: 100 concurrent workflow executions with simulated random worker terminations and lease expiration recoveries.
 - **Part 4: Verification Gate 30**:
   - Vitest component tests in `@acc/console`.
-  - Maven tests in `apps/backend/workflow-engine` (100% pass).
+  - Maven tests in `apps/api/workflow-engine` (100% pass).
   - Clean production typecheck & lint.
 
 ## 2. Invariants Followed

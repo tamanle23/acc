@@ -23,7 +23,7 @@ Consequently:
    - Run the complete test suite.
 
 ## Changes
-### Backend (`apps/backend/acc-sandbox`)
+### Backend (`apps/api/acc-sandbox`)
 - `SandboxUserSeeder.java`:
   - Created seeder persisting `User`, `Role`, `UserRole`, `Permission`, and `UserPermission` entities from `SandboxPersonaRegistry`.
 - `SandboxDataPreWarmer.java`:

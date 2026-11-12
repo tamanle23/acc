@@ -8,9 +8,9 @@ While the backend had transactional deep-cloning logic (`TenantProvisioningServi
 - Client UI in `@acc/console` to browse, search, and preview blueprint schemas (entity models, attribute tables, relationship graphs, and dynamic forms) before committing to provisioning.
 
 ## 2. Changes Made
-1. **Backend (`@acc/backend`)**:
-   - Updated `apps/backend/acc-fw/src/main/java/com/acc/presentation/TenantProvisioningController.java` to expose `GET /api/v1/metadata/blueprints/{blueprintId}`.
-   - Updated `apps/backend/acc-ms-aio/src/main/resources/application-local.yml` permitAlls list for `/api/v1/metadata/blueprints` and `/api/v1/metadata/blueprints/**`.
+1. **Backend (`@acc/api`)**:
+   - Updated `apps/api/acc-fw/src/main/java/com/acc/presentation/TenantProvisioningController.java` to expose `GET /api/v1/metadata/blueprints/{blueprintId}`.
+   - Updated `apps/api/acc-ms-aio/src/main/resources/application-local.yml` permitAlls list for `/api/v1/metadata/blueprints` and `/api/v1/metadata/blueprints/**`.
 2. **Unified Sandbox Platform**:
    - Created `apps/console/src/features/metadata/data/mock-blueprints.ts` containing manifests for Headless CMS, Fleet Logistics, B2B CRM, and Blank Canvas.
    - Updated `apps/console/src/core/sandbox/handlers/metadata-sandbox-adapter.ts` to mock `/blueprints`, `/blueprints/:id`, and `/tenants/provision`.

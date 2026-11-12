@@ -1,7 +1,7 @@
 # 034: Backend Multi-Tenant Workspace Entity & Auto-Provisioning Invariants
 
 ## Problem
-In earlier iterations, Workspaces were conceptual constructs tracked on the frontend (`apps/console`), client stores (`useProfileStore`), and Unified Sandbox state. In the backend (`apps/backend`):
+In earlier iterations, Workspaces were conceptual constructs tracked on the frontend (`apps/console`), client stores (`useProfileStore`), and Unified Sandbox state. In the backend (`apps/api`):
 1. There was no PostgreSQL table or JPA entity representing Workspaces.
 2. Tenant provisioning (`TenantProvisioningService`) cloned metadata Blueprint entities, attributes, and relationships, but left tenants without an initial default workspace record.
 3. There was no backend database invariant guaranteeing that each tenant has exactly one active immutable default workspace or isolating workspaces via PostgreSQL Row Level Security (RLS).
@@ -24,19 +24,19 @@ In earlier iterations, Workspaces were conceptual constructs tracked on the fron
 
 ## Changes
 - **Liquibase**:
-  - `apps/backend/acc-db/src/main/resources/db/acc/changelog-000.000.00008.xml`: Defined table, constraints, partial indexes, and RLS policy.
-  - `apps/backend/acc-db/src/main/resources/db/acc/changelog-master.xml`: Included changelog 8.
+  - `apps/api/acc-db/src/main/resources/db/acc/changelog-000.000.00008.xml`: Defined table, constraints, partial indexes, and RLS policy.
+  - `apps/api/acc-db/src/main/resources/db/acc/changelog-master.xml`: Included changelog 8.
 - **Domain & Repository**:
-  - `apps/backend/acc-fw/src/main/java/com/acc/domain/workspace/Workspace.java`: JPA Entity.
-  - `apps/backend/acc-fw/src/main/java/com/acc/repository/jpa/WorkspaceRepository.java`: JPA Repository with tenant queries.
+  - `apps/api/acc-fw/src/main/java/com/acc/domain/workspace/Workspace.java`: JPA Entity.
+  - `apps/api/acc-fw/src/main/java/com/acc/repository/jpa/WorkspaceRepository.java`: JPA Repository with tenant queries.
 - **Provisioning Service**:
-  - `apps/backend/acc-fw/src/main/java/com/acc/tenant/service/TenantProvisioningService.java`: Step 5 auto-provisions default immutable workspace.
-  - `apps/backend/acc-fw/src/main/java/com/acc/tenant/dto/TenantProvisioningResult.java`: Added default workspace tracking fields.
-  - `apps/backend/acc-fw/src/test/java/com/acc/tenant/service/TenantProvisioningServiceTest.java`: Added mock and assertions across test cases.
+  - `apps/api/acc-fw/src/main/java/com/acc/tenant/service/TenantProvisioningService.java`: Step 5 auto-provisions default immutable workspace.
+  - `apps/api/acc-fw/src/main/java/com/acc/tenant/dto/TenantProvisioningResult.java`: Added default workspace tracking fields.
+  - `apps/api/acc-fw/src/test/java/com/acc/tenant/service/TenantProvisioningServiceTest.java`: Added mock and assertions across test cases.
 
 ## Verification
-- Unit Tests: `apps/backend/mvnw.cmd test -pl acc-fw -Dtest=TenantProvisioningServiceTest` -> **5/5 tests passed** (0 failures, 0 errors).
-- Full Build: `apps/backend/mvnw.cmd test-compile -DskipTests` -> **BUILD SUCCESS** across all 10 Maven reactor modules in 6.894s.
+- Unit Tests: `apps/api/mvnw.cmd test -pl acc-fw -Dtest=TenantProvisioningServiceTest` -> **5/5 tests passed** (0 failures, 0 errors).
+- Full Build: `apps/api/mvnw.cmd test-compile -DskipTests` -> **BUILD SUCCESS** across all 10 Maven reactor modules in 6.894s.
 
 ## Tasks
 - [x] Phase 1: Database Migration (`UNIPOST_WORKSPACES` table, RLS, partial default index).

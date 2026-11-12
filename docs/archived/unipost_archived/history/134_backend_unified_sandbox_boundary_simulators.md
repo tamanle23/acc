@@ -12,7 +12,7 @@ In Phase 2 of Iteration 8, the boundary simulators implemented in `acc-sandbox` 
 6. Verify E2E Flow 08 via Playwright.
 
 ## Changes
-- **Module `apps/backend/acc-sandbox`**:
+- **Module `apps/api/acc-sandbox`**:
   - `pom.xml`: Added provided dependencies on `acc-ms-fs` and `acc-ms-worker`.
   - `PayOsCheckoutInterceptorAspect.java`: Intercepts `createPaymentLink` and delegates to `PayOsSimulator`.
   - `InMemoryStorageConnector.java`: `@Primary` drop-in bean implementing `StorageConnector`.
@@ -23,12 +23,12 @@ In Phase 2 of Iteration 8, the boundary simulators implemented in `acc-sandbox` 
   - `MockWebhookDeliveryServiceTest.java`: Verified edge revalidation interception and dispatcher payload capture.
 
 ## Verification
-- `mvn test -f apps/backend/acc-sandbox/pom.xml -q`: 16 tests passed.
-- `mvn test -f apps/backend/pom.xml -q`: Full multi-module suite passed with 0 regressions, preserving JaCoCo 90% hard gate.
+- `mvn test -f apps/api/acc-sandbox/pom.xml -q`: 16 tests passed.
+- `mvn test -f apps/api/pom.xml -q`: Full multi-module suite passed with 0 regressions, preserving JaCoCo 90% hard gate.
 - `pnpm --filter @acc/console exec playwright test e2e/08-finops-vietqr-billing.spec.ts`: Passed (1/1).
 
 ## Walkthrough
-Refer to `apps/backend/doc/walkthrough_42.md` for complete design pattern details.
+Refer to `apps/api/doc/walkthrough_42.md` for complete design pattern details.
 
 ## Tasks
 - [x] Implement PayOS AOP checkout interceptor aspect

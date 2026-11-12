@@ -1,10 +1,10 @@
 # 205. Unified Sandbox Platform Synchronization (Iteration 23)
 
 ## Problem
-Following the implementation of canonical Sovereign RBAC permissions, Passkey biometric authentication, and Person-tenant self-onboarding (`tenant_id = 'usr-<uuid>'`) in Iteration 23, the Unified Sandbox Platform across both backend (`apps/backend/acc-sandbox`) and frontend (`apps/console/src/core/sandbox/`) retained legacy role strings (e.g. `ROLE_ADMIN`, `ROLE_CREATOR`, `ROLE_USER`) and lacked aligned persona structures. To maintain zero-regression sandbox parity and enable seamless offline development and testing, the sandbox needed to be synchronized with canonical Sovereign and inside-tenant roles and authorities.
+Following the implementation of canonical Sovereign RBAC permissions, Passkey biometric authentication, and Person-tenant self-onboarding (`tenant_id = 'usr-<uuid>'`) in Iteration 23, the Unified Sandbox Platform across both backend (`apps/api/acc-sandbox`) and frontend (`apps/console/src/core/sandbox/`) retained legacy role strings (e.g. `ROLE_ADMIN`, `ROLE_CREATOR`, `ROLE_USER`) and lacked aligned persona structures. To maintain zero-regression sandbox parity and enable seamless offline development and testing, the sandbox needed to be synchronized with canonical Sovereign and inside-tenant roles and authorities.
 
 ## Plan
-1. **Backend Sandbox Alignment (`apps/backend/acc-sandbox`)**:
+1. **Backend Sandbox Alignment (`apps/api/acc-sandbox`)**:
    - Update `SandboxPersonaRegistry` to declare canonical roles and the full set of 24 permissions across all personas (`admin`, `system`, `creator`, `user`).
    - Assign `ROLE_SYSTEM_ROOT`, `ROLE_WORKSPACE_OWNER`, `ROLE_OPERATIONS_MANAGER`, and `ROLE_STANDARD_MEMBER`.
    - Update `SandboxPersonaRegistryTest` assertions to verify canonical roles.
@@ -18,13 +18,13 @@ Following the implementation of canonical Sovereign RBAC permissions, Passkey bi
    - Verify zero regressions and 100% test pass rates.
 
 ## Changes
-- `apps/backend/acc-sandbox/src/main/java/com/acc/sandbox/auth/SandboxPersonaRegistry.java`:
+- `apps/api/acc-sandbox/src/main/java/com/acc/sandbox/auth/SandboxPersonaRegistry.java`:
   - Aligned `system` persona with `ROLE_SYSTEM_ROOT`, `ROLE_WORKSPACE_OWNER`, `ROLE_STANDARD_MEMBER`.
   - Aligned `admin` persona with `ROLE_WORKSPACE_OWNER`, `ROLE_STANDARD_MEMBER`, `ROLE_ADMIN`.
   - Aligned `creator` persona with `ROLE_OPERATIONS_MANAGER`, `ROLE_STANDARD_MEMBER`.
   - Aligned `user` persona with `ROLE_STANDARD_MEMBER`.
   - Populated complete canonical authority sets for each persona.
-- `apps/backend/acc-sandbox/src/test/java/com/acc/sandbox/auth/SandboxPersonaRegistryTest.java`:
+- `apps/api/acc-sandbox/src/test/java/com/acc/sandbox/auth/SandboxPersonaRegistryTest.java`:
   - Updated assertions for canonical roles across all default personas.
 - `apps/console/src/core/sandbox/store/sandbox-store.ts`:
   - Updated `DEFAULT_SANDBOX_PERSONAS` with canonical titles and role arrays.

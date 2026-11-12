@@ -28,30 +28,30 @@ In earlier iterations of the workflow orchestration engine:
    - Synthesize branch arrays (`decisionCases`, `loopOver`, `compensateHandlerRef`) from handle connections.
 5. **Unified Sandbox Parity & Full Verification**:
    - Synchronize `packages/sandbox/src/handlers/workflow-handler.ts` to mirror canonical blank initialization with `START_WORKFLOW` and `END_WORKFLOW`.
-   - Verify unit tests across `@acc/backend`, `@acc/console`, and `@acc/sandbox`.
+   - Verify unit tests across `@acc/api`, `@acc/console`, and `@acc/sandbox`.
 
 ## Changes
 
 ### 1. Backend Workflow Engine
-- **`apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/model/TaskType.java`**:
+- **`apps/api/workflow-engine/src/main/java/com/acc/workflow/core/model/TaskType.java`**:
   - Added enum entry `END_WORKFLOW`.
-- **`apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/model/WorkflowDefinition.java`**:
+- **`apps/api/workflow-engine/src/main/java/com/acc/workflow/core/model/WorkflowDefinition.java`**:
   - Updated `WorkflowDefinition.createBlank(...)` to instantiate `START_WORKFLOW` and `END_WORKFLOW` with system boundary flags in `layoutMetadata`.
-- **`apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/decider/strategy/EndWorkflowStrategy.java`**:
+- **`apps/api/workflow-engine/src/main/java/com/acc/workflow/core/decider/strategy/EndWorkflowStrategy.java`**:
   - Implemented fan-in barrier strategy to ensure non-compensation prerequisite tasks have completed before producing final workflow output.
-- **`apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/decider/strategy/StartWorkflowStrategy.java`**:
+- **`apps/api/workflow-engine/src/main/java/com/acc/workflow/core/decider/strategy/StartWorkflowStrategy.java`**:
   - Enhanced root node pass-through behavior: if `workflowKey` is absent, validates and outputs input payload immediately.
-- **`apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/decider/NodeStrategyRegistry.java`**:
+- **`apps/api/workflow-engine/src/main/java/com/acc/workflow/core/decider/NodeStrategyRegistry.java`**:
   - Registered `EndWorkflowStrategy` under `TaskType.END_WORKFLOW`.
-- **`apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/graph/AcyclicityGuard.java`**:
+- **`apps/api/workflow-engine/src/main/java/com/acc/workflow/core/graph/AcyclicityGuard.java`**:
   - Implemented partition of graph edges into $E_{\text{forward}}$ and $E_{\text{back}}$.
   - Validated that return edges entering `loop-back` strictly originate from descendants within that loop's body.
   - Excluded back-edge origin tasks and compensation targets from terminal node count calculations.
-- **`apps/backend/workflow-engine/src/test/java/com/acc/workflow/core/graph/AcyclicityGuardTest.java`**:
+- **`apps/api/workflow-engine/src/test/java/com/acc/workflow/core/graph/AcyclicityGuardTest.java`**:
   - Added test cases verifying valid `DO_WHILE` loops with back-edges, invalid external returns, and end node detection.
-- **`apps/backend/workflow-engine/src/test/java/com/acc/workflow/core/PureDeciderTest.java`**:
+- **`apps/api/workflow-engine/src/test/java/com/acc/workflow/core/PureDeciderTest.java`**:
   - Added unit test verifying `END_WORKFLOW` decider execution.
-- **`apps/backend/acc-ms-aio/src/test/java/com/acc/aio/controller/workflow/WorkflowEngineRestApiTest.java`**:
+- **`apps/api/acc-ms-aio/src/test/java/com/acc/aio/controller/workflow/WorkflowEngineRestApiTest.java`**:
   - Verified blank workflow creation returns `START_WORKFLOW` and `END_WORKFLOW`.
 
 ### 2. Console Visual DAG Studio
@@ -88,7 +88,7 @@ In earlier iterations of the workflow orchestration engine:
 3. **Sandbox Vitest Suite**:
    `pnpm --filter @acc/sandbox test` passed (11 test files, 103 tests).
 4. **Backend Maven Tests**:
-   `pnpm --filter @acc/backend exec node mvnw.cjs -am -pl acc-ms-aio test "-Dtest=WorkflowEngineRestApiTest,AcyclicityGuardTest,PureDeciderTest"` passed across all modules (`BUILD SUCCESS`).
+   `pnpm --filter @acc/api exec node mvnw.cjs -am -pl acc-ms-aio test "-Dtest=WorkflowEngineRestApiTest,AcyclicityGuardTest,PureDeciderTest"` passed across all modules (`BUILD SUCCESS`).
 
 ---
 

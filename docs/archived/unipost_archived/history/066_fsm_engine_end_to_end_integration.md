@@ -14,7 +14,7 @@ While Phase 22 implemented the Visual Schema Studio & FSM Workflow Designer in `
    - Dynamically inspect `entityType.lifecycleConfig` for the current row's state.
    - Render available transitions in a dedicated "FSM Transition" sub-menu in the row actions dropdown.
    - Wire each transition item to `handleRecordTransition` invoking `transitionMutation.mutateAsync` with real toast feedback.
-4. **Backend Integration Testing**: Author `EntityLifecycleFsmIntegrationTest` in `apps/backend/acc-fw/src/test/java/com/acc/service/workflow/` testing:
+4. **Backend Integration Testing**: Author `EntityLifecycleFsmIntegrationTest` in `apps/api/acc-fw/src/test/java/com/acc/service/workflow/` testing:
    - Happy-path 5-Gate transition pipeline mutating state, bumping schema version, publishing Spring domain `EntityStateChangedEvent`, and publishing transactional outbox `RECORD_TRANSITIONED` events.
    - SpEL guard gate violation resulting in `MetadataConflictException` and transaction abort.
    - Missing mandatory required attribute violation resulting in `MetadataConflictException`.
@@ -30,7 +30,7 @@ While Phase 22 implemented the Visual Schema Studio & FSM Workflow Designer in `
   - [`apps/console/src/features/metadata/api/metadata-api.ts`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/api/metadata-api.ts): Added `useTransitionEntityRecord` mutation hook invalidating `entity-records` queries.
   - [`apps/console/src/features/metadata/components/data-explorer/entity-data-grid.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/data-explorer/entity-data-grid.tsx): Integrated transition mutation and dynamic FSM transition menu items in row action dropdown with Sonner toast feedback.
 - **Backend Framework**:
-  - [`apps/backend/acc-fw/src/test/java/com/acc/service/workflow/EntityLifecycleFsmIntegrationTest.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/test/java/com/acc/service/workflow/EntityLifecycleFsmIntegrationTest.java): Created formal integration test verifying real `MetadataService`, real `EntityLifecycleService`, real `SpelGuardEvaluator`, and event publishers.
+  - [`apps/api/acc-fw/src/test/java/com/acc/service/workflow/EntityLifecycleFsmIntegrationTest.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/acc-fw/src/test/java/com/acc/service/workflow/EntityLifecycleFsmIntegrationTest.java): Created formal integration test verifying real `MetadataService`, real `EntityLifecycleService`, real `SpelGuardEvaluator`, and event publishers.
 
 ## 4. Verification
 1. **Backend Tests**:

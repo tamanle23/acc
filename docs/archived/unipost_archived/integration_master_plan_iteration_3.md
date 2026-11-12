@@ -16,7 +16,7 @@ While State Machines (FSM) govern lifecycle state transitions on individual aggr
 - Zero-I/O deterministic decider loops
 - **Polyglot Worker Execution**: Native execution of tasks via Java 21 Virtual Threads AND lightweight, cross-platform TypeScript workers (Web, Node.js, Bun, React Native/Mobile, and Edge).
 
-The engine is implemented as a dedicated Maven submodule (`workflow-engine`) within `apps/backend/` and organized around **Hexagonal Architecture (Ports & Adapters)**, strictly separating a 100% deterministic, zero-I/O functional core (`PureDecider`) from pluggable imperative persistence and worker transport adapters. It bridges **code-first developer authoring** with **zero-code visual builder authoring** (`@xyflow/react` in `@acc/console`) via a bidirectional **Canonical Intermediate Representation (IR)**.
+The engine is implemented as a dedicated Maven submodule (`workflow-engine`) within `apps/api/` and organized around **Hexagonal Architecture (Ports & Adapters)**, strictly separating a 100% deterministic, zero-I/O functional core (`PureDecider`) from pluggable imperative persistence and worker transport adapters. It bridges **code-first developer authoring** with **zero-code visual builder authoring** (`@xyflow/react` in `@acc/console`) via a bidirectional **Canonical Intermediate Representation (IR)**.
 
 ```
        +-------------------------------------------------------------------+
@@ -64,7 +64,7 @@ The engine is implemented as a dedicated Maven submodule (`workflow-engine`) wit
                      v                                       v
        +---------------------------+       +-------------------------------+
        | Java Virtual-Thread Host  |       | Pure TypeScript Worker SDK    |
-       | (apps/backend/wf-engine)  |       | (@acc/worker package)     |
+       | (apps/api/wf-engine)  |       | (@acc/worker package)     |
        | - Virtual-Thread per Task |       | - Universal (Node/Bun/Browser)|
        | - Semaphore Concurrency   |       | - Promise-based Concurrency   |
        | - Java Middleware Chain   |       | - Composable Async Middleware |
@@ -105,10 +105,10 @@ The engine is implemented as a dedicated Maven submodule (`workflow-engine`) wit
 
 ## 3. Directory Layouts (Backend & Pure TypeScript SDK)
 
-### 3.1 Backend Module: `apps/backend/workflow-engine/`
+### 3.1 Backend Module: `apps/api/workflow-engine/`
 
 ```text
-apps/backend/
+apps/api/
 ├── pom.xml                                              # Root Backend POM (includes <module>workflow-engine</module>)
 └── workflow-engine/                                     # NEW SUBMODULE
     ├── pom.xml                                          # Submodule POM (Jackson, SQLite-JDBC, SLF4J, JUnit 5, AssertJ)
@@ -349,7 +349,7 @@ export class WorkflowWorkerHost {
 
 | Phase | Milestone Title | Target Deliverables | Verification Mechanism |
 | :---: | :--- | :--- | :--- |
-| **Phase 26** | **Submodule Setup, Canonical Workflow IR & Zero-I/O PureDecider** | `apps/backend/workflow-engine` POM, `workflow-ir-schema-v1.json`, Memento snapshots, sealed `EngineCommand`s, immutable models, pure state machine decider core. | Pure JUnit 5 record-in / command-out unit test suite executing in <1ms without mocks or Spring context. |
+| **Phase 26** | **Submodule Setup, Canonical Workflow IR & Zero-I/O PureDecider** | `apps/api/workflow-engine` POM, `workflow-ir-schema-v1.json`, Memento snapshots, sealed `EngineCommand`s, immutable models, pure state machine decider core. | Pure JUnit 5 record-in / command-out unit test suite executing in <1ms without mocks or Spring context. |
 | **Phase 27** | **Conductor Node Strategies, Topological Frontiers & Parameter Resolver** | `NodeStrategyRegistry` implementing `SIMPLE`, `SWITCH`, `FORK_JOIN`, `DYNAMIC_FORK`, `WAIT`, and `DO_WHILE`; Kahn's topological frontier calculation; Tarjan cycle detection; JSONPath / SpEL `ParameterResolver`. | Cycle detection tests asserting cycle path traces; parameter resolution tests evaluating `${workflow.input.*}` and `${taskRef.output.*}`; branch resolution tests. |
 | **Phase 28** | **Hexagonal Engine, Single-Column Lease Queue & Storage Adapters** | Hexagonal ports (`PersistencePort`, `UnitOfWork`, `WorkerTransportPort`); `WorkflowEngineService`; atomic single-column lease queue (`visible_at_epoch_ms`); dual storage adapters (`PostgresJdbcPersistenceAdapter` with RLS/SKIP LOCKED and `SqliteJdbcPersistenceAdapter` with WAL mode); lease sweeper for automatic timeout recovery. | Multi-threaded lease contention contract test suite run against both SQLite WAL and PostgreSQL Testcontainers; worker crash lease recovery test. |
 | **Phase 29** | **Polyglot Worker SDKs (Java Virtual-Thread & Pure TypeScript `@acc/worker`) & Distributed Saga** | Java Virtual-Thread `WorkerHost`; **Pure TypeScript `@acc/worker`** package with `WorkflowWorkerHost`, middleware chain, adaptive polling, and auto-heartbeat; reverse topological Saga compensator. | Java and TypeScript test suites verifying worker registration, lease extensions via auto-heartbeat, `TaskOutcome.inProgress` deferrals, retry backoffs, and reverse Saga compensation. |
@@ -360,7 +360,7 @@ export class WorkflowWorkerHost {
 ## 6. Deep Dive Phase Specifications & Verification Gates
 
 ### Phase 26: Submodule Setup, Canonical Workflow IR & Zero-I/O PureDecider
-- **Submodule Creation**: Add `<module>workflow-engine</module>` to `apps/backend/pom.xml`. Configure `workflow-engine/pom.xml` inheriting backend parent with Jackson, SQLite-JDBC, SLF4J, JUnit 5, and AssertJ.
+- **Submodule Creation**: Add `<module>workflow-engine</module>` to `apps/api/pom.xml`. Configure `workflow-engine/pom.xml` inheriting backend parent with Jackson, SQLite-JDBC, SLF4J, JUnit 5, and AssertJ.
 - **Canonical IR Specifications (`workflow-ir-schema-v1.json`)**:
   - `workflowKey`: Alphanumeric slug identifier (e.g. `order-fulfillment-pipeline`).
   - `version`: Monotonically increasing revision integer.

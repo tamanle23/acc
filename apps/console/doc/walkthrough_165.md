@@ -28,7 +28,7 @@ When creating a new workflow:
   - Fixed `decoratedNodes` so that an entry/start node (`workflow_start`, `node-start`, `data.isStartNode`) guarantees `isEndNode = false`, ensuring the right-side source handle is always rendered and never suppressed by an out-degree of 0.
 
 ## Verification
-- **Backend Tests**: `pnpm --filter @acc/backend exec node mvnw.cjs -am -pl acc-ms-aio test "-Dtest=WorkflowEngineRestApiTest"` passed (2/2 tests, BUILD SUCCESS).
+- **Backend Tests**: `pnpm --filter @acc/api exec node mvnw.cjs -am -pl acc-ms-aio test "-Dtest=WorkflowEngineRestApiTest"` passed (2/2 tests, BUILD SUCCESS).
 - **Sandbox Tests**: `pnpm --filter @acc/sandbox test` passed (11 test files, 103 tests).
 - **Console Tests**: `pnpm --filter @acc/console exec vitest run src/features/workflows` passed (24 test files, 112 tests).
 - **TypeScript**: `pnpm --filter @acc/console exec tsc --noEmit` passed with 0 errors.

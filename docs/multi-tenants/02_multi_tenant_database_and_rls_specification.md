@@ -2,7 +2,7 @@
 
 **Series:** Multi-Tenant Architecture Blueprint Series (Document 02 of N)  
 **Document Level:** Low-Level Technical Specification (LLTS) & Database DDL Blueprint  
-**Target Systems:** `@acc/backend` (Spring Modulith / Java 21 / Liquibase / PostgreSQL 16+)  
+**Target Systems:** `@acc/api` (Spring Modulith / Java 21 / Liquibase / PostgreSQL 16+)  
 **Scope:** Tenant-Scoped Indexing, Row-Level Security (RLS) Policies, Spring Modulith Connection Hooks, Zero Cross-Tenant Leakage  
 **Status:** Canonical Living Architecture Document  
 

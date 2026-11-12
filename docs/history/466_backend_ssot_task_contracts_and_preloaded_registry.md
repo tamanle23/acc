@@ -13,7 +13,7 @@ In the Visual DAG Studio and Workflow Task Definitions Catalog:
 5. Create comprehensive automated unit and integration tests across console, studio, and sandbox platforms.
 
 ## Changes
-- **Backend Workflow Engine (`apps/backend/workflow-engine`)**:
+- **Backend Workflow Engine (`apps/api/workflow-engine`)**:
   - `TaskDefinitionRegistry.java`: `listLatest()` now prepends all 24 built-in contracts from `BuiltInTaskContracts.getContracts()` as canonical `v1 ACTIVE SYSTEM` task definitions with `isBuiltIn: true`.
 - **Unified Sandbox Platform (`packages/sandbox`)**:
   - `workflow-handler.ts`: `WorkflowTaskDefinitionsSandboxRepository` synthesizes all 24 built-in contracts from `SANDBOX_TASK_CONTRACTS` into `TaskDefinitionRecordIR` entries (`tenantId = 'SYSTEM'`, `status = 'ACTIVE'`, `isBuiltIn = true`).

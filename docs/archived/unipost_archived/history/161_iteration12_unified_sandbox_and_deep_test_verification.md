@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-20  
 **Status:** Complete  
-**Scope:** `@acc/console`, `@acc/backend` (`acc-fw`)  
+**Scope:** `@acc/console`, `@acc/api` (`acc-fw`)  
 
 ---
 
@@ -41,11 +41,11 @@ During skeptical code review and adversarial test probing of the Iteration 12 im
 - `apps/console/src/features/workflows/approvals/__tests__/approvals-inbox.test.tsx`: Expanded test suite covering rendering, optimistic approval, rejection rationale dialog, search filtering, SSE task reception, and reconnection handling.
 - `apps/console/src/features/dlq/components/dlq-inspector-sheet.tsx`: Fixed catch block strict typing, removed unused imports, removed non-interactive tabIndex.
 
-### Backend (`@acc/backend`)
-- `apps/backend/acc-fw/src/test/java/com/acc/service/MetadataServiceTest.java`: Added 5 unit tests for `seekEntityRecords` covering first page seek, Base64 cursor seek, ISO 8601 timestamp cursor parsing, malformed cursor fallback, and entity type not found.
-- `apps/backend/acc-fw/src/test/java/com/acc/service/metadata/serialization/FieldLevelSecuritySerializerTest.java`: Created 7 tests for ADMIN, OPERATOR, VIEWER role masking, PII pattern detection, and operator truncation.
-- `apps/backend/acc-fw/src/test/java/com/acc/presentation/NotificationSseControllerTest.java`: Created 5 tests for SSE streaming handshake, tenant/SYSTEM broadcast, scheduled heartbeats, and emitter removal.
-- `apps/backend/acc-fw/src/test/java/com/acc/service/workflow/EntityWorkflowTriggerDispatcherTest.java`: Created 4 tests for mutation event dispatch, approval triggers, and state change broadcasts.
+### Backend (`@acc/api`)
+- `apps/api/acc-fw/src/test/java/com/acc/service/MetadataServiceTest.java`: Added 5 unit tests for `seekEntityRecords` covering first page seek, Base64 cursor seek, ISO 8601 timestamp cursor parsing, malformed cursor fallback, and entity type not found.
+- `apps/api/acc-fw/src/test/java/com/acc/service/metadata/serialization/FieldLevelSecuritySerializerTest.java`: Created 7 tests for ADMIN, OPERATOR, VIEWER role masking, PII pattern detection, and operator truncation.
+- `apps/api/acc-fw/src/test/java/com/acc/presentation/NotificationSseControllerTest.java`: Created 5 tests for SSE streaming handshake, tenant/SYSTEM broadcast, scheduled heartbeats, and emitter removal.
+- `apps/api/acc-fw/src/test/java/com/acc/service/workflow/EntityWorkflowTriggerDispatcherTest.java`: Created 4 tests for mutation event dispatch, approval triggers, and state change broadcasts.
 
 ---
 

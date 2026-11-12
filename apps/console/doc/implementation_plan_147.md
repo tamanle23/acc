@@ -1,7 +1,7 @@
 # Implementation Plan: Workflow Execution & Live Streaming Experience (Iteration 19)
 
 ## 1. Goal Description
-The objective of this iteration is to elevate the **Workflow Execution & Live Streaming Experience** across `@acc/console` and `@acc/backend` to enterprise production-grade standards.
+The objective of this iteration is to elevate the **Workflow Execution & Live Streaming Experience** across `@acc/console` and `@acc/api` to enterprise production-grade standards.
 
 When users inspect workflow instances (from `/workflow-executions` or inside `VisualDagStudio` in `mode="execution"`):
 1. **Full-Stack Real-Time SSE Telemetry Channel**:
@@ -73,9 +73,9 @@ sequenceDiagram
 ## 4. Proposed Changes
 
 ### Workstream 1: Backend Loom Virtual Threads & SSE Broadcaster [COMPLETED]
-- **File**: `apps/backend/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/ExecutionStreamBroadcaster.java`
+- **File**: `apps/api/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/ExecutionStreamBroadcaster.java`
   - Upgraded with Java 21 Loom virtual threads executor, scheduled 15s heartbeat pings, and task log broadcast method.
-- **File**: `apps/backend/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/TaskWorkerController.java`
+- **File**: `apps/api/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/TaskWorkerController.java`
   - Added `POST /api/v1/workflow/tasks/{id}/log` endpoint for task stdout/stderr log chunk streaming.
 
 ### Workstream 2: Frontend Real-Time SSE Telemetry & State Synchronization
@@ -129,7 +129,7 @@ sequenceDiagram
 ### Automated Tests
 1. **Backend Unit & Sliced Rest Controller Tests**:
    ```bash
-   node ./apps/backend/mvnw.cjs test -pl acc-ms-aio -Dtest=WorkflowEngineRestApiTest,WorkflowIteration13ControllersTest
+   node ./apps/api/mvnw.cjs test -pl acc-ms-aio -Dtest=WorkflowEngineRestApiTest,WorkflowIteration13ControllersTest
    ```
    Verified green (3/3 passed).
 2. **Console Workflows & Execution Unit/Component Tests**:

@@ -4,7 +4,7 @@
 > **Iteration:** 2 (Enterprise Advanced Capabilities & Production Industrialization)  
 > **Classification:** Master Systems Architecture Specification & Multi-Tier Production Plan  
 > **Authors:** Lead Systems Architect & Full-Stack Engineering Team  
-> **Target Scope:** `@acc/backend`, `@acc/console`, `@acc/desktop`, `mobile-ui`, `tekgo-ui`, `packages/*`, `.github/workflows`  
+> **Target Scope:** `@acc/api`, `@acc/console`, `@acc/desktop`, `mobile-ui`, `tekgo-ui`, `packages/*`, `.github/workflows`  
 > **Preceding Baseline:** Completed Iteration 1 (Phases 1–15 & Section 13 Architectural Invariants Verified in History Logs `036`–`052`)  
 > **Synthesized Strategic Pillars:**
 > 1. **Track 1:** Advanced Dynamic Metadata Extensions, Pluggable Widgets, Model Context Protocol (MCP) Synthesis & Spring Modulith Dynamic Dispatch.
@@ -40,7 +40,7 @@ flowchart TD
         DomainStudio["Domain Blueprint Customization Studio<br/>Visual Schema & FSM Workflow Designer"]
     end
 
-    subgraph BackendCore["@acc/backend (Java 21 / Spring Modulith)"]
+    subgraph BackendCore["@acc/api (Java 21 / Spring Modulith)"]
         Dispatch["ResolvableType Dynamic Command Dispatcher"]
         FSM["5-Gate Entity Lifecycle Service (FSM)"]
         GDPR_Export["GDPR Art. 20 Non-Blocking Streaming ZIP"]
@@ -238,7 +238,7 @@ Iteration 2 Master Execution Map
   - Tenant dynamic theme overrides: Brand color palettes (Primary, Accent, Glass Tint Scrims), custom logos, and typography tokens stored in tenant configuration JSONB.
   - CSS variable injection on tenant switch: Seamlessly updates Liquid Glass tokens across Web and Desktop without page reload.
 - **Dynamic Domain Blueprint Seeding Engine:**
-  - Pluggable blueprint catalog loader in `@acc/backend` (`classpath:metadata/blueprints/*.json`):
+  - Pluggable blueprint catalog loader in `@acc/api` (`classpath:metadata/blueprints/*.json`):
     - Real Estate MLS (`Property`, `ListingAgent`, `TourSchedule`).
     - Healthcare Records (`PatientRecord`, `ClinicalNote`, `Prescription`).
     - Logistics Fleet Management (`DispatchOrder`, `DriverProfile`, `TelemetryPoint`).

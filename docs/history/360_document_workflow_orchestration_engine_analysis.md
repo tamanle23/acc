@@ -1,7 +1,7 @@
 # 360 - Document Workflow Orchestration Engine Architecture Analysis
 
 ## Problem
-The comprehensive architectural analysis and master technical specification of the Workflow Orchestration Engine (spanning `@acc/backend`, `@acc/console`, and `packages/sandbox`) needed to be formally documented and persisted into the root `./docs` repository knowledge base for engineering reference, architectural governance, and future onboarding.
+The comprehensive architectural analysis and master technical specification of the Workflow Orchestration Engine (spanning `@acc/api`, `@acc/console`, and `packages/sandbox`) needed to be formally documented and persisted into the root `./docs` repository knowledge base for engineering reference, architectural governance, and future onboarding.
 
 ## Plan
 1. Create authoritative technical specification: `docs/WORKFLOW_ORCHESTRATION_ENGINE_DEEP_ANALYSIS.md`.

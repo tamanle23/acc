@@ -1,7 +1,7 @@
 # Comprehensive Phased Implementation Plan 62: Domain Blueprints Full-Stack Ecosystem
 
 **Document Path:** `apps/console/doc/implementation_plan_62.md`  
-**Target Systems:** `@acc/backend` (Spring Modulith / Java 21 / payOS Vietnam SDK / PostgreSQL), `@acc/console` (React 19 / Vite 8 / TanStack Router / Liquid Glass Design System)  
+**Target Systems:** `@acc/api` (Spring Modulith / Java 21 / payOS Vietnam SDK / PostgreSQL), `@acc/console` (React 19 / Vite 8 / TanStack Router / Liquid Glass Design System)  
 **Reference Document:** [`docs/multi-tenants/domain_blueprints_fullstack_guide.md`](file:///c:/Users/Admin/workspace/git/acc/docs/multi-tenants/domain_blueprints_fullstack_guide.md)  
 **Supporting Specifications:**
 - Part 5: [`docs/multi-tenants/05_tenant_onboarding_and_template_provisioning.md`](file:///c:/Users/Admin/workspace/git/acc/docs/multi-tenants/05_tenant_onboarding_and_template_provisioning.md)
@@ -14,7 +14,7 @@
 
 ## 1. Architectural Strategy & Phased Breakdown
 
-The **Domain Blueprints Full-Stack Ecosystem** connects the backend provisioning engine (`@acc/backend`) with the client experience (`@acc/console`) across all touchpoints:
+The **Domain Blueprints Full-Stack Ecosystem** connects the backend provisioning engine (`@acc/api`) with the client experience (`@acc/console`) across all touchpoints:
 - **Internal Architect & Operator Flow:** Discovering, previewing, and importing blueprints directly from inside the `/metadata` workspace.
 - **Public Self-Service Acquisition Flow:** Public landing page (`/`), pricing tiers, blueprint carousel selection, registration, and 1-click workspace initialization.
 - **Multi-Workspace Switcher Flow:** Provisioning isolated sub-workspaces/subsidiaries from Settings.
@@ -61,9 +61,9 @@ To guarantee zero regressions, strict compliance with the **Unified Sandbox Plat
 
 ## 2. Phase 1: In-App Blueprint Gallery, Template Preview Modal & Console Seeding
 
-### 2.1 Backend Deliverables (`@acc/backend`)
+### 2.1 Backend Deliverables (`@acc/api`)
 - [ ] **Task 1.1: Blueprint Manifest Detail Endpoint (`GET /api/v1/metadata/blueprints/{id}`)**
-  - **Class:** [`TenantProvisioningController.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/presentation/TenantProvisioningController.java)
+  - **Class:** [`TenantProvisioningController.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/acc-fw/src/main/java/com/acc/presentation/TenantProvisioningController.java)
   - Method: `getBlueprintDetails(@PathVariable String blueprintId)` returning `ResponseWrapper<ContextHeader, BlueprintManifest>`.
   - Calls `blueprintCatalogService.getBlueprint(blueprintId)`.
   - Returns HTTP 404 if blueprint ID does not exist in catalog.
@@ -192,7 +192,7 @@ Reference: `Touchpoint B: Multi-Workspace / Organization Switcher` from [`domain
 ### 5.1 Architecture Specifications
 Reference: [`docs/multi-tenants/09_tenant_billing_payos_and_feature_entitlements.md`](file:///c:/Users/Admin/workspace/git/acc/docs/multi-tenants/09_tenant_billing_payos_and_feature_entitlements.md).
 
-### 5.2 Backend Deliverables (`@acc/backend`)
+### 5.2 Backend Deliverables (`@acc/api`)
 - [ ] **Task 4.1: Liquibase Migration & Entity Models**
   - Create `UNIPOST_TENANT_BILLING`:
     - Columns: `tenant_id` (PK, UUID), `payos_customer_id`, `current_order_code` (BIGINT), `plan_tier` (VARCHAR), `billing_cadence` (VARCHAR), `expires_at` (TIMESTAMP), `status` (VARCHAR).
@@ -234,15 +234,15 @@ Reference: [`docs/multi-tenants/09_tenant_billing_payos_and_feature_entitlements
 
 | Milestone | Scope & Deliverables | Primary Apps | Verification Gates |
 | :--- | :--- | :--- | :--- |
-| **Phase 1** | Blueprint Detail API, Public Access config, Sandbox Adapter, Zero-dep SVG Graph, `TemplatePreviewModal`, `BlueprintGalleryDialog`, Sidebar trigger & Zero-model callout | `apps/backend`, `apps/console` | Unit tests pass, live blueprint import in console in $<250\text{ ms}$ |
+| **Phase 1** | Blueprint Detail API, Public Access config, Sandbox Adapter, Zero-dep SVG Graph, `TemplatePreviewModal`, `BlueprintGalleryDialog`, Sidebar trigger & Zero-model callout | `apps/api`, `apps/console` | Unit tests pass, live blueprint import in console in $<250\text{ ms}$ |
 | **Phase 2** | Root `/` Landing Route, Liquid Glass Hero & Bento, Pricing Section, 2-Step Onboarding with Blueprint Carousel & 1-Click Setup | `apps/console` | Public routing verified, new tenant onboarded with selected blueprint |
-| **Phase 3** | Sub-tenant creation API, Settings Workspaces UI with Blueprint picker, Instant tenant context switching | `apps/backend`, `apps/console` | Multi-workspace creation and live context switching verified |
-| **Phase 4** | `UNIPOST_TENANT_FEATURES`, payOS VietQR webhooks, `@RequireFeature` aspect, `<FeatureGate />` UI & `PayOsQrModal` | `apps/backend`, `apps/console` | HMAC webhook test passes, VietQR scan simulation unlocks feature live |
+| **Phase 3** | Sub-tenant creation API, Settings Workspaces UI with Blueprint picker, Instant tenant context switching | `apps/api`, `apps/console` | Multi-workspace creation and live context switching verified |
+| **Phase 4** | `UNIPOST_TENANT_FEATURES`, payOS VietQR webhooks, `@RequireFeature` aspect, `<FeatureGate />` UI & `PayOsQrModal` | `apps/api`, `apps/console` | HMAC webhook test passes, VietQR scan simulation unlocks feature live |
 
 ---
 
 ## 7. History & Archival Protocol
 In accordance with `.agents/rules/00-generic-common.md`:
-- Each phase produces a paired `apps/console/doc/walkthrough_<NN>.md` (or `apps/backend/doc/walkthrough_<NN>.md`).
+- Each phase produces a paired `apps/console/doc/walkthrough_<NN>.md` (or `apps/api/doc/walkthrough_<NN>.md`).
 - Each phase logs a sequential entry in `docs/history/XXX_<task>.md` and updates `docs/history/README.md`.
 - All verified changes auto-committed with Conventional Commits (`feat(...)`, `test(...)`).

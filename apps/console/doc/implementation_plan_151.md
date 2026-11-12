@@ -26,14 +26,14 @@
 
 ## Proposed Changes by Component
 
-### Backend: Workflow Engine Core (`apps/backend/workflow-engine`)
+### Backend: Workflow Engine Core (`apps/api/workflow-engine`)
 - `HttpNodeStrategy.java`: Purge `HttpClient` and convert to pure scheduler targeting `system:http`.
 - `CallMcpToolStrategy.java`: Purge `HttpClient` and convert to pure scheduler targeting `system:mcp`.
 - `LlmChatCompleteStrategy.java`: Purge `HttpClient` and convert to pure scheduler targeting `system:llm`.
 - `DynamicForkStrategy.java`: Implement parent task tracking barrier until all dynamic child tasks complete.
 - `WorkflowEngineService.java`: Add `replayDlqTask(String workflowId, String taskId, Map<String, Object> modifiedInput, long nowEpochMs)`.
 
-### Backend: API Gateway & Workers (`apps/backend/acc-ms-aio`)
+### Backend: API Gateway & Workers (`apps/api/acc-ms-aio`)
 - `SystemTaskWorkerPool.java`: Implement Loom virtual-thread worker pool polling system-reserved queues (`system:http`, `system:mcp`, etc.).
 - `WorkflowExecutionController.java`: Expose `/api/v1/workflow/executions/{id}/tasks/{taskId}/replay`.
 
@@ -49,7 +49,7 @@
 ### Automated Tests
 1. **Backend Verification**:
    ```powershell
-   cd apps/backend && ./mvnw test-compile -q
+   cd apps/api && ./mvnw test-compile -q
    ./mvnw test -Dtest=PureDeciderTest,DynamicForkTest -q
    ```
 2. **Frontend Verification**:

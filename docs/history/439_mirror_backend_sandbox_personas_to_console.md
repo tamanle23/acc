@@ -1,7 +1,7 @@
 # 439: Mirror Backend Sandbox Personas to Console's Sandbox
 
 ## Problem
-The backend sandbox (`apps/backend/acc-sandbox`) defined authoritative personas in `SandboxPersonaRegistry.java` and `SandboxUserSeeder.java` with canonical credentials, email usernames (`admin@acc.io`, `custodian@system`, `creator@acc.io`, `user@acc.io`), default tenant `tenant-acme` (and `SYSTEM`), and specific authorities/roles (`ROLE_ADMIN`, `ROLE_SYSTEM_SUPPORT`).
+The backend sandbox (`apps/api/acc-sandbox`) defined authoritative personas in `SandboxPersonaRegistry.java` and `SandboxUserSeeder.java` with canonical credentials, email usernames (`admin@acc.io`, `custodian@system`, `creator@acc.io`, `user@acc.io`), default tenant `tenant-acme` (and `SYSTEM`), and specific authorities/roles (`ROLE_ADMIN`, `ROLE_SYSTEM_SUPPORT`).
 In contrast, the frontend console sandbox (`apps/console/src/core/sandbox` and `packages/sandbox`) drifted with differing usernames (`admin_bypass`, `custodian_root`), regional mock tenants (`tenant-us-east-1`, `tenant-eu-central-1`, `tenant-us-west-2`), missing aliases, and lack of bi-directional synchronization between the console Zustand store and the `@acc/sandbox` store manager. When running in dev sandbox against the backend or in local mock mode, mismatched tenant IDs and persona credentials caused 401/403 or empty record sets.
 
 ## Plan

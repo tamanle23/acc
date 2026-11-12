@@ -1,7 +1,7 @@
 # Walkthrough 135 — Iteration 14: Visual DAG Studio & Execution Inspector Enhancements
 
 ## Overview
-Executed all workstreams of `docs/integration_master_plan_iteration14.md` end-to-end with zero stubs, strict zero-regression guarantees, and WCAG 2.2 AA compliant Liquid Glass styling across `@acc/console` and `@acc/backend`.
+Executed all workstreams of `docs/integration_master_plan_iteration14.md` end-to-end with zero stubs, strict zero-regression guarantees, and WCAG 2.2 AA compliant Liquid Glass styling across `@acc/console` and `@acc/api`.
 
 ---
 

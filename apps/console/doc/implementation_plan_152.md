@@ -70,7 +70,7 @@ Upgrade the **"RBAC Matrix & Global Users"** screen (`apps/console/src/routes/_a
 ## 3. Full-Stack Implementation Deliverables
 
 ```
-apps/backend/
+apps/api/
 ├── acc-db/src/main/resources/db/acc/
 │   └── changelog-000.000.00017.xml                 # [NEW] Liquibase migration
 ├── acc-fw/src/main/java/com/acc/
@@ -111,7 +111,7 @@ apps/console/
 ## 4. Verification Plan
 
 ### Automated Tests
-1. **Backend Unit & Slice Tests (`apps/backend`)**:
+1. **Backend Unit & Slice Tests (`apps/api`)**:
    - `TenantRoleDelegationServiceTest`:
      - Test: Tenant Admin delegates `ROLE_OPERATIONS_MANAGER` to member in same tenant -> SUCCESS.
      - Test: Tenant Admin attaches ad-hoc override `entity:record:delete = false` -> SUCCESS.

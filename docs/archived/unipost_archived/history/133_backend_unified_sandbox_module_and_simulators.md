@@ -4,8 +4,8 @@
 Currently, `@acc/console` has an offline-first Unified Sandbox Platform, whereas the backend either required live cloud infrastructure (PostgreSQL, MinIO/S3, ActiveMQ, real PayOS credentials) or relied on synthetic mocks, which violated the `ZERO-STUB-PROHIBITION` rule. Furthermore, sandbox harness code needed to be completely decoupled so that production builds retain zero footprint and zero overhead.
 
 ## Plan
-1. Create a separate Maven module `apps/backend/acc-sandbox`.
-2. Register the module in `apps/backend/pom.xml` under `<modules>` and `<dependencyManagement>`.
+1. Create a separate Maven module `apps/api/acc-sandbox`.
+2. Register the module in `apps/api/pom.xml` under `<modules>` and `<dependencyManagement>`.
 3. Implement core SPI contracts (`ExternalServiceSimulator`) and thread-safe registry (`BackendSandboxRegistry`).
 4. Implement boundary simulators for PayOS VietQR (`PayOsSimulator`), S3/MinIO (`InMemoryStorageSimulator`), and Outbox Webhooks (`MockWebhookDispatcher`).
 5. Support embedded PGlite database configuration (`PgLiteDatasourceConfiguration`) with dual Test Mode (`memory://`) and Dev Mode (`file:tmp/db/pglite-sandbox`).
@@ -14,8 +14,8 @@ Currently, `@acc/console` has an offline-first Unified Sandbox Platform, whereas
 
 ## Changes
 - **Parent Configuration**:
-  - `apps/backend/pom.xml`: Added `acc-sandbox` module and dependencyManagement entry.
-- **New Module**: `apps/backend/acc-sandbox`:
+  - `apps/api/pom.xml`: Added `acc-sandbox` module and dependencyManagement entry.
+- **New Module**: `apps/api/acc-sandbox`:
   - `pom.xml`: Module definition inheriting from `com.acc:acc:1.0.0-SNAPSHOT`.
   - `SandboxProperties.java`: Configuration for mode (`DEV` | `TEST`), embedded database, and PayOS auto-confirm settings.
   - `ExternalServiceSimulator.java`: SPI interface for boundary simulators.
@@ -34,14 +34,14 @@ Currently, `@acc/console` has an offline-first Unified Sandbox Platform, whereas
   - `SandboxDecouplingIntegrationTest.java`: Asserts zero sandbox beans are registered when disabled or omitted.
 
 ## Verification
-- `mvn test -f apps/backend/acc-sandbox/pom.xml -q`: 14 tests passed in `acc-sandbox`.
-- `mvn test -f apps/backend/pom.xml -q`: Full multi-module test suite passed with 0 failures, preserving JaCoCo 90% hard gate.
+- `mvn test -f apps/api/acc-sandbox/pom.xml -q`: 14 tests passed in `acc-sandbox`.
+- `mvn test -f apps/api/pom.xml -q`: Full multi-module test suite passed with 0 failures, preserving JaCoCo 90% hard gate.
 
 ## Walkthrough
-Refer to `apps/backend/doc/walkthrough_41.md` for complete architecture diagrams and verification details.
+Refer to `apps/api/doc/walkthrough_41.md` for complete architecture diagrams and verification details.
 
 ## Tasks
-- [x] Create decoupled Maven module `apps/backend/acc-sandbox`
+- [x] Create decoupled Maven module `apps/api/acc-sandbox`
 - [x] Implement `ExternalServiceSimulator` SPI & `BackendSandboxRegistry`
 - [x] Implement PayOS VietQR, InMemory S3, and Mock Webhook simulators
 - [x] Implement embedded PGlite datasource configuration with dual Dev/Test mode

@@ -4,14 +4,14 @@ import * as path from 'path';
 
 /**
  * Formal Verification Suite: Backend Multi-Tenancy IDOR Elimination & Security RBAC Hardening
- * Target: apps/backend/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/
+ * Target: apps/api/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/
  * Standards: ZERO-CLIENT-TRUST, ANTI-IDOR, PRINCIPLE-OF-LEAST-PRIVILEGE, ZERO-STUB-PROHIBITION
  */
 describe('Phase 3: Backend Multi-Tenancy IDOR Elimination & Security RBAC Hardening', () => {
   const repoRoot = path.resolve(__dirname, '..');
   const workflowControllersDir = path.join(
     repoRoot,
-    'apps/backend/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow'
+    'apps/api/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow'
   );
 
   const controllerFiles = [

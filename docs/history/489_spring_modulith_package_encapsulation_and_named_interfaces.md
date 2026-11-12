@@ -43,38 +43,38 @@ Without explicit `@ApplicationModule` and `@NamedInterface` annotations:
 
 ## Changes
 - **Maven Reactor POMs**:
-  - `apps/backend/acc-fw/pom.xml`: Added `spring-modulith-api`.
-  - `apps/backend/workflow-engine/pom.xml`: Added `spring-modulith-api`.
-  - `apps/backend/acc-ms-fs/pom.xml`: Added `spring-modulith-api`.
-  - `apps/backend/acc-ms-worker/pom.xml`: Added `spring-modulith-api`.
+  - `apps/api/acc-fw/pom.xml`: Added `spring-modulith-api`.
+  - `apps/api/workflow-engine/pom.xml`: Added `spring-modulith-api`.
+  - `apps/api/acc-ms-fs/pom.xml`: Added `spring-modulith-api`.
+  - `apps/api/acc-ms-worker/pom.xml`: Added `spring-modulith-api`.
 - **Package Encapsulation Descriptors (`package-info.java`)**:
-  - `apps/backend/acc-ms-aio/src/main/java/com/acc/aio/config/package-info.java`
-  - `apps/backend/acc-ms-aio/src/main/java/com/acc/aio/controller/package-info.java`
-  - `apps/backend/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/package-info.java`
-  - `apps/backend/acc-ms-aio/src/main/java/com/acc/aio/worker/package-info.java`
-  - `apps/backend/workflow-engine/src/main/java/com/acc/workflow/package-info.java`
-  - `apps/backend/workflow-engine/src/main/java/com/acc/workflow/ports/package-info.java`
-  - `apps/backend/workflow-engine/src/main/java/com/acc/workflow/application/package-info.java`
-  - `apps/backend/acc-ms-fs/src/main/java/com/acc/fs/package-info.java`
-  - `apps/backend/acc-ms-fs/src/main/java/com/acc/fs/application/ports/in/package-info.java`
-  - `apps/backend/acc-ms-fs/src/main/java/com/acc/fs/application/ports/out/package-info.java`
-  - `apps/backend/acc-ms-worker/src/main/java/com/acc/worker/package-info.java`
-  - `apps/backend/acc-ms-worker/src/main/java/com/acc/worker/application/outbox/ports/in/package-info.java`
-  - `apps/backend/acc-ms-worker/src/main/java/com/acc/worker/application/saga/ports/in/package-info.java`
-  - `apps/backend/acc-fw/src/main/java/com/acc/identity/package-info.java`
-  - `apps/backend/acc-fw/src/main/java/com/acc/identity/application/user/port/in/package-info.java`
+  - `apps/api/acc-ms-aio/src/main/java/com/acc/aio/config/package-info.java`
+  - `apps/api/acc-ms-aio/src/main/java/com/acc/aio/controller/package-info.java`
+  - `apps/api/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/package-info.java`
+  - `apps/api/acc-ms-aio/src/main/java/com/acc/aio/worker/package-info.java`
+  - `apps/api/workflow-engine/src/main/java/com/acc/workflow/package-info.java`
+  - `apps/api/workflow-engine/src/main/java/com/acc/workflow/ports/package-info.java`
+  - `apps/api/workflow-engine/src/main/java/com/acc/workflow/application/package-info.java`
+  - `apps/api/acc-ms-fs/src/main/java/com/acc/fs/package-info.java`
+  - `apps/api/acc-ms-fs/src/main/java/com/acc/fs/application/ports/in/package-info.java`
+  - `apps/api/acc-ms-fs/src/main/java/com/acc/fs/application/ports/out/package-info.java`
+  - `apps/api/acc-ms-worker/src/main/java/com/acc/worker/package-info.java`
+  - `apps/api/acc-ms-worker/src/main/java/com/acc/worker/application/outbox/ports/in/package-info.java`
+  - `apps/api/acc-ms-worker/src/main/java/com/acc/worker/application/saga/ports/in/package-info.java`
+  - `apps/api/acc-fw/src/main/java/com/acc/identity/package-info.java`
+  - `apps/api/acc-fw/src/main/java/com/acc/identity/application/user/port/in/package-info.java`
 - **Modulith Verification & Documentation**:
-  - `apps/backend/acc-ms-aio/src/test/java/com/acc/aio/ModularityTests.java`: Added `@DisplayName` and `Documenter.writeDocumentation()` generation step.
+  - `apps/api/acc-ms-aio/src/test/java/com/acc/aio/ModularityTests.java`: Added `@DisplayName` and `Documenter.writeDocumentation()` generation step.
 
 ## Verification
 - **Tier 1 (Domain Tests)**:
-  - `mvn test -f apps/backend/pom.xml "-Dtest=*AggregateTest"`: Exited 0.
+  - `mvn test -f apps/api/pom.xml "-Dtest=*AggregateTest"`: Exited 0.
 - **Tier 2 (ArchUnit Enforcement)**:
-  - `mvn test -f apps/backend/pom.xml -pl :acc-core "-Dtest=HexagonalArchitectureEnforcementTest"`: Exited 0 (0 framework leaks in any domain package).
+  - `mvn test -f apps/api/pom.xml -pl :acc-core "-Dtest=HexagonalArchitectureEnforcementTest"`: Exited 0 (0 framework leaks in any domain package).
 - **Tier 3 (Module Suites)**:
-  - `mvn test -f apps/backend/pom.xml -pl :workflow-engine,:acc-ms-fs,:acc-ms-worker`: All module unit and integration tests passed with 0 failures, 0 errors.
+  - `mvn test -f apps/api/pom.xml -pl :workflow-engine,:acc-ms-fs,:acc-ms-worker`: All module unit and integration tests passed with 0 failures, 0 errors.
 - **Tier 4 (Spring Modulith Verification & Documentation)**:
-  - `mvn test -f apps/backend/pom.xml -pl :acc-ms-aio "-Dtest=ModularityTests"`: Exited 0. Verified all modules and generated PlantUML/AsciiDoc diagrams under `target/spring-modulith-docs/`.
+  - `mvn test -f apps/api/pom.xml -pl :acc-ms-aio "-Dtest=ModularityTests"`: Exited 0. Verified all modules and generated PlantUML/AsciiDoc diagrams under `target/spring-modulith-docs/`.
 
 ## Walkthrough
 1. **Module Registry**: Spring Modulith verifies `com.acc.aio.config`, `com.acc.aio.controller`, and `com.acc.aio.worker` with explicit named interfaces for workflow REST endpoints.

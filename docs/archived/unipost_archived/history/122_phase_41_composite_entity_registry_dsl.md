@@ -23,22 +23,22 @@ In multi-tenant domain modeling, querying relational customer/entity hierarchies
    - Unit tests covering compiler invariants, dependency guards, read-only behavior, and dynamic index DDL generation.
 
 ## Changes
-- `apps/backend/acc-db/src/main/resources/db/acc/changelog-000.000.00011.xml`: Liquibase migration.
-- `apps/backend/acc-db/src/main/resources/db/acc/changelog-master.xml`: Registered changelog.
-- `apps/backend/acc-fw/src/main/java/com/acc/domain/metadata/`: Created `CompositeJoinPattern`, `CompositeField`, `CompositeNode`, `CompositeSpec`, and updated `EntityType`.
-- `apps/backend/acc-fw/src/main/java/com/acc/service/CompositeSpecCompiler.java`: Validation, JSON Schema compilation, SQL preview generation.
-- `apps/backend/acc-fw/src/main/java/com/acc/service/DynamicIndexProvisioner.java`: Asynchronous non-transactional DDL executor.
-- `apps/backend/acc-fw/src/main/java/com/acc/service/SchemaValidationService.java`: Hazelcast caching and composite delegation.
-- `apps/backend/acc-fw/src/main/java/com/acc/service/MetadataService.java`: Strict Dependency Guard & Read-Only Invariant enforcement.
-- `apps/backend/acc-fw/src/main/java/com/acc/presentation/dto/metadata/`: DTO mapping for composite fields.
-- `apps/backend/acc-fw/src/test/java/com/acc/service/CompositeEntityTypeVerificationTest.java`: Comprehensive JUnit 5 tests.
+- `apps/api/acc-db/src/main/resources/db/acc/changelog-000.000.00011.xml`: Liquibase migration.
+- `apps/api/acc-db/src/main/resources/db/acc/changelog-master.xml`: Registered changelog.
+- `apps/api/acc-fw/src/main/java/com/acc/domain/metadata/`: Created `CompositeJoinPattern`, `CompositeField`, `CompositeNode`, `CompositeSpec`, and updated `EntityType`.
+- `apps/api/acc-fw/src/main/java/com/acc/service/CompositeSpecCompiler.java`: Validation, JSON Schema compilation, SQL preview generation.
+- `apps/api/acc-fw/src/main/java/com/acc/service/DynamicIndexProvisioner.java`: Asynchronous non-transactional DDL executor.
+- `apps/api/acc-fw/src/main/java/com/acc/service/SchemaValidationService.java`: Hazelcast caching and composite delegation.
+- `apps/api/acc-fw/src/main/java/com/acc/service/MetadataService.java`: Strict Dependency Guard & Read-Only Invariant enforcement.
+- `apps/api/acc-fw/src/main/java/com/acc/presentation/dto/metadata/`: DTO mapping for composite fields.
+- `apps/api/acc-fw/src/test/java/com/acc/service/CompositeEntityTypeVerificationTest.java`: Comprehensive JUnit 5 tests.
 - `packages/client/src/contracts/metadata.ts`: TypeScript contracts for composite specifications.
 - `apps/console/src/features/metadata/components/studio/composite/`: Created `CompositeCatalogRail`, `CompositeProjectionCanvas`, `CompositePreviewHub`, `CompositeBentoStudio`, and Vitest tests.
 - `apps/console/src/features/metadata/components/studio/visual-schema-studio.tsx`: Added Composite Studio tab.
 - `apps/console/src/features/metadata/data/mock-metadata.ts`: Added Customer 360 View seed and 405 mutation guards.
 
 ## Verification
-- **Backend Unit Tests**: `mvn test -f apps/backend/pom.xml -pl acc-fw "-Dtest=CompositeEntityTypeVerificationTest" -q` passed 6/6 tests with 0 failures.
+- **Backend Unit Tests**: `mvn test -f apps/api/pom.xml -pl acc-fw "-Dtest=CompositeEntityTypeVerificationTest" -q` passed 6/6 tests with 0 failures.
 - **Frontend Vitest**:
   - `composite-bento-studio.test.tsx`: 3 tests passed.
   - `visual-schema-studio.test.tsx`: 8 tests passed.

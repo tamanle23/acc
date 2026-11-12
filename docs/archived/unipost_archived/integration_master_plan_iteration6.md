@@ -328,10 +328,10 @@ flowchart TD
 
 ```powershell
 # 1. Backend Core & Database Test Suite
-cd apps/backend; ./mvnw.cmd clean test '-Dsurefire.failIfNoSpecifiedTests=false'
+cd apps/api; ./mvnw.cmd clean test '-Dsurefire.failIfNoSpecifiedTests=false'
 
 # 2. Maximum-Care CRUD, Pagination & Invalidation Storm Tests
-cd apps/backend; ./mvnw.cmd test -Dtest=RecordMutationPipelineTest,DynamicQueryPaginationTest,InvalidationCoalescingTest
+cd apps/api; ./mvnw.cmd test -Dtest=RecordMutationPipelineTest,DynamicQueryPaginationTest,InvalidationCoalescingTest
 
 # 3. Monorepo-Wide Integrity Check
 pnpm check-types

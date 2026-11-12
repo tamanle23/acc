@@ -21,9 +21,9 @@ The user requested the complete elimination of "Deterministic AI-Assisted Schema
 
 ## Changes Made
 - **Backend**:
-  - Deleted `apps/backend/acc-fw/src/main/java/com/acc/service/metadata/AiSchemaSynthesizerService.java`
-  - Deleted `apps/backend/acc-fw/src/main/java/com/acc/presentation/AiSchemaSynthesizerController.java`
-  - Deleted `apps/backend/acc-fw/src/test/java/com/acc/service/metadata/AiSchemaSynthesizerServiceTest.java`
+  - Deleted `apps/api/acc-fw/src/main/java/com/acc/service/metadata/AiSchemaSynthesizerService.java`
+  - Deleted `apps/api/acc-fw/src/main/java/com/acc/presentation/AiSchemaSynthesizerController.java`
+  - Deleted `apps/api/acc-fw/src/test/java/com/acc/service/metadata/AiSchemaSynthesizerServiceTest.java`
 - **Frontend (`@acc/console`)**:
   - Deleted `apps/console/src/features/metadata/components/studio/ai-schema-generator-modal.tsx`
   - Cleaned `apps/console/src/features/metadata/components/studio/visual-schema-studio.tsx`

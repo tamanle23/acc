@@ -48,13 +48,13 @@ Distributed DAG workflows running in production are notoriously difficult to deb
 - `apps/console/src/locales/en/console.json` & `vi/console.json`: Added `workerFleet` translation keys.
 - `apps/console/src/core/sandbox/handlers/worker-sandbox-handler.ts`: Unified Sandbox route handler.
 - `apps/console/src/core/sandbox/index.ts`: Registered handler in `sandboxRegistry`.
-- `apps/backend/acc-ms-aio/.../workflow/WorkerRegistry.java`: Thread-safe worker registry with heartbeat aging.
-- `apps/backend/acc-ms-aio/.../workflow/WorkerFleetController.java`: REST API for worker fleet querying, heartbeats, and drain.
+- `apps/api/acc-ms-aio/.../workflow/WorkerRegistry.java`: Thread-safe worker registry with heartbeat aging.
+- `apps/api/acc-ms-aio/.../workflow/WorkerFleetController.java`: REST API for worker fleet querying, heartbeats, and drain.
 - `apps/console/src/features/workflows/components/__tests__/execution-time-travel-scrubber.test.tsx`: Vitest suite for scrubber.
 - `apps/console/src/features/workflows/components/__tests__/payload-diff-viewer.test.tsx`: Vitest suite for diff viewer.
 - `apps/console/src/features/workers/__tests__/worker-fleet.test.tsx`: Vitest suite for worker fleet dashboard and sandbox.
-- `apps/backend/acc-ms-aio/.../workflow/WorkerFleetControllerTest.java`: Backend JUnit 5 test for worker endpoints.
-- `apps/backend/acc-ms-aio/.../workflow/WorkflowChaosStressVerificationTest.java`: 1,000-concurrent stress test suite.
+- `apps/api/acc-ms-aio/.../workflow/WorkerFleetControllerTest.java`: Backend JUnit 5 test for worker endpoints.
+- `apps/api/acc-ms-aio/.../workflow/WorkflowChaosStressVerificationTest.java`: 1,000-concurrent stress test suite.
 
 ---
 

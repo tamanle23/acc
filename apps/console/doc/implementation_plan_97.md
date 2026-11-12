@@ -42,8 +42,8 @@ Phase 34 implements the end-to-end bridge connecting the `@acc/console` frontend
 ---
 
 ## 2. Target Files & Changes
-- `apps/backend/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/WorkflowExecutionController.java`
-- `apps/backend/acc-ms-aio/src/test/java/com/acc/aio/controller/workflow/WorkflowEngineRestApiTest.java`
+- `apps/api/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/WorkflowExecutionController.java`
+- `apps/api/acc-ms-aio/src/test/java/com/acc/aio/controller/workflow/WorkflowEngineRestApiTest.java`
 - `packages/sandbox/src/handlers/workflow-handler.ts`
 - `packages/sandbox/src/__tests__/workflow-sandbox.test.ts`
 - `apps/console/src/features/workflows/api/workflow-api.ts`

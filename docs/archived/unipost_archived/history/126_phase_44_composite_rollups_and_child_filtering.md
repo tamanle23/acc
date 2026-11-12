@@ -28,13 +28,13 @@ In composite entity aggregates, child sub-collections are paginated (e.g., 10 or
    - Vitest tests covering Master-Detail row rollup chips, search filtering, and column sorting.
 
 ## Changes
-- `apps/backend/acc-fw/src/main/java/com/acc/domain/metadata/CompositeRollup.java`: Domain record for computed rollups.
-- `apps/backend/acc-fw/src/main/java/com/acc/domain/metadata/CompositeSpec.java` & `CompositeNode.java`: Extended with `rollups`.
-- `apps/backend/acc-fw/src/main/java/com/acc/presentation/dto/metadata/ChildFilterCriteria.java` & `ChildQueryOptions.java`: Query parameter DTOs.
-- `apps/backend/acc-fw/src/main/java/com/acc/service/DynamicQueryCompiler.java`: Companion lateral queries, dynamic filters, and custom child sorting.
-- `apps/backend/acc-fw/src/main/java/com/acc/service/CompositeRecordService.java`: Overloaded with `ChildQueryOptions`.
-- `apps/backend/acc-fw/src/main/java/com/acc/presentation/CompositeEntityController.java`: `childQueries` parameter parser.
-- `apps/backend/acc-fw/src/test/java/com/acc/service/DynamicQueryCompilerTest.java`: Rollup and child filtering/sorting tests.
+- `apps/api/acc-fw/src/main/java/com/acc/domain/metadata/CompositeRollup.java`: Domain record for computed rollups.
+- `apps/api/acc-fw/src/main/java/com/acc/domain/metadata/CompositeSpec.java` & `CompositeNode.java`: Extended with `rollups`.
+- `apps/api/acc-fw/src/main/java/com/acc/presentation/dto/metadata/ChildFilterCriteria.java` & `ChildQueryOptions.java`: Query parameter DTOs.
+- `apps/api/acc-fw/src/main/java/com/acc/service/DynamicQueryCompiler.java`: Companion lateral queries, dynamic filters, and custom child sorting.
+- `apps/api/acc-fw/src/main/java/com/acc/service/CompositeRecordService.java`: Overloaded with `ChildQueryOptions`.
+- `apps/api/acc-fw/src/main/java/com/acc/presentation/CompositeEntityController.java`: `childQueries` parameter parser.
+- `apps/api/acc-fw/src/test/java/com/acc/service/DynamicQueryCompilerTest.java`: Rollup and child filtering/sorting tests.
 - `packages/client/src/contracts/metadata.ts`: Added rollup and query types.
 - `apps/console/src/features/metadata/components/studio/composite/composite-rollup-builder.tsx`: Rollup configuration UI.
 - `apps/console/src/features/metadata/components/studio/composite/composite-projection-canvas.tsx`: Embedded rollup builder.

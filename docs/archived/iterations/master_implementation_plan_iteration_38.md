@@ -2,10 +2,10 @@
 
 **Iteration:** 38  
 **Target Systems:**  
-- `@acc/backend` (`apps/backend/workflow-engine`, `apps/backend/acc-ms-aio`, `apps/backend/acc-fw`)
+- `@acc/api` (`apps/api/workflow-engine`, `apps/api/acc-ms-aio`, `apps/api/acc-fw`)
 - `@acc/console` (`apps/console/src/features/workflows`, `apps/console/src/features/dlq`, `apps/console/src/features/metadata`)
 **Companion Local Plans:**  
-- Backend: [`apps/backend/doc/implementation_plan_49.md`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/doc/implementation_plan_49.md)
+- Backend: [`apps/api/doc/implementation_plan_49.md`](file:///c:/Users/Admin/workspace/git/acc/apps/api/doc/implementation_plan_49.md)
 - Console: [`apps/console/doc/implementation_plan_158.md`](file:///c:/Users/Admin/workspace/git/acc/apps/console/doc/implementation_plan_158.md)
 
 ---
@@ -77,7 +77,7 @@ flowchart TD
 
 ## 3. Concrete Implementation Breakdown
 
-### Part A: `@acc/backend` Workflow Engine (`workflow-engine`)
+### Part A: `@acc/api` Workflow Engine (`workflow-engine`)
 1. **[NEW] `com.acc.workflow.application.TaskLeaseWatchdog`**:
    - Queries `persistencePort.findExpiredLeaseTasks(nowEpochMs)`.
    - If `attempt >= maxAttempts`: Quarantines task to `task_dlq` (`TaskDlqRecord`) with reason `"TASK_LEASE_EXPIRED"`, and updates execution status to `TIMED_OUT`.
@@ -89,11 +89,11 @@ flowchart TD
    - Verifies whether prerequisite tasks in `joinOn` represent `DYNAMIC_FORK` nodes.
    - Validates that all dynamically generated subtask references have reached terminal status (`COMPLETED`, `FAILED`, `TERMINATED`).
 
-### Part B: `@acc/backend` System Worker Fleet (`acc-ms-aio`)
+### Part B: `@acc/api` System Worker Fleet (`acc-ms-aio`)
 1. **[MODIFY] `com.acc.aio.worker.SystemTaskWorkerPool`**:
    - Adds `@Scheduled(fixedDelay = 5000)` watchdog reaper loop executing `engineService.reapExpiredLeases(System.currentTimeMillis())`.
 
-### Part C: `@acc/backend` Metadata Platform (`acc-fw`)
+### Part C: `@acc/api` Metadata Platform (`acc-fw`)
 1. **[MODIFY] `com.acc.service.DynamicIndexProvisioner`**:
    - Adds `provisionAttributeIndexAsync(Long entityTypeId, String systemName, String dataType)`.
    - Asynchronously creates functional B-Tree index on `UNIPOST_ENTITIES (((attributes->>'systemName')::type))` via virtual threads.

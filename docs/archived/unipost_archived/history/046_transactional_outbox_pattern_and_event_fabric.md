@@ -12,19 +12,19 @@ Direct asynchronous calls or webhooks embedded within user-facing API mutations 
 
 ## Changes
 - **Liquibase Migrations**:
-  - Added [`apps/backend/acc-db/src/main/resources/db/acc/changelog-000.000.00009.xml`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-db/src/main/resources/db/acc/changelog-000.000.00009.xml).
-  - Updated [`apps/backend/acc-db/src/main/resources/db/acc/changelog-master.xml`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-db/src/main/resources/db/acc/changelog-master.xml).
+  - Added [`apps/api/acc-db/src/main/resources/db/acc/changelog-000.000.00009.xml`](file:///c:/Users/Admin/workspace/git/acc/apps/api/acc-db/src/main/resources/db/acc/changelog-000.000.00009.xml).
+  - Updated [`apps/api/acc-db/src/main/resources/db/acc/changelog-master.xml`](file:///c:/Users/Admin/workspace/git/acc/apps/api/acc-db/src/main/resources/db/acc/changelog-master.xml).
 - **Core Entity & Service (`acc-fw`)**:
-  - Created [`OutboxEvent.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/domain/outbox/OutboxEvent.java).
-  - Created [`OutboxEventRepository.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/repository/jpa/OutboxEventRepository.java).
-  - Created [`OutboxEventPublisher.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/outbox/OutboxEventPublisher.java).
-  - Wired into [`MetadataService.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/service/MetadataService.java) for `createEntityRecord`, `updateEntityRecord`, and `deleteEntityRecord`.
+  - Created [`OutboxEvent.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/acc-fw/src/main/java/com/acc/domain/outbox/OutboxEvent.java).
+  - Created [`OutboxEventRepository.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/acc-fw/src/main/java/com/acc/repository/jpa/OutboxEventRepository.java).
+  - Created [`OutboxEventPublisher.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/acc-fw/src/main/java/com/acc/outbox/OutboxEventPublisher.java).
+  - Wired into [`MetadataService.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/acc-fw/src/main/java/com/acc/service/MetadataService.java) for `createEntityRecord`, `updateEntityRecord`, and `deleteEntityRecord`.
 - **Worker Job (`acc-ms-worker`)**:
-  - Created [`OutboxPollingJob.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-ms-worker/src/main/java/com/acc/worker/outbox/OutboxPollingJob.java).
+  - Created [`OutboxPollingJob.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/acc-ms-worker/src/main/java/com/acc/worker/outbox/OutboxPollingJob.java).
 - **Tests & Artifacts**:
-  - Created [`OutboxEventPublisherTest.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/test/java/com/acc/outbox/OutboxEventPublisherTest.java).
-  - Created [`OutboxPollingJobTest.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-ms-worker/src/test/java/com/acc/worker/outbox/OutboxPollingJobTest.java).
-  - Generated `implementation_plan_26.md` and `walkthrough_26.md` in `apps/backend/doc/`.
+  - Created [`OutboxEventPublisherTest.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/acc-fw/src/test/java/com/acc/outbox/OutboxEventPublisherTest.java).
+  - Created [`OutboxPollingJobTest.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/acc-ms-worker/src/test/java/com/acc/worker/outbox/OutboxPollingJobTest.java).
+  - Generated `implementation_plan_26.md` and `walkthrough_26.md` in `apps/api/doc/`.
 
 ## Verification
 - `OutboxEventPublisherTest`: 2/2 passed.

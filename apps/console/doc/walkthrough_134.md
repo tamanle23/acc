@@ -1,7 +1,7 @@
 # Walkthrough 134 — Iteration 13 Full-Stack Execution (Phases 1–7)
 
 ## Overview
-Executed all 7 phases of `docs/integration_master_plan_iteration13.md` (`apps/console/doc/implementation_plan_134.md`) end-to-end with zero stubs and full backend-frontend alignment across `@acc/backend` (`workflow-engine`, `acc-fw`, `acc-ms-aio`), `@acc/worker` (`packages/worker`), `@acc/sandbox` (`packages/sandbox`), and `@acc/console`.
+Executed all 7 phases of `docs/integration_master_plan_iteration13.md` (`apps/console/doc/implementation_plan_134.md`) end-to-end with zero stubs and full backend-frontend alignment across `@acc/api` (`workflow-engine`, `acc-fw`, `acc-ms-aio`), `@acc/worker` (`packages/worker`), `@acc/sandbox` (`packages/sandbox`), and `@acc/console`.
 
 ---
 

@@ -1,7 +1,7 @@
 # Integration Master Plan: Iteration 21 - Persistence & Metadata-Driven Database Architecture Synchronization
 
 **Target Systems:**  
-- `@acc/backend` (`apps/backend/acc-db`, `apps/backend/acc-fw`, `apps/backend/acc-ms-aio`)  
+- `@acc/api` (`apps/api/acc-db`, `apps/api/acc-fw`, `apps/api/acc-ms-aio`)  
 - `@acc/console` (`apps/console/src/features/metadata`, `apps/console/src/core/sandbox`)  
 **Lead Systems Architect:** Principal Polyglot Architect, Spring Boot Backend Specialist & UI/UX Systems Specialist  
 **Standards:** PostgreSQL 16+ RLS, Liquibase Unified Master, Spring Modulith, React 19, WCAG 2.2 AA, Liquid Glass Design Tokens  

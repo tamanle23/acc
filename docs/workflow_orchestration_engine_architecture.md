@@ -4,7 +4,7 @@
 **Status:** Authoritative Single Source of Truth (SSOT)  
 **Lead Systems Architect:** Principal Polyglot Architect & Full-Stack Systems Engineer  
 **Target Systems:**  
-- `@acc/backend` (`apps/backend/workflow-engine`, `apps/backend/acc-ms-aio`)  
+- `@acc/api` (`apps/api/workflow-engine`, `apps/api/acc-ms-aio`)  
 - `@acc/console` (`apps/console/src/features/workflows`, `apps/console/src/features/workflow-executions`)  
 - `@acc/ui` (`packages/ui`)  
 **Compliance Standards:** Java 21 LTS, Spring Modulith, React 19, `@xyflow/react`, WCAG 2.2 AA, Liquid Glass Optical Tokens, Zero-Stub Sandbox Parity  

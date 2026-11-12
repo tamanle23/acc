@@ -3,7 +3,7 @@
 **Date**: 2026-10-14  
 **Author**: Lead Systems Architect  
 **Category**: feat(backend)  
-**Scope**: `apps/backend/workflow-engine`
+**Scope**: `apps/api/workflow-engine`
 
 ---
 
@@ -26,15 +26,15 @@ Phase 27 of [`docs/integration_master_plan_iteration_3.md`](file:///c:/Users/Adm
 ---
 
 ## 3. Changes Made
-- [`ParameterResolver.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/expression/ParameterResolver.java): Pure parameter resolution engine.
-- [`AcyclicityGuard.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/graph/AcyclicityGuard.java): Kahn's algorithm & DFS cycle path extractor.
-- [`WorkflowCycleDetectedException.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/graph/WorkflowCycleDetectedException.java): Typed cycle exception.
-- [`NodeEvaluatorStrategy.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/decider/strategy/NodeEvaluatorStrategy.java): Evaluation strategy interface.
+- [`ParameterResolver.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/workflow-engine/src/main/java/com/acc/workflow/core/expression/ParameterResolver.java): Pure parameter resolution engine.
+- [`AcyclicityGuard.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/workflow-engine/src/main/java/com/acc/workflow/core/graph/AcyclicityGuard.java): Kahn's algorithm & DFS cycle path extractor.
+- [`WorkflowCycleDetectedException.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/workflow-engine/src/main/java/com/acc/workflow/core/graph/WorkflowCycleDetectedException.java): Typed cycle exception.
+- [`NodeEvaluatorStrategy.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/workflow-engine/src/main/java/com/acc/workflow/core/decider/strategy/NodeEvaluatorStrategy.java): Evaluation strategy interface.
 - Strategy implementations: `SimpleTaskStrategy`, `SwitchNodeStrategy`, `ForkJoinStrategy`, `DynamicForkStrategy`, `WaitNodeStrategy`, `DoWhileStrategy`.
-- [`NodeStrategyRegistry.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/decider/NodeStrategyRegistry.java): Strategy registry.
-- [`PureDecider.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/decider/PureDecider.java): Refactored to delegate to registry and parameter resolver.
+- [`NodeStrategyRegistry.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/workflow-engine/src/main/java/com/acc/workflow/core/decider/NodeStrategyRegistry.java): Strategy registry.
+- [`PureDecider.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/workflow-engine/src/main/java/com/acc/workflow/core/decider/PureDecider.java): Refactored to delegate to registry and parameter resolver.
 - Test suites: `ParameterResolverTest.java`, `AcyclicityGuardTest.java`, `NodeStrategiesTest.java`.
-- Documentation: [`apps/backend/doc/implementation_plan_31.md`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/doc/implementation_plan_31.md), [`apps/backend/doc/walkthrough_31.md`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/doc/walkthrough_31.md).
+- Documentation: [`apps/api/doc/implementation_plan_31.md`](file:///c:/Users/Admin/workspace/git/acc/apps/api/doc/implementation_plan_31.md), [`apps/api/doc/walkthrough_31.md`](file:///c:/Users/Admin/workspace/git/acc/apps/api/doc/walkthrough_31.md).
 
 ---
 

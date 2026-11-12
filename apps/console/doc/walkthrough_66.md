@@ -19,8 +19,8 @@ This document records the complete implementation of **Phase 4 of the Domain Blu
 
 ## 2. Changes Made Across Modules
 
-### A. Backend (`@acc/backend`)
-1. **Liquibase Migration (`apps/backend/acc-db/src/main/resources/db/acc/changelog-000.000.00006.xml`)**:
+### A. Backend (`@acc/api`)
+1. **Liquibase Migration (`apps/api/acc-db/src/main/resources/db/acc/changelog-000.000.00006.xml`)**:
    - `UNIPOST_TENANT_BILLING`: columns `tenant_id`, `payos_customer_id`, `current_order_code`, `plan_tier`, `billing_cadence`, `status`, `amount_paid`, `expires_at`, `created_date`, `last_updated_date`.
    - `UNIPOST_TENANT_FEATURES`: columns `id`, `tenant_id`, `feature_key`, `is_enabled`, `expires_at`, `created_date`, `last_updated_date`.
    - Row-Level Security policies `tenant_isolation_billing` and `tenant_isolation_features` matching `app.current_tenant_id`.

@@ -1,7 +1,7 @@
 # Integration Master Plan: Iteration 20 - Enterprise Hardening & High-Resilience Workflow Orchestration Engine
 
 **Target Systems:**  
-- `@acc/backend` (`apps/backend/workflow-engine`, `apps/backend/acc-ms-aio`)  
+- `@acc/api` (`apps/api/workflow-engine`, `apps/api/acc-ms-aio`)  
 - `@acc/console` (`apps/console/src/features/workflows`, `apps/console/src/features/workflow-executions`)  
 **Lead Systems Architect:** Principal Polyglot Architect, Spring Boot Backend Specialist & UI/UX Systems Specialist  
 **Standards:** Java 21 LTS Virtual Threads (Loom), Spring Modulith, React 19, `@xyflow/react`, WCAG 2.2 AA, Liquid Glass Optical Tokens  
@@ -95,11 +95,11 @@ flowchart TD
 ## 3. Detailed Workstream Specifications
 
 ### Workstream 1: Pure Zero-I/O Decider & Loom System Task Worker Fleet
-- **Backend Refactoring (`apps/backend/workflow-engine`)**:
+- **Backend Refactoring (`apps/api/workflow-engine`)**:
   - Refactor `HttpNodeStrategy`, `CallMcpToolStrategy`, `LlmChatCompleteStrategy`, `JdbcNodeStrategy`, and `KafkaPublishStrategy`.
   - Remove all embedded `HttpClient`, `DataSource`, or thread operations from `com.acc.workflow.core.decider.strategy.*`.
   - In `evaluate(...)`, if the task has not started, emit `EngineCommand.ScheduleTask` targeting reserved system domains (`system:http`, `system:mcp`, `system:llm`, `system:jdbc`, `system:kafka`).
-- **System Task Workers (`apps/backend/acc-ms-aio`)**:
+- **System Task Workers (`apps/api/acc-ms-aio`)**:
   - Implement `SystemTaskWorkerPool` managed by Spring Boot using Java 21 Loom virtual threads (`Executors.newVirtualThreadPerTaskExecutor()`).
   - Workers poll reserved system task queues, execute I/O outside database transactions, and call `reportTaskResult`.
 

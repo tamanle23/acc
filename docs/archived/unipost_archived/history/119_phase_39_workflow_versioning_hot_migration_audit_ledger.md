@@ -31,7 +31,7 @@ In complex multi-tenant workflow architectures, long-running workflow executions
 
 ## Changes
 
-### 1. `apps/backend/workflow-engine`
+### 1. `apps/api/workflow-engine`
 - `WorkflowVersionStatus.java`: Semantic version status enum.
 - `WorkflowDefinitionRecord.java`: Record holding versioned definition payload, status, and audit timestamps.
 - `WorkflowAuditRecord.java`: Record representing SHA-256 hash-chained audit entries with genesis hash constant.
@@ -42,7 +42,7 @@ In complex multi-tenant workflow architectures, long-running workflow executions
 - `WorkflowEngineService.java`: Emits audit logs on start, task completion, and migration; exposes dry-run validation and verification methods.
 - Tests: `AuditLedgerServiceTest.java`, `TopologicalCompatibilityValidatorTest.java`.
 
-### 2. `apps/backend/acc-ms-aio`
+### 2. `apps/api/acc-ms-aio`
 - `WorkflowEngineConfiguration.java`: Added persistence fallback to `WorkflowDefinitionRegistry`.
 - `WorkflowDefinitionController.java`: Added endpoints for version inspection, dry-run hot migration, execution hot migration, and audit ledger verification.
 

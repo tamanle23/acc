@@ -5,7 +5,7 @@ In a multi-tenant enterprise architecture, ensuring absolute zero data leakage a
 
 ## Proposed Plan
 1. **Implement Real Backend Security Penetration Suite (`SecurityPenetrationFuzzingTest.java`)**:
-   - Class location: `apps/backend/acc-fw/src/test/java/com/acc/fw/security/SecurityPenetrationFuzzingTest.java`.
+   - Class location: `apps/api/acc-fw/src/test/java/com/acc/fw/security/SecurityPenetrationFuzzingTest.java`.
    - **Cross-Tenant Horizontal Infiltration (100 Randomized Attacks)**:
      - Generate randomized adversarial HTTP requests injecting spoofed `X-Tenant-Id`, `x-tenant`, and `x-acc-tenant` headers aiming to access victim tenant resources (`tenant_victim_corporate`).
      - Route requests through the production `HeaderSanitizerFilter` and `JwtTokenHelper`.
@@ -22,11 +22,11 @@ In a multi-tenant enterprise architecture, ensuring absolute zero data leakage a
 3. **CI/CD Integration**:
    - Updated `.github/workflows/ci.yml` to execute `./mvnw test -Dtest="*ModularityTests,TenantExportServiceTest,SecurityPenetrationFuzzingTest"`.
 4. **Verification**:
-   - Run `.\mvnw.cmd test -pl acc-fw -Dtest=SecurityPenetrationFuzzingTest` in `apps/backend`.
+   - Run `.\mvnw.cmd test -pl acc-fw -Dtest=SecurityPenetrationFuzzingTest` in `apps/api`.
    - Verify 3/3 tests pass in sub-second execution.
 
 ## Changes Made
-- `apps/backend/acc-fw/src/test/java/com/acc/fw/security/SecurityPenetrationFuzzingTest.java`: Implemented real Spring Boot security penetration test suite.
+- `apps/api/acc-fw/src/test/java/com/acc/fw/security/SecurityPenetrationFuzzingTest.java`: Implemented real Spring Boot security penetration test suite.
 - `.github/workflows/ci.yml`: Updated backend test step to run `SecurityPenetrationFuzzingTest`.
 - Removed synthetic TypeScript stub test and restored console configuration.
 

@@ -1,7 +1,7 @@
 # 357 - Enterprise Workflow Orchestration Upgrade & Resilience
 
 ## Problem
-The monorepo workflow orchestration engine had structural vulnerabilities across both `@acc/backend` and `@acc/console`:
+The monorepo workflow orchestration engine had structural vulnerabilities across both `@acc/api` and `@acc/console`:
 1. **Backend Deficiencies**:
    - `WorkflowEngineService.java` contained truncated methods (`simulateExecution`), missing decider hooks, and unhandled lease watchdog delegation.
    - High-concurrency tests triggered SQLite database contention errors during rapid polling.
@@ -34,36 +34,36 @@ The monorepo workflow orchestration engine had structural vulnerabilities across
 
 ## Changes
 
-### Backend (`apps/backend`)
-- `apps/backend/workflow-engine/src/main/java/com/acc/workflow/application/WorkflowEngineService.java`:
+### Backend (`apps/api`)
+- `apps/api/workflow-engine/src/main/java/com/acc/workflow/application/WorkflowEngineService.java`:
   - Restored `simulateExecution` return payload.
   - Delegated `reapExpiredLeases` to `taskLeaseWatchdog`.
   - Added optimistic idempotency guard in `reportTaskResult`.
-- `apps/backend/workflow-engine/src/main/java/com/acc/workflow/adapters/storage/SqliteJdbcPersistenceAdapter.java`:
+- `apps/api/workflow-engine/src/main/java/com/acc/workflow/adapters/storage/SqliteJdbcPersistenceAdapter.java`:
   - Added `ReentrantLock pollLock` around `pollTasks`.
-- `apps/backend/workflow-engine/src/main/java/com/acc/workflow/worker/middleware/RetryWithJitterPolicy.java`:
+- `apps/api/workflow-engine/src/main/java/com/acc/workflow/worker/middleware/RetryWithJitterPolicy.java`:
   - Created exponential backoff with full jitter policy.
-- `apps/backend/workflow-engine/src/test/java/com/acc/workflow/worker/RetryWithJitterPolicyTest.java`:
+- `apps/api/workflow-engine/src/test/java/com/acc/workflow/worker/RetryWithJitterPolicyTest.java`:
   - Created 6 unit tests validating jitter bounds and exponential scaling.
-- `apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/graph/AcyclicityGuard.java`:
+- `apps/api/workflow-engine/src/main/java/com/acc/workflow/core/graph/AcyclicityGuard.java`:
   - Added implicit linear sequential chaining when `hasAnyJoinOn == false`.
-- `apps/backend/workflow-engine/src/main/java/com/acc/workflow/application/TaskLeaseWatchdog.java`:
+- `apps/api/workflow-engine/src/main/java/com/acc/workflow/application/TaskLeaseWatchdog.java`:
   - Fixed property mappings (`tenantId`, `workspaceId`, `taskTypeStr`, `taskReferenceName`).
-- `apps/backend/workflow-engine/src/test/java/com/acc/workflow/application/TaskLeaseWatchdogTest.java`:
+- `apps/api/workflow-engine/src/test/java/com/acc/workflow/application/TaskLeaseWatchdogTest.java`:
   - Refactored from Mockito to pure Java `InMemoryPersistenceAdapter`.
-- `apps/backend/acc-ms-aio/src/main/java/com/acc/aio/config/WorkflowEngineConfiguration.java`:
+- `apps/api/acc-ms-aio/src/main/java/com/acc/aio/config/WorkflowEngineConfiguration.java`:
   - Wrapped `DataSource` with `TransactionAwareDataSourceProxy`.
-- `apps/backend/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/ExecutionStreamBroadcaster.java`:
+- `apps/api/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/ExecutionStreamBroadcaster.java`:
   - Added max emitter capacity (100) per execution.
-- `apps/backend/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/WorkflowExecutionController.java`:
+- `apps/api/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/WorkflowExecutionController.java`:
   - Added `@RequestMapping({"/api/v1/workflow/executions", "/api/workflow/executions"})` and implemented dual-mode pagination.
-- `apps/backend/acc-fw/src/main/java/com/acc/service/MetadataService.java`:
+- `apps/api/acc-fw/src/main/java/com/acc/service/MetadataService.java`:
   - Fixed unreferenced `request` in `archiveAttributeDefinition` and `unarchiveAttributeDefinition`.
-- `apps/backend/acc-ms-worker/pom.xml`:
+- `apps/api/acc-ms-worker/pom.xml`:
   - Removed phantom `acc-resources` dependency.
-- `apps/backend/acc-fw/src/test/java/com/acc/service/workflow/EntityWorkflowTriggerDispatcherSpELTest.java`:
+- `apps/api/acc-fw/src/test/java/com/acc/service/workflow/EntityWorkflowTriggerDispatcherSpELTest.java`:
   - Fixed `EntityRecordMutatedEvent` constructor invocation.
-- `apps/backend/acc-ms-aio/src/test/java/com/acc/aio/controller/workflow/WorkflowChaosStressVerificationTest.java`:
+- `apps/api/acc-ms-aio/src/test/java/com/acc/aio/controller/workflow/WorkflowChaosStressVerificationTest.java`:
   - Updated polling visibility timestamp to `System.currentTimeMillis() + 60000L`.
 
 ### Frontend & Sandbox (`apps/console`, `packages/sandbox`)
@@ -93,7 +93,7 @@ The monorepo workflow orchestration engine had structural vulnerabilities across
 - `pnpm --filter @acc/console exec tsc --noEmit --project tsconfig.json`: 0 errors (Exit code 0).
 
 ## Walkthrough
-- `apps/backend/doc/walkthrough_50.md`
+- `apps/api/doc/walkthrough_50.md`
 - `apps/console/doc/walkthrough_160.md`
 
 ## Tasks

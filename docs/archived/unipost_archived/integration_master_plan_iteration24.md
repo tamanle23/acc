@@ -1,7 +1,7 @@
 # Integration Master Plan: Iteration 24 - Tenant-Sole Role Assignment, Subordinate RBAC Delegation, Ad-Hoc Permission Overrides & Enterprise Security Studio Upgrade
 
 **Target Systems:**  
-- `@acc/backend` (`apps/backend/acc-db`, `apps/backend/acc-fw`, `apps/backend/acc-ms-aio`)  
+- `@acc/api` (`apps/api/acc-db`, `apps/api/acc-fw`, `apps/api/acc-ms-aio`)  
 - `@acc/client` (`packages/client/src/contracts/system.ts`)  
 - `@acc/console` (`apps/console/src/features/system`, `apps/console/src/core/sandbox`)  
 **Lead Systems Architect:** Principal Polyglot Architect, Spring Boot Backend Specialist, TypeScript Frontend Architect & UI/UX Systems Specialist  
@@ -181,7 +181,7 @@ The view is structured into three dedicated tabs under Liquid Glass styling:
 
 ### 5.2 Deliverables File Tree
 ```
-apps/backend/
+apps/api/
 ├── acc-db/src/main/resources/db/acc/
 │   └── changelog-000.000.00017.xml                 # [NEW] Liquibase migration: UNIPOST_IDENTITY_USERPERMISSION + role tenant_id
 ├── acc-fw/src/main/java/com/acc/
@@ -226,7 +226,7 @@ apps/console/
 ## 6. Verification Plan
 
 ### Automated Tests
-1. **Backend Unit & Slice Tests (`apps/backend`)**:
+1. **Backend Unit & Slice Tests (`apps/api`)**:
    - `TenantRoleDelegationServiceTest`:
      - Test: Tenant Admin delegates `ROLE_OPERATIONS_MANAGER` to member in same tenant -> SUCCESS.
      - Test: Tenant Admin attaches ad-hoc override `entity:record:delete = false` -> SUCCESS.

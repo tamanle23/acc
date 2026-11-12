@@ -1,7 +1,7 @@
 # Unlocking the Full Potential of Dynamic Metadata: Architectural Blueprint & Implementation Design
 
 **Target Domain:** Enterprise Dynamic Data Fabric & Low-Code Ecosystem  
-**Target Systems:** `@acc/backend` (Spring Modulith / Java 21), `@acc/console` (React 19 / Vite 8), `mobile-ui` (Expo SDK 57), `tekgo-ui` (Next.js 15)  
+**Target Systems:** `@acc/api` (Spring Modulith / Java 21), `@acc/console` (React 19 / Vite 8), `mobile-ui` (Expo SDK 57), `tekgo-ui` (Next.js 15)  
 **Foundational Invariants:** Hybrid Relational + JSONB, Draft-07 JSON Schema, Distributed Hazelcast/Redis Caching (`schema:{id}:v{version}`), 3-Tier Edge Relationships (Patterns A, B, C)  
 **Status:** Living Architectural Specification & Implementation Roadmap
 
@@ -108,7 +108,7 @@ export interface DynamicEntityFormProps {
 Dynamic records are often not merely static data records; they represent lifecycles (e.g., `JobOrder`, `ReturnTicket`, `PolicyDocument`) that require controlled state transitions, permission gates, and side effects.
 
 ### 3.2 Architectural Design
-Introduce a lightweight, metadata-driven Finite State Machine (FSM) engine integrated into the `@acc/backend` write pipeline:
+Introduce a lightweight, metadata-driven Finite State Machine (FSM) engine integrated into the `@acc/api` write pipeline:
 
 ```
 [Record Draft] ──(Event: SUBMIT)──> [Validation Gate] ──(Pass)──> [Pending Review]
@@ -274,10 +274,10 @@ Enterprise customers require point-in-time auditing, compliance rollbacks, and f
 | Phase | Milestone | Deliverables | Monorepo Scope |
 | :--- | :--- | :--- | :--- |
 | **Phase 1** | **Headless UI Renderer & Studio** | `<DynamicEntityForm />`, `<DynamicDataGrid />`, Filter Builder, Liquid Glass Tokens | `@acc/ui`, `@acc/console`, `mobile-ui` |
-| **Phase 2** | **AI Agent MCP & OpenAPI Bridge** | Runtime MCP Tool registry, JSON Schema $\to$ MCP schema converter, Semantic Search | `@acc/backend`, AI sidecar |
-| **Phase 3** | **FSM Operational State Engine** | Lifecycle config in `UNIPOST_ENTITY_TYPES`, CEL/SpEL validation, transition events | `@acc/backend` |
-| **Phase 4** | **Pattern C Graph Studio & Lineage** | Recursive traversal SQL, React Flow visualizer, edge metadata editor | `@acc/backend`, `@acc/console` |
-| **Phase 5** | **Data Governance & Virtual Marts** | RFC 6902 patch auditing, virtual SQL view generator, bulk CSV ingestion | `@acc/backend`, database layer |
+| **Phase 2** | **AI Agent MCP & OpenAPI Bridge** | Runtime MCP Tool registry, JSON Schema $\to$ MCP schema converter, Semantic Search | `@acc/api`, AI sidecar |
+| **Phase 3** | **FSM Operational State Engine** | Lifecycle config in `UNIPOST_ENTITY_TYPES`, CEL/SpEL validation, transition events | `@acc/api` |
+| **Phase 4** | **Pattern C Graph Studio & Lineage** | Recursive traversal SQL, React Flow visualizer, edge metadata editor | `@acc/api`, `@acc/console` |
+| **Phase 5** | **Data Governance & Virtual Marts** | RFC 6902 patch auditing, virtual SQL view generator, bulk CSV ingestion | `@acc/api`, database layer |
 
 ---
 

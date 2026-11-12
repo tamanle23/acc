@@ -240,7 +240,7 @@ Slide-over sheet triggered when a node is clicked in Read-Only Mode:
 #### 1. Strategic Objective
 Establish enterprise governance and human oversight workflows by implementing an end-to-end Human-in-the-Loop subsystem, complete with a dedicated Task Approval Inbox, interactive decision forms, claim mechanics, and SLA timeout escalation.
 
-#### 2. Backend Human Task Architecture (`apps/backend/workflow-engine`)
+#### 2. Backend Human Task Architecture (`apps/api/workflow-engine`)
 - **Task Lifecycle Extensions**:
   - When the engine encounters a `HUMAN` node, `HumanNodeStrategy` schedules the task and sets status to `WAITING_FOR_APPROVAL`.
   - The workflow execution enters a graceful paused state waiting for task resolution.
@@ -460,7 +460,7 @@ Deliver unmatched operational transparency and debugging capabilities through an
 
 1. **Backend Maven Reactor Test Suite**:
    ```powershell
-   cd apps/backend; ./mvnw.cmd clean test '-Dsurefire.failIfNoSpecifiedTests=false'
+   cd apps/api; ./mvnw.cmd clean test '-Dsurefire.failIfNoSpecifiedTests=false'
    ```
    - `workflow-engine`: 100% unit test coverage over `PureDecider`, `NodeStrategyRegistry`, `ParameterResolver`, `SagaCompensator`, and `AuditLedgerVerifier`.
    - `acc-ms-aio`: Spring Boot integration tests verifying definition versioning, human task endpoints, DLQ management, and SSE telemetry.

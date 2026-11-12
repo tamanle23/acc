@@ -2,7 +2,7 @@
 
 ## 1. Executive Summary & Context
 
-Following comprehensive architectural analysis and design alignment via `/grill-me`, Iteration 42 upgrades the monorepo's distributed Workflow Orchestration Engine spanning `@acc/backend` (`apps/backend/workflow-engine` and `acc-ms-aio`) and `@acc/console` (`apps/console/src/features/workflows` and `workflow-executions`).
+Following comprehensive architectural analysis and design alignment via `/grill-me`, Iteration 42 upgrades the monorepo's distributed Workflow Orchestration Engine spanning `@acc/api` (`apps/api/workflow-engine` and `acc-ms-aio`) and `@acc/console` (`apps/console/src/features/workflows` and `workflow-executions`).
 
 Key Pillars:
 1. **Spring-Managed Transaction Integrity**: Wrap `DataSource` with `TransactionAwareDataSourceProxy` in `WorkflowEngineConfiguration` to bind all storage adapter JDBC calls into Spring's active `@Transactional` boundaries, maintaining zero-framework purity in core `workflow-engine`.
@@ -28,14 +28,14 @@ graph TD
         StreamHook["useWorkflowExecutionStream (SSE / Polling)"]
     end
 
-    subgraph Backend_Gateway["apps/backend/acc-ms-aio (Spring Boot 3 / Loom)"]
+    subgraph Backend_Gateway["apps/api/acc-ms-aio (Spring Boot 3 / Loom)"]
         Config["WorkflowEngineConfiguration (TransactionAwareDataSourceProxy)"]
         ExecCtrl["WorkflowExecutionController (Dual-Mode PageBuilder)"]
         TaskCtrl["TaskWorkerController (Idempotent Status Guard)"]
         Broadcaster["ExecutionStreamBroadcaster (Bounded Loom Queue)"]
     end
 
-    subgraph Engine_Core["apps/backend/workflow-engine (Hexagonal Core)"]
+    subgraph Engine_Core["apps/api/workflow-engine (Hexagonal Core)"]
         Service["WorkflowEngineService (ACID Coordinator)"]
         PureDecider["PureDecider (Zero-I/O Functional Decider)"]
         Middleware["ErrorClassificationMiddleware (Jittered Backoff)"]

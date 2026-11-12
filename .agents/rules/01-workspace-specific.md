@@ -8,7 +8,7 @@ description: Workspace registry, packaging boundaries, i18n, Liquid Glass UI tok
 ## Workspace Registry & Routing
 - Specs: `pnpm` workspaces + Turborepo pipelines (`build`, `dev`, `lint`, `test`, `check-types`).
 - Registry:
-  - `@acc/backend`: `apps/backend` (Java 21 / Spring Modulith)
+  - `@acc/api`: `apps/api` (Java 21 / Spring Modulith)
   - `@acc/console`: `apps/console` (React 19 / Vite 8) | Deps: `@acc/ui`, `@acc/i18n`, `@acc/typescript-config`
   - `mobile-ui`: `apps/mobile-ui` (Expo SDK 57 / React Native 0.86)
   - `tekgo-ui`: `apps/tekgo-ui` (Next.js 15 / React 19) | Deps: `@acc/ui`

@@ -11,13 +11,13 @@ In multi-tier monorepos, public reader portals (e.g., `tekgo-ui` Next.js fronten
 5. Verify with automated tests in `PublishableKeyFilterTest` and `PublicCmsGatewayControllerTest`.
 
 ## Changes
-- `apps/backend/acc-fw/src/main/java/com/acc/fw/security/PublishableKeyAuthenticationToken.java`: Public reader authentication token.
-- `apps/backend/acc-fw/src/main/java/com/acc/fw/security/PublishableKeyFilter.java`: Filter resolving tenant from publishable keys or path and applying public reader security context.
-- `apps/backend/acc-fw/src/main/java/com/acc/presentation/PublicCmsGatewayController.java`: Controller for `/api/v1/public/tenants/{tenantId}/cms/records` enforcing `WHERE status = 'PUBLISHED'`.
-- `apps/backend/acc-fw/src/main/java/com/acc/repository/jpa/EntityTypeRepository.java`: Added system name lookup methods.
-- `apps/backend/acc-fw/src/main/java/com/acc/boot/config/SecurityConfiguration.java`: Added `publishableKeyFilter()` bean and permitted public route.
-- `apps/backend/acc-fw/src/test/java/com/acc/fw/security/PublishableKeyFilterTest.java`: Unit tests for key verification, bearer support, path fallback, and 401 handling.
-- `apps/backend/acc-fw/src/test/java/com/acc/presentation/PublicCmsGatewayControllerTest.java`: Unit tests verifying published status filtering and 404 behavior for drafts.
+- `apps/api/acc-fw/src/main/java/com/acc/fw/security/PublishableKeyAuthenticationToken.java`: Public reader authentication token.
+- `apps/api/acc-fw/src/main/java/com/acc/fw/security/PublishableKeyFilter.java`: Filter resolving tenant from publishable keys or path and applying public reader security context.
+- `apps/api/acc-fw/src/main/java/com/acc/presentation/PublicCmsGatewayController.java`: Controller for `/api/v1/public/tenants/{tenantId}/cms/records` enforcing `WHERE status = 'PUBLISHED'`.
+- `apps/api/acc-fw/src/main/java/com/acc/repository/jpa/EntityTypeRepository.java`: Added system name lookup methods.
+- `apps/api/acc-fw/src/main/java/com/acc/boot/config/SecurityConfiguration.java`: Added `publishableKeyFilter()` bean and permitted public route.
+- `apps/api/acc-fw/src/test/java/com/acc/fw/security/PublishableKeyFilterTest.java`: Unit tests for key verification, bearer support, path fallback, and 401 handling.
+- `apps/api/acc-fw/src/test/java/com/acc/presentation/PublicCmsGatewayControllerTest.java`: Unit tests verifying published status filtering and 404 behavior for drafts.
 
 ## Verification
 - `mvnw.cmd test -pl acc-fw -Dtest="PublishableKeyFilterTest,PublicCmsGatewayControllerTest"`: 8 tests passing.

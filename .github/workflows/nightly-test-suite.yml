@@ -39,7 +39,7 @@ jobs:
 
       - name: Run Backend Tests & Generate JaCoCo Coverage Report
         run: |
-          mvn clean verify -f apps/backend/pom.xml -q
+          mvn clean verify -f apps/api/pom.xml -q
 
       - name: Archive JaCoCo HTML Coverage Reports
         if: always()
@@ -47,8 +47,8 @@ jobs:
         with:
           name: backend-jacoco-report
           path: |
-            apps/backend/acc-fw/target/site/jacoco
-            apps/backend/**/target/site/jacoco
+            apps/api/acc-fw/target/site/jacoco
+            apps/api/**/target/site/jacoco
           retention-days: 14
 
   # ---------------------------------------------------------------------------
@@ -143,7 +143,7 @@ jobs:
       - name: Build Backend AIO JAR (for Live Mode Auto-Spawn)
         if: ${{ github.event.inputs.e2e_mode == 'live' }}
         run: |
-          mvn clean package -f apps/backend/pom.xml -DskipTests -q
+          mvn clean package -f apps/api/pom.xml -DskipTests -q
 
       - name: Run Full 15-Spec Playwright Matrix (Dual-Mode Autonomous & Live)
         env:

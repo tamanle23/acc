@@ -12,7 +12,7 @@ This implementation plan establishes the Backend as the Single Source of Truth (
 - `packages/sandbox/src/handlers/workflow-handler.ts`:
   - `WorkflowTaskDefinitionsSandboxRepository.listLatest()` merges `SANDBOX_TASK_CONTRACTS` as immutable read-only records (`tenantId: 'SYSTEM'`, `status: 'ACTIVE'`, `isBuiltIn: true`).
   - Guards against deleting or mutating built-in system task definitions.
-- `apps/backend/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/TaskDefinitionController.java` & `TaskDefinitionRegistry.java`:
+- `apps/api/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/TaskDefinitionController.java` & `TaskDefinitionRegistry.java`:
   - Returns canonical `BuiltInTaskContracts` merged with tenant tasks in `GET /api/v1/workflow/task-definitions`.
 
 ### 2.2 Client-Side Dynamic Hydration Engine

@@ -9,11 +9,11 @@ This plan implements the comprehensive domain recalibration:
 - Replaces the modal dialog popup for "Manage Users" in Fleet Tenants Ledger with a dedicated right-side `TenantUsersDrawer`, bringing symmetrical slide-over UX with "Manage Workspaces".
 
 ## 2. Key Target Files
-- `apps/backend/acc-fw/src/main/java/com/acc/fw/core/jwt/JwtAuthenticationTokenFilter.java`
-- `apps/backend/acc-fw/src/main/java/com/acc/service/MetadataService.java`
-- `apps/backend/acc-fw/src/main/java/com/acc/service/SchemaValidationService.java`
-- `apps/backend/acc-fw/src/test/java/com/acc/service/SchemaValidationServiceTest.java`
-- `apps/backend/acc-fw/src/main/java/com/acc/domain/metadata/*.java`
+- `apps/api/acc-fw/src/main/java/com/acc/fw/core/jwt/JwtAuthenticationTokenFilter.java`
+- `apps/api/acc-fw/src/main/java/com/acc/service/MetadataService.java`
+- `apps/api/acc-fw/src/main/java/com/acc/service/SchemaValidationService.java`
+- `apps/api/acc-fw/src/test/java/com/acc/service/SchemaValidationServiceTest.java`
+- `apps/api/acc-fw/src/main/java/com/acc/domain/metadata/*.java`
 - `apps/console/src/features/spring-auth/components/ProtectedRoute.tsx`
 - `apps/console/src/components/layout/data/sidebar-data.ts`
 - `apps/console/src/stores/profile-store.ts`

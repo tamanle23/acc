@@ -14,11 +14,11 @@
   - [ ] Add real-time search & filter bar with match badge and ancestor auto-expansion in `visual-json-editor.tsx`.
   - [ ] Add array item Move Up / Move Down reordering controls in `json-tree-node.tsx` and `json-form-row.tsx`.
   - [ ] Add non-blocking inline JSON Schema validation (`jsonSchema` + `onValidationChange`) with node/row error badges.
-- [ ] **Phase 3: Core Workflow Engine Orchestration (`@acc/backend`)**
+- [ ] **Phase 3: Core Workflow Engine Orchestration (`@acc/api`)**
   - [ ] Add explicit `workflowId` to `TaskSnapshot` across all persistence adapters.
   - [ ] Add `taskDefName` routing (defaulting to `taskReferenceName`) in `TaskDefinition`, `SimpleTaskStrategy`, and `PersistencePort.pollTasks`.
   - [ ] Advance elapsed `WAIT` timers in `ScheduledLeaseSweeper` and broadcast SSE updates.
-- [ ] **Phase 4: `SIMPLE` Task Worker Registration Protocol & 4-Layer SDK (`@acc/worker`, `@acc/sandbox`, `@acc/backend`)**
+- [ ] **Phase 4: `SIMPLE` Task Worker Registration Protocol & 4-Layer SDK (`@acc/worker`, `@acc/sandbox`, `@acc/api`)**
   - [ ] Upgrade `@acc/worker` (`packages/worker`) with `TaskWorkerDescriptor`, `/register` handshake, periodic `/heartbeat`, fixed `workflowId` resolution, and CLI runner.
   - [ ] Bridge `@acc/worker` into `@acc/sandbox` via `InMemorySandboxWorkerTransport`.
   - [ ] Add `@WorkflowTaskWorker`, `SimpleTaskWorkerRegistrar`, `HttpWorkerTransportAdapter`, and `/register` + `/catalog` endpoints in `WorkerFleetController`.

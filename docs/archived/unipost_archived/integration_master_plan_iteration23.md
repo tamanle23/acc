@@ -1,7 +1,7 @@
 # Integration Master Plan: Iteration 23 - Sovereign Identity, System-Wide RBAC Delegation, Person-Tenant Onboarding, Passkeys (WebAuthn) & Full-Stack UI Wirings
 
 **Target Systems:**  
-- `@acc/backend` (`apps/backend/acc-db`, `apps/backend/acc-fw`, `apps/backend/acc-ms-aio`)  
+- `@acc/api` (`apps/api/acc-db`, `apps/api/acc-fw`, `apps/api/acc-ms-aio`)  
 - `@acc/client` (`packages/client/src/contracts/users.ts`, `packages/client/src/contracts/auth.ts`)  
 - `@acc/console` (`apps/console/src/features/auth`, `apps/console/src/features/spring-auth`, `apps/console/src/core/sandbox`)  
 **Lead Systems Architect:** Principal Polyglot Architect, Spring Boot Backend Specialist, TypeScript Frontend Architect & UI/UX Systems Specialist  
@@ -172,7 +172,7 @@ Adhering strictly to `.agents/rules/01-workspace-specific.md` (Liquid Glass) and
 
 ## 5. System-Wide RBAC Catalog & Tenant Entitlement Delegation
 
-### 5.1 Global Schema Architecture (`apps/backend/acc-db`)
+### 5.1 Global Schema Architecture (`apps/api/acc-db`)
 In Liquibase `changelog-000.000.00016.xml`:
 1. **`${table_prefix}ROLE` Schema Evolution**:
    - Add `role_scope VARCHAR(20) NOT NULL DEFAULT 'TENANT'` (Values: `'SYSTEM'`, `'TENANT'`).
@@ -242,7 +242,7 @@ In Liquibase `changelog-000.000.00016.xml`:
 ## 7. Migration & Implementation Strategy
 
 ### Step 1: Liquibase Migration (`changelog-000.000.00016.xml`)
-- Author `apps/backend/acc-db/src/main/resources/db/acc/changelog-000.000.00016.xml`:
+- Author `apps/api/acc-db/src/main/resources/db/acc/changelog-000.000.00016.xml`:
   1. Pre-flight PL/pgSQL assertion for `${SOVEREIGN_*_PASSWORD_HASH}`.
   2. Evolve `${table_prefix}ROLE` (`role_scope`, `min_plan_tier`).
   3. Evolve `${table_prefix}USERROLE` (`tenant_id`, index).
@@ -255,7 +255,7 @@ In Liquibase `changelog-000.000.00016.xml`:
   10. Add `is_verified` and `phone_number_verified` columns to `${table_prefix}USER`.
 - Register in `changelog-master.xml`.
 
-### Step 2: Backend Controller & Service Alignment (`apps/backend/acc-fw`)
+### Step 2: Backend Controller & Service Alignment (`apps/api/acc-fw`)
 - Update `SystemFleetController.java` `@PreAuthorize` annotations.
 - Update `SystemFleetService.java` in-memory seeds to match new roles.
 

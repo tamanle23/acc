@@ -3,7 +3,7 @@
 **Document Reference:** `docs/multi-tenants/11_system_tenant_sovereign_custody_architecture.md`  
 **Series:** Multi-Tenant Architecture & Data Sovereignty Specification  
 **Classification:** Canonical Architecture & System Blueprint  
-**Target Systems:** `@acc/backend` (Spring Modulith / Java 21 / PostgreSQL 16+), `@acc/console` (React 19 / Vite 8 / TanStack Router)  
+**Target Systems:** `@acc/api` (Spring Modulith / Java 21 / PostgreSQL 16+), `@acc/console` (React 19 / Vite 8 / TanStack Router)  
 **Author:** Lead Systems Architect & Sovereign Custodian  
 **Status:** Living Design Specification & Implementation Blueprint  
 
@@ -264,7 +264,7 @@ CREATE POLICY tenant_isolation_entities ON UNIPOST_ENTITIES
 
 ### 4.2 Backend Layer: Metadata Guard Refactoring
 
-In `apps/backend/acc-fw/src/main/java/com/acc/service/MetadataService.java`, the immutability guards must differentiate between an unauthorized commercial tenant attempting to alter base schemas versus the Sovereign Custodian managing core platform infrastructure:
+In `apps/api/acc-fw/src/main/java/com/acc/service/MetadataService.java`, the immutability guards must differentiate between an unauthorized commercial tenant attempting to alter base schemas versus the Sovereign Custodian managing core platform infrastructure:
 
 ```java
 // BEFORE: Unconditional block preventing all callers from modifying SYSTEM attributes
@@ -701,7 +701,7 @@ sequenceDiagram
     autonumber
     actor Custodian as Sovereign Custodian (SYSTEM UI)
     participant ConsoleUI as @acc/console (React 19)
-    participant SpringAPI as @acc/backend (Spring Modulith)
+    participant SpringAPI as @acc/api (Spring Modulith)
     participant Cache as Redis / Hazelcast / L1 Cache
     participant RLS as PostgreSQL (RLS Enforced)
     participant TenantApp as Tenant Client (@acc/console)

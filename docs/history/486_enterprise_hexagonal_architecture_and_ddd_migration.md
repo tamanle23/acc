@@ -1,7 +1,7 @@
 # 486: Enterprise Hexagonal Architecture & DDD Ports-and-Adapters Migration
 
 ## Problem
-The backend monorepo (`apps/backend`) and console client (`apps/console`) suffered from severe architectural coupling, framework leakage, and persistence bleeds:
+The backend monorepo (`apps/api`) and console client (`apps/console`) suffered from severe architectural coupling, framework leakage, and persistence bleeds:
 1. **Domain Kernel Contamination:** `acc-core` imported `org.springframework.context.ApplicationContext` and `jakarta.annotation.PostConstruct` via `SpringMediator.java`, contaminating what should be a 100% pure Java DDD kernel.
 2. **Production Stub in IAM:** `UserRepositoryImpl.findByEmail` returned `Optional.empty()` with a comment stating it was omitted from JPA.
 3. **Servlet Protocol Intrusion in File Storage:** `FileService.java` directly imported `jakarta.servlet.http.HttpServletRequest` and HTTP controller request bodies in its service interface.
@@ -30,7 +30,7 @@ The backend monorepo (`apps/backend`) and console client (`apps/console`) suffer
    - Run 4-Tier verification (ArchUnit, Pure Domain tests, MyBatis tests, Modulith verification, and Vitest suites).
 
 ## Changes
-### `apps/backend/acc-core` (Pure Domain Kernel)
+### `apps/api/acc-core` (Pure Domain Kernel)
 - `pom.xml`: Removed `spring-boot-starter`. Added ArchUnit JUnit 5 dependency.
 - `AggregateRoot.java`: Upgraded to generic `AggregateRoot<ID extends Serializable>` with internal domain event queue (`registerEvent`, `pollUncommittedEvents`).
 - `Entity.java`: Implemented base entity with equality and hash code based on identity.
@@ -44,7 +44,7 @@ The backend monorepo (`apps/backend`) and console client (`apps/console`) suffer
   - `DomainValidationException.java`
 - `arch/HexagonalArchitectureEnforcementTest.java`: Added ArchUnit test ensuring zero Spring/Jakarta/Hibernate/Jackson imports in domain packages.
 
-### `apps/backend/acc-fw` (Framework Adapters & IAM Infrastructure)
+### `apps/api/acc-fw` (Framework Adapters & IAM Infrastructure)
 - `mediator/`: Relocated `SpringMediator.java` and `DynamicCommandDispatcher.java` from `acc-core`.
 - `mybatis/`: Created shared MyBatis type handlers:
   - `JsonbTypeHandler.java`
@@ -68,7 +68,7 @@ The backend monorepo (`apps/backend`) and console client (`apps/console`) suffer
   - `infra/user/repository/UserRepositoryImpl.java`: Fixed legacy stub in `findByEmail` delegating to JPA repository.
   - `infra/user/repository/jpa/UserRepository.java`: Added `findByEmail(String email)`.
 
-### `apps/backend/workflow-engine` & `acc-ms-aio`
+### `apps/api/workflow-engine` & `acc-ms-aio`
 - `workflow-engine/pom.xml`: Added dependencies on `acc-core` and `acc-fw`.
 - `domain/taskdef/model/TaskDefinitionAggregate.java`: Pure DDD aggregate implementing version hard-fork and promotion state machines.
 - `domain/taskdef/valobj/TaskDefId.java` & `TaskStatus.java`: Value objects.
@@ -81,7 +81,7 @@ The backend monorepo (`apps/backend`) and console client (`apps/console`) suffer
   - `AuditLedgerController.java`: Decoupled from `PersistencePort`.
   - `WorkflowExecutionController.java`: Replaced direct `PersistencePort` compensation logic with `engineService.executeManualCompensation(...)`.
 
-### `apps/backend/acc-ms-fs` (File Storage)
+### `apps/api/acc-ms-fs` (File Storage)
 - `domain/model/FsObjectAggregate.java`: Pure domain aggregate for files and directories.
 - `domain/valobj/FileId.java`: Value object.
 - `domain/repository/BlobStoragePort.java`: Driven storage SPI for binary blobs.

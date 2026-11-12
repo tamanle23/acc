@@ -2,7 +2,7 @@
 
 ## 1. Executive Summary & Vision
 
-Iteration 13 elevates the **acc** enterprise platform by closing all backend-frontend contract gaps from Iteration 12 Workstreams 4 & 5, equipping `VisualJsonEditor` with schema-aware linting and deep search/reordering ergonomics, establishing a production-grade 4-layer **SIMPLE Task Worker Registration & Polyglot SDK Architecture** (`@acc/worker`, `@acc/sandbox`, `@acc/backend`, and `@acc/console`), refining the **Visual DAG Workflow Designer**, introducing **Deterministic AI-Assisted Schema Generation**, and delivering an interactive **Engine-Level Workflow Visual Debugger** with breakpoints, step-over execution, and live node replay.
+Iteration 13 elevates the **acc** enterprise platform by closing all backend-frontend contract gaps from Iteration 12 Workstreams 4 & 5, equipping `VisualJsonEditor` with schema-aware linting and deep search/reordering ergonomics, establishing a production-grade 4-layer **SIMPLE Task Worker Registration & Polyglot SDK Architecture** (`@acc/worker`, `@acc/sandbox`, `@acc/api`, and `@acc/console`), refining the **Visual DAG Workflow Designer**, introducing **Deterministic AI-Assisted Schema Generation**, and delivering an interactive **Engine-Level Workflow Visual Debugger** with breakpoints, step-over execution, and live node replay.
 
 ---
 
@@ -13,7 +13,7 @@ Iteration 13 elevates the **acc** enterprise platform by closing all backend-fro
 | **1. Workstream 4 & 5 Full-Stack Alignment** | 1. **Human Approvals REST API**: Expose `WorkflowApprovalsController` (`/api/v1/workflows/approvals` and `/api/v1/workflow/approvals`) in `acc-ms-aio` matching the exact `ApprovalTask` contract used by `@acc/console`.<br/>2. **System/Human Task Upsert**: Fix `WorkflowEngineService.applyCommands` so `EngineCommand.UpdateTaskStatus` upserts new task executions via `saveTaskExecution` when a task does not yet exist in `PersistencePort`.<br/>3. **Recursive JSONB FLS Masking**: Upgrade `FieldLevelSecuritySerializer` to recursively mask PII fields inside nested `Map` and `List` (`jsonb`) structures and honor schema-level sensitivity flags (`isSensitive` / `validationRules.pii`).<br/>4. **DLQ & CDC Diff Ergonomics**: Embed `VisualJsonEditor` in `dlq-inspector-sheet.tsx` for interactive override editing and wire `usePreviewRestoreRecord` diff confirmation into `master-detail-row-inspector.tsx`. |
 | **2. Visual JSON Editor Schema Linting & Ergonomics** | **Non-Blocking Inline Linting + `onValidationChange`**: `VisualJsonEditor` emits `onChange` whenever JSON syntax is valid while evaluating `jsonSchema` constraints (`type`, `required`, `enum`, `minLength`, `maxLength`, `minimum`, `maximum`, `pattern`) to surface inline error badges on offending `JsonTreeNode` / `JsonFormRow` items and a toolbar validation summary. Includes real-time key/value search with automatic ancestor expansion and array element Move Up / Move Down reordering. |
 | **3. `SIMPLE` Task Routing Identity** | `TaskDefinition` and `DagNodeData` support `taskDefName` (defaulting to `taskReferenceName`). `SimpleTaskStrategy` enqueues tasks with `effectiveTaskName = taskDefName \|\| taskReferenceName`. Workers polling for a specific task name (e.g., `checkInventory`) match that task name, while generic domain workers polling `"SIMPLE"` act as fallback handlers. `TaskSnapshot` and `TaskSnapshotDto` explicitly carry `workflowId` so workers never rely on `taskId.split("_")[0]`. |
-| **4. `@acc/worker` (`packages/worker`) 4-Layer Separation of Concerns** | 1. **`@acc/console` (`apps/console`)**: Strictly Control Plane UI. Never imports `@acc/worker`; queries `GET /api/v1/workflow/workers` (Fleet) and `GET /api/v1/workflow/workers/catalog` (Registered `SIMPLE` Task Definitions + Input/Output JSON Schemas).<br/>2. **`@acc/worker` (`packages/worker`)**: Pure TypeScript Worker SDK (`WorkflowWorkerHost`, `TaskPoller`, `HttpWorkerTransportClient`, Middlewares) upgraded with `/register` capability handshake, periodic `/heartbeat` telemetry, fixed `workflowId` resolution, and a runnable CLI worker entrypoint (`packages/worker/src/runner.ts`).<br/>3. **`@acc/sandbox` (`packages/sandbox`)**: Wires `@acc/worker` with `InMemorySandboxWorkerTransport` so offline dev mode runs real `WorkflowWorkerHost` pipelines in-memory.<br/>4. **`@acc/backend` (`workflow-engine` & `acc-ms-aio`)**: Java `WorkerHost` + `@WorkflowTaskWorker` annotation + `SimpleTaskWorkerRegistrar` + `RegistryAwareInProcessTransportAdapter` + `HttpWorkerTransportAdapter`. |
+| **4. `@acc/worker` (`packages/worker`) 4-Layer Separation of Concerns** | 1. **`@acc/console` (`apps/console`)**: Strictly Control Plane UI. Never imports `@acc/worker`; queries `GET /api/v1/workflow/workers` (Fleet) and `GET /api/v1/workflow/workers/catalog` (Registered `SIMPLE` Task Definitions + Input/Output JSON Schemas).<br/>2. **`@acc/worker` (`packages/worker`)**: Pure TypeScript Worker SDK (`WorkflowWorkerHost`, `TaskPoller`, `HttpWorkerTransportClient`, Middlewares) upgraded with `/register` capability handshake, periodic `/heartbeat` telemetry, fixed `workflowId` resolution, and a runnable CLI worker entrypoint (`packages/worker/src/runner.ts`).<br/>3. **`@acc/sandbox` (`packages/sandbox`)**: Wires `@acc/worker` with `InMemorySandboxWorkerTransport` so offline dev mode runs real `WorkflowWorkerHost` pipelines in-memory.<br/>4. **`@acc/api` (`workflow-engine` & `acc-ms-aio`)**: Java `WorkerHost` + `@WorkflowTaskWorker` annotation + `SimpleTaskWorkerRegistrar` + `RegistryAwareInProcessTransportAdapter` + `HttpWorkerTransportAdapter`. |
 | **5. Deterministic Schema Generation Engine** | **100% Local Deterministic JSON AST & Domain Heuristics Only**: Zero external LLM HTTP calls. Combines a deterministic domain keyword parser (E-Commerce, FinTech, Healthcare, Logistics, HR, CMS) with a recursive JSON sample AST inference engine (`TEXT`, `NUMBER`, `BOOLEAN`, `DATETIME`, `ENUM`, `JSON`, `RELATION`, `uiComponent`, `validationRules`, FLS PII flags, and recommended FSM `LifecycleConfig`). |
 | **6. Workflow Visual Debugger Breakpoints** | **Server-Side & Sandbox Engine Breakpoints**: Active breakpoints (`Set<String> breakpoints`) are stored on the execution; `PureDecider` halts before scheduling a breakpointed `taskReferenceName` and transitions execution to `PAUSED_AT_BREAKPOINT` until `POST /api/v1/workflow/executions/{id}/step` (Step Over) or `/resume` is invoked. Includes **"Edit Input & Re-Run From Node"** (`POST .../tasks/{taskRef}/rerun`) and a **Time-Travel Variable Watch & State Diff** drawer. |
 
@@ -46,7 +46,7 @@ flowchart TD
     subgraph P4["Phase 4: SIMPLE Task Worker Registration & 4-Layer SDK"]
         S1["@acc/worker: /register Handshake, /heartbeat & Runner"]
         S2["@acc/sandbox: InMemorySandboxWorkerTransport Bridge"]
-        S3["@acc/backend: @WorkflowTaskWorker & SimpleTaskWorkerRegistrar"]
+        S3["@acc/api: @WorkflowTaskWorker & SimpleTaskWorkerRegistrar"]
         S4["WorkerFleetController: POST /register & GET /catalog"]
     end
 
@@ -77,16 +77,16 @@ flowchart TD
 
 ### Phase 1: Re-Verify & Align Workstream 4 & Workstream 5 (Backend ↔ Frontend)
 
-1. **`WorkflowEngineService.java` (`apps/backend/workflow-engine`)**:
+1. **`WorkflowEngineService.java` (`apps/api/workflow-engine`)**:
    - In `applyCommands(...)`: When handling `EngineCommand.UpdateTaskStatus`, check if `persistencePort.getTaskExecution(ut.taskId())` is empty; if empty, insert via `persistencePort.saveTaskExecution(...)` so `HUMAN` (`WAITING_FOR_APPROVAL`), `HTTP`, `SET_VARIABLE`, `INLINE`, and `SWITCH` tasks are durably persisted in both `InMemoryPersistenceAdapter` and `PostgresJdbcPersistenceAdapter`.
    - Add `resolveHumanApprovalTask(String workflowId, String taskIdOrRef, String action, String actor, String rationale, WorkflowDefinition definition, long nowEpochMs)` to complete/fail a `WAITING_FOR_APPROVAL` task, append `HUMAN_APPROVAL_RESOLVED` to the cryptographic audit ledger, and advance `PureDecider`.
-2. **`WorkflowApprovalsController.java` (`apps/backend/acc-ms-aio`)**:
+2. **`WorkflowApprovalsController.java` (`apps/api/acc-ms-aio`)**:
    - Expose `@RequestMapping({"/api/v1/workflows/approvals", "/api/v1/workflow/approvals"})`:
      - `GET /`: Returns pending and resolved `ApprovalTask` items for the active tenant.
      - `POST /{taskId}/resolve`: Resolves an approval task (`APPROVED`, `REJECTED`, `CHANGES_REQUESTED`), advances the workflow execution if linked, and broadcasts `APPROVAL_RESOLVED` via `NotificationSseController`.
-3. **`EntityWorkflowTriggerDispatcher.java` (`apps/backend/acc-fw`)**:
+3. **`EntityWorkflowTriggerDispatcher.java` (`apps/api/acc-fw`)**:
    - Enrich `APPROVAL_REQUESTED` SSE broadcasts with complete `ApprovalTask` fields (`id`, `title`, `entityType`, `entityName`, `recordId`, `beforeContext`, `afterContext`, `status: "PENDING"`) so `ApprovalsInbox` renders live tasks immediately.
-4. **`FieldLevelSecuritySerializer.java` (`apps/backend/acc-fw`)**:
+4. **`FieldLevelSecuritySerializer.java` (`apps/api/acc-fw`)**:
    - Recursively traverse nested `Map<String, Object>` and `List<Object>` values (`jsonb` attributes) to mask PII keys at any nesting depth, and support explicit schema-level `isSensitive` / `validationRules.pii` flags.
 5. **`dlq-inspector-sheet.tsx` & `master-detail-row-inspector.tsx` (`apps/console`)**:
    - Replace the raw `<Textarea>` in `dlq-inspector-sheet.tsx` with `VisualJsonEditor` for interactive override payload editing before DLQ replay.
@@ -107,7 +107,7 @@ flowchart TD
 
 ---
 
-### Phase 3: Core Workflow Engine Orchestration (`@acc/backend`)
+### Phase 3: Core Workflow Engine Orchestration (`@acc/api`)
 
 1. **Explicit `workflowId` Propagation (`TaskSnapshot.java` & Storage Adapters)**:
    - Add `workflowId` to `TaskSnapshot` (retaining a backward-compatible constructor overload) and populate it across `InMemoryPersistenceAdapter`, `PostgresJdbcPersistenceAdapter`, and `SqliteJdbcPersistenceAdapter` so workers and engine services never rely on `taskId.split("_")[0]`.
@@ -119,7 +119,7 @@ flowchart TD
 
 ---
 
-### Phase 4: `SIMPLE` Task Worker Registration Protocol & 4-Layer SDK (`@acc/worker`, `@acc/sandbox`, `@acc/backend`)
+### Phase 4: `SIMPLE` Task Worker Registration Protocol & 4-Layer SDK (`@acc/worker`, `@acc/sandbox`, `@acc/api`)
 
 ```mermaid
 sequenceDiagram
@@ -148,7 +148,7 @@ sequenceDiagram
 2. **Layer 2 — `@acc/sandbox` (`packages/sandbox`) Offline Simulation Bridge**:
    - Create `InMemorySandboxWorkerTransport` implementing `WorkerTransportClient` from `@acc/worker` so offline Sandbox mode executes real `WorkflowWorkerHost` task handlers and middlewares in-memory.
    - Expose `POST /api/v1/workflow/workers/register` and `GET /api/v1/workflow/workers/catalog` in `worker-sandbox-handler.ts` / `workflow-handler.ts`.
-3. **Layer 3 — `@acc/backend` (`workflow-engine` & `acc-ms-aio`) Java SDK & Auto-Registrar**:
+3. **Layer 3 — `@acc/api` (`workflow-engine` & `acc-ms-aio`) Java SDK & Auto-Registrar**:
    - Create `@WorkflowTaskWorker` annotation, `TaskWorkerDescriptor` record, `HttpWorkerTransportAdapter`, and `RegistryAwareInProcessTransportAdapter`.
    - Implement `SimpleTaskWorkerRegistrar` in `acc-ms-aio` to auto-discover `@WorkflowTaskWorker` Spring beans/methods, register their descriptors in `WorkerRegistry`, and mount them into the embedded virtual-thread `WorkerHost`.
    - Expose `POST /api/v1/workflow/workers/register` and `GET /api/v1/workflow/workers/catalog` in `WorkerFleetController.java`.

@@ -1,7 +1,7 @@
 # 488: Hexagonal Worker Outbox & Sagas Architecture
 
 ## Problem
-In Phase 3 of the monorepo's enterprise Hexagonal Architecture & DDD modernization, `apps/backend/acc-ms-worker` previously coupled outbox processing, scheduled polling, JSON deserialization, HTTP webhook transport, and distributed sagas directly into monolithic service classes and scheduled job components (`OutboxPollingJob.java` and `UserRegistrationSaga.java`). 
+In Phase 3 of the monorepo's enterprise Hexagonal Architecture & DDD modernization, `apps/api/acc-ms-worker` previously coupled outbox processing, scheduled polling, JSON deserialization, HTTP webhook transport, and distributed sagas directly into monolithic service classes and scheduled job components (`OutboxPollingJob.java` and `UserRegistrationSaga.java`). 
 
 This violated the Hexagonal Ports-and-Adapters seams and strict ArchUnit architectural invariants:
 1. Business logic for transactional outbox retries, backoff calculations, DLQ transitions, and saga lifecycle states were bound directly to Spring framework annotations, Jackson mappers, and JPA entities.
@@ -36,7 +36,7 @@ This violated the Hexagonal Ports-and-Adapters seams and strict ArchUnit archite
 
 ## Changes
 - **Build Configuration**:
-  - `apps/backend/acc-ms-worker/pom.xml`: Added explicit `<version>${project.version}</version>` to `acc-fw` dependency.
+  - `apps/api/acc-ms-worker/pom.xml`: Added explicit `<version>${project.version}</version>` to `acc-fw` dependency.
 - **Pure Domain Layer (`com.acc.worker.domain..`)**:
   - `OutboxMessageId.java`: Strongly-typed UUID identifier for outbox messages.
   - `OutboxStatus.java`: Pure enum for message processing states (`PENDING`, `PROCESSING`, `PUBLISHED`, `DEAD_LETTER`).
@@ -68,13 +68,13 @@ This violated the Hexagonal Ports-and-Adapters seams and strict ArchUnit archite
 
 ## Verification
 - **Tier 1 (Domain Tests)**:
-  - `mvn test -f apps/backend/pom.xml "-Dtest=*AggregateTest"`: Exited 0 (0ms execution, 100% pure JVM).
+  - `mvn test -f apps/api/pom.xml "-Dtest=*AggregateTest"`: Exited 0 (0ms execution, 100% pure JVM).
 - **Tier 2 (ArchUnit Enforcement)**:
-  - `mvn test -f apps/backend/pom.xml -pl :acc-core "-Dtest=HexagonalArchitectureEnforcementTest"`: Exited 0 (0 architectural violations across all domain packages).
+  - `mvn test -f apps/api/pom.xml -pl :acc-core "-Dtest=HexagonalArchitectureEnforcementTest"`: Exited 0 (0 architectural violations across all domain packages).
 - **Tier 3 (Worker Module Suite)**:
-  - `mvn test -f apps/backend/pom.xml -pl :acc-ms-worker`: 20/20 tests passed, 0 failures, 0 errors.
+  - `mvn test -f apps/api/pom.xml -pl :acc-ms-worker`: 20/20 tests passed, 0 failures, 0 errors.
 - **Tier 4 (Spring Modulith Verification)**:
-  - `mvn test -f apps/backend/pom.xml -pl :acc-ms-aio "-Dtest=ModularityTests"`: Exited 0 (all application modules verified).
+  - `mvn test -f apps/api/pom.xml -pl :acc-ms-aio "-Dtest=ModularityTests"`: Exited 0 (all application modules verified).
 
 ## Walkthrough
 1. **Domain Isolation**: Domain entities in `acc-ms-worker` now live in `com.acc.worker.domain` without any Spring, JPA, or Jackson dependencies, adhering to clean architecture invariants.

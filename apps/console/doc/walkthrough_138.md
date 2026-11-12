@@ -43,9 +43,9 @@ This walkthrough details the end-to-end execution of `docs/integration_master_pl
     - Reconstructed canvas edges from `joinOn`, `decisionCases`, and `defaultCase`.
 
 ### 3. Backend Verification & Invariants
-- `apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/graph/AcyclicityGuard.java`:
+- `apps/api/workflow-engine/src/main/java/com/acc/workflow/core/graph/AcyclicityGuard.java`:
   - Enforced that workflows containing a `FORK_JOIN` task must contain a matching `JOIN` task barrier.
-- `apps/backend/workflow-engine/src/test/java/com/acc/workflow/core/graph/AcyclicityGuardTest.java`:
+- `apps/api/workflow-engine/src/test/java/com/acc/workflow/core/graph/AcyclicityGuardTest.java`:
   - Added tests for `shouldRejectForkWithoutJoin` and `shouldAcceptValidForkJoinPair`.
 
 ---

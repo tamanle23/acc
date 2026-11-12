@@ -12,12 +12,12 @@ Phase 43 implements the **Adaptive Read-Time Resolution Engine** for synthesized
 
 ## Changes Summary
 
-### 1. Backend Core & REST Endpoints (`apps/backend/acc-fw`)
-- [`DynamicQueryCompiler.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/service/DynamicQueryCompiler.java): Single-pass SQL compiler for Pattern B (Foreign Key) and Pattern C (Association Matrix `UNIPOST_ENTITY_RELATIONSHIPS`) with quoted `"deletedDate" IS NULL` soft-delete checks.
-- [`DataLoaderBatchResolver.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/service/DataLoaderBatchResolver.java): Resilient fallback batch resolver traversing entity records and relationships in memory.
-- [`CompositeRecordService.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/service/CompositeRecordService.java): Orchestration service with `1500ms` statement timeout enforcement and graceful fallback.
-- [`CompositeEntityController.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/presentation/CompositeEntityController.java): REST controller with bracket notation parameter parsing and `X-Composite-Engine` response header.
-- DTOs: [`ChildPaginationParam.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/presentation/dto/metadata/ChildPaginationParam.java), [`ChildPaginationMetadata.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/presentation/dto/metadata/ChildPaginationMetadata.java), [`CompositeRecordResponse.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/presentation/dto/metadata/CompositeRecordResponse.java).
+### 1. Backend Core & REST Endpoints (`apps/api/acc-fw`)
+- [`DynamicQueryCompiler.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/acc-fw/src/main/java/com/acc/service/DynamicQueryCompiler.java): Single-pass SQL compiler for Pattern B (Foreign Key) and Pattern C (Association Matrix `UNIPOST_ENTITY_RELATIONSHIPS`) with quoted `"deletedDate" IS NULL` soft-delete checks.
+- [`DataLoaderBatchResolver.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/acc-fw/src/main/java/com/acc/service/DataLoaderBatchResolver.java): Resilient fallback batch resolver traversing entity records and relationships in memory.
+- [`CompositeRecordService.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/acc-fw/src/main/java/com/acc/service/CompositeRecordService.java): Orchestration service with `1500ms` statement timeout enforcement and graceful fallback.
+- [`CompositeEntityController.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/acc-fw/src/main/java/com/acc/presentation/CompositeEntityController.java): REST controller with bracket notation parameter parsing and `X-Composite-Engine` response header.
+- DTOs: [`ChildPaginationParam.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/acc-fw/src/main/java/com/acc/presentation/dto/metadata/ChildPaginationParam.java), [`ChildPaginationMetadata.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/acc-fw/src/main/java/com/acc/presentation/dto/metadata/ChildPaginationMetadata.java), [`CompositeRecordResponse.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/acc-fw/src/main/java/com/acc/presentation/dto/metadata/CompositeRecordResponse.java).
 
 ### 2. Client Contracts & Console Services (`packages/client`, `apps/console`)
 - [`contracts/metadata.ts`](file:///c:/Users/Admin/workspace/git/acc/packages/client/src/contracts/metadata.ts): Exported `ChildPaginationMetadata`, `CompositeRecordResponse`, and `CompositeRecordPageResponse`.
@@ -39,7 +39,7 @@ Phase 43 implements the **Adaptive Read-Time Resolution Engine** for synthesized
 ### Backend Unit Tests
 Executed Maven test suite covering `DynamicQueryCompilerTest` and `CompositeRecordServiceTest`:
 ```
-mvn test -f apps/backend/pom.xml -pl acc-fw "-Dtest=*Composite*,DynamicQueryCompilerTest,CompositeRecordServiceTest" -q
+mvn test -f apps/api/pom.xml -pl acc-fw "-Dtest=*Composite*,DynamicQueryCompilerTest,CompositeRecordServiceTest" -q
 [INFO] Results:
 [INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0
 [INFO] BUILD SUCCESS

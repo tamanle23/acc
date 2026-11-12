@@ -27,14 +27,14 @@ The distributed workflow task queue required production-grade resilience against
 
 ## Changes Made
 - **Backend Core**:
-  - `apps/backend/workflow-engine/src/main/resources/db/schema-postgres.sql` & `schema-sqlite.sql`: Added `created_at_ms` and `task_dlq` schema.
-  - `apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/model/TaskDlqRecord.java`: Domain record.
-  - `apps/backend/workflow-engine/src/main/java/com/acc/workflow/ports/PersistencePort.java`: DLQ port definitions.
-  - `apps/backend/workflow-engine/src/main/java/com/acc/workflow/adapters/storage/InMemoryPersistenceAdapter.java`: Dynamic priority sorting & DLQ memory map.
-  - `apps/backend/workflow-engine/src/main/java/com/acc/workflow/adapters/storage/SqliteJdbcPersistenceAdapter.java`: SQLite SQL priority age formula and DLQ CRUD.
-  - `apps/backend/workflow-engine/src/main/java/com/acc/workflow/adapters/storage/PostgresJdbcPersistenceAdapter.java`: PostgreSQL `FOR UPDATE SKIP LOCKED` priority aging & DLQ CRUD.
-  - `apps/backend/workflow-engine/src/main/java/com/acc/workflow/application/WorkflowEngineService.java`: DLQ isolation, zombie worker lease reclamation, replay, and discard.
-  - `apps/backend/acc-ms-aio/.../WorkflowDlqController.java`: REST controller for `/api/v1/workflow/dlq`.
+  - `apps/api/workflow-engine/src/main/resources/db/schema-postgres.sql` & `schema-sqlite.sql`: Added `created_at_ms` and `task_dlq` schema.
+  - `apps/api/workflow-engine/src/main/java/com/acc/workflow/core/model/TaskDlqRecord.java`: Domain record.
+  - `apps/api/workflow-engine/src/main/java/com/acc/workflow/ports/PersistencePort.java`: DLQ port definitions.
+  - `apps/api/workflow-engine/src/main/java/com/acc/workflow/adapters/storage/InMemoryPersistenceAdapter.java`: Dynamic priority sorting & DLQ memory map.
+  - `apps/api/workflow-engine/src/main/java/com/acc/workflow/adapters/storage/SqliteJdbcPersistenceAdapter.java`: SQLite SQL priority age formula and DLQ CRUD.
+  - `apps/api/workflow-engine/src/main/java/com/acc/workflow/adapters/storage/PostgresJdbcPersistenceAdapter.java`: PostgreSQL `FOR UPDATE SKIP LOCKED` priority aging & DLQ CRUD.
+  - `apps/api/workflow-engine/src/main/java/com/acc/workflow/application/WorkflowEngineService.java`: DLQ isolation, zombie worker lease reclamation, replay, and discard.
+  - `apps/api/acc-ms-aio/.../WorkflowDlqController.java`: REST controller for `/api/v1/workflow/dlq`.
 - **Worker SDK**:
   - `packages/worker/src/host/TaskPoller.ts`: Exponential backoff with 20% randomized jitter.
   - `packages/worker/src/__tests__/jittered-poller.test.ts`: Jitter unit test.
@@ -70,7 +70,7 @@ The distributed workflow task queue required production-grade resilience against
   - `pnpm --filter @acc/console exec tsc --noEmit`: Passed clean with 0 errors.
 
 ## Walkthrough
-- Backend: `apps/backend/doc/walkthrough_39.md`
+- Backend: `apps/api/doc/walkthrough_39.md`
 - Console UI: `apps/console/doc/walkthrough_103.md`
 
 ## Tasks

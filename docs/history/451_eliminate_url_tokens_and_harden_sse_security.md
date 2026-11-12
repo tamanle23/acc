@@ -15,7 +15,7 @@ In earlier iterations, Server-Sent Events (SSE) connections to `/api/v1/notifica
    - Encapsulate offline sandbox handling directly within `FetchEventSource`.
 2. **Refactor Frontend Consumers**:
    - Update `useNotificationStream`, `ApprovalsInbox`, and `useWorkflowExecutionStream` to use `FetchEventSource` with zero URL tokens.
-3. **Backend Security Hardening (`apps/backend/`)**:
+3. **Backend Security Hardening (`apps/api/`)**:
    - Remove `/api/v1/notifications/stream` from `SecurityConfiguration.java` and `application-local.yml` `permitAll` matchers.
    - Remove query parameter token extraction (`request.getParameter("token")` / `access_token`) from `JwtAuthenticationTokenFilter.java`.
    - Update `NotificationSseController.java` to enforce strict tenant isolation from `TenantContextHolder` (derived from the verified JWT principal) rather than trusting unverified query parameters.
@@ -32,11 +32,11 @@ In earlier iterations, Server-Sent Events (SSE) connections to `/api/v1/notifica
   - `apps/console/src/features/notifications/hooks/use-notification-stream.ts`: Replaced `new EventSource` with `FetchEventSource`; removed `token` from `streamUrl`.
   - `apps/console/src/features/workflows/approvals/approvals-inbox.tsx`: Replaced `new EventSource` with `FetchEventSource`; removed `token` from `streamUrl`.
   - `apps/console/src/features/workflows/hooks/use-workflow-execution-stream.ts`: Replaced `new EventSource` with `FetchEventSource`; removed `token` from `sseUrl`.
-- **Backend Security Hardening (`apps/backend/`):**
-  - `apps/backend/acc-fw/src/main/java/com/acc/boot/config/SecurityConfiguration.java`: Removed `/api/v1/notifications/stream` from `permitAll()` matchers.
-  - `apps/backend/acc-ms-aio/src/main/resources/application-local.yml`: Removed `/api/v1/notifications/stream` from `permitAlls`.
-  - `apps/backend/acc-fw/src/main/java/com/acc/fw/core/jwt/JwtAuthenticationTokenFilter.java`: Purged query parameter token extraction and hardcoded permitAll fallbacks.
-  - `apps/backend/acc-fw/src/main/java/com/acc/presentation/NotificationSseController.java`: Enforced tenant isolation via `TenantContextHolder`; removed `token` request parameter.
+- **Backend Security Hardening (`apps/api/`):**
+  - `apps/api/acc-fw/src/main/java/com/acc/boot/config/SecurityConfiguration.java`: Removed `/api/v1/notifications/stream` from `permitAll()` matchers.
+  - `apps/api/acc-ms-aio/src/main/resources/application-local.yml`: Removed `/api/v1/notifications/stream` from `permitAlls`.
+  - `apps/api/acc-fw/src/main/java/com/acc/fw/core/jwt/JwtAuthenticationTokenFilter.java`: Purged query parameter token extraction and hardcoded permitAll fallbacks.
+  - `apps/api/acc-fw/src/main/java/com/acc/presentation/NotificationSseController.java`: Enforced tenant isolation via `TenantContextHolder`; removed `token` request parameter.
 - **Test Suites:**
   - Updated `notifications.test.tsx` (12 tests passed).
   - Updated `approvals-inbox.test.tsx` (6 tests passed).

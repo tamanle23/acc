@@ -2,7 +2,7 @@
 
 **Series:** Multi-Tenant Architecture Blueprint Series (Document 05 of N)  
 **Document Level:** Platform Engineering & System Integration Specification  
-**Target Systems:** `@acc/backend` (Spring Modulith / Java 21), `@acc/console` (React 19 / Vite 8)  
+**Target Systems:** `@acc/api` (Spring Modulith / Java 21), `@acc/console` (React 19 / Vite 8)  
 **Scope:** Automated Tenant Creation, Global Blueprint Catalog, Schema Cloning & Seeding, Isolated Tenant Workspaces  
 **Status:** Canonical Living Architecture Document  
 
@@ -39,7 +39,7 @@ It is critical to distinguish between **Common System Schemas** and **Onboarding
 * **Domain Starter Blueprints (`bp_...`)**: Optional, vertical-specific starter packages (e.g. *Fleet Logistics*, *Hazardous Waste Tracking*). These are **deep-cloned** into the tenant's scope (`tenant_id = newTenantId`), giving the tenant 100% ownership to evolve them as pure bespoke models.
 
 ```
-apps/backend/acc-fw/src/main/resources/metadata/blueprints/
+apps/api/acc-fw/src/main/resources/metadata/blueprints/
 ├── logistics-fleet-blueprint.json
 ├── b2b-crm-billing-blueprint.json
 ├── it-asset-management-blueprint.json

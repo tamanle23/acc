@@ -2,7 +2,7 @@
 
 ## 1. Design Strategy
 
-The objective is to implement a robust Hybrid Metadata Architecture that allows for dynamic schema definition and entity management without requiring database schema changes for every new attribute, while ensuring seamless integration with the existing `@acc/backend` (Spring Modulith) and frontend ecosystem (React 19/Next.js/Expo, Zustand, TanStack Query).
+The objective is to implement a robust Hybrid Metadata Architecture that allows for dynamic schema definition and entity management without requiring database schema changes for every new attribute, while ensuring seamless integration with the existing `@acc/api` (Spring Modulith) and frontend ecosystem (React 19/Next.js/Expo, Zustand, TanStack Query).
 
 The strategy divides the system into two distinct zones:
 *   **The Rules (Metadata):** Strictly relational tables (`entity_types`, `attribute_definitions`) defining the schema.
@@ -14,7 +14,7 @@ This approach balances flexibility with strict referential integrity, performanc
 
 The architecture spans the entire full-stack ecosystem:
 
-### Backend (`@acc/backend`)
+### Backend (`@acc/api`)
 *   **Database (PostgreSQL via Liquibase in `acc-db`):**
     *   Leverages `JSONB` for dynamic attributes.
     *   Implements the "Edge Table" (Pattern C) for complex dynamic relationships while maintaining referential integrity.

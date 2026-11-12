@@ -4,9 +4,9 @@
 **Status:** Completed | Fully Verified (Commits `e4d77685`, `4b1897d9`, `9ed21275`, `12fcba0a`, `ef3e2a48`)  
 **Author:** Principal Software Architect (DDD & Hexagonal Architecture)  
 **Standard:** [`document-reviewing`](file:///c:/Users/Admin/workspace/git/acc/.agents/skills/document-reviewing/SKILL.md) & [`code-reviewing`](file:///c:/Users/Admin/workspace/git/acc/.agents/skills/code-reviewing/SKILL.md)  
-**Target Systems:** Whole `@acc/backend` ecosystem ([`apps/backend`](file:///c:/Users/Admin/workspace/git/acc/apps/backend)) and `@acc/console` ([`apps/console`](file:///c:/Users/Admin/workspace/git/acc/apps/console))  
+**Target Systems:** Whole `@acc/api` ecosystem ([`apps/api`](file:///c:/Users/Admin/workspace/git/acc/apps/api)) and `@acc/console` ([`apps/console`](file:///c:/Users/Admin/workspace/git/acc/apps/console))  
 **Companion App Plans:**
-- Backend Plan: [`apps/backend/doc/implementation_plan_166.md`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/doc/implementation_plan_166.md)
+- Backend Plan: [`apps/api/doc/implementation_plan_166.md`](file:///c:/Users/Admin/workspace/git/acc/apps/api/doc/implementation_plan_166.md)
 - Console UI Plan: [`apps/console/doc/implementation_plan_176.md`](file:///c:/Users/Admin/workspace/git/acc/apps/console/doc/implementation_plan_176.md)
 - Plan Artifact: [`hexagonal_architecture_and_ddd_migration_plan.md`](file:///c:/Users/Admin/.gemini/antigravity/brain/f10cce1a-c362-4eb9-b89a-360213e357f4/hexagonal_architecture_and_ddd_migration_plan.md)
 
@@ -14,7 +14,7 @@
 
 ## 1. Executive Summary
 
-This master plan establishes strict **Ports-and-Adapters seams** (Hexagonal Architecture / Alistair Cockburn) and **Domain-Driven Design (DDD)** principles across the **entire `apps/backend` monorepo**, covering all 4 core Bounded Contexts, the Platform Kernel, and the Frontend Console client:
+This master plan establishes strict **Ports-and-Adapters seams** (Hexagonal Architecture / Alistair Cockburn) and **Domain-Driven Design (DDD)** principles across the **entire `apps/api` monorepo**, covering all 4 core Bounded Contexts, the Platform Kernel, and the Frontend Console client:
 
 1. **Workflow & Orchestration Context (`workflow-engine` & `acc-ms-aio`):** Pure `TaskDefinitionAggregate` & `WorkflowExecutionAggregate`; Driven ports via MyBatis XML mappers with `JsonbTypeHandler`.
 2. **File Storage & Asset Management Context (`acc-ms-fs`):** Pure `FsObjectAggregate` isolating file metadata and quota rules; Driven ports for MyBatis persistence and S3 / FileSystem `BlobStoragePort`, eliminating all `HttpServletRequest` and Jakarta Servlet imports from business services.

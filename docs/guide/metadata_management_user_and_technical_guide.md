@@ -1,6 +1,6 @@
 # Metadata Management Module - Complete User & Technical Guide
 
-**Module**: `@acc/console` & `@acc/backend`  
+**Module**: `@acc/console` & `@acc/api`  
 **Architecture**: Hybrid Relational + JSONB Schema Engine with Distributed Hazelcast Cache  
 **Scope**: End-to-End User Workflows, Data Modeling Patterns, Dynamic UI Components, and Integration Points.
 
@@ -31,7 +31,7 @@ The Metadata Management module in Acc provides a **runtime-extensible, zero-down
                                            │ REST API (JSON Schema, JWT, GIN Indexes)
                                            ▼
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                                  @acc/backend                                      │
+│                                  @acc/api                                      │
 │  ┌─────────────────────────────────┐       ┌────────────────────────────────────────┐  │
 │  │ SchemaValidationService         │       │ Embedded Hazelcast Distributed Cache   │  │
 │  │ (Draft-07 JSON Schema / Cache)  │ <===> │ (Cluster-wide L1/L2 Invalidation)      │  │

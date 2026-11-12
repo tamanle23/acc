@@ -1,7 +1,7 @@
 # Track 2: Declarative State Machines & Operational Workflows
 ## Enterprise Architectural Blueprint & Backend Implementation Guide
 
-**Target Backend System:** `@acc/backend` (`apps/backend/acc-fw`, Java 21 / Spring Boot 3.3 / Spring Modulith)
+**Target Backend System:** `@acc/api` (`apps/api/acc-fw`, Java 21 / Spring Boot 3.3 / Spring Modulith)
 **Target Domain:** Enterprise Multi-Tenant Dynamic Data Fabric & Low-Code Workflow Engine
 **Referenced Context:** `docs/brainstorming/unlocking_full_potential_of_dynamic_metadata.md` (Section 3)
 **Authoritative Architectural Specification Version:** 2.0-ENTERPRISE
@@ -19,7 +19,7 @@ Without a centralized, metadata-driven Finite State Machine (FSM) engine, enterp
 - **Missing Permission & Attribute Gates**: Operations are permitted when mandatory supporting attributes (e.g., `approver_id`, `reject_reason`, `budget_code`) are missing from the attributes payload.
 - **Tightly Coupled Side Effects**: Sending email notifications, triggering webhooks, or updating downstream inventory systems are hardcoded inside database transaction boundaries, leading to dirty reads and performance degradation.
 
-This specification introduces a **Declarative, Metadata-Driven State Machine & Workflow Engine** seamlessly embedded into the `@acc/backend` write pipeline.
+This specification introduces a **Declarative, Metadata-Driven State Machine & Workflow Engine** seamlessly embedded into the `@acc/api` write pipeline.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────┐

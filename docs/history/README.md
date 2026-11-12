@@ -164,3 +164,4 @@
 | 498 | [Fix Canvas2D Readback and WAI-ARIA Hidden Console Warnings](./498_fix_canvas2d_readback_and_wai_aria_hidden_warnings.md) | Completed |
 | 499 | [Eliminate Playground Memory Spike with SD Quality Canvas and Complete Shiki Removal](./499_eliminate_playground_memory_spike_sd_canvas_and_shiki_removal.md) | Completed |
 | 500 | [Complete Migration from python-backend to ai-control-plane](./500_migrate_python_backend_to_ai_control_plane.md) | Completed |
+| 501 | [Rename apps/backend to apps/api and @acc/backend to @acc/api](./501_rename_backend_to_api.md) | Completed |

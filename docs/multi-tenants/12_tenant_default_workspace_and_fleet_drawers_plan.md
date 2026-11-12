@@ -10,7 +10,7 @@
 
 ## 1. Executive Summary & Core Invariants
 
-This plan establishes the definitive architectural model for multi-tenant identity, workspace lifecycle immutability, personal user defaults, and sovereign fleet UI/UX drawer symmetry across `@acc/console` and `@acc/backend`.
+This plan establishes the definitive architectural model for multi-tenant identity, workspace lifecycle immutability, personal user defaults, and sovereign fleet UI/UX drawer symmetry across `@acc/console` and `@acc/api`.
 
 ### Core Invariants:
 1. **User-to-Tenant Topology (1..N Membership, 1 Active Session)**:
@@ -67,16 +67,16 @@ This plan establishes the definitive architectural model for multi-tenant identi
 ## 3. Phased Execution Tasks
 
 ### Phase 1: Backend Security & Purge of `default-tenant` Fallbacks
-* **File**: `apps/backend/acc-fw/src/main/java/com/acc/fw/core/jwt/JwtAuthenticationTokenFilter.java`
+* **File**: `apps/api/acc-fw/src/main/java/com/acc/fw/core/jwt/JwtAuthenticationTokenFilter.java`
   - Remove `.orElse("default-tenant")`.
   - If `jwtTokenHelper.getTenantId(c)` is empty, do **not** authenticate the user; return `401 Unauthorized` with structured body: `"UNASSIGNED_TENANT: User account does not belong to any tenant."`
-* **File**: `apps/backend/acc-fw/src/main/java/com/acc/service/MetadataService.java`
+* **File**: `apps/api/acc-fw/src/main/java/com/acc/service/MetadataService.java`
   - Remove fallback `: "default-tenant"` in `createEntityRecord`. Require non-null `activeTenantId` from `TenantContextHolder`.
-* **File**: `apps/backend/acc-fw/src/main/java/com/acc/service/SchemaValidationService.java`
+* **File**: `apps/api/acc-fw/src/main/java/com/acc/service/SchemaValidationService.java`
   - Remove `"default-tenant"` in cache key generation. Throw `TenancySecurityException` if tenant is absent.
-* **File**: `apps/backend/acc-fw/src/main/java/com/acc/fw/tenancy/ratelimit/TenantRateLimitFilter.java` & `TenantRateLimitService.java`
+* **File**: `apps/api/acc-fw/src/main/java/com/acc/fw/tenancy/ratelimit/TenantRateLimitFilter.java` & `TenantRateLimitService.java`
   - Remove fallback to `"default-tenant"`.
-* **File**: `apps/backend/acc-fw/src/main/java/com/acc/domain/metadata/*.java`
+* **File**: `apps/api/acc-fw/src/main/java/com/acc/domain/metadata/*.java`
   - Remove default initialization `private String tenantId = "default-tenant"`.
 * **Tests**: Update `SchemaValidationServiceTest.java` to test explicitly with `"tenant-acme"`.
 

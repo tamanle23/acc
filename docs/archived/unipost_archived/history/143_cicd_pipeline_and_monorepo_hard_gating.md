@@ -15,7 +15,7 @@ With Dual-Mode E2E testing (Mode 1 Autonomous Sandbox and Mode 2 Live Backend) e
 
 ### 1. GitHub Actions Nightly & Live E2E Integration
 - Updated `.github/workflows/nightly-test-suite.yml`:
-  - Added conditional Java 21 setup and Maven packaging step `mvn clean package -f apps/backend/pom.xml -DskipTests -q` when `e2e_mode == 'live'`.
+  - Added conditional Java 21 setup and Maven packaging step `mvn clean package -f apps/api/pom.xml -DskipTests -q` when `e2e_mode == 'live'`.
   - Replaced single-mode execution with dual-mode branch:
     - If `e2e_mode == 'live'`, runs `pnpm test:e2e:live` with live Spring Boot backend server auto-spawn and PGlite RLS.
     - If `e2e_mode == 'sandbox'`, runs `pnpm test:e2e` against deterministic client mock engines.
@@ -24,7 +24,7 @@ With Dual-Mode E2E testing (Mode 1 Autonomous Sandbox and Mode 2 Live Backend) e
 ### 2. Comprehensive Monorepo Verification
 - Executed and validated all verification commands:
   - `pnpm test:backend:sandbox`: 33/33 tests passed in 44.3s.
-  - `pnpm --filter @acc/backend test:modulith`: `ModularityTests` passed cleanly in 24.3s.
+  - `pnpm --filter @acc/api test:modulith`: `ModularityTests` passed cleanly in 24.3s.
   - `pnpm test:e2e`: 15/15 Golden Journey specs passed in 44.5s.
   - `pnpm --filter tekgo-ui build`: 95/95 static pages generated with 0 SSR hook errors.
   - `pnpm --filter mobile-ui test`: 23/23 tests green in 803ms.

@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-19  
 **Status:** Complete  
-**Scope:** `@acc/console`, `@acc/backend` (`acc-fw`, `acc-db`, `acc-ms-aio`)  
+**Scope:** `@acc/console`, `@acc/api` (`acc-fw`, `acc-db`, `acc-ms-aio`)  
 
 ---
 
@@ -38,19 +38,19 @@ Execute `docs/integration_master_plan_iteration12.md` and `apps/console/doc/impl
 - `apps/console/src/features/workflows/index.tsx`: Tabbed navigation between Definitions Catalog and Approvals Inbox.
 - `apps/console/src/features/dlq/components/dlq-inspector-sheet.tsx`: Enhanced override editor with "Copy Existing Payload" button and validated JSON editing.
 
-### Backend (`@acc/backend`)
-- `apps/backend/acc-db/src/main/resources/db/acc/changelog-000.000.00013.xml`: Added GIN index `idx_acc_entities_gin`, keyset seek index `idx_acc_entities_seek`, outbox table `UNIPOST_EVENT_PUBLICATIONS`, and DLQ table `UNIPOST_DLQ_MESSAGES`.
-- `apps/backend/acc-fw/src/main/java/org/springframework/data/util/TypeInformation.java`: Permanently removed stub; configured Springdoc OpenAPI 3.1 cleanly.
-- `apps/backend/acc-fw/src/main/java/com/acc/service/BaseModelService.java`: Fully implemented `findAll(PageRequest)` without TODOs.
-- `apps/backend/acc-fw/src/main/java/com/acc/cache/jest/JestRepository.java`: Replaced swallowed exceptions with `ElasticsearchOperationException`.
-- `apps/backend/acc-fw/src/main/java/com/acc/fw/context/WebContext.java`: Migrated to `InheritableThreadLocal` for virtual thread cluster safety.
-- `apps/backend/acc-fw/src/main/java/com/acc/service/DynamicIndexProvisioner.java`: Configured reflective Java 21 Loom virtual thread executor with cached thread pool fallback.
-- `apps/backend/acc-fw/src/main/java/com/acc/service/MetadataService.java`: Added keyset cursor-based seek method `seekEntityRecords` and exposed `GET /entity-types/{id}/records/seek`.
-- `apps/backend/acc-fw/src/main/java/com/acc/presentation/MetadataController.java`: Added seek and revert (`PATCH /records/{id}/revert/{auditId}`) endpoints.
-- `apps/backend/acc-fw/src/main/java/com/acc/presentation/NotificationSseController.java`: Created SSE notification streaming endpoint `/api/v1/notifications/stream`.
-- `apps/backend/acc-fw/src/main/java/com/acc/service/workflow/EntityWorkflowTriggerDispatcher.java`: Created Modulith event dispatcher bridging entity mutations to workflow executions and SSE alerts.
-- `apps/backend/acc-fw/src/main/java/com/acc/service/metadata/serialization/FieldLevelSecuritySerializer.java`: Implemented role-aware attribute masking (Admin / Operator / Viewer).
-- `apps/backend/acc-fw/src/main/java/com/acc/presentation/dto/metadata/MetadataDtoMapper.java`: Integrated field-level security redaction into record responses.
+### Backend (`@acc/api`)
+- `apps/api/acc-db/src/main/resources/db/acc/changelog-000.000.00013.xml`: Added GIN index `idx_acc_entities_gin`, keyset seek index `idx_acc_entities_seek`, outbox table `UNIPOST_EVENT_PUBLICATIONS`, and DLQ table `UNIPOST_DLQ_MESSAGES`.
+- `apps/api/acc-fw/src/main/java/org/springframework/data/util/TypeInformation.java`: Permanently removed stub; configured Springdoc OpenAPI 3.1 cleanly.
+- `apps/api/acc-fw/src/main/java/com/acc/service/BaseModelService.java`: Fully implemented `findAll(PageRequest)` without TODOs.
+- `apps/api/acc-fw/src/main/java/com/acc/cache/jest/JestRepository.java`: Replaced swallowed exceptions with `ElasticsearchOperationException`.
+- `apps/api/acc-fw/src/main/java/com/acc/fw/context/WebContext.java`: Migrated to `InheritableThreadLocal` for virtual thread cluster safety.
+- `apps/api/acc-fw/src/main/java/com/acc/service/DynamicIndexProvisioner.java`: Configured reflective Java 21 Loom virtual thread executor with cached thread pool fallback.
+- `apps/api/acc-fw/src/main/java/com/acc/service/MetadataService.java`: Added keyset cursor-based seek method `seekEntityRecords` and exposed `GET /entity-types/{id}/records/seek`.
+- `apps/api/acc-fw/src/main/java/com/acc/presentation/MetadataController.java`: Added seek and revert (`PATCH /records/{id}/revert/{auditId}`) endpoints.
+- `apps/api/acc-fw/src/main/java/com/acc/presentation/NotificationSseController.java`: Created SSE notification streaming endpoint `/api/v1/notifications/stream`.
+- `apps/api/acc-fw/src/main/java/com/acc/service/workflow/EntityWorkflowTriggerDispatcher.java`: Created Modulith event dispatcher bridging entity mutations to workflow executions and SSE alerts.
+- `apps/api/acc-fw/src/main/java/com/acc/service/metadata/serialization/FieldLevelSecuritySerializer.java`: Implemented role-aware attribute masking (Admin / Operator / Viewer).
+- `apps/api/acc-fw/src/main/java/com/acc/presentation/dto/metadata/MetadataDtoMapper.java`: Integrated field-level security redaction into record responses.
 
 ---
 

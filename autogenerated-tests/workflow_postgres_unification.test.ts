@@ -8,7 +8,7 @@ describe('Iteration 61: Enhanced Unified PostgreSQL Architecture for Workflow En
   test('TC-WF-01: Changelog 19 declares all 6 workflow tables, autovacuum tuning, and pg_notify trigger', () => {
     const changelogPath = path.join(
       ROOT_DIR,
-      'apps/backend/acc-db/src/main/resources/db/acc/changelog-000.000.00019.xml'
+      'apps/api/acc-db/src/main/resources/db/acc/changelog-000.000.00019.xml'
     );
     expect(fs.existsSync(changelogPath)).toBe(true);
 
@@ -30,11 +30,11 @@ describe('Iteration 61: Enhanced Unified PostgreSQL Architecture for Workflow En
   test('TC-WF-02: Master changelogs in acc-db and acc-sandbox include changelog-000.000.00019.xml', () => {
     const accDbMaster = path.join(
       ROOT_DIR,
-      'apps/backend/acc-db/src/main/resources/db/acc/changelog-master.xml'
+      'apps/api/acc-db/src/main/resources/db/acc/changelog-master.xml'
     );
     const sandboxMaster = path.join(
       ROOT_DIR,
-      'apps/backend/acc-sandbox/src/main/resources/db/sandbox/changelog-master.xml'
+      'apps/api/acc-sandbox/src/main/resources/db/sandbox/changelog-master.xml'
     );
 
     expect(fs.readFileSync(accDbMaster, 'utf-8')).toContain('db/acc/changelog-000.000.00019.xml');
@@ -44,7 +44,7 @@ describe('Iteration 61: Enhanced Unified PostgreSQL Architecture for Workflow En
   test('TC-WF-03: PostgresJdbcPersistenceAdapter includes defensive initializeSchemaIfMissing()', () => {
     const adapterPath = path.join(
       ROOT_DIR,
-      'apps/backend/workflow-engine/src/main/java/com/acc/workflow/adapters/storage/PostgresJdbcPersistenceAdapter.java'
+      'apps/api/workflow-engine/src/main/java/com/acc/workflow/adapters/storage/PostgresJdbcPersistenceAdapter.java'
     );
     const content = fs.readFileSync(adapterPath, 'utf-8');
     expect(content).toContain('initializeSchemaIfMissing()');
@@ -55,7 +55,7 @@ describe('Iteration 61: Enhanced Unified PostgreSQL Architecture for Workflow En
   test('TC-WF-04: WorkflowEngineConfiguration configures isolated HikariPool-WorkflowEngine and listener bean', () => {
     const configPath = path.join(
       ROOT_DIR,
-      'apps/backend/acc-ms-aio/src/main/java/com/acc/aio/config/WorkflowEngineConfiguration.java'
+      'apps/api/acc-ms-aio/src/main/java/com/acc/aio/config/WorkflowEngineConfiguration.java'
     );
     const content = fs.readFileSync(configPath, 'utf-8');
     expect(content).toContain('HikariPool-WorkflowEngine');
@@ -68,7 +68,7 @@ describe('Iteration 61: Enhanced Unified PostgreSQL Architecture for Workflow En
   test('TC-WF-05: PostgresNotificationListener and SystemTaskWorkerPool storm coalescing', () => {
     const listenerPath = path.join(
       ROOT_DIR,
-      'apps/backend/acc-ms-aio/src/main/java/com/acc/aio/worker/PostgresNotificationListener.java'
+      'apps/api/acc-ms-aio/src/main/java/com/acc/aio/worker/PostgresNotificationListener.java'
     );
     expect(fs.existsSync(listenerPath)).toBe(true);
     const listenerContent = fs.readFileSync(listenerPath, 'utf-8');
@@ -79,7 +79,7 @@ describe('Iteration 61: Enhanced Unified PostgreSQL Architecture for Workflow En
 
     const workerPoolPath = path.join(
       ROOT_DIR,
-      'apps/backend/acc-ms-aio/src/main/java/com/acc/aio/worker/SystemTaskWorkerPool.java'
+      'apps/api/acc-ms-aio/src/main/java/com/acc/aio/worker/SystemTaskWorkerPool.java'
     );
     const workerContent = fs.readFileSync(workerPoolPath, 'utf-8');
     expect(workerContent).toContain('drainScheduled');
@@ -91,12 +91,12 @@ describe('Iteration 61: Enhanced Unified PostgreSQL Architecture for Workflow En
   test('TC-WF-06: SQLite adapter and dependency marked deprecated/optional', () => {
     const sqliteAdapterPath = path.join(
       ROOT_DIR,
-      'apps/backend/workflow-engine/src/main/java/com/acc/workflow/adapters/storage/SqliteJdbcPersistenceAdapter.java'
+      'apps/api/workflow-engine/src/main/java/com/acc/workflow/adapters/storage/SqliteJdbcPersistenceAdapter.java'
     );
     const sqliteContent = fs.readFileSync(sqliteAdapterPath, 'utf-8');
     expect(sqliteContent).toContain('@Deprecated');
 
-    const pomPath = path.join(ROOT_DIR, 'apps/backend/workflow-engine/pom.xml');
+    const pomPath = path.join(ROOT_DIR, 'apps/api/workflow-engine/pom.xml');
     const pomContent = fs.readFileSync(pomPath, 'utf-8');
     expect(pomContent).toContain('<optional>true</optional>');
   });

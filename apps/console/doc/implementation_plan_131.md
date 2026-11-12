@@ -83,33 +83,33 @@ flowchart TD
 
 ---
 
-### Phase 2: Complete Zero-Stub Hardening (`@acc/backend`)
+### Phase 2: Complete Zero-Stub Hardening (`@acc/api`)
 
-#### [DELETE] `apps/backend/acc-fw/src/main/java/org/springframework/data/util/TypeInformation.java`
+#### [DELETE] `apps/api/acc-fw/src/main/java/org/springframework/data/util/TypeInformation.java`
 - Remove stub class; configure Springdoc OpenAPI 3.1 to skip Spring Data introspection cleanly.
 
-#### [MODIFY] `apps/backend/acc-fw/src/main/java/com/acc/service/BaseModelService.java`
+#### [MODIFY] `apps/api/acc-fw/src/main/java/com/acc/service/BaseModelService.java`
 - Fully implement base model persistence, audit timestamps, and tenant security; eliminate `// TODO Auto-generated method stub`.
 
-#### [MODIFY] `apps/backend/acc-fw/src/main/java/com/acc/cache/jest/JestRepository.java`
+#### [MODIFY] `apps/api/acc-fw/src/main/java/com/acc/cache/jest/JestRepository.java`
 - Replace swallowed exceptions with typed `ElasticsearchOperationException` and contextual logging.
 
-#### [MODIFY] `apps/backend/acc-fw/src/main/java/com/acc/fw/context/WebContext.java`
+#### [MODIFY] `apps/api/acc-fw/src/main/java/com/acc/fw/context/WebContext.java`
 - Refactor single-instance thread-local state to support multi-instance cluster deployments and virtual thread hand-offs.
 
 ---
 
-### Phase 3: Backend Performance Tuning & Indexing (`@acc/backend`)
+### Phase 3: Backend Performance Tuning & Indexing (`@acc/api`)
 
-#### [MODIFY] `apps/backend/acc-fw/src/main/resources/db/migration/V12__dynamic_indexing_and_audit.sql`
+#### [MODIFY] `apps/api/acc-fw/src/main/resources/db/migration/V12__dynamic_indexing_and_audit.sql`
 - Add global GIN indexing: `CREATE INDEX idx_entity_records_gin ON UNIPOST_ENTITY_RECORDS USING gin (data jsonb_path_ops);`.
 - Add programmatic creation of PostgreSQL functional expression indexes for attributes flagged as `indexed: true`.
 
-#### [MODIFY] `apps/backend/acc-fw/src/main/java/com/acc/service/metadata/MetadataRecordService.java`
+#### [MODIFY] `apps/api/acc-fw/src/main/java/com/acc/service/metadata/MetadataRecordService.java`
 - Implement keyset/cursor-based pagination (`seek` method) for sub-millisecond query performance on tables exceeding 100,000 records.
 - Implement selective projection queries (`jsonb_build_object`).
 
-#### [MODIFY] `apps/backend/acc-fw/src/main/java/com/acc/config/HazelcastConfig.java` & `AsyncExecutionConfig.java`
+#### [MODIFY] `apps/api/acc-fw/src/main/java/com/acc/config/HazelcastConfig.java` & `AsyncExecutionConfig.java`
 - Configure Near-Cache with `in-memory-format: OBJECT` and local invalidation listeners.
 - Enable Java 21 Project Loom virtual thread per-task executors for workflow step dispatches.
 
@@ -117,13 +117,13 @@ flowchart TD
 
 ### Phase 4: Dynamic Workflows & Real-Life E2E Workflows
 
-#### [NEW] `apps/backend/acc-fw/src/main/java/com/acc/service/metadata/workflow/EntityWorkflowTriggerDispatcher.java`
+#### [NEW] `apps/api/acc-fw/src/main/java/com/acc/service/metadata/workflow/EntityWorkflowTriggerDispatcher.java`
 - Spring Modulith persistent outbox listener on `EntityRecordMutatedEvent`; dispatches automated DAG `WorkflowExecution`.
 
 #### [NEW] `apps/console/src/features/workflows/approvals/approvals-inbox.tsx`
 - Human-in-the-loop approval inbox listing pending workflow review tasks with dynamic entity context diffs.
 
-#### [NEW] `apps/backend/acc-fw/src/main/java/com/acc/controller/NotificationSseController.java`
+#### [NEW] `apps/api/acc-fw/src/main/java/com/acc/controller/NotificationSseController.java`
 - Server-Sent Events (SSE) notification stream (`/api/v1/notifications/stream`) pushing approval events and execution progress.
 
 #### [MODIFY] `apps/console/src/features/system/dlq/dlq-inspector-sheet.tsx`
@@ -133,10 +133,10 @@ flowchart TD
 
 ### Phase 5: Security, CDC & Dual-Mode E2E Verification
 
-#### [MODIFY] `apps/backend/acc-fw/src/main/java/com/acc/service/metadata/serialization/FieldLevelSecuritySerializer.java`
+#### [MODIFY] `apps/api/acc-fw/src/main/java/com/acc/service/metadata/serialization/FieldLevelSecuritySerializer.java`
 - Server-side dynamic serialization redaction based on user tenant roles.
 
-#### [MODIFY] `apps/backend/acc-fw/src/main/java/com/acc/service/metadata/MetadataRecordService.java`
+#### [MODIFY] `apps/api/acc-fw/src/main/java/com/acc/service/metadata/MetadataRecordService.java`
 - Record RFC-6902 JSON Patch on mutations in `UNIPOST_RECORD_AUDIT_LOGS`; implement rollback endpoint.
 
 #### [NEW] `apps/console/src/features/metadata/components/data-explorer/record-history-drawer.tsx`
@@ -156,7 +156,7 @@ pnpm --filter @acc/console check-types
 pnpm --filter @acc/console test:run
 
 # 3. Backend Unit & Modulith Contract Tests
-pnpm --filter @acc/backend test
+pnpm --filter @acc/api test
 
 # 4. Playwright Dual-Mode E2E Workflows (Mode 1 Sandbox & Mode 2 Live Backend)
 pnpm test:e2e

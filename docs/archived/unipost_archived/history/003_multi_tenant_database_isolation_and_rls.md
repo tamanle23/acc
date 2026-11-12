@@ -17,16 +17,16 @@ In the dynamic metadata engine, entity types and attribute definitions lacked te
 7. Add automated tests and verify build.
 
 ## Changes
-- **Database (`apps/backend/acc-db`)**:
+- **Database (`apps/api/acc-db`)**:
   - `src/main/resources/db/acc/changelog-000.000.00005.xml`: Added DDL for tenant columns, soft-delete composite partial indexes, and PostgreSQL RLS policies (`FORCE ROW LEVEL SECURITY`).
   - `src/main/resources/db/acc/changelog-master.xml`: Included changelog 00005.
-- **Entities (`apps/backend/acc-fw`)**:
+- **Entities (`apps/api/acc-fw`)**:
   - `com.acc.domain.metadata.EntityType`: Added `tenantId` mapping.
   - `com.acc.domain.metadata.AttributeDefinition`: Added `tenantId` mapping.
   - `com.acc.domain.metadata.RelationshipType`: Added `tenantId` mapping.
   - `com.acc.domain.metadata.EntityRelationship`: Added `tenantId` mapping.
   - `com.acc.domain.metadata.EntityRecord`: Added non-null default for `tenantId`.
-- **Tenancy Framework (`apps/backend/acc-fw`)**:
+- **Tenancy Framework (`apps/api/acc-fw`)**:
   - `com.acc.fw.tenancy.TenantContextHolder`: Thread-local context manager.
   - `com.acc.fw.tenancy.TenantSessionAspect`: Spring AOP Aspect executing `SET LOCAL app.current_tenant_id`.
   - `com.acc.fw.tenancy.TenantContextAndAspectTest`: Unit tests for tenant context and aspect.

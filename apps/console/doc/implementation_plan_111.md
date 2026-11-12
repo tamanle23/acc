@@ -9,7 +9,7 @@ Phase 42 establishes the hardened, transactional write plane for base entity rec
 
 > [!IMPORTANT]
 > **Key Architecture Decisions Aligned in /grill-me**:
-> 1. **Dedicated Pipeline**: A modular `RecordMutationPipeline` engine in `apps/backend/acc-fw` orchestrates all 6 stages within `@Transactional` boundaries.
+> 1. **Dedicated Pipeline**: A modular `RecordMutationPipeline` engine in `apps/api/acc-fw` orchestrates all 6 stages within `@Transactional` boundaries.
 > 2. **Dual-Mode OCC & ETag**: Extract version from `If-Match` header (or JSON body `version`). On mismatch, attempt 3-way auto-merge if `baseAttributes` is provided; otherwise return `409 Conflict`. Return `ETag: "\"{version}\""` on all record GET and mutation responses.
 > 3. **Declarative Delete Cascades**: Pattern B declares `cascadePolicy` inside `options` JSONB (`UNIPOST_ATTRIBUTE_DEFINITIONS`); Pattern C stores `cascade_policy` in `UNIPOST_RELATIONSHIP_TYPES`. Supports `RESTRICT`, `CASCADE`, and `SET_NULL` (Detach).
 > 4. **Cascade Execution Strategy**: Child cascade deletes execute via set-based bulk SQL updates (`UPDATE UNIPOST_ENTITIES SET deleted_date = NOW() ...`) for maximum throughput, recording a single root audit log entry.
@@ -28,7 +28,7 @@ Phase 42 establishes the hardened, transactional write plane for base entity rec
 
 ### Workstream 1: Database Schema & Partitioned Audit Ledger (Liquibase)
 
-#### [NEW] `apps/backend/acc-db/src/main/resources/db/acc/changelog-000.000.00012.xml`
+#### [NEW] `apps/api/acc-db/src/main/resources/db/acc/changelog-000.000.00012.xml`
 - Add `cascade_policy VARCHAR(20) DEFAULT 'RESTRICT' NOT NULL` to `UNIPOST_RELATIONSHIP_TYPES`.
 - Create partitioned table `UNIPOST_RECORD_AUDIT_LOG`:
   - Columns:
@@ -54,29 +54,29 @@ Phase 42 establishes the hardened, transactional write plane for base entity rec
 - Add composite index: `idx_record_audit_lookup ON UNIPOST_RECORD_AUDIT_LOG (tenant_id, record_id, created_at DESC)`.
 - Enable PostgreSQL Row-Level Security (RLS) on `UNIPOST_RECORD_AUDIT_LOG` with tenant isolation policy matching `UNIPOST_ENTITIES`.
 
-#### [EDIT] `apps/backend/acc-db/src/main/resources/db/acc/changelog-master.xml`
+#### [EDIT] `apps/api/acc-db/src/main/resources/db/acc/changelog-master.xml`
 - Register `changelog-000.000.00012.xml`.
 
 ---
 
 ### Workstream 2: Domain Model & Audit Persistence
 
-#### [NEW] `apps/backend/acc-fw/src/main/java/com/acc/domain/metadata/RecordAuditLog.java`
+#### [NEW] `apps/api/acc-fw/src/main/java/com/acc/domain/metadata/RecordAuditLog.java`
 - JPA entity representing `UNIPOST_RECORD_AUDIT_LOG` with composite primary key (`id`, `createdAt`), `tenantId`, `recordId`, `entityTypeId`, `operation`, `actor`, `version`, `oldAttributes`, `newAttributes`, and `delta`.
 
-#### [NEW] `apps/backend/acc-fw/src/main/java/com/acc/repository/jpa/RecordAuditLogRepository.java`
+#### [NEW] `apps/api/acc-fw/src/main/java/com/acc/repository/jpa/RecordAuditLogRepository.java`
 - Repository with queries:
   - `findByTenantIdAndRecordIdOrderByCreatedAtDesc(String tenantId, Long recordId)`
   - `findByTenantIdAndRecordIdAndId(String tenantId, Long recordId, Long id)`
 
-#### [EDIT] `apps/backend/acc-fw/src/main/java/com/acc/domain/metadata/RelationshipType.java`
+#### [EDIT] `apps/api/acc-fw/src/main/java/com/acc/domain/metadata/RelationshipType.java`
 - Add `cascadePolicy` column (`RESTRICT`, `CASCADE`, `SET_NULL`) with default `RESTRICT`.
 
 ---
 
 ### Workstream 3: The 6-Stage Mutation Pipeline Engine
 
-#### [NEW] `apps/backend/acc-fw/src/main/java/com/acc/service/RecordMutationPipeline.java`
+#### [NEW] `apps/api/acc-fw/src/main/java/com/acc/service/RecordMutationPipeline.java`
 - Encapsulates the 6-stage lifecycle:
   - **Stage 1 (OCC & ETag Extraction)**: Resolves expected version from `If-Match` header or request body.
   - **Stage 2 (Validation & Defaults)**: Applies server-side attribute defaults, checks payload size, validates with `SchemaValidationService` (`additionalProperties: false`), and triggers FSM state transition validation.
@@ -91,10 +91,10 @@ Phase 42 establishes the hardened, transactional write plane for base entity rec
     - If `SET_NULL`: executes bulk SQL update clearing the referencing foreign key or soft-deletes the relationship edge.
   - **Stage 6 (Audit & Outbox)**: Computes attribute delta map `{"key": {"old": v1, "new": v2}}`, saves row in `UNIPOST_RECORD_AUDIT_LOG`, and dispatches outbox event via `OutboxEventPublisher`.
 
-#### [NEW] `apps/backend/acc-fw/src/main/java/com/acc/service/AuditPartitionProvisioner.java`
+#### [NEW] `apps/api/acc-fw/src/main/java/com/acc/service/AuditPartitionProvisioner.java`
 - Utility/scheduled component checking if monthly partitions for `T + 1` and `T + 2` months exist, creating table DDL dynamically if missing.
 
-#### [EDIT] `apps/backend/acc-fw/src/main/java/com/acc/service/MetadataService.java`
+#### [EDIT] `apps/api/acc-fw/src/main/java/com/acc/service/MetadataService.java`
 - Refactor `createEntityRecord`, `updateEntityRecord`, `patchEntityRecord`, and `deleteEntityRecord` to delegate directly through `RecordMutationPipeline`.
 - Add `getRecordAuditLogs(Long entityTypeId, Long recordId)` returning chronological audit history.
 - Add `previewRestoreRecordVersion(Long entityTypeId, Long recordId, Long auditLogId)` computing proposed attributes diff with active schema defaults.
@@ -104,7 +104,7 @@ Phase 42 establishes the hardened, transactional write plane for base entity rec
 
 ### Workstream 4: REST Controllers & ETag Protocol
 
-#### [EDIT] `apps/backend/acc-fw/src/main/java/com/acc/presentation/MetadataController.java`
+#### [EDIT] `apps/api/acc-fw/src/main/java/com/acc/presentation/MetadataController.java`
 - In `getEntityRecord`, attach `ETag: "\"{record.version}\""` header.
 - In `updateEntityRecord` and `patchEntityRecord`, support `@RequestHeader(value = "If-Match", required = false) String ifMatchHeader` and return `ETag` header.
 - Add endpoint `GET /entity-types/{id}/records/{recordId}/audit` returning `List<RecordAuditLogResponse>`.
@@ -148,7 +148,7 @@ Phase 42 establishes the hardened, transactional write plane for base entity rec
 
 ### Automated Tests
 1. **Backend Tests (JUnit 5)**:
-   - `apps/backend/acc-fw/src/test/java/com/acc/service/RecordMutationPipelineTest.java`:
+   - `apps/api/acc-fw/src/test/java/com/acc/service/RecordMutationPipelineTest.java`:
      - `testCreateRecord_EnforcesDefaultsAndCreatesAuditLog`
      - `testUpdateRecord_WithValidIfMatch_SucceedsAndComputesDelta`
      - `testUpdateRecord_WithVersionMismatchAndBaseAttributes_Performs3WayMerge`
@@ -166,7 +166,7 @@ Phase 42 establishes the hardened, transactional write plane for base entity rec
      - Asserts "Restore to this Version" button is hidden for regular tenant operators (`isSovereignCustodian: false`).
      - Asserts restore preview dialog shows computed changes before confirming.
 3. **Monorepo Build & Quality Gates**:
-   - `mvn test -f apps/backend/pom.xml -pl acc-fw "-Dtest=RecordMutationPipelineTest" -q`
+   - `mvn test -f apps/api/pom.xml -pl acc-fw "-Dtest=RecordMutationPipelineTest" -q`
    - `pnpm --filter @acc/console test`
    - `pnpm --filter @acc/console exec eslint src/features/metadata/components/records`
    - `pnpm --filter @acc/console exec tsc --noEmit`

@@ -2,7 +2,7 @@
 
 **Series:** Multi-Tenant Architecture Blueprint Series (Document 04 of N)  
 **Document Level:** Security Architecture & Technical Specification  
-**Target Systems:** `@acc/backend` (Spring Modulith / Spring Security 6 / Java 21), `@acc/console` (React 19 / Axios)  
+**Target Systems:** `@acc/api` (Spring Modulith / Spring Security 6 / Java 21), `@acc/console` (React 19 / Axios)  
 **Scope:** Cryptographic Token Claims, Security Filter Chains, `TenantContextHolder`, Async / Reactive Context Propagation, Anti-Spoofing Guarantees  
 **Status:** Canonical Living Architecture Document  
 

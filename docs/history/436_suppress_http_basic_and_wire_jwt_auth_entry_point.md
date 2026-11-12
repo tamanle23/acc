@@ -10,7 +10,7 @@ Root Causes Identified:
 4. In Console (`user-auth-form.tsx`), `fetchAuthenticationProfile()` was invoked immediately after `setTokens(...)` without passing the explicit Bearer token, causing potential race conditions with asynchronous store updates.
 
 ## Changes Made
-1. **Backend (`apps/backend/acc-fw`)**:
+1. **Backend (`apps/api/acc-fw`)**:
    - `SecurityConfiguration.java`:
      - Injected `JwtAuthenticationEntryPoint`.
      - Explicitly disabled HTTP Basic authentication: `.httpBasic(hb -> hb.disable())`.

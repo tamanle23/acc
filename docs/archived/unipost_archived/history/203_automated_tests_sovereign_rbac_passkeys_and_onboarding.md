@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-25  
 **Author:** Lead Systems Architect & Full-Stack Engineer  
-**Scope:** `apps/backend/acc-fw`, `apps/console`, `docs/history/`  
+**Scope:** `apps/api/acc-fw`, `apps/console`, `docs/history/`  
 **Status:** Complete & Verified  
 
 ---
@@ -14,7 +14,7 @@ Following the implementation of Sovereign RBAC, passkey biometric authentication
 
 ## 2. Implementation & Test Suite Architecture
 
-### 2.1. Backend Unit Tests (`apps/backend/acc-fw`)
+### 2.1. Backend Unit Tests (`apps/api/acc-fw`)
 - **`SystemFleetServiceTest`**:
   - Validated `assumeTenant` issuance stamping canonical `ROLE_SYSTEM_ROOT` and `ROLE_SYSTEM_SUPPORT` authorities.
   - Verified sovereign role matrix store initialization, custom role creation, duplicate role conflict detection (`MetadataConflictException`), permission updating, and error handling for missing roles (`MetadataNotFoundException`).

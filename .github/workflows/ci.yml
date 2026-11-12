@@ -73,7 +73,7 @@ jobs:
           docker --version
 
       - name: Build and Test Spring Backend
-        working-directory: apps/backend
+        working-directory: apps/api
         run: |
           ./mvnw test -Dtest="*ModularityTests,TenantExportServiceTest,SecurityPenetrationFuzzingTest" -Dsurefire.failIfNoSpecifiedTests=false --batch-mode
 

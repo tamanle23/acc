@@ -22,14 +22,14 @@ In previous iterations, the console client lacked unified, declarative client-si
 ## Changes
 
 ### 1. Backend Security & Controller Hardening
-- [`SecurityConfiguration.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/boot/config/SecurityConfiguration.java): Disabled CSRF for stateless REST endpoints, set `SessionCreationPolicy.STATELESS`, disabled httpBasic dialogs.
-- [`WebConfiguration.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/boot/config/WebConfiguration.java): Configured Jackson ObjectMapper with `FAIL_ON_NULL_FOR_PRIMITIVES = false` and `FAIL_ON_UNKNOWN_PROPERTIES = false`.
-- [`WorkflowDefinition.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/model/WorkflowDefinition.java) & [`TaskDefinition.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/model/TaskDefinition.java): Replaced primitive `int` fields with boxed `Integer` and record defaults.
-- [`WorkflowDefinitionController.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/WorkflowDefinitionController.java): Replaced legacy `@PreAuthorize` strings with canonical `workflow:definition:manage` and `workflow:definition:read`.
-- [`WorkflowExecutionController.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/WorkflowExecutionController.java): Replaced `@PreAuthorize` strings with canonical `workflow:execution:submit` and `workflow:execution:read`.
-- [`WorkflowApprovalsController.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/WorkflowApprovalsController.java): Replaced `@PreAuthorize` with canonical `workflow:approval:execute` and `workflow:execution:read`.
-- [`WorkerFleetController.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/WorkerFleetController.java): Standardized permission check to `platform:workers:manage`.
-- [`SandboxPersonaRegistry.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-sandbox/src/main/java/com/acc/sandbox/auth/SandboxPersonaRegistry.java): Purged legacy strings and seeded canonical permissions across all personas.
+- [`SecurityConfiguration.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/acc-fw/src/main/java/com/acc/boot/config/SecurityConfiguration.java): Disabled CSRF for stateless REST endpoints, set `SessionCreationPolicy.STATELESS`, disabled httpBasic dialogs.
+- [`WebConfiguration.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/acc-fw/src/main/java/com/acc/boot/config/WebConfiguration.java): Configured Jackson ObjectMapper with `FAIL_ON_NULL_FOR_PRIMITIVES = false` and `FAIL_ON_UNKNOWN_PROPERTIES = false`.
+- [`WorkflowDefinition.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/workflow-engine/src/main/java/com/acc/workflow/core/model/WorkflowDefinition.java) & [`TaskDefinition.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/workflow-engine/src/main/java/com/acc/workflow/core/model/TaskDefinition.java): Replaced primitive `int` fields with boxed `Integer` and record defaults.
+- [`WorkflowDefinitionController.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/WorkflowDefinitionController.java): Replaced legacy `@PreAuthorize` strings with canonical `workflow:definition:manage` and `workflow:definition:read`.
+- [`WorkflowExecutionController.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/WorkflowExecutionController.java): Replaced `@PreAuthorize` strings with canonical `workflow:execution:submit` and `workflow:execution:read`.
+- [`WorkflowApprovalsController.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/WorkflowApprovalsController.java): Replaced `@PreAuthorize` with canonical `workflow:approval:execute` and `workflow:execution:read`.
+- [`WorkerFleetController.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/WorkerFleetController.java): Standardized permission check to `platform:workers:manage`.
+- [`SandboxPersonaRegistry.java`](file:///c:/Users/Admin/workspace/git/acc/apps/api/acc-sandbox/src/main/java/com/acc/sandbox/auth/SandboxPersonaRegistry.java): Purged legacy strings and seeded canonical permissions across all personas.
 
 ### 2. Frontend Authorization Primitives (`@acc/console`)
 - [`permission-guard.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/components/auth/permission-guard.tsx): Implemented `<PermissionGuard />` with `getRequiredClearanceText()` mapping canonical atoms to human-readable clearance tiers (Community, Standard, Operations, Workspace Owner, Sovereign).
@@ -65,8 +65,8 @@ In previous iterations, the console client lacked unified, declarative client-si
   - `pnpm --filter @acc/console test src/features/metadata/components/entity-type/`: **3 passed (1 test file)**.
   - `pnpm --filter @acc/console test src/features/metadata/__tests__/context-switching-store.test.ts`: **3 passed (1 test file)**.
 - **Backend Build & Test**:
-  - `node apps/backend/mvnw.cjs -pl acc-fw test -Dtest=TokenServiceImplTest`: **2 passed (0 errors)**.
-  - `pnpm --filter @acc/backend check-types`: **BUILD SUCCESS (9/9 modules clean)**.
+  - `node apps/api/mvnw.cjs -pl acc-fw test -Dtest=TokenServiceImplTest`: **2 passed (0 errors)**.
+  - `pnpm --filter @acc/api check-types`: **BUILD SUCCESS (9/9 modules clean)**.
 
 ## Tasks
 - [x] Backend `@PreAuthorize` canonical purge across all workflow and worker controllers.

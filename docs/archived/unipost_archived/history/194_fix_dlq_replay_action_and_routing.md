@@ -24,8 +24,8 @@ When clicking the "Replay" action button on a Dead-Letter Queue (DLQ) task in `@
 - **`apps/console/src/features/dlq/components/dlq-table.tsx`**: Added `replayingDlqId` to table props and forwarded to column builder.
 - **`apps/console/src/features/dlq/index.tsx`**: Fed `replayMutation.isPending` and target `dlqId` into both table and inspector sheet.
 - **`packages/sandbox/src/handlers/dlq-sandbox-handler.ts`**: Updated `DlqSandboxRepository.getById()`, `replay()`, and `discard()` to fallback across all tenant maps if not found under active session tenant.
-- **`apps/backend/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/WorkflowDlqController.java`**: Added `/api/system/dlq` and `/api/workflow/dlq` paths to `@RequestMapping`.
-- **`apps/backend/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/WorkflowExecutionController.java`**: Corrected `dlq.dlqId()` method call.
+- **`apps/api/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/WorkflowDlqController.java`**: Added `/api/system/dlq` and `/api/workflow/dlq` paths to `@RequestMapping`.
+- **`apps/api/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/WorkflowExecutionController.java`**: Corrected `dlq.dlqId()` method call.
 - **`apps/console/src/features/workflows/components/studio/toolbar/dag-header-command-bar.tsx`**: Enhanced aria-label to `Topological Auto-Layout` for WCAG 2.2 AA compliance.
 - **`apps/console/src/features/workflows/components/studio/iteration18-studio.test.tsx`** & **`visual-dag-studio-modes.test.tsx`**: Added `useReplayWorkflowTask` mock definition.
 

@@ -1,15 +1,15 @@
 # Walkthrough 67: Comprehensive Unit, Integration, and E2E Test Suite for Multi-Tenant Ecosystem
 
 ## 1. Executive Summary
-This document records the creation, execution, and verification of comprehensive end-to-end (E2E), integration, and unit tests covering all multi-tenant and domain blueprint lifecycles across `@acc/backend` and `@acc/console`.
+This document records the creation, execution, and verification of comprehensive end-to-end (E2E), integration, and unit tests covering all multi-tenant and domain blueprint lifecycles across `@acc/api` and `@acc/console`.
 
 ---
 
 ## 2. Test Suites Added & Enhanced
 
-### A. Backend (`@acc/backend`)
+### A. Backend (`@acc/api`)
 1. **`TenantBillingControllerTest.java`**:
-   - Location: `apps/backend/acc-fw/src/test/java/com/acc/presentation/TenantBillingControllerTest.java`
+   - Location: `apps/api/acc-fw/src/test/java/com/acc/presentation/TenantBillingControllerTest.java`
    - Scope: Presentation controller endpoints for billing and payOS checkout.
    - Test cases:
      - `testGetBillingSummary_ReturnsActiveTenantEntitlements`: Verifies retrieval of active tenant subscription and granted `FEATURE_*` tokens.
@@ -17,10 +17,10 @@ This document records the creation, execution, and verification of comprehensive
      - `testHandlePayOsWebhook_SuccessReturns200`: Verifies successful processing of verified payOS webhooks with HTTP 200.
      - `testHandlePayOsWebhook_RejectedSignatureReturns400`: Verifies rejection of tampered/forged HMAC signatures with HTTP 400.
 2. **`PayOsBillingAndEntitlementsTest.java`**:
-   - Location: `apps/backend/acc-fw/src/test/java/com/acc/tenant/billing/PayOsBillingAndEntitlementsTest.java`
+   - Location: `apps/api/acc-fw/src/test/java/com/acc/tenant/billing/PayOsBillingAndEntitlementsTest.java`
    - Scope: Cryptographic HMAC-SHA256 signature verification, billing repository state machine, and dynamic feature entitlement grants.
 3. **`MetadataCacheListenerTest.java`**:
-   - Location: `apps/backend/acc-fw/src/test/java/com/acc/service/MetadataCacheListenerTest.java`
+   - Location: `apps/api/acc-fw/src/test/java/com/acc/service/MetadataCacheListenerTest.java`
    - Refined verification for dual-parameter cache invalidation `invalidateL1Cache(entityTypeId, tenantId)`.
 
 ### B. Frontend (`@acc/console`)

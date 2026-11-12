@@ -1,7 +1,7 @@
 # History Entry 144: Fix Multiple Primary DataSource Beans in Backend Sandbox Startup
 
 ## Problem Statement
-When running `pnpm dev:sandbox` at the monorepo root (which launches `turbo dev --filter=@acc/backend --filter=@acc/console` with Spring Boot profile `local` and `application.sandbox.enabled=true`), Spring Boot aborted with:
+When running `pnpm dev:sandbox` at the monorepo root (which launches `turbo dev --filter=@acc/api --filter=@acc/console` with Spring Boot profile `local` and `application.sandbox.enabled=true`), Spring Boot aborted with:
 ```
 Caused by: org.springframework.beans.factory.NoUniqueBeanDefinitionException: No qualifying bean of type 'javax.sql.DataSource' available: more than one 'primary' bean found among candidates: [masterDatabase, sandboxDataSource]
 ```
@@ -23,6 +23,6 @@ Caused by: org.springframework.beans.factory.NoUniqueBeanDefinitionException: No
    - Verified that running `pnpm dev:sandbox` / `spring-boot:run` starts Jetty on port 8000 in 16.8 seconds, exposes `/actuator/health` returning HTTP 200 `{"status":"UP"}`, and runs with zero bean conflict.
 
 ## Verification
-- `node apps/backend/mvnw.cjs -pl acc-ms-aio spring-boot:run ...` started with 0 errors.
+- `node apps/api/mvnw.cjs -pl acc-ms-aio spring-boot:run ...` started with 0 errors.
 - `curl http://localhost:8000/actuator/health` returned HTTP 200 OK.
 - `pnpm test:backend:sandbox` ran 33/33 tests passing.

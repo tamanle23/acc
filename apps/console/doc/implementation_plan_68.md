@@ -165,6 +165,6 @@ In `apps/console/src/core/sandbox/handlers/billing-sandbox-handler.ts`:
 - **Type Safety**: `pnpm --filter @acc/console check-types`
 - **Linting & Style**: `pnpm --filter @acc/console lint`
 - **Frontend Automated Tests**: `pnpm --filter @acc/console test`
-- **Backend Automated Tests**: `apps/backend/mvnw.cmd test -pl acc-fw`
+- **Backend Automated Tests**: `apps/api/mvnw.cmd test -pl acc-fw`
 - **Accessibility**: WCAG 2.2 AA compliance check on all text and modal dialogs.
 - **Git Archival**: Create `docs/history/019_settings_billing_and_subscriptions_panel.md`, update `docs/history/README.md`, and commit.

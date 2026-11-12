@@ -28,14 +28,14 @@ While Phase 39 enabled single-execution hot migration and SHA-256 audit ledger t
 
 ## Changes
 
-### 1. `apps/backend/workflow-engine`
+### 1. `apps/api/workflow-engine`
 - `MigrationTier.java`: Added 3-tier enum for migration risk classification.
 - `TopologicalCompatibilityValidator.java`: Added tier calculation, terminal status rejection, and parameter binding warnings.
 - `PersistencePort.java`, `InMemoryPersistenceAdapter.java`, `PostgresJdbcPersistenceAdapter.java`, `SqliteJdbcPersistenceAdapter.java`: Added `listWorkflowExecutions` for definition-scoped execution retrieval.
 - `WorkflowEngineService.java`: Added `migrateExecutionWithQuiescence` with 30s leased task drain check, terminal state protection, and pre-migration snapshot audit capture.
 - `TopologicalCompatibilityValidatorTest.java`: Added unit tests for 3-tier categorization and terminal rejection.
 
-### 2. `apps/backend/acc-ms-aio`
+### 2. `apps/api/acc-ms-aio`
 - `WorkflowEngineConfiguration.java`: Added `persistencePort()` getter on `WorkflowDefinitionRegistry`.
 - `WorkflowDefinitionController.java`: Added `/migration-preview` and `/batch-migrate` REST endpoints.
 

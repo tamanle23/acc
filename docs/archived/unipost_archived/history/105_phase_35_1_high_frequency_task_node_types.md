@@ -1,7 +1,7 @@
 # 105. Phase 35.1: High-Frequency Task Node Types Engine
 
 **Date:** 2026-10-15  
-**Scope:** `apps/backend/workflow-engine`, `apps/backend/acc-ms-aio`  
+**Scope:** `apps/api/workflow-engine`, `apps/api/acc-ms-aio`  
 **Status:** Completed  
 
 ---
@@ -17,26 +17,26 @@ Workflows previously relied almost exclusively on `SIMPLE` worker tasks for busi
 5. Verify via unit tests in `workflow-engine` and an integration test in `acc-ms-aio`.
 
 ## 3. Changes
-- **`apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/model/TaskType.java`**:
+- **`apps/api/workflow-engine/src/main/java/com/acc/workflow/core/model/TaskType.java`**:
   - Added new task types.
-- **`apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/model/WorkflowSnapshot.java`**:
+- **`apps/api/workflow-engine/src/main/java/com/acc/workflow/core/model/WorkflowSnapshot.java`**:
   - Added `variables` map and backward-compatible constructor overload.
-- **`apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/expression/ParameterResolver.java`**:
+- **`apps/api/workflow-engine/src/main/java/com/acc/workflow/core/expression/ParameterResolver.java`**:
   - Supported `${workflow.variables.<key>}` resolution.
-- **`apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/decider/strategy/`**:
+- **`apps/api/workflow-engine/src/main/java/com/acc/workflow/core/decider/strategy/`**:
   - Created `SetVariableStrategy.java`, `JsonTransformStrategy.java`, `InlineExpressionStrategy.java`, `HumanNodeStrategy.java`, `ExclusiveJoinStrategy.java`, and `HttpNodeStrategy.java`.
-- **`apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/decider/NodeStrategyRegistry.java`**:
+- **`apps/api/workflow-engine/src/main/java/com/acc/workflow/core/decider/NodeStrategyRegistry.java`**:
   - Registered all new strategies in default mapping.
-- **`apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/decider/PureDecider.java`**:
+- **`apps/api/workflow-engine/src/main/java/com/acc/workflow/core/decider/PureDecider.java`**:
   - Dynamically updated in-flight `snapshot` with completed task output and variable merges.
 - **Tests & Artifacts**:
   - Created `HighFrequencyTaskStrategiesTest.java` in `workflow-engine`.
   - Created `HighFrequencyTaskIntegrationTest.java` in `acc-ms-aio`.
-  - Created `apps/backend/doc/implementation_plan_35.md` and `apps/backend/doc/walkthrough_35.md`.
+  - Created `apps/api/doc/implementation_plan_35.md` and `apps/api/doc/walkthrough_35.md`.
 
 ## 4. Verification
-- `cd apps/backend; ./mvnw.cmd test -pl workflow-engine`: 32/32 tests passed (including all 5 new high-frequency strategy tests).
-- `cd apps/backend; ./mvnw.cmd test -pl acc-ms-aio -Dtest=HighFrequencyTaskIntegrationTest`: passed in 0.357s.
+- `cd apps/api; ./mvnw.cmd test -pl workflow-engine`: 32/32 tests passed (including all 5 new high-frequency strategy tests).
+- `cd apps/api; ./mvnw.cmd test -pl acc-ms-aio -Dtest=HighFrequencyTaskIntegrationTest`: passed in 0.357s.
 - `pnpm --filter @acc/worker test`: 5/5 tests passed.
 
 ## 5. Walkthrough

@@ -5,14 +5,14 @@ import * as path from 'path';
 /**
  * Formal Verification Matrix: Backend Sandbox Two-Tier Safeguards & In-Process PGlite WASM
  * Reference: docs/iterations/master_implementation_plan_iteration_58.md
- * Target Modules: apps/backend/acc-sandbox, apps/backend/acc-ms-aio, apps/backend/pom.xml
+ * Target Modules: apps/api/acc-sandbox, apps/api/acc-ms-aio, apps/api/pom.xml
  */
 describe('Iteration 58: Backend Sandbox Two-Tier Safeguards & PGlite WASM Parity', () => {
   const repoRoot = path.resolve(__dirname, '..');
 
   // TC-SB-01: Zonky Native Embedded PostgreSQL Dependency Declaration
   test('TC-SB-01: acc-sandbox/pom.xml must declare io.zonky.test:embedded-postgres non-optional', () => {
-    const pomPath = path.join(repoRoot, 'apps/backend/acc-sandbox/pom.xml');
+    const pomPath = path.join(repoRoot, 'apps/api/acc-sandbox/pom.xml');
     expect(fs.existsSync(pomPath)).toBe(true);
 
     const content = fs.readFileSync(pomPath, 'utf-8');
@@ -33,7 +33,7 @@ describe('Iteration 58: Backend Sandbox Two-Tier Safeguards & PGlite WASM Parity
   test('TC-SB-02: EmbeddedPostgresDatasourceConfiguration must strictly enforce postgres driver with zero external postgres fallback', () => {
     const configPath = path.join(
       repoRoot,
-      'apps/backend/acc-sandbox/src/main/java/com/acc/sandbox/db/EmbeddedPostgresDatasourceConfiguration.java'
+      'apps/api/acc-sandbox/src/main/java/com/acc/sandbox/db/EmbeddedPostgresDatasourceConfiguration.java'
     );
     expect(fs.existsSync(configPath)).toBe(true);
 
@@ -50,7 +50,7 @@ describe('Iteration 58: Backend Sandbox Two-Tier Safeguards & PGlite WASM Parity
     // SandboxProperties must not have @Component or @Primary to prevent duplicate bean clash
     const propsPath = path.join(
       repoRoot,
-      'apps/backend/acc-sandbox/src/main/java/com/acc/sandbox/config/SandboxProperties.java'
+      'apps/api/acc-sandbox/src/main/java/com/acc/sandbox/config/SandboxProperties.java'
     );
     const propsContent = fs.readFileSync(propsPath, 'utf-8');
     expect(propsContent).not.toContain('@Component');
@@ -61,11 +61,11 @@ describe('Iteration 58: Backend Sandbox Two-Tier Safeguards & PGlite WASM Parity
   test('TC-SB-03: SandboxEnvironmentPostProcessor must have HIGHEST_PRECEDENCE and be registered in spring.factories', () => {
     const postProcessorPath = path.join(
       repoRoot,
-      'apps/backend/acc-sandbox/src/main/java/com/acc/sandbox/config/SandboxEnvironmentPostProcessor.java'
+      'apps/api/acc-sandbox/src/main/java/com/acc/sandbox/config/SandboxEnvironmentPostProcessor.java'
     );
     const factoriesPath = path.join(
       repoRoot,
-      'apps/backend/acc-sandbox/src/main/resources/META-INF/spring.factories'
+      'apps/api/acc-sandbox/src/main/resources/META-INF/spring.factories'
     );
 
     expect(fs.existsSync(postProcessorPath)).toBe(true);
@@ -89,7 +89,7 @@ describe('Iteration 58: Backend Sandbox Two-Tier Safeguards & PGlite WASM Parity
 
   // TC-SB-04: Safeguard Level 2 — Build-Time Maven Packaging Exclusion
   test('TC-SB-04: acc-ms-aio/pom.xml must encapsulate acc-sandbox in profile conditional on !excludeSandbox', () => {
-    const aioPomPath = path.join(repoRoot, 'apps/backend/acc-ms-aio/pom.xml');
+    const aioPomPath = path.join(repoRoot, 'apps/api/acc-ms-aio/pom.xml');
     expect(fs.existsSync(aioPomPath)).toBe(true);
 
     const content = fs.readFileSync(aioPomPath, 'utf-8');
@@ -119,14 +119,14 @@ describe('Iteration 58: Backend Sandbox Two-Tier Safeguards & PGlite WASM Parity
     ];
 
     for (const file of envFiles) {
-      const filePath = path.join(repoRoot, 'apps/backend/acc-ms-aio/src/main/resources', file);
+      const filePath = path.join(repoRoot, 'apps/api/acc-ms-aio/src/main/resources', file);
       expect(fs.existsSync(filePath)).toBe(true);
 
       const content = fs.readFileSync(filePath, 'utf-8');
       expect(content).toMatch(/sandbox:\s*\n\s*enabled:\s*false/);
     }
 
-    const sandboxYamlPath = path.join(repoRoot, 'apps/backend/acc-ms-aio/src/main/resources/application-sandbox.yml');
+    const sandboxYamlPath = path.join(repoRoot, 'apps/api/acc-ms-aio/src/main/resources/application-sandbox.yml');
     expect(fs.existsSync(sandboxYamlPath)).toBe(true);
     const sandboxYaml = fs.readFileSync(sandboxYamlPath, 'utf-8');
     expect(sandboxYaml).toContain('jdbc:pglite:../../tmp/db/pglite-sandbox');
@@ -135,9 +135,9 @@ describe('Iteration 58: Backend Sandbox Two-Tier Safeguards & PGlite WASM Parity
   });
 
   // TC-SB-06: Production and Non-Sandbox Build Scripts
-  test('TC-SB-06: package.json and apps/backend/package.json must provide build:prod and build:no-sandbox', () => {
+  test('TC-SB-06: package.json and apps/api/package.json must provide build:prod and build:no-sandbox', () => {
     const rootPkgPath = path.join(repoRoot, 'package.json');
-    const backendPkgPath = path.join(repoRoot, 'apps/backend/package.json');
+    const backendPkgPath = path.join(repoRoot, 'apps/api/package.json');
 
     const rootPkg = JSON.parse(fs.readFileSync(rootPkgPath, 'utf-8'));
     const backendPkg = JSON.parse(fs.readFileSync(backendPkgPath, 'utf-8'));
@@ -157,7 +157,7 @@ describe('Iteration 58: Backend Sandbox Two-Tier Safeguards & PGlite WASM Parity
   test('TC-SB-07: Core logic in acc-fw (AuditPartitionProvisioner) must be completely decoupled from sandbox', () => {
     const auditProvPath = path.join(
       repoRoot,
-      'apps/backend/acc-fw/src/main/java/com/acc/service/AuditPartitionProvisioner.java'
+      'apps/api/acc-fw/src/main/java/com/acc/service/AuditPartitionProvisioner.java'
     );
     expect(fs.existsSync(auditProvPath)).toBe(true);
 
@@ -172,7 +172,7 @@ describe('Iteration 58: Backend Sandbox Two-Tier Safeguards & PGlite WASM Parity
   test('TC-SB-08: application-sandbox.yml must configure embedded PostgreSQL with org.postgresql.Driver', () => {
     const sandboxYamlPath = path.join(
       repoRoot,
-      'apps/backend/acc-ms-aio/src/main/resources/application-sandbox.yml'
+      'apps/api/acc-ms-aio/src/main/resources/application-sandbox.yml'
     );
     expect(fs.existsSync(sandboxYamlPath)).toBe(true);
 
@@ -187,7 +187,7 @@ describe('Iteration 58: Backend Sandbox Two-Tier Safeguards & PGlite WASM Parity
 
   // TC-SB-09: Authoritative Liquibase Schema Migration on PGlite in Sandbox Mode
   test('TC-SB-09: acc-sandbox must include acc-db and declare SandboxLiquibaseConfiguration for schema migrations', () => {
-    const sandboxPomPath = path.join(repoRoot, 'apps/backend/acc-sandbox/pom.xml');
+    const sandboxPomPath = path.join(repoRoot, 'apps/api/acc-sandbox/pom.xml');
     expect(fs.existsSync(sandboxPomPath)).toBe(true);
     const pomContent = fs.readFileSync(sandboxPomPath, 'utf-8');
     expect(pomContent).toContain('<artifactId>acc-db</artifactId>');
@@ -195,7 +195,7 @@ describe('Iteration 58: Backend Sandbox Two-Tier Safeguards & PGlite WASM Parity
 
     const liquibaseConfigPath = path.join(
       repoRoot,
-      'apps/backend/acc-sandbox/src/main/java/com/acc/sandbox/db/SandboxLiquibaseConfiguration.java'
+      'apps/api/acc-sandbox/src/main/java/com/acc/sandbox/db/SandboxLiquibaseConfiguration.java'
     );
     expect(fs.existsSync(liquibaseConfigPath)).toBe(true);
     const configContent = fs.readFileSync(liquibaseConfigPath, 'utf-8');
@@ -206,7 +206,7 @@ describe('Iteration 58: Backend Sandbox Two-Tier Safeguards & PGlite WASM Parity
 
     const sandboxChangelogPath = path.join(
       repoRoot,
-      'apps/backend/acc-sandbox/src/main/resources/db/sandbox/changelog-master.xml'
+      'apps/api/acc-sandbox/src/main/resources/db/sandbox/changelog-master.xml'
     );
     expect(fs.existsSync(sandboxChangelogPath)).toBe(true);
     const changelogContent = fs.readFileSync(sandboxChangelogPath, 'utf-8');

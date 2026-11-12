@@ -39,7 +39,7 @@ Two critical defects were discovered:
    - Run Vitest suite and Maven tests.
 
 ## Changes
-### Backend (`apps/backend/acc-fw`)
+### Backend (`apps/api/acc-fw`)
 - `JwtTokenHelper.java`:
   - Removed brittle `aud == userAgent` equality check from `validate`.
 - `TokenServiceImpl.java`:

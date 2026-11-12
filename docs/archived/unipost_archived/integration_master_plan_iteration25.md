@@ -1,7 +1,7 @@
 # Integration Master Plan: Iteration 25 - Cryptographic Merkle Audit Studio, Dynamic Entity Access Control & Full-Stack Verification
 
 **Target Systems:**  
-- `@acc/backend` (`apps/backend/acc-db`, `apps/backend/acc-fw`, `apps/backend/acc-ms-aio`)  
+- `@acc/api` (`apps/api/acc-db`, `apps/api/acc-fw`, `apps/api/acc-ms-aio`)  
 - `@acc/client` (`packages/client/src/contracts/metadata.ts`, `packages/client/src/contracts/system.ts`)  
 - `@acc/console` (`apps/console/src/features/metadata`, `apps/console/src/features/system`, `apps/console/src/core/sandbox`)  
 **Lead Systems Architect:** Principal Polyglot Architect, Database Architect & Operations Specialist, TypeScript Architect & UI/UX Systems Specialist  
@@ -193,7 +193,7 @@ export interface AuditVerificationResult {
 ## 3. Concrete Deliverables & File Tree
 
 ```
-apps/backend/
+apps/api/
 ├── acc-db/src/main/resources/db/acc/
 │   ├── changelog-master.xml                           # [MODIFY] Include changelog 18
 │   └── changelog-000.000.00018.xml                   # [NEW] Add prev_hash, current_hash, signature to AUDIT_LOG

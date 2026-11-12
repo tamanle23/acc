@@ -10,7 +10,7 @@ However, two critical architectural gaps remain across design-time authoring and
    - In `apps/console/src/features/workflows/components/studio/canvas/dag-quick-insert-popover.tsx`, the canvas quick-insert search only searches static `PALETTE_ITEMS`, completely omitting tenant-defined custom tasks.
    - In `apps/console/src/features/workflows/components/studio/inspectors/dag-property-inspector.tsx`, when an engineer selects a custom task node on the canvas, the inspector falls back to a freeform JSON tree editor rather than dynamically generating structured, typed form controls driven by the task definition's `inputSchema` with autocomplete for `${workflow.input.*}` and `${upstream.output.*}` expressions.
 2. **Runtime Execution Integrity Gap in Workflow Engine**:
-   - In `apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/decider/strategy/SimpleTaskStrategy.java` and `apps/backend/workflow-engine/src/main/java/com/acc/workflow/application/WorkflowEngineService.java`, while input schemas are validated pre-dispatch, **output payloads returned by workers upon task completion are never validated against `outputSchema`**. A misbehaving worker can return empty or malformed payloads, which silently cascade into downstream nodes until an unhandled runtime failure occurs.
+   - In `apps/api/workflow-engine/src/main/java/com/acc/workflow/core/decider/strategy/SimpleTaskStrategy.java` and `apps/api/workflow-engine/src/main/java/com/acc/workflow/application/WorkflowEngineService.java`, while input schemas are validated pre-dispatch, **output payloads returned by workers upon task completion are never validated against `outputSchema`**. A misbehaving worker can return empty or malformed payloads, which silently cascade into downstream nodes until an unhandled runtime failure occurs.
 
 Iteration 79 bridges design-time authoring and runtime execution into a seamless, contract-enforced pipeline with zero-regression guarantees.
 
@@ -140,7 +140,7 @@ export interface DagQuickInsertPopoverProps {
 export function DagPropertyInspector(props: DagPropertyInspectorProps): JSX.Element;
 ```
 
-### 5.4 `apps/backend/workflow-engine/src/main/java/com/acc/workflow/application/WorkflowEngineService.java`
+### 5.4 `apps/api/workflow-engine/src/main/java/com/acc/workflow/application/WorkflowEngineService.java`
 ```java
 public void reportTaskResult(
     String workflowId,
@@ -155,7 +155,7 @@ public void reportTaskResult(
 );
 ```
 
-### 5.5 `apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/decider/strategy/SimpleTaskStrategy.java`
+### 5.5 `apps/api/workflow-engine/src/main/java/com/acc/workflow/core/decider/strategy/SimpleTaskStrategy.java`
 ```java
 public final class SimpleTaskStrategy implements NodeEvaluatorStrategy {
     @Override
@@ -213,7 +213,7 @@ public final class SimpleTaskStrategy implements NodeEvaluatorStrategy {
 | **Quick Insert** | `pnpm --filter @acc/console test -- dag-quick-insert` | `dag-quick-insert-popover.test.tsx` | Custom tasks searchable and insertable with full metadata. |
 | **Dynamic Inspector** | `pnpm --filter @acc/console test -- dag-property-inspector` | `dag-property-inspector.test.tsx` | Dynamic form fields rendered from schema; variable bindings update state. |
 | **Semantic Linter** | `pnpm --filter @acc/console test -- dag-semantic-linter` | `dag-semantic-linter.test.ts` | Linter flags missing required contract parameters. |
-| **Backend Schema Gate** | `mvn test -pl apps/backend/workflow-engine -Dtest=SimpleTaskStrategyValidationTest` | `SimpleTaskStrategyValidationTest.java` | Output schema violation rejected, marked FAILED, sent to DLQ. |
+| **Backend Schema Gate** | `mvn test -pl apps/api/workflow-engine -Dtest=SimpleTaskStrategyValidationTest` | `SimpleTaskStrategyValidationTest.java` | Output schema violation rejected, marked FAILED, sent to DLQ. |
 | **Sandbox Parity** | `pnpm --filter @acc/sandbox test` | `workflow-task-definitions.test.ts` | 100% green across all 12 sandbox suites. |
 | **Console Typecheck** | `pnpm --filter @acc/console exec tsc --noEmit` | Whole console codebase | 0 TypeScript errors. |
 

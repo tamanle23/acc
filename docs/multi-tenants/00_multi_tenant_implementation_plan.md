@@ -1,7 +1,7 @@
 # Multi-Tenant Dynamic Metadata Architecture: Phased Implementation Plan
 
 **Series:** Multi-Tenant Architecture Blueprint Series (Document 00 / Master Implementation Plan)  
-**Target Systems:** `@acc/backend` (Spring Modulith / Java 21 / PostgreSQL 16+ / payOS), `@acc/console` (React 19 / Vite 8 / TanStack Router)  
+**Target Systems:** `@acc/api` (Spring Modulith / Java 21 / PostgreSQL 16+ / payOS), `@acc/console` (React 19 / Vite 8 / TanStack Router)  
 **Based On:** Technical Specifications Parts 1 through 10 (`docs/multi-tenants/01-10`)  
 **Status:** Canonical Implementation Roadmap & Execution Plan  
 
@@ -160,7 +160,7 @@ In accordance with user directives, the implementation plan prioritizes the **Pu
 
 ### Tasks & Deliverables:
 - [ ] **Task 6.1: Blueprint Manifest Definitions**:
-  - Create declarative JSON templates in `apps/backend/acc-fw/src/main/resources/metadata/blueprints/`:
+  - Create declarative JSON templates in `apps/api/acc-fw/src/main/resources/metadata/blueprints/`:
     - `logistics-fleet-blueprint.json` (Fleet Vehicle, Dispatch Order, Assigned Vehicle edge).
     - `b2b-crm-billing-blueprint.json` (Customer Account, Invoice, Line Items).
     - `blank-workspace-blueprint.json` (Empty canvas).

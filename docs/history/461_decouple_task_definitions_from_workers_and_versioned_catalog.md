@@ -17,21 +17,21 @@ Decouple Task Definitions into a first-class, versioned entity in the workflow d
 
 ## Changes
 ### Backend
-- `apps/backend/acc-db/src/main/resources/db/acc/changelog-000.000.00021.xml`: Liquibase migration for `workflow_task_definitions` table and `task_executions` columns.
-- `apps/backend/acc-db/src/main/resources/db/acc/changelog-master.xml`: Included changelog 21.
-- `apps/backend/workflow-engine/src/main/resources/db/schema-postgres.sql`: Added `workflow_task_definitions` and `task_executions` columns.
-- `apps/backend/workflow-engine/src/main/resources/db/schema-sqlite.sql`: Added `workflow_task_definitions` and `task_executions` columns.
-- `apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/model/TaskDefinitionRecord.java`: First-class record with builder and immutable defaults.
-- `apps/backend/workflow-engine/src/main/java/com/acc/workflow/ports/PersistencePort.java`: Added task definition CRUD and versioning contracts.
-- `apps/backend/workflow-engine/src/main/java/com/acc/workflow/adapters/storage/InMemoryPersistenceAdapter.java`: Implemented task definition methods.
-- `apps/backend/workflow-engine/src/main/java/com/acc/workflow/adapters/storage/PostgresJdbcPersistenceAdapter.java`: Implemented PostgreSQL persistence with JSONB.
-- `apps/backend/workflow-engine/src/main/java/com/acc/workflow/adapters/storage/SqliteJdbcPersistenceAdapter.java`: Implemented SQLite persistence.
-- `apps/backend/workflow-engine/src/main/java/com/acc/workflow/application/TaskDefinitionRegistry.java`: Implemented registry with seeding and hard-fork versioning.
-- `apps/backend/workflow-engine/src/main/java/com/acc/workflow/worker/TaskWorkerDescriptor.java`: Added capacity-only constructor.
-- `apps/backend/acc-ms-aio/src/main/java/com/acc/aio/config/WorkflowEngineConfiguration.java`: Registered `TaskDefinitionRegistry` bean.
-- `apps/backend/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/TaskDefinitionController.java`: Added REST controller for task definitions.
-- `apps/backend/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/TaskContractController.java`: Refactored to fetch dynamic schema contracts from registry.
-- `apps/backend/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/SimpleTaskWorkerRegistrar.java`: Refactored workers to capacity-only descriptors.
+- `apps/api/acc-db/src/main/resources/db/acc/changelog-000.000.00021.xml`: Liquibase migration for `workflow_task_definitions` table and `task_executions` columns.
+- `apps/api/acc-db/src/main/resources/db/acc/changelog-master.xml`: Included changelog 21.
+- `apps/api/workflow-engine/src/main/resources/db/schema-postgres.sql`: Added `workflow_task_definitions` and `task_executions` columns.
+- `apps/api/workflow-engine/src/main/resources/db/schema-sqlite.sql`: Added `workflow_task_definitions` and `task_executions` columns.
+- `apps/api/workflow-engine/src/main/java/com/acc/workflow/core/model/TaskDefinitionRecord.java`: First-class record with builder and immutable defaults.
+- `apps/api/workflow-engine/src/main/java/com/acc/workflow/ports/PersistencePort.java`: Added task definition CRUD and versioning contracts.
+- `apps/api/workflow-engine/src/main/java/com/acc/workflow/adapters/storage/InMemoryPersistenceAdapter.java`: Implemented task definition methods.
+- `apps/api/workflow-engine/src/main/java/com/acc/workflow/adapters/storage/PostgresJdbcPersistenceAdapter.java`: Implemented PostgreSQL persistence with JSONB.
+- `apps/api/workflow-engine/src/main/java/com/acc/workflow/adapters/storage/SqliteJdbcPersistenceAdapter.java`: Implemented SQLite persistence.
+- `apps/api/workflow-engine/src/main/java/com/acc/workflow/application/TaskDefinitionRegistry.java`: Implemented registry with seeding and hard-fork versioning.
+- `apps/api/workflow-engine/src/main/java/com/acc/workflow/worker/TaskWorkerDescriptor.java`: Added capacity-only constructor.
+- `apps/api/acc-ms-aio/src/main/java/com/acc/aio/config/WorkflowEngineConfiguration.java`: Registered `TaskDefinitionRegistry` bean.
+- `apps/api/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/TaskDefinitionController.java`: Added REST controller for task definitions.
+- `apps/api/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/TaskContractController.java`: Refactored to fetch dynamic schema contracts from registry.
+- `apps/api/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/SimpleTaskWorkerRegistrar.java`: Refactored workers to capacity-only descriptors.
 
 ### Sandbox & Frontend
 - `packages/sandbox/src/handlers/workflow-handler.ts`: Added stateful repository, seed catalog, and route handlers.
@@ -54,7 +54,7 @@ Decouple Task Definitions into a first-class, versioned entity in the workflow d
   - `@acc/console` tests (`visual-dag-studio-modes.test.tsx`, `dag-palette.test.tsx`, `visual-dag-studio-2.test.tsx`, `dag-node.test.tsx`, `task-contract-registry.test.ts`): all passed.
 
 ## Walkthrough
-- Backend Companion Walkthrough: `apps/backend/doc/walkthrough_164.md`
+- Backend Companion Walkthrough: `apps/api/doc/walkthrough_164.md`
 - Console Companion Walkthrough: `apps/console/doc/walkthrough_172.md`
 - Master Plan: `docs/iterations/master_implementation_plan_iteration_75.md`
 

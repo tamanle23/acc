@@ -2,7 +2,7 @@ import { describe, test, expect } from 'bun:test';
 
 /**
  * Formal Verification Suite: Workflow Route Unification to Canonical /api/v1/...
- * Target: apps/backend/acc-ms-aio/.../controller/workflow/*
+ * Target: apps/api/acc-ms-aio/.../controller/workflow/*
  * Invariant: All workflow orchestration controllers strictly bind canonical /api/v1/... routes.
  */
 describe('Phase 1: Workflow Controllers Canonical /api/v1/... Route Mapping', () => {

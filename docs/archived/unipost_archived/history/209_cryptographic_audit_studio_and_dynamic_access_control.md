@@ -13,7 +13,7 @@ In compliance environments and sovereign custody operations, records mutated wit
 
 ## Changes
 - **Database**:
-  - Created `apps/backend/acc-db/src/main/resources/db/acc/changelog-000.000.00018.xml`.
+  - Created `apps/api/acc-db/src/main/resources/db/acc/changelog-000.000.00018.xml`.
   - Registered migration in `changelog-master.xml`.
 - **Backend**:
   - Updated `RecordAuditLog.java` and `RecordAuditLogRepository.java`.

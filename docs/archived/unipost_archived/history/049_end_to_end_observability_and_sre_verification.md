@@ -17,16 +17,16 @@ Distributed operations in modern multi-tenant environments (e.g., entity mutatio
 ## Changes Summary
 - `apps/console/src/features/spring-auth/api-client.ts`: Added W3C `traceparent` injection in request interceptor.
 - `apps/console/src/features/spring-auth/__tests__/api-client-context.test.ts`: Added test for traceparent generation.
-- `apps/backend/acc-core/src/main/java/com/acc/core/io/ContextHeader.java`: Added `traceparent` and `traceId`.
-- `apps/backend/acc-fw/src/main/java/com/acc/fw/tracking/ContextFilter.java`: W3C traceparent extraction, MDC population, and response header echo.
-- `apps/backend/acc-fw/src/main/java/com/acc/fw/core/jwt/JwtAuthenticationTokenFilter.java`: Populated `tenant_id` and `user_id` MDC keys.
-- `apps/backend/acc-fw/src/main/java/com/acc/fw/security/PublishableKeyFilter.java`: Populated `tenant_id` MDC key.
-- `apps/backend/acc-fw/src/main/resources/logback.xml` & worker `logback-local.xml`: Standardized log pattern.
-- `apps/backend/acc-fw/src/main/java/com/acc/outbox/OutboxEventPublisher.java`: Injected `traceparent` into outbox payload metadata.
-- `apps/backend/acc-ms-worker/src/main/java/com/acc/worker/outbox/OutboxPollingJob.java`: Handled MDC context per event and forwarded traceparent.
-- `apps/backend/acc-ms-worker/src/main/java/com/acc/worker/service/WebhookDeliveryService.java`: Supported traceparent header delivery.
+- `apps/api/acc-core/src/main/java/com/acc/core/io/ContextHeader.java`: Added `traceparent` and `traceId`.
+- `apps/api/acc-fw/src/main/java/com/acc/fw/tracking/ContextFilter.java`: W3C traceparent extraction, MDC population, and response header echo.
+- `apps/api/acc-fw/src/main/java/com/acc/fw/core/jwt/JwtAuthenticationTokenFilter.java`: Populated `tenant_id` and `user_id` MDC keys.
+- `apps/api/acc-fw/src/main/java/com/acc/fw/security/PublishableKeyFilter.java`: Populated `tenant_id` MDC key.
+- `apps/api/acc-fw/src/main/resources/logback.xml` & worker `logback-local.xml`: Standardized log pattern.
+- `apps/api/acc-fw/src/main/java/com/acc/outbox/OutboxEventPublisher.java`: Injected `traceparent` into outbox payload metadata.
+- `apps/api/acc-ms-worker/src/main/java/com/acc/worker/outbox/OutboxPollingJob.java`: Handled MDC context per event and forwarded traceparent.
+- `apps/api/acc-ms-worker/src/main/java/com/acc/worker/service/WebhookDeliveryService.java`: Supported traceparent header delivery.
 - `apps/tekgo-ui/app/api/revalidate/route.ts`: Echoed traceparent in response headers and JSON body.
-- `apps/backend/acc-fw/src/test/java/com/acc/fw/tracking/DistributedTracingMdcTest.java`: Added tests for traceparent and MDC.
+- `apps/api/acc-fw/src/test/java/com/acc/fw/tracking/DistributedTracingMdcTest.java`: Added tests for traceparent and MDC.
 
 ## Verification
 - Maven test runs in `acc-fw` and `acc-ms-worker`: All tests green.

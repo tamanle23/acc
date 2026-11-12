@@ -4,7 +4,7 @@
 In distributed workflow orchestration, workers must execute tasks reliably across polyglot microservice environments (Java backend and TypeScript/Node services) while preserving strict concurrency bounds, transparent heartbeat lease extensions, and reversible side-effect management via Saga compensation without blocking JVM or Node event loops.
 
 ## Plan
-1. Implement Java Worker SDK in `apps/backend/workflow-engine`:
+1. Implement Java Worker SDK in `apps/api/workflow-engine`:
    - `TaskContext`, sealed `TaskOutcome`, `WorkerConfig`, `TaskHandler`.
    - Composable middleware chain (`AutoHeartbeatMiddleware`, `SchemaValidationMiddleware`, `ErrorClassificationMiddleware`).
    - `WorkerHost` leveraging virtual-thread per task execution, Semaphore concurrency backpressure, adaptive exponential backoff polling, and burst draining.
@@ -22,17 +22,17 @@ In distributed workflow orchestration, workers must execute tasks reliably acros
 
 ## Changes
 - **Java**:
-  - `apps/backend/workflow-engine/src/main/java/com/acc/workflow/worker/TaskContext.java`
-  - `apps/backend/workflow-engine/src/main/java/com/acc/workflow/worker/TaskOutcome.java`
-  - `apps/backend/workflow-engine/src/main/java/com/acc/workflow/worker/TaskHandler.java`
-  - `apps/backend/workflow-engine/src/main/java/com/acc/workflow/worker/WorkerConfig.java`
-  - `apps/backend/workflow-engine/src/main/java/com/acc/workflow/worker/WorkerHost.java`
-  - `apps/backend/workflow-engine/src/main/java/com/acc/workflow/worker/middleware/AutoHeartbeatMiddleware.java`
-  - `apps/backend/workflow-engine/src/main/java/com/acc/workflow/worker/middleware/SchemaValidationMiddleware.java`
-  - `apps/backend/workflow-engine/src/main/java/com/acc/workflow/worker/middleware/ErrorClassificationMiddleware.java`
-  - `apps/backend/workflow-engine/src/main/java/com/acc/workflow/application/SagaCompensator.java`
-  - `apps/backend/workflow-engine/src/test/java/com/acc/workflow/worker/WorkerHostTest.java`
-  - `apps/backend/workflow-engine/src/test/java/com/acc/workflow/application/SagaCompensatorTest.java`
+  - `apps/api/workflow-engine/src/main/java/com/acc/workflow/worker/TaskContext.java`
+  - `apps/api/workflow-engine/src/main/java/com/acc/workflow/worker/TaskOutcome.java`
+  - `apps/api/workflow-engine/src/main/java/com/acc/workflow/worker/TaskHandler.java`
+  - `apps/api/workflow-engine/src/main/java/com/acc/workflow/worker/WorkerConfig.java`
+  - `apps/api/workflow-engine/src/main/java/com/acc/workflow/worker/WorkerHost.java`
+  - `apps/api/workflow-engine/src/main/java/com/acc/workflow/worker/middleware/AutoHeartbeatMiddleware.java`
+  - `apps/api/workflow-engine/src/main/java/com/acc/workflow/worker/middleware/SchemaValidationMiddleware.java`
+  - `apps/api/workflow-engine/src/main/java/com/acc/workflow/worker/middleware/ErrorClassificationMiddleware.java`
+  - `apps/api/workflow-engine/src/main/java/com/acc/workflow/application/SagaCompensator.java`
+  - `apps/api/workflow-engine/src/test/java/com/acc/workflow/worker/WorkerHostTest.java`
+  - `apps/api/workflow-engine/src/test/java/com/acc/workflow/application/SagaCompensatorTest.java`
 - **TypeScript**:
   - `packages/worker/package.json`
   - `packages/worker/tsconfig.json`

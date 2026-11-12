@@ -69,7 +69,7 @@ sequenceDiagram
 
 ## Proposed Changes
 
-### 1. Backend Core & Validator (`apps/backend/workflow-engine`)
+### 1. Backend Core & Validator (`apps/api/workflow-engine`)
 
 #### [MODIFY] `TopologicalCompatibilityValidator.java`
 - Introduce `MigrationTier` enum: `FULLY_COMPATIBLE`, `CONDITIONAL_REQUIRES_MANUAL_REVIEW`, `INCOMPATIBLE_BLOCK`.
@@ -94,7 +94,7 @@ sequenceDiagram
 
 ---
 
-### 2. REST Layer (`apps/backend/acc-ms-aio`)
+### 2. REST Layer (`apps/api/acc-ms-aio`)
 
 #### [MODIFY] `WorkflowDefinitionController.java`
 - Add `POST /api/v1/workflow/definitions/{key}/migration-preview`:

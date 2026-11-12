@@ -27,7 +27,7 @@ In Task 034, we created the `UNIPOST_WORKSPACES` database table, Liquibase RLS m
    - Vite production build & Maven reactor test-compile verified.
 
 ## Changes
-- **Backend (`apps/backend/acc-fw`)**:
+- **Backend (`apps/api/acc-fw`)**:
   - `src/main/java/com/acc/workspace/dto/WorkspaceDto.java`: Record DTO.
   - `src/main/java/com/acc/workspace/dto/CreateWorkspaceRequest.java`: Creation payload.
   - `src/main/java/com/acc/workspace/dto/UpdateWorkspaceRequest.java`: Update payload.
@@ -41,8 +41,8 @@ In Task 034, we created the `UNIPOST_WORKSPACES` database table, Liquibase RLS m
   - `src/core/sandbox/__tests__/workspace-sandbox-handler.test.ts`: Vitest suite covering API matching, default workspace protection, code duplication rejection, and default switching.
 
 ## Verification
-- Maven unit tests: `apps/backend/mvnw.cmd test -pl acc-fw -Dtest=WorkspaceServiceTest` -> **7/7 passed**.
-- Maven reactor compile: `apps/backend/mvnw.cmd test-compile -DskipTests` -> **BUILD SUCCESS** (4.664s).
+- Maven unit tests: `apps/api/mvnw.cmd test -pl acc-fw -Dtest=WorkspaceServiceTest` -> **7/7 passed**.
+- Maven reactor compile: `apps/api/mvnw.cmd test-compile -DskipTests` -> **BUILD SUCCESS** (4.664s).
 - Vitest suite: `pnpm --filter @acc/console test` -> **144/144 passed across 28 test files**.
 - Vite production build: `pnpm --filter @acc/console exec vite build` -> **Built in 641ms**.
 

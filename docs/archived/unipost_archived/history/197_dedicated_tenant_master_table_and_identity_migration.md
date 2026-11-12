@@ -20,9 +20,9 @@ The database architecture previously relied on floating, denormalized tenant str
 
 ## 3. Changes
 - **Database & Migrations**:
-  - `apps/backend/acc-db/src/main/resources/db/changelog-master.xml`: Unified master migration graph.
-  - `apps/backend/acc-db/src/main/resources/db/acc/changelog-000.000.00014.xml`: Incremental DDL for `UNIPOST_TENANTS`, backfill, FKs, RLS, and dead table drops.
-  - `apps/backend/acc-db/src/main/resources/application.yml`: Pointed Liquibase configuration to unified master.
+  - `apps/api/acc-db/src/main/resources/db/changelog-master.xml`: Unified master migration graph.
+  - `apps/api/acc-db/src/main/resources/db/acc/changelog-000.000.00014.xml`: Incremental DDL for `UNIPOST_TENANTS`, backfill, FKs, RLS, and dead table drops.
+  - `apps/api/acc-db/src/main/resources/application.yml`: Pointed Liquibase configuration to unified master.
 - **Domain & Services (`acc-fw`)**:
   - Added `Tenant.java` and `TenantRepository.java`.
   - Updated `Workspace.java` with `@ManyToOne` association to `Tenant`.

@@ -9,7 +9,7 @@ Iteration 20 achieves full enterprise-grade resilience, zero-I/O decider complia
 
 ### Workstream 1: Pure Zero-I/O Decider & Loom System Task Worker Fleet
 - **Pure Decider Refactoring**: Purged synchronous I/O, `HttpClient` invocations, and direct database queries from `HttpNodeStrategy`, `CallMcpToolStrategy`, `LlmChatCompleteStrategy`, `JdbcNodeStrategy`, and `KafkaPublishStrategy`. All decider strategies now behave as pure deterministic schedulers targeting reserved system queues (`system:http`, `system:mcp`, `system:llm`, `system:jdbc`, `system:kafka`).
-- **Java 21 Loom Virtual Thread Worker Fleet (`SystemTaskWorkerPool`)**: Built virtual thread workers in `apps/backend/acc-ms-aio` that asynchronously poll reserved system domain queues, execute I/O workloads with exponential backoff and timeout handling, and report completion status back to the workflow engine.
+- **Java 21 Loom Virtual Thread Worker Fleet (`SystemTaskWorkerPool`)**: Built virtual thread workers in `apps/api/acc-ms-aio` that asynchronously poll reserved system domain queues, execute I/O workloads with exponential backoff and timeout handling, and report completion status back to the workflow engine.
 
 ### Workstream 2: Dynamic Fork Barrier Synchronization & Fan-In Join
 - **Barrier Synchronization (`DynamicForkStrategy`)**: When expanding dynamic items into child tasks, the parent task enters `IN_PROGRESS` and halts downstream progression until all $N$ dynamic child tasks terminate.

@@ -52,7 +52,7 @@ Whenever a rule needs to be introduced, updated, or modified:
 ### Workspace Registry Matrix
 | Identifier | Path | Framework / Runtime | Internal Dependencies |
 | :--- | :--- | :--- | :--- |
-| `@acc/backend` | `apps/backend` | Java 21, Spring Boot, Spring Modulith, Spring Cloud, Maven | None |
+| `@acc/api` | `apps/api` | Java 21, Spring Boot, Spring Modulith, Spring Cloud, Maven | None |
 | `@acc/console` | `apps/console` | React 19, Vite 8, Tailwind CSS v4, TanStack Router/Query | `@acc/ui`, `@acc/i18n`, `@acc/typescript-config` |
 | `mobile-ui` | `apps/mobile-ui` | Expo SDK 57, React Native 0.86, React 19, Zustand | None |
 | `tekgo-ui` | `apps/tekgo-ui` | Next.js 15 (App Router), React 19, MDX, Pliny | `@acc/ui` |
@@ -103,7 +103,7 @@ Whenever an implementation plan, bug fix, refactoring, or code update completes 
    - The iteration increment counter is computed as `NEXT_ITERATION = MAX(all existing iteration numbers in docs/iterations/ and archives) + 1` (starting after 37, so next is `38`).
    - App-specific paired plans/walkthroughs in `apps/<app>/doc/` reference this consolidated iteration document.
 3. **Execution Context Invariant for Consolidated Plans**:
-   - Whenever the user instructs the agent to execute a consolidated master implementation plan (e.g. `master_implementation_plan_iteration_${increment_number}.md`), the agent **MUST ALWAYS read and include all companion local plans** (e.g., `apps/backend/doc/implementation_plan_<NN>.md`, `apps/console/doc/implementation_plan_<NN>.md`) into the active execution context before making any code changes.
+   - Whenever the user instructs the agent to execute a consolidated master implementation plan (e.g. `master_implementation_plan_iteration_${increment_number}.md`), the agent **MUST ALWAYS read and include all companion local plans** (e.g., `apps/api/doc/implementation_plan_<NN>.md`, `apps/console/doc/implementation_plan_<NN>.md`) into the active execution context before making any code changes.
    - This prevents context drift, guarantees alignment with local app specifications, and ensures matched local walkthroughs are recorded accurately.
 4. **Master Implementation Plan Completeness & Rigor Invariant**:
    - Master iteration implementation plans (`docs/iterations/master_implementation_plan_iteration_${increment_number}.md`) MUST NEVER be superficial, high-level outlines, sketchy bullet-point summaries, or placeholder checklists.

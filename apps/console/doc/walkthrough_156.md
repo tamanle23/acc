@@ -1,7 +1,7 @@
 # Walkthrough 156: Cryptographic Merkle Tamper-Evident Audit Trail & Dynamic Entity Access Control Engine
 
 ## Overview
-Iteration 25 completes the enterprise cryptographic audit trail and dynamic entity permissions gating across `@acc/backend`, `@acc/client`, and `@acc/console`.
+Iteration 25 completes the enterprise cryptographic audit trail and dynamic entity permissions gating across `@acc/api`, `@acc/client`, and `@acc/console`.
 
 ## Key Capabilities Delivered
 

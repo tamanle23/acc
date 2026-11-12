@@ -2,9 +2,9 @@
 
 ## 1. Executive Summary & Problem Analysis
 
-In Iteration 50, we completed critical foundational work: constant-time HMAC-SHA256 signature verification and route normalization in `apps/backend`, migration of the metadata mock engine to `packages/sandbox`, and dead code pruning in `apps/console`.
+In Iteration 50, we completed critical foundational work: constant-time HMAC-SHA256 signature verification and route normalization in `apps/api`, migration of the metadata mock engine to `packages/sandbox`, and dead code pruning in `apps/console`.
 
-However, deep static analysis of `apps/backend`, `apps/console`, and `packages/sandbox` reveals three critical architectural gaps that break enterprise invariants:
+However, deep static analysis of `apps/api`, `apps/console`, and `packages/sandbox` reveals three critical architectural gaps that break enterprise invariants:
 
 1. **Option 1: Incomplete Unified Sandbox Parity & Lingering Duplicate Handlers**:
    - While `metadata-sandbox-adapter.ts` in `apps/console` cleanly delegates to `@acc/sandbox`, other key handlers (`billing-sandbox-handler.ts`, `users-sandbox-handler.ts`, `apps-sandbox-handler.ts`, `workspace-sandbox-handler.ts`, `auth-sandbox-handler.ts`, `chats-sandbox-handler.ts`) remain duplicated between `apps/console/src/core/sandbox/handlers/` and `packages/sandbox/src/handlers/`.
@@ -18,7 +18,7 @@ However, deep static analysis of `apps/backend`, `apps/console`, and `packages/s
    - Violates `.agents/rules/00-generic-common.md` (Strict TypeScript, no `any`, Zero-Regression).
 
 3. **Option 3: Backend Security & Multi-Tenancy IDOR Vulnerabilities**:
-   - In `apps/backend/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/WorkflowDefinitionController.java` and `WorkflowExecutionController.java`, controllers declare `@RequestHeader(value = "X-Tenant-Id", required = false) String headerTenantId` and call a local fallback `resolveTenantId(headerTenantId)`.
+   - In `apps/api/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/WorkflowDefinitionController.java` and `WorkflowExecutionController.java`, controllers declare `@RequestHeader(value = "X-Tenant-Id", required = false) String headerTenantId` and call a local fallback `resolveTenantId(headerTenantId)`.
    - Even though `HeaderSanitizerFilter.java` exists in `acc-fw` to strip incoming headers, controllers having code paths that read `X-Tenant-Id` header creates confusion and potential IDOR vulnerabilities if invoked internally or without the gateway filter. Tenant context must strictly and exclusively be derived from `TenantContextHolder.getRequiredTenantId()`.
    - Furthermore, `WorkflowExecutionController.java`, `WorkflowDefinitionController.java`, `WorkflowApprovalsController.java`, `WorkerFleetController.java`, and `TaskWorkerController.java` lack Spring Security `@PreAuthorize` method annotations, whereas `TenantBillingController` and `MetadataController` strictly enforce `@PreAuthorize("hasAuthority(...) or hasRole('ADMIN')")`.
    - Violates `.agents/rules/00-generic-common.md` (Zero-Stub Prohibition, Defensive Coding) and security invariants.
@@ -54,7 +54,7 @@ flowchart TD
     SStore["defaultSandboxStore\n(Token-Derived Tenancy)"]
   end
 
-  subgraph Spring_Backend ["apps/backend (Java 21 / Spring Modulith)"]
+  subgraph Spring_Backend ["apps/api (Java 21 / Spring Modulith)"]
     Filter["HeaderSanitizerFilter\n(Strips X-Tenant-Id)"]
     JWT["JwtAuthenticationTokenFilter\n(Sets TenantContextHolder)"]
     Sec["@PreAuthorize Aspect Engine\n(WORKFLOW_READ / WORKFLOW_WRITE)"]
@@ -145,7 +145,7 @@ export function useWorkflowExecutions(filterParams?: WorkflowExecutionFilterPara
 
 ### 5.3 Backend: Sanitized Multi-Tenant Controller Signatures
 ```java
-// apps/backend/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/WorkflowExecutionController.java
+// apps/api/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/WorkflowExecutionController.java
 @RestController
 @RequestMapping("/api/v1/workflow/executions")
 public class WorkflowExecutionController {

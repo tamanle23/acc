@@ -1,7 +1,7 @@
 # Integration Master Plan: Iteration 15
 ## DAG Graph Topology Invariants (Conventional Single-Start & Single-End), Canvas Authoring & Existing Visual Debugger Alignment
 
-> **Monorepo Target:** `@acc/console` (`apps/console`) & `@acc/backend` (`apps/backend/workflow-engine`, `apps/backend/acc-ms-aio`)  
+> **Monorepo Target:** `@acc/console` (`apps/console`) & `@acc/api` (`apps/api/workflow-engine`, `apps/api/acc-ms-aio`)  
 > **Status:** Final Aligned Specification  
 > **Author:** Lead Systems Architect & Full-Stack Engineer  
 

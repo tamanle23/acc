@@ -4,7 +4,7 @@
 While Phase 33 wired the distributed workflow engine into Spring Boot and exposed REST endpoints, `@acc/console` lacked a live client integration, an enterprise catalog landing page for workflow definitions, real-time telemetry streaming for active execution runs, and visual node state feedback on the React Flow canvas.
 
 ## 2. Plan
-1. Add `ExecutionStreamBroadcaster` in `apps/backend/acc-ms-aio` and expose `GET /api/v1/workflow/executions/{id}/events` producing `SseEmitter` event streams.
+1. Add `ExecutionStreamBroadcaster` in `apps/api/acc-ms-aio` and expose `GET /api/v1/workflow/executions/{id}/events` producing `SseEmitter` event streams.
 2. Upgrade `workflowSandboxHandler` in `@acc/sandbox` to simulate real-time SSE stream events and support execution snapshots and definition CRUD.
 3. Author TanStack Query and SSE hooks in `@acc/console`:
    - `useWorkflowDefinitions()`, `useWorkflowDefinition()`, `useSaveWorkflowDefinition()`, `useToggleWorkflowStatus()`, `useDeleteWorkflowDefinition()`.
@@ -17,7 +17,7 @@ While Phase 33 wired the distributed workflow engine into Spring Boot and expose
 7. Author comprehensive unit and integration tests across backend, sandbox, and console.
 
 ## 3. Changes
-- **Spring Boot Backend (`apps/backend/acc-ms-aio`)**:
+- **Spring Boot Backend (`apps/api/acc-ms-aio`)**:
   - `ExecutionStreamBroadcaster.java`: Thread-safe multi-client `SseEmitter` registry.
   - `WorkflowExecutionController.java`: Added `/api/v1/workflow/executions/{id}/events` and lifecycle broadcast.
   - `TaskWorkerController.java`: Broadcast `TASK_IN_PROGRESS`, `TASK_COMPLETED`, and `TASK_FAILED`.

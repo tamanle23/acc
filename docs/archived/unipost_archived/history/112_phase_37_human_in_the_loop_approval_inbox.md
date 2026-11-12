@@ -20,9 +20,9 @@ Workflows involving human review, compliance validation, and financial authoriza
 9. Verify with Vitest and backend compilation.
 
 ## Changes Made
-- `apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/model/TaskStatus.java`: Added `WAITING_FOR_APPROVAL`.
-- `apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/decider/strategy/HumanNodeStrategy.java`: Transition initial evaluation to `WAITING_FOR_APPROVAL`.
-- `apps/backend/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/TaskWorkerController.java`: Added `POST /{id}/claim`, `POST /{id}/unclaim`, `POST /{id}/resolve`.
+- `apps/api/workflow-engine/src/main/java/com/acc/workflow/core/model/TaskStatus.java`: Added `WAITING_FOR_APPROVAL`.
+- `apps/api/workflow-engine/src/main/java/com/acc/workflow/core/decider/strategy/HumanNodeStrategy.java`: Transition initial evaluation to `WAITING_FOR_APPROVAL`.
+- `apps/api/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/TaskWorkerController.java`: Added `POST /{id}/claim`, `POST /{id}/unclaim`, `POST /{id}/resolve`.
 - `packages/client/src/contracts/workflow-executions.ts`: Added `ApprovalTask`, `ApprovalDecisionRequest`, and updated `TaskSnapshot`.
 - `packages/client/src/client.ts`: Added `getApprovals`, `claimApproval`, `unclaimApproval`, `resolveApproval`.
 - `packages/sandbox/src/handlers/workflow-handler.ts`: Added `tenantApprovals` state, seeded records, and mock routes.

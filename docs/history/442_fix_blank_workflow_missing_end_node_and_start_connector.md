@@ -7,11 +7,11 @@ In the workflow orchestration subsystem:
 3. In `visual-dag-studio.tsx`, `decoratedNodes` calculated `isStartNode = degIn === 0` and `isEndNode = degOut === 0`. Because a start node had 0 outgoing edges before connection, `isEndNode` evaluated to `true`, which suppressed its source handle (`{!data.isEndNode && <Handle type="source" />}`).
 
 ## Changes
-- `apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/model/WorkflowDefinition.java`:
+- `apps/api/workflow-engine/src/main/java/com/acc/workflow/core/model/WorkflowDefinition.java`:
   - Added factory method `WorkflowDefinition.createBlank(key, name, description)` to initialize standard `workflow_start` and `workflow_end` boundary tasks and layout metadata.
-- `apps/backend/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/WorkflowDefinitionController.java`:
+- `apps/api/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/WorkflowDefinitionController.java`:
   - In `registerDefinition()`, automatically initializes blank workflow definitions using `WorkflowDefinition.createBlank(...)` when tasks list is null or empty.
-- `apps/backend/acc-ms-aio/src/test/java/com/acc/aio/controller/workflow/WorkflowEngineRestApiTest.java`:
+- `apps/api/acc-ms-aio/src/test/java/com/acc/aio/controller/workflow/WorkflowEngineRestApiTest.java`:
   - Added `@Test testRegisterBlankWorkflowInitializesStartAndEndNodes()` verifying `POST /api/v1/workflow/definitions` with empty tasks generates both Start and End boundary nodes.
 - `packages/sandbox/src/handlers/workflow-handler.ts`:
   - Implemented offline sandbox parity: `WorkflowSandboxRepository.saveDefinition()` automatically initializes canonical `workflow_start` and `workflow_end` nodes when tasks are empty.
@@ -21,7 +21,7 @@ In the workflow orchestration subsystem:
   - Fixed `decoratedNodes` so that explicit start nodes (`workflow_start`, `node-start`, `data.isStartNode`) enforce `isEndNode = false`, ensuring the right source handle is always rendered.
 
 ## Verification
-- `pnpm --filter @acc/backend exec node mvnw.cjs -am -pl acc-ms-aio test "-Dtest=WorkflowEngineRestApiTest"` (2/2 passed, BUILD SUCCESS).
+- `pnpm --filter @acc/api exec node mvnw.cjs -am -pl acc-ms-aio test "-Dtest=WorkflowEngineRestApiTest"` (2/2 passed, BUILD SUCCESS).
 - `pnpm --filter @acc/sandbox test` (11 test files, 103 passed).
 - `pnpm --filter @acc/console exec vitest run src/features/workflows` (24 test files, 112 passed).
 - `pnpm --filter @acc/console exec tsc --noEmit` (0 errors).

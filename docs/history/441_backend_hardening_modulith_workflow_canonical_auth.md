@@ -2,7 +2,7 @@
 
 ## Problem
 1. **Spring Modulith Boundary Cycles**:
-   `apps/backend/acc-ms-aio` had an unresolvable 3-way circular dependency among internal modulith package slices: `com.acc.aio.config -> com.acc.aio.worker -> com.acc.aio.controller -> com.acc.aio.config`. The cycle stemmed from:
+   `apps/api/acc-ms-aio` had an unresolvable 3-way circular dependency among internal modulith package slices: `com.acc.aio.config -> com.acc.aio.worker -> com.acc.aio.controller -> com.acc.aio.config`. The cycle stemmed from:
    - `com.acc.aio.config.WorkflowEngineConfiguration` declaring inner worker classes and exposing bean factories referencing `com.acc.aio.worker`.
    - `WorkflowDefinitionRegistry` being defined inside `com.acc.aio.config` rather than the core `workflow-engine` domain layer, forcing workers and controllers to import from `config`.
    - `SystemTaskWorkerPool` directly coupling to `ExecutionStreamBroadcaster` in `com.acc.aio.controller` to push task execution events.
@@ -31,20 +31,20 @@
    - Purge `hasRole('ADMIN')`, `ROLE_SYSTEM_ROOT`, `ROLE_SYSTEM_SUPPORT`, `ROLE_SYSTEM_CUSTODIAN`, `platform:quotas:override`, and `platform:users:lock` from all controllers (`TaskWorkerController`, `WorkerFleetController`, `WorkflowApprovalsController`, `WorkflowDefinitionController`, `WorkflowExecutionController`, `SystemFleetController`, `AuditController`, `TenantProvisioningController`, `TenantRoleDelegationController`).
    - Harmonize `SandboxPersonaRegistry` authorities to include full canonical permissions.
 4. **Verification & Quality Gate**:
-   - Run `pnpm --filter @acc/backend test:modulith` (0 cycles, 0 boundary violations).
-   - Run `pnpm --filter @acc/backend test:sandbox` (53/53 tests pass).
-   - Run `pnpm --filter @acc/backend check-types` (all 9 modules compile cleanly).
+   - Run `pnpm --filter @acc/api test:modulith` (0 cycles, 0 boundary violations).
+   - Run `pnpm --filter @acc/api test:sandbox` (53/53 tests pass).
+   - Run `pnpm --filter @acc/api check-types` (all 9 modules compile cleanly).
    - Run unit and integration tests for DLQ and Audit Ledger.
 
 ## Changes
-- **`apps/backend/workflow-engine`**:
+- **`apps/api/workflow-engine`**:
   - `WorkflowDefinitionRegistry.java`: Created application registry for workflow definitions in `com.acc.workflow.application`.
   - `WorkflowExecutionBroadcastEvent.java`, `TaskLogBroadcastEvent.java`: Created domain events in `com.acc.workflow.events`.
   - `WorkflowExecutionStatus.java`: Created canonical execution status enum including `TAMPERED` status.
   - `WorkflowStatus.java`: Added `TAMPERED` state and bidirectional conversion helpers (`toExecutionStatus()`, `fromExecutionStatus()`).
   - `WorkflowSnapshot.java`: Added `executionStatus()` method.
   - `WorkflowEngineService.java`: Added `quarantineTamperedWorkflow(workflowId, reason)` which transitions workflow to `WorkflowStatus.TAMPERED`, evicts active tasks from persistence queue, and records quarantine failure details.
-- **`apps/backend/acc-ms-aio`**:
+- **`apps/api/acc-ms-aio`**:
   - `ScheduledLeaseSweeper.java`: Relocated to `com.acc.aio.worker.ScheduledLeaseSweeper`.
   - `WorkflowWorkerConfiguration.java`: Created worker bean configuration in `com.acc.aio.worker`.
   - `SystemTaskWorkerPool.java`: Replaced direct dependency on `ExecutionStreamBroadcaster` with Spring `ApplicationEventPublisher`.
@@ -53,20 +53,20 @@
   - `AuditLedgerController.java`: Created REST verification controller mapped to `/api/v1/workflow/audit`, verifying SHA-256 cryptographic audit chains and quarantining tampered workflows with HTTP 409 Conflict.
   - `WorkflowDlqController.java`: Updated `@PreAuthorize` to strictly evaluate `hasAuthority('platform:dlq:manage')`.
   - Controllers updated to use `WorkflowDefinitionRegistry` from `workflow-engine` and purged of role-based security checks: `TaskWorkerController`, `WorkerFleetController`, `WorkflowApprovalsController`, `WorkflowDefinitionController`, `WorkflowExecutionController`.
-- **`apps/backend/acc-fw`**:
+- **`apps/api/acc-fw`**:
   - `SystemFleetController.java`: Converted all 12 endpoints to evaluate strictly canonical permissions (`platform:fleet:read`, `platform:fleet:mutate`, `platform:quotas:manage`, `platform:tenant:assume`, `platform:roles:manage`, `platform:users:manage`).
   - `AuditController.java`: Purged `or hasRole('SYSTEM_ROOT')` from `/records`, `/verify`, and `/export`.
   - `TenantProvisioningController.java`: Uncommented and wired canonical permissions `metadata:schema:read` and `metadata:blueprint:provision`.
   - `TenantRoleDelegationController.java`: Purged `hasAnyRole(...)` checks from role retrieval and delegation endpoints.
-- **`apps/backend/acc-sandbox`**:
+- **`apps/api/acc-sandbox`**:
   - `SandboxPersonaRegistry.java`: Updated custodian persona to grant canonical permissions `platform:quotas:manage`, `platform:users:manage`, `metadata:blueprint:provision`, and `platform:audit:verify`.
 
 ## Verification
 1. **Spring Modulith Application Module Tests**:
-   - Executed: `pnpm --filter @acc/backend test:modulith`
+   - Executed: `pnpm --filter @acc/api test:modulith`
    - Result: **0 failures, 0 errors, 0 boundary violations**. Slices `# Config`, `# Controller`, and `# Worker` verified completely acyclic.
 2. **Backend Sandbox Tests**:
-   - Executed: `pnpm --filter @acc/backend test:sandbox`
+   - Executed: `pnpm --filter @acc/api test:sandbox`
    - Result: **53 tests run, 0 failures, 0 errors, 0 skipped**.
 3. **Audit Ledger & Quarantine Tests**:
    - Executed: `node mvnw.cjs -pl acc-ms-aio test -Dtest=AuditLedgerControllerTest`
@@ -75,11 +75,11 @@
    - Executed: `node mvnw.cjs -pl acc-ms-aio test -Dtest=WorkflowDlqRestApiTest`
    - Result: Passed with `platform:dlq:manage` canonical authority verification.
 5. **Full Reactor Compilation**:
-   - Executed: `pnpm --filter @acc/backend check-types`
+   - Executed: `pnpm --filter @acc/api check-types`
    - Result: **All 9 modules compiled with BUILD SUCCESS**.
 
 ## Walkthrough
-- Refer to `apps/backend/doc/walkthrough_55.md` for detailed code changes, verification steps, and operational guidelines.
+- Refer to `apps/api/doc/walkthrough_55.md` for detailed code changes, verification steps, and operational guidelines.
 
 ## Tasks
 - [x] Extract `WorkflowDefinitionRegistry` and domain events to `workflow-engine`

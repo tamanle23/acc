@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-19  
 **Status:** Complete  
-**Scope:** `@acc/console`, `@acc/backend` (`acc-fw`)  
+**Scope:** `@acc/console`, `@acc/api` (`acc-fw`)  
 
 ---
 
@@ -38,10 +38,10 @@ During rigorous skeptical review of commit `eff4683` (Iteration 12), multiple cr
 - `apps/console/src/features/workflows/approvals/approvals-inbox.tsx`: Removed `console.warn` and synchronous `setSseConnected` call in catch block.
 - `apps/console/src/features/workflows/approvals/__tests__/approvals-inbox.test.tsx`: Removed unused `vi` import.
 
-### Backend (`@acc/backend`)
-- `apps/backend/acc-fw/src/main/java/com/acc/cache/jest/JestRepository.java`: Replaced all 6 swallowed `IOException` catch blocks with `ElasticsearchOperationException`.
-- `apps/backend/acc-fw/src/main/java/com/acc/service/RecordMutationPipeline.java`: Implemented `ApplicationEventPublisherAware` and annotated `setApplicationEventPublisher` with `@Autowired(required = false)`.
-- `apps/backend/acc-fw/src/test/java/com/acc/service/RecordMutationPipelineTest.java`: Added unit test `testApplicationEventPublisher_FiresMutationEventOnCreate` asserting event publication on entity mutation.
+### Backend (`@acc/api`)
+- `apps/api/acc-fw/src/main/java/com/acc/cache/jest/JestRepository.java`: Replaced all 6 swallowed `IOException` catch blocks with `ElasticsearchOperationException`.
+- `apps/api/acc-fw/src/main/java/com/acc/service/RecordMutationPipeline.java`: Implemented `ApplicationEventPublisherAware` and annotated `setApplicationEventPublisher` with `@Autowired(required = false)`.
+- `apps/api/acc-fw/src/test/java/com/acc/service/RecordMutationPipelineTest.java`: Added unit test `testApplicationEventPublisher_FiresMutationEventOnCreate` asserting event publication on entity mutation.
 
 ---
 

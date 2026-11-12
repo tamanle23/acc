@@ -24,9 +24,9 @@ The user requested moving the Dead-Letter Queue (DLQ) screen to SYSTEM's root us
    - Regenerate `routeTree.gen.ts`.
 
 ## Changes Made
-- `apps/backend/acc-ms-aio/.../WorkflowDlqController.java`: Added `@PreAuthorize`, `/api/v1/system/dlq` route, and fleet querying.
-- `apps/backend/acc-fw/.../SystemFleetService.java`: Added `"platform:dlq:manage"` to `ROLE_SYSTEM_CUSTODIAN` permissions and ephemeral token generation.
-- `apps/backend/acc-ms-aio/.../WorkflowDlqRestApiTest.java`: Verified security annotation, dual routing, and fleet-wide querying.
+- `apps/api/acc-ms-aio/.../WorkflowDlqController.java`: Added `@PreAuthorize`, `/api/v1/system/dlq` route, and fleet querying.
+- `apps/api/acc-fw/.../SystemFleetService.java`: Added `"platform:dlq:manage"` to `ROLE_SYSTEM_CUSTODIAN` permissions and ephemeral token generation.
+- `apps/api/acc-ms-aio/.../WorkflowDlqRestApiTest.java`: Verified security annotation, dual routing, and fleet-wide querying.
 - `packages/sandbox/src/handlers/dlq-sandbox-handler.ts`: Supported `/api/v1/system/dlq`.
 - `apps/console/src/routes/_authenticated/system.dlq.tsx`: Added new system DLQ route.
 - `apps/console/src/routes/_authenticated/dlq/`: Removed old route folder.
@@ -36,7 +36,7 @@ The user requested moving the Dead-Letter Queue (DLQ) screen to SYSTEM's root us
 - `apps/console/src/features/dlq/hooks/use-dlq.ts`: Updated query key and endpoint to `/system/dlq`.
 - `apps/console/src/features/dlq/__tests__/dlq-feature.test.tsx`: Added 403 Forbidden and sovereign root tests.
 - `apps/console/ROUTE.md`: Updated layout tree, matrix, and section 3.10 blueprint.
-- `apps/backend/doc/implementation_plan_40.md` & `walkthrough_40.md`: Backend artifacts.
+- `apps/api/doc/implementation_plan_40.md` & `walkthrough_40.md`: Backend artifacts.
 - `apps/console/doc/implementation_plan_104.md` & `walkthrough_104.md`: Console artifacts.
 
 ## Verification
@@ -50,7 +50,7 @@ The user requested moving the Dead-Letter Queue (DLQ) screen to SYSTEM's root us
   - `vitest run dlq-feature`: 4/4 passed (including 403 Forbidden validation).
 
 ## Walkthrough
-- Backend: `apps/backend/doc/walkthrough_40.md`
+- Backend: `apps/api/doc/walkthrough_40.md`
 - Console UI: `apps/console/doc/walkthrough_104.md`
 
 ## Tasks

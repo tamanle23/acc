@@ -2,14 +2,14 @@
 
 **Document Status:** Complete & Verified  
 **Date:** 2026-10-29  
-**Target:** `@acc/backend` (Java 21 / Spring Modulith) & `@acc/console` (React 19 / Vite 8)  
+**Target:** `@acc/api` (Java 21 / Spring Modulith) & `@acc/console` (React 19 / Vite 8)  
 **Standard:** Enterprise Clean Coder, SOLID Principles, Unified Sandbox Platform Mandate, Zero-Stub Prohibition  
 
 ---
 
 ## 1. Executive Summary & Problem Formulation
 
-A deep multi-vector architectural audit of `@acc/backend` and `@acc/console` revealed key divergence areas, cryptographic/stub bypasses, orphaned dead code, and ad-hoc mock patterns that break monorepo invariants:
+A deep multi-vector architectural audit of `@acc/api` and `@acc/console` revealed key divergence areas, cryptographic/stub bypasses, orphaned dead code, and ad-hoc mock patterns that break monorepo invariants:
 
 1. **Production Cryptographic Backdoors and Ad-Hoc Stubs in Backend (`PayOsBillingService.java`):**
    - In `PayOsBillingService.java`, signature verification contains insecure bypass strings (`"mock_signature_ok"`, `"test_valid_sig"`), violating the monorepo's `ZERO-STUB-PROHIBITION` rule.
@@ -59,7 +59,7 @@ flowchart TD
         User_Handler["users-sandbox-handler.ts"]
     end
 
-    subgraph Backend["apps/backend (Java 21 / Spring Modulith)"]
+    subgraph Backend["apps/api (Java 21 / Spring Modulith)"]
         AIO["acc-ms-aio Controllers\n(Dual Mappings: /api/v1 & /api)"]
         Engine["workflow-engine Core\n(Hexagonal Pure Java)"]
         FW["acc-fw Services & Tenancy"]
@@ -114,7 +114,7 @@ Client hooks (`useWorkflowExecutions`, `useMetadata`, `useUsers`) must accept bo
 
 ## 5. Concrete File & Class Signatures
 
-### 5.1 Backend: [`PayOsBillingService.java`](file:///mnt/c/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/tenant/billing/PayOsBillingService.java)
+### 5.1 Backend: [`PayOsBillingService.java`](file:///mnt/c/Users/Admin/workspace/git/acc/apps/api/acc-fw/src/main/java/com/acc/tenant/billing/PayOsBillingService.java)
 ```java
 // Production-hardened cryptographic verification (No stubs or backdoors)
 public boolean verifySignature(PayOsWebhookPayload payload) {
@@ -242,9 +242,9 @@ export const metadataSandboxHandler: SandboxRouteHandler = {
 
 | Test Suite / Target | Command | Verification Invariant |
 | :--- | :--- | :--- |
-| **Backend HMAC Security** | `cd apps/backend && ./mvnw test -pl acc-fw -Dtest=PayOsBillingServiceTest -q` | Reject `"mock_signature_ok"` and fake headers; accept only valid HMACs. |
-| **Backend Workflow Routes** | `cd apps/backend && ./mvnw test -pl acc-ms-aio -Dtest=Workflow*Test -q` | Dual route mapping (`/api/v1/...` and `/api/...`) returns 200/201. |
-| **Workflow Engine Core** | `cd apps/backend && ./mvnw test -pl workflow-engine -q` | 65/65 pure Java tests pass; zero regressions. |
+| **Backend HMAC Security** | `cd apps/api && ./mvnw test -pl acc-fw -Dtest=PayOsBillingServiceTest -q` | Reject `"mock_signature_ok"` and fake headers; accept only valid HMACs. |
+| **Backend Workflow Routes** | `cd apps/api && ./mvnw test -pl acc-ms-aio -Dtest=Workflow*Test -q` | Dual route mapping (`/api/v1/...` and `/api/...`) returns 200/201. |
+| **Workflow Engine Core** | `cd apps/api && ./mvnw test -pl workflow-engine -q` | 65/65 pure Java tests pass; zero regressions. |
 | **Console Sandbox Parity** | `pnpm --filter @acc/sandbox test` | Metadata handler passes 100% of offline CRUD simulation tests. |
 | **Console Features** | `pnpm --filter @acc/console test -- src/features/workflows src/features/workflow-executions src/features/metadata` | Zero component test failures; query hooks succeed with normalized data. |
 | **Type Integrity** | `pnpm --filter @acc/console exec tsc --noEmit --project tsconfig.json` | 0 type errors across console codebase. |

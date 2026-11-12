@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-09  
 **Status:** Completed  
-**Scope:** `@acc/backend` (`apps/backend/acc-fw`)
+**Scope:** `@acc/api` (`apps/api/acc-fw`)
 
 ## 1. Problem Statement
 When new tenant organizations onboard to the Acc platform, configuring entity schemas, field attributes, UI components, and relationship graphs manually from scratch is high-friction and error-prone. Tenants need pre-modeled, production-ready industry blueprints (such as Logistics & Fleet Management, B2B CRM & Invoicing, or Blank Workspace) that can be seeded atomically in $< 250\text{ ms}$, deep-cloning all metadata stamped with the target tenant ID, pre-warming Hazelcast/L1 schema caches, and ensuring decoupled schema evolution (zero runtime linkage back to template files).
@@ -20,9 +20,9 @@ When new tenant organizations onboard to the Acc platform, configuring entity sc
 
 ## 3. Changes
 - **Blueprint JSON Manifests:**
-  - `apps/backend/acc-fw/src/main/resources/metadata/blueprints/logistics-fleet-blueprint.json`: models Fleet Vehicles, Dispatch Orders, and vehicle assignment edges.
-  - `apps/backend/acc-fw/src/main/resources/metadata/blueprints/b2b-crm-billing-blueprint.json`: models Customer Accounts, Invoices, and customer billing edges.
-  - `apps/backend/acc-fw/src/main/resources/metadata/blueprints/blank-workspace-blueprint.json`: clean canvas workspace template.
+  - `apps/api/acc-fw/src/main/resources/metadata/blueprints/logistics-fleet-blueprint.json`: models Fleet Vehicles, Dispatch Orders, and vehicle assignment edges.
+  - `apps/api/acc-fw/src/main/resources/metadata/blueprints/b2b-crm-billing-blueprint.json`: models Customer Accounts, Invoices, and customer billing edges.
+  - `apps/api/acc-fw/src/main/resources/metadata/blueprints/blank-workspace-blueprint.json`: clean canvas workspace template.
 - **Blueprint DTOs & Catalog Loader:**
   - `com.acc.tenant.blueprint.BlueprintManifest`: record mapping blueprint schema.
   - `com.acc.tenant.blueprint.BlueprintSummaryDto`: lightweight projection for catalog listing.

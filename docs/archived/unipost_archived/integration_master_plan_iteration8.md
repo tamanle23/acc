@@ -1,7 +1,7 @@
 # Master Plan: Backend Unified Sandbox Platform & Architecture Integration (Iteration 8)
 
 ## 1. Goal & Architecture Overview
-Establish an enterprise-grade, clean-architecture **Backend Unified Sandbox Platform** packaged as a **separate, decoupled Maven module** (`apps/backend/acc-sandbox`) that seamlessly supports **both Test Mode and Dev Mode**, while remaining completely decoupled when running in real production live mode.
+Establish an enterprise-grade, clean-architecture **Backend Unified Sandbox Platform** packaged as a **separate, decoupled Maven module** (`apps/api/acc-sandbox`) that seamlessly supports **both Test Mode and Dev Mode**, while remaining completely decoupled when running in real production live mode.
 
 ### Dual Operating Modes (Test Mode vs Dev Mode)
 
@@ -28,7 +28,7 @@ Establish an enterprise-grade, clean-architecture **Backend Unified Sandbox Plat
 
 ## 2. Core Guiding Principles
 
-1. **Decoupled Packaging**: Packaged as an independent Maven artifact (`acc-sandbox`) inside `apps/backend/pom.xml`. Production builds can completely omit this dependency, ensuring **zero footprint and zero runtime overhead in production**.
+1. **Decoupled Packaging**: Packaged as an independent Maven artifact (`acc-sandbox`) inside `apps/api/pom.xml`. Production builds can completely omit this dependency, ensuring **zero footprint and zero runtime overhead in production**.
 2. **Dual-Mode Profiles (`dev` & `test`)**:
    - **Dev Mode (`application-sandbox.yml`)**:
      - Boots Spring Boot on port 8000 for local developer testing and Playwright live E2E runs (`pnpm test:e2e:live`).
@@ -55,8 +55,8 @@ Establish an enterprise-grade, clean-architecture **Backend Unified Sandbox Plat
 
 ### Phase 1: Module Creation, Auto-Configuration & Embedded PGlite Setup
 1. **Maven Module Setup**:
-   - Create `apps/backend/acc-sandbox` with `pom.xml`.
-   - Register `<module>./acc-sandbox</module>` in `apps/backend/pom.xml`.
+   - Create `apps/api/acc-sandbox` with `pom.xml`.
+   - Register `<module>./acc-sandbox</module>` in `apps/api/pom.xml`.
    - Dependency hierarchy: `acc-sandbox` depends on `acc-fw` (provided/compile), keeping `acc-fw` free of sandbox dependencies.
 2. **Embedded PGlite Database Auto-Configuration**:
    - Add `io.github.jakvbs:pglite-spring-boot-test` dependency.
@@ -119,14 +119,14 @@ Establish an enterprise-grade, clean-architecture **Backend Unified Sandbox Plat
 ### Automated Commands
 ```powershell
 # 1. Build and Test the new acc-sandbox module in Test Mode
-& "C:\Users\Admin\.m2\wrapper\dists\apache-maven-3.9.9-bin\6gbr3tfuiv8aocduf5pro8ephc\apache-maven-3.9.9\bin\mvn.cmd" clean test -f apps/backend/acc-sandbox/pom.xml -q
+& "C:\Users\Admin\.m2\wrapper\dists\apache-maven-3.9.9-bin\6gbr3tfuiv8aocduf5pro8ephc\apache-maven-3.9.9\bin\mvn.cmd" clean test -f apps/api/acc-sandbox/pom.xml -q
 
 # 2. Run full backend suite with JaCoCo check
-& "C:\Users\Admin\.m2\wrapper\dists\apache-maven-3.9.9-bin\6gbr3tfuiv8aocduf5pro8ephc\apache-maven-3.9.9\bin\mvn.cmd" test -f apps/backend/pom.xml -q
+& "C:\Users\Admin\.m2\wrapper\dists\apache-maven-3.9.9-bin\6gbr3tfuiv8aocduf5pro8ephc\apache-maven-3.9.9\bin\mvn.cmd" test -f apps/api/pom.xml -q
 
 # 3. Verify Decoupling (sandbox disabled by default in production)
-& "C:\Users\Admin\.m2\wrapper\dists\apache-maven-3.9.9-bin\6gbr3tfuiv8aocduf5pro8ephc\apache-maven-3.9.9\bin\mvn.cmd" test -Dtest=SandboxDecouplingIntegrationTest -f apps/backend/pom.xml -q
+& "C:\Users\Admin\.m2\wrapper\dists\apache-maven-3.9.9-bin\6gbr3tfuiv8aocduf5pro8ephc\apache-maven-3.9.9\bin\mvn.cmd" test -Dtest=SandboxDecouplingIntegrationTest -f apps/api/pom.xml -q
 
 # 4. Verify Dev Mode (Boot backend with sandbox profile)
-& "C:\Users\Admin\.m2\wrapper\dists\apache-maven-3.9.9-bin\6gbr3tfuiv8aocduf5pro8ephc\apache-maven-3.9.9\bin\mvn.cmd" spring-boot:run -f apps/backend/acc-ms-aio/pom.xml -Dspring-boot.run.profiles=local,sandbox
+& "C:\Users\Admin\.m2\wrapper\dists\apache-maven-3.9.9-bin\6gbr3tfuiv8aocduf5pro8ephc\apache-maven-3.9.9\bin\mvn.cmd" spring-boot:run -f apps/api/acc-ms-aio/pom.xml -Dspring-boot.run.profiles=local,sandbox
 ```

@@ -26,7 +26,7 @@ While Phase 41 delivered the declarative `CompositeSpec` AST DSL and Phase 42 im
 
 ## Changes
 
-### Backend (`apps/backend/acc-fw`)
+### Backend (`apps/api/acc-fw`)
 - `com.acc.presentation.dto.metadata`:
   - `ChildPaginationParam.java`: Request parameter for child collection pagination.
   - `ChildPaginationMetadata.java`: Response DTO for child collection counts and pagination state.
@@ -57,7 +57,7 @@ While Phase 41 delivered the declarative `CompositeSpec` AST DSL and Phase 42 im
 
 ## Verification
 - **Backend Tests**:
-  - `mvn test -f apps/backend/pom.xml -pl acc-fw "-Dtest=*Composite*,DynamicQueryCompilerTest,CompositeRecordServiceTest" -q`
+  - `mvn test -f apps/api/pom.xml -pl acc-fw "-Dtest=*Composite*,DynamicQueryCompilerTest,CompositeRecordServiceTest" -q`
   - All 5 unit tests passed with 0 failures and 0 errors.
 - **Frontend Tests**:
   - `pnpm --filter @acc/console exec vitest run src/features/metadata/components/data-explorer/composite-master-detail-row.test.tsx src/features/metadata/components/studio/composite/composite-bento-studio.test.tsx`

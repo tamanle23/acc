@@ -1,6 +1,6 @@
 # Implementation Plan 57 - Enterprise Enhancements for Three-Tier Metadata Architecture
 
-Comprehensive implementation roadmap detailing the 5 most impactful architectural enhancements and practical improvements for the Three-Tier Metadata Management Module across Frontend (`@acc/console`), Backend (`@acc/backend`), and Database (`acc-db`).
+Comprehensive implementation roadmap detailing the 5 most impactful architectural enhancements and practical improvements for the Three-Tier Metadata Management Module across Frontend (`@acc/console`), Backend (`@acc/api`), and Database (`acc-db`).
 
 ---
 
@@ -18,7 +18,7 @@ To transform this foundation into a resilient, enterprise-grade engine capable o
 ## 1. Enhancement 1: Native PostgreSQL JSONB Containment (`@>`) Query Optimization (Tier 3)
 
 ### Problem & Motivation
-Currently, [`EntityRecordSpecifications.java`](file:///C:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/service/EntityRecordSpecifications.java#L57-L68) constructs SQL predicates using `jsonb_extract_path_text(attributes, :attrName) = :val`. While functional, this prevents PostgreSQL from leveraging the `GIN (attributes jsonb_path_ops)` index for exact-match equality and multi-attribute filters. The index only accelerates the native JSON containment operator (`@>`).
+Currently, [`EntityRecordSpecifications.java`](file:///C:/Users/Admin/workspace/git/acc/apps/api/acc-fw/src/main/java/com/acc/service/EntityRecordSpecifications.java#L57-L68) constructs SQL predicates using `jsonb_extract_path_text(attributes, :attrName) = :val`. While functional, this prevents PostgreSQL from leveraging the `GIN (attributes jsonb_path_ops)` index for exact-match equality and multi-attribute filters. The index only accelerates the native JSON containment operator (`@>`).
 
 ### Proposed Solution
 1. **Add Custom SQL Function / Operator to Hibernate / Criteria**:
@@ -42,7 +42,7 @@ Currently, [`EntityRecordSpecifications.java`](file:///C:/Users/Admin/workspace/
 ## 2. Enhancement 2: Cache Stampede Mitigation & Lock-Free L1 Compilation (Tier 2)
 
 ### Problem & Motivation
-In [`SchemaValidationService.java`](file:///C:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/service/SchemaValidationService.java#L67-L105), if the Hazelcast cache key expires or is invalidated during a burst of concurrent traffic, multiple threads simultaneously query the database and re-compile the JSON schema.
+In [`SchemaValidationService.java`](file:///C:/Users/Admin/workspace/git/acc/apps/api/acc-fw/src/main/java/com/acc/service/SchemaValidationService.java#L67-L105), if the Hazelcast cache key expires or is invalidated during a burst of concurrent traffic, multiple threads simultaneously query the database and re-compile the JSON schema.
 
 ### Proposed Solution
 1. **Per-Model Atomic In-Process Locking**:

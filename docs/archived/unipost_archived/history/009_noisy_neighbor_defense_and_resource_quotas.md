@@ -18,20 +18,20 @@ In a multi-tenant dynamic schema architecture, shared computing resources (API w
 
 ## Changes Made
 - **Rate Limiting:**
-  - `apps/backend/acc-fw/src/main/java/com/acc/fw/tenancy/ratelimit/TenantRateLimitService.java`
-  - `apps/backend/acc-fw/src/main/java/com/acc/fw/tenancy/ratelimit/TenantRateLimitFilter.java`
+  - `apps/api/acc-fw/src/main/java/com/acc/fw/tenancy/ratelimit/TenantRateLimitService.java`
+  - `apps/api/acc-fw/src/main/java/com/acc/fw/tenancy/ratelimit/TenantRateLimitFilter.java`
 - **ReDoS & Schema Timeout Defense:**
-  - `apps/backend/acc-fw/src/main/java/com/acc/service/exception/ValidationTimeoutException.java`
-  - `apps/backend/acc-fw/src/main/java/com/acc/service/SchemaValidationService.java`
+  - `apps/api/acc-fw/src/main/java/com/acc/service/exception/ValidationTimeoutException.java`
+  - `apps/api/acc-fw/src/main/java/com/acc/service/SchemaValidationService.java`
 - **Resource Quotas & Payload Guard:**
-  - `apps/backend/acc-fw/src/main/java/com/acc/repository/jpa/EntityTypeRepository.java`: added `countByDeletedDateIsNull()`
-  - `apps/backend/acc-fw/src/main/java/com/acc/service/MetadataService.java`: wired 50-model cap, 100-attribute cap, 1MB payload check, and `isDangerousRegex` detector.
+  - `apps/api/acc-fw/src/main/java/com/acc/repository/jpa/EntityTypeRepository.java`: added `countByDeletedDateIsNull()`
+  - `apps/api/acc-fw/src/main/java/com/acc/service/MetadataService.java`: wired 50-model cap, 100-attribute cap, 1MB payload check, and `isDangerousRegex` detector.
 - **Database Statement Timeout:**
-  - `apps/backend/acc-fw/src/main/java/com/acc/fw/tenancy/TenantSessionAspect.java`: added `SET LOCAL statement_timeout = '3000ms'`.
+  - `apps/api/acc-fw/src/main/java/com/acc/fw/tenancy/TenantSessionAspect.java`: added `SET LOCAL statement_timeout = '3000ms'`.
 - **Unit & Regression Tests:**
-  - `apps/backend/acc-fw/src/test/java/com/acc/fw/tenancy/ratelimit/TenantRateLimitServiceTest.java`
-  - `apps/backend/acc-fw/src/test/java/com/acc/service/SafeSchemaValidationTest.java`
-  - `apps/backend/acc-fw/src/test/java/com/acc/service/CompositeCacheFabricTest.java`
+  - `apps/api/acc-fw/src/test/java/com/acc/fw/tenancy/ratelimit/TenantRateLimitServiceTest.java`
+  - `apps/api/acc-fw/src/test/java/com/acc/service/SafeSchemaValidationTest.java`
+  - `apps/api/acc-fw/src/test/java/com/acc/service/CompositeCacheFabricTest.java`
 
 ## Verification
 - Maven test-compile and test executions:
@@ -41,6 +41,6 @@ In a multi-tenant dynamic schema architecture, shared computing resources (API w
   All tests passed across all 10 modules (`BUILD SUCCESS`).
 
 ## Walkthrough & Artifacts
-- Plan: `apps/backend/doc/implementation_plan_21.md`
-- Walkthrough: `apps/backend/doc/walkthrough_21.md`
+- Plan: `apps/api/doc/implementation_plan_21.md`
+- Walkthrough: `apps/api/doc/walkthrough_21.md`
 - History: `docs/history/009_noisy_neighbor_defense_and_resource_quotas.md`
