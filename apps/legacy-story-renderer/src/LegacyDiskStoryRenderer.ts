@@ -239,10 +239,13 @@ export class LegacyDiskStoryRenderer {
       try {
         Logger.info(
           'LegacyDiskStoryRenderer',
-          '[Pipeline] Pre-warming AI Subsystem (SAM 2 & Depth Anything v2)...'
+          '[Pipeline] Pre-warming AI Control Plane Subsystem...'
         );
-        const { defaultIPCFacade } = await import('@acc/core');
-        await defaultIPCFacade.ensureDaemonRunning();
+        const { AIInferenceClient } = await import('@acc/ai-control-plane-sdk');
+        const aiClient = new AIInferenceClient();
+        await aiClient.fetchHealth().catch((err: unknown) => {
+          Logger.warn('LegacyDiskStoryRenderer', `[Pipeline] AI Control Plane not responding yet: ${err instanceof Error ? err.message : String(err)}`);
+        });
       } catch (err: any) {
         Logger.warn('LegacyDiskStoryRenderer', `[Pipeline] Pre-warming error: ${err.message}`);
       }

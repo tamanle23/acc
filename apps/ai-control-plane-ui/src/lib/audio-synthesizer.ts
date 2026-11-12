@@ -3,7 +3,7 @@ import type {
   WeightTierId,
   OffloadStrategy,
   LocalHardwareProfile,
-} from '@ai-monorepo/ai-control-plane-sdk';
+} from '@acc/ai-control-plane-sdk';
 import { TIER_SPEC_MAP } from '@/constants/studio-constants';
 
 export function computeClientModelWeights(

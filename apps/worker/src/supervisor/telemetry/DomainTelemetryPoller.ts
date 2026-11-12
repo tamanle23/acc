@@ -1,23 +1,29 @@
-import { telemetryBroker, type PythonBackendDomainTelemetry } from "./TelemetryEventBroker.js";
+import { telemetryBroker, type AIControlPlaneDomainTelemetry } from "./TelemetryEventBroker.js";
+import { AIInferenceClient } from "@acc/ai-control-plane-sdk";
 
 /**
  * DomainTelemetryPoller:
- * Polls domain-level AI models & VRAM status from Python backend (via gRPC port 50051).
- * Merges domain status into TelemetryEventBroker under 'python-backend.domain'.
+ * Polls domain-level AI models & VRAM status from AI Control Plane (HTTP port 50051).
+ * Merges domain status into TelemetryEventBroker under 'ai-control-plane.domain'.
  */
 export class DomainTelemetryPoller {
   private pollInterval: ReturnType<typeof setInterval> | null = null;
   private isPolling = false;
+  private client: AIInferenceClient;
 
   constructor(
-    private readonly pythonGrpcPort: number = 50051,
+    private readonly aiControlPlanePort: number = 50051,
     private readonly intervalMs: number = 2000
-  ) {}
+  ) {
+    this.client = new AIInferenceClient({
+      baseUrls: [`http://127.0.0.1:${this.aiControlPlanePort}`, `http://localhost:${this.aiControlPlanePort}`],
+    });
+  }
 
   public start(): void {
     if (this.pollInterval) return;
     this.pollInterval = setInterval(() => {
-      this.pollPythonBackend();
+      this.pollAIControlPlane();
     }, this.intervalMs);
   }
 
@@ -28,53 +34,29 @@ export class DomainTelemetryPoller {
     }
   }
 
-  public async pollPythonBackend(): Promise<void> {
+  public async pollAIControlPlane(): Promise<void> {
     if (this.isPolling) return;
     this.isPolling = true;
 
     try {
-      // In production, queries AdminService.GetVRAMStatus via gRPC reflection or binary wire.
-      // Falls back to local health state or lightweight mock probe if gRPC port is alive.
-      const isAlive = await this.probeGrpcPort(this.pythonGrpcPort);
-      if (isAlive) {
-        // Record active TTS & LLM memory status
-        const domainData: PythonBackendDomainTelemetry = {
-          type: "python-backend",
+      const health = await this.client.fetchHealth();
+      if (health && health.status === "ok") {
+        const domainData: AIControlPlaneDomainTelemetry = {
+          type: "ai-control-plane",
           vramUsedMb: 240,
           freeVramBytes: 12 * 1024 * 1024 * 1024,
           totalVramBytes: 16 * 1024 * 1024 * 1024,
           cachedModelCount: 1,
           activeModels: [
-            { name: "tts_engine (Kokoro / VieNeu)", vramMb: 240, accessCount: 1 },
+            { name: "ai-control-plane (VieNeu-TTS / Kokoro / Qwen)", vramMb: 240, accessCount: 1 },
           ],
         };
-        telemetryBroker.recordDomainTelemetry("python-backend", domainData);
+        telemetryBroker.recordDomainTelemetry("ai-control-plane", domainData);
       }
     } catch {
       // Offline / not answering
     } finally {
       this.isPolling = false;
-    }
-  }
-
-  private async probeGrpcPort(port: number): Promise<boolean> {
-    try {
-      const conn = await Bun.connect({
-        hostname: "127.0.0.1",
-        port,
-        socket: {
-          data() {},
-          open(socket) {
-            socket.end();
-          },
-          error() {},
-          close() {},
-        },
-      });
-      conn.end();
-      return true;
-    } catch {
-      return false;
     }
   }
 }

@@ -15,7 +15,7 @@ export function ConsoleSection(props: ConsoleSectionProps) {
 
   const services = [
     { id: "supervisor", label: "supervisor" },
-    { id: "python-backend", label: "python-backend" },
+    { id: "ai-control-plane", label: "ai-control-plane" },
     { id: "worker", label: "worker" },
     { id: "studio", label: "studio" },
   ];

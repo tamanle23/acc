@@ -48,7 +48,7 @@ describe("HttpServer Modular Endpoints & Routing", () => {
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.profile.activeTier).toBe("tier4");
-    expect(data.services["python-backend"]).toBeDefined();
+    expect(data.services["ai-control-plane"]).toBeDefined();
     expect(data.services["worker"]).toBeDefined();
     expect(data.services["studio"]).toBeDefined();
     expect(data.trayColor).toBeDefined();

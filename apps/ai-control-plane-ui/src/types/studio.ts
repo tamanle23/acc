@@ -1,7 +1,7 @@
 import type {
   ModalityFamily,
   OutputModality,
-} from "@ai-monorepo/ai-control-plane-sdk";
+} from "@acc/ai-control-plane-sdk";
 
 export type StudioWorkspaceId = "pipelines" | "hf" | "env" | "telemetry" | "sdk";
 

@@ -68,7 +68,6 @@ export interface NetworkSimulationConfig {
 }
 
 export interface SandboxState {
-  enabled: boolean;
   activePersonaId: SandboxPersonaId;
   activeTenantId: string;
   networkSimulation: NetworkSimulationConfig;

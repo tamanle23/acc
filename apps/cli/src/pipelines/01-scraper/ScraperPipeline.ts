@@ -1,6 +1,6 @@
 import path from 'path';
 import fs from 'fs';
-import { defaultIPCFacade, IPCFacade } from '@acc/core';
+import { AIInferenceClient } from '@acc/ai-control-plane-sdk';
 import { defaultExporterDispatcher, ExporterDispatcher, MultiExportResults } from '@acc/exporters';
 import {
   IPipeline,
@@ -36,11 +36,11 @@ export class ScraperPipeline implements IPipeline<IngestedEvent> {
   public readonly name = 'Event-Driven Scraper & Fast-Paced Summarizer';
   public readonly description = 'Ingests real-time events, extracts structured news summary via LLM, synthesizes TTS, and renders alert video cards.';
 
-  private ipcFacade: IPCFacade;
+  private client: AIInferenceClient;
   private dispatcher: ExporterDispatcher;
 
-  constructor(ipcFacade?: IPCFacade, dispatcher?: ExporterDispatcher) {
-    this.ipcFacade = ipcFacade || defaultIPCFacade;
+  constructor(client?: AIInferenceClient, dispatcher?: ExporterDispatcher) {
+    this.client = client || new AIInferenceClient();
     this.dispatcher = dispatcher || (defaultExporterDispatcher as any);
   }
 
@@ -48,10 +48,10 @@ export class ScraperPipeline implements IPipeline<IngestedEvent> {
     const runner = new PipelineRunner<UnifiedPipelineContext<IngestedEvent>>();
 
     // Stage 1: LLM Structured JSON Extraction
-    runner.use(createScraperLLMSummarizeStage(this.ipcFacade));
+    runner.use(createScraperLLMSummarizeStage(this.client));
 
     // Stage 2: Spoken Narration Synthesis
-    runner.use(createScraperTTSSynthesisStage(this.ipcFacade));
+    runner.use(createScraperTTSSynthesisStage(this.client));
 
     // Stage 3: Visual Card Composition & PipelineIR Assembly
     runner.use(createScraperCardCompositionStage());

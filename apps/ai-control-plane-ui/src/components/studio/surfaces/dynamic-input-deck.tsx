@@ -17,7 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import type { ModelCatalogEntry } from "@ai-monorepo/ai-control-plane-sdk";
+import type { ModelCatalogEntry } from "@acc/ai-control-plane-sdk";
 import { getPipelineStudioStyle } from "./pipeline-styles";
 
 export interface DynamicInputDeckProps {

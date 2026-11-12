@@ -34,7 +34,7 @@ import {
   type GpuSandboxStatusResponse,
   type JobStatus,
   type JobProgressInfo,
-} from "@ai-monorepo/ai-control-plane-sdk";
+} from "@acc/ai-control-plane-sdk";
 import { RefreshCw, FileCode, Check } from "lucide-solid";
 import { Button } from "@/components/ui/button";
 import {
@@ -2272,7 +2272,7 @@ export function App() {
   createNdjsonTransformStream,
   buildMultimodalFormData,
   createWinterTCEdgeGateway
-} from '@ai-monorepo/ai-control-plane-sdk';
+} from '@acc/ai-control-plane-sdk';
 
 const client = new AIInferenceClient("", { timeoutMs: 30_000, maxRetries: 2 });
 
@@ -2823,7 +2823,7 @@ export default { fetch: createWinterTCEdgeGateway("http://127.0.0.1:8000") };`;
   createNdjsonTransformStream,
   buildMultimodalFormData,
   createWinterTCEdgeGateway
-} from '@ai-monorepo/ai-control-plane-sdk';
+} from '@acc/ai-control-plane-sdk';
 
 const client = new AIInferenceClient("", { timeoutMs: 30_000, maxRetries: 2 });
 

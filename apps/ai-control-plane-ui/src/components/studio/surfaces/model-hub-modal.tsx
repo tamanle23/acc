@@ -17,7 +17,7 @@ import type {
   HubResolveResponse,
   ModelCatalogEntry,
   WeightPrecision,
-} from "@ai-monorepo/ai-control-plane-sdk";
+} from "@acc/ai-control-plane-sdk";
 import {
   getPipelineStudioStyle,
   CANONICAL_PIPELINE_OPTIONS,

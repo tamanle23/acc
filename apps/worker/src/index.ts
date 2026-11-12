@@ -2,7 +2,7 @@
 import os from "node:os";
 import { Logger, TaskWorkerFactory } from "@acc/core";
 import { ITaskPoller, TaskPayload, TaskExecutionResult, SandboxTaskPoller } from "./poller/index.js";
-import { BackendHypervisor, PythonBackendAdapter } from "./hypervisor/index.js";
+import { BackendHypervisor, AIControlPlaneAdapter } from "./hypervisor/index.js";
 import { StoryScriptTaskCommand, TtsSynthesizeTaskCommand, IrComposeTaskCommand } from "./tasks/index.js";
 import { WorkerTelemetryServer } from "./telemetry/WorkerTelemetryServer.js";
 
@@ -12,13 +12,12 @@ import { findAvailablePort } from "./supervisor/portScanner.js";
 import { HardwareProfiler, type SystemProfile } from "./supervisor/HardwareProfiler.js";
 import { supervisorEngine } from "./supervisor/SupervisorEngine.js";
 import { telemetryBroker } from "./supervisor/telemetry/TelemetryEventBroker.js";
-import { PythonGrpcStreamConsumer } from "./supervisor/telemetry/PythonGrpcStreamConsumer.js";
 import { HttpServer } from "./supervisor/server/HttpServer.js";
 
 export interface WorkerCliOptions {
   sandbox: boolean;
   pollIntervalMs: number;
-  pythonPort: number;
+  aiControlPlanePort: number;
   ollamaPort: number;
   telemetryPort: number;
   supervisorPort: number;
@@ -29,7 +28,7 @@ export function parseWorkerArgs(args: string[]): WorkerCliOptions {
   const options: WorkerCliOptions = {
     sandbox: true,
     pollIntervalMs: 3000,
-    pythonPort: parseInt(process.env.PYTHON_PORT || "50051", 10),
+    aiControlPlanePort: parseInt(process.env.AI_CONTROL_PLANE_PORT || process.env.AI_PORT || "50051", 10),
     ollamaPort: parseInt(process.env.OLLAMA_PORT || "11434", 10),
     telemetryPort: parseInt(process.env.WORKER_TELEMETRY_PORT || "4000", 10),
     supervisorPort: parseInt(process.env.SUPERVISOR_PORT || "3333", 10),
@@ -42,8 +41,8 @@ export function parseWorkerArgs(args: string[]): WorkerCliOptions {
       options.sandbox = true;
     } else if (arg === "--interval" || arg === "-i") {
       options.pollIntervalMs = parseInt(args[++i] || "3000", 10);
-    } else if (arg === "--python-port") {
-      options.pythonPort = parseInt(args[++i] || "50051", 10);
+    } else if (arg === "--ai-port" || arg === "--ai-control-plane-port" || arg === "--python-port") {
+      options.aiControlPlanePort = parseInt(args[++i] || "50051", 10);
     } else if (arg === "--ollama-port") {
       options.ollamaPort = parseInt(args[++i] || "11434", 10);
     } else if (arg === "--telemetry-port") {
@@ -61,24 +60,22 @@ export interface WorkerBootstrapResult {
   hypervisor: BackendHypervisor;
   telemetryServer: WorkerTelemetryServer;
   httpServer?: HttpServer;
-  pythonStreamConsumer?: PythonGrpcStreamConsumer;
 }
 
 export async function bootstrapWorker(options: WorkerCliOptions): Promise<WorkerBootstrapResult> {
   Logger.info("ACC-Worker", "==================================================");
   Logger.info("ACC-Worker", "ACC Unified Supervisor & Task Worker Daemon v1.0.0");
   Logger.info("ACC-Worker", `Environment: AI_OFFLINE=${process.env.ACC_AI_OFFLINE || "0"}`);
-  Logger.info("ACC-Worker", `Ports: Supervisor=${options.supervisorPort}, Python=${options.pythonPort}, Telemetry=${options.telemetryPort}`);
+  Logger.info("ACC-Worker", `Ports: Supervisor=${options.supervisorPort}, AIControlPlane=${options.aiControlPlanePort}, Telemetry=${options.telemetryPort}`);
   Logger.info("ACC-Worker", "==================================================");
 
   let activeProfile: SystemProfile | null = null;
   let httpServer: HttpServer | undefined;
-  let pythonStreamConsumer: PythonGrpcStreamConsumer | undefined;
 
   // 1. Initialize Supervisor Subsystems (Control Plane & Telemetry on Port 3333)
   if (options.enableSupervisor) {
     const config = configStore.loadConfig();
-    config.pythonPort = options.pythonPort;
+    config.aiControlPlanePort = options.aiControlPlanePort;
 
     try {
       const resolvedSupervisorPort = await findAvailablePort(options.supervisorPort);
@@ -111,12 +108,8 @@ export async function bootstrapWorker(options: WorkerCliOptions): Promise<Worker
     });
     httpServer.start();
 
-    // Start Supervised Fleet (Python backend + Studio)
+    // Start Supervised Fleet (AI Control Plane + Studio)
     await supervisorEngine.startAll();
-
-    // Attach Python gRPC Telemetry Stream
-    pythonStreamConsumer = new PythonGrpcStreamConsumer("127.0.0.1", config.pythonPort);
-    pythonStreamConsumer.start();
   }
 
   // 2. Legacy Worker Telemetry Server (Port 4000) for backward compatibility
@@ -129,7 +122,7 @@ export async function bootstrapWorker(options: WorkerCliOptions): Promise<Worker
 
   // 3. Initialize Backend Hypervisor & register adapters
   const hypervisor = new BackendHypervisor();
-  hypervisor.registerAdapter(new PythonBackendAdapter(options.pythonPort));
+  hypervisor.registerAdapter(new AIControlPlaneAdapter(options.aiControlPlanePort));
 
   // 4. Register production Task Commands
   TaskWorkerFactory.register(new StoryScriptTaskCommand(hypervisor));
@@ -205,19 +198,18 @@ export async function bootstrapWorker(options: WorkerCliOptions): Promise<Worker
     }
   });
 
-  return { poller, hypervisor, telemetryServer, httpServer, pythonStreamConsumer };
+  return { poller, hypervisor, telemetryServer, httpServer };
 }
 
 if (import.meta.main) {
   const options = parseWorkerArgs(process.argv.slice(2));
   bootstrapWorker(options)
-    .then(({ poller, telemetryServer, httpServer, pythonStreamConsumer }) => {
+    .then(({ poller, telemetryServer, httpServer }) => {
       let isShuttingDown = false;
       const shutdown = async () => {
         if (isShuttingDown) return;
         isShuttingDown = true;
         Logger.info("ACC-Worker", "Shutting down unified supervisor & worker daemon...");
-        pythonStreamConsumer?.stop();
         telemetryServer.stop();
         await supervisorEngine.stopAll();
         httpServer?.stop();

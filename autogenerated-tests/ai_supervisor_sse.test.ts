@@ -64,7 +64,7 @@ describe("AI-Supervisor REST & SSE Telemetry Control Plane", () => {
       freeMemoryMb: 16384,
     });
 
-    broker.updateServiceMetrics("python-backend", {
+    broker.updateServiceMetrics("ai-control-plane", {
       pid: 12345,
       status: "RUNNING",
       cpuPercent: 4.5,
@@ -72,8 +72,8 @@ describe("AI-Supervisor REST & SSE Telemetry Control Plane", () => {
       uptimeSeconds: 120,
     });
 
-    broker.recordDomainTelemetry("python-backend", {
-      type: "python-backend",
+    broker.recordDomainTelemetry("ai-control-plane", {
+      type: "ai-control-plane",
       vramUsedMb: 240,
       freeVramBytes: 12000000000,
       totalVramBytes: 16000000000,
@@ -83,10 +83,10 @@ describe("AI-Supervisor REST & SSE Telemetry Control Plane", () => {
 
     const snapshot = broker.publishSnapshot();
     expect(snapshot.system.hardwareTier).toBe("standard");
-    expect(snapshot.services["python-backend"]).toBeDefined();
-    expect(snapshot.services["python-backend"].status).toBe("RUNNING");
-    expect(snapshot.services["python-backend"].domain).toBeDefined();
-    expect((snapshot.services["python-backend"].domain as any).vramUsedMb).toBe(240);
+    expect(snapshot.services["ai-control-plane"]).toBeDefined();
+    expect(snapshot.services["ai-control-plane"].status).toBe("RUNNING");
+    expect(snapshot.services["ai-control-plane"].domain).toBeDefined();
+    expect((snapshot.services["ai-control-plane"].domain as any).vramUsedMb).toBe(240);
   });
 
   it("creates a compliant WHATWG ReadableStream delivering text/event-stream chunks", async () => {

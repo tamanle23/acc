@@ -11,7 +11,7 @@ import {
 } from "lucide-solid";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import type { ModelCatalogEntry } from "@ai-monorepo/ai-control-plane-sdk";
+import type { ModelCatalogEntry } from "@acc/ai-control-plane-sdk";
 import type { ThemePreset } from "@/lib/themes";
 
 export interface StudioHeaderProps {

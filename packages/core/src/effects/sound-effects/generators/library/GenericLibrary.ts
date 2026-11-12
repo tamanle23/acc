@@ -1,6 +1,6 @@
 import { ISoundGenerator, GeneratedSound } from '../../core/interfaces';
 import { FreesoundClient } from '@acc/core';
-import { FAUNA_DICTIONARY } from '../ai/Fauna';
+import { FAUNA_DICTIONARY } from '../../core/faunaDictionary';
 import path from 'path';
 import fs from 'fs';
 

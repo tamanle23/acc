@@ -93,3 +93,7 @@ export const usePostStore = create<PostState>()(
     }
   )
 );
+
+function fetch(input: RequestInfo | URL, init?: RequestInit | undefined): Promise<Response> {
+  throw new Error('Function not implemented.');
+}

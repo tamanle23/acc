@@ -37,8 +37,8 @@ export function TelemetryGrid(props: TelemetryGridProps) {
   };
 
   const vramMetrics = () => {
-    const pythonTelemetry = props.telemetry?.services?.["python-backend"]?.domain;
-    if (pythonTelemetry && pythonTelemetry.type === "python-backend") {
+    const pythonTelemetry = props.telemetry?.services?.["ai-control-plane"]?.domain;
+    if (pythonTelemetry && pythonTelemetry.type === "ai-control-plane") {
       const usedMb = pythonTelemetry.vramUsedMb;
       const totalMb = pythonTelemetry.totalVramBytes / (1024 * 1024);
       const pct = totalMb > 0 ? Math.min(100, Math.round((usedMb / totalMb) * 100)) : 0;

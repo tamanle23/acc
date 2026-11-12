@@ -4,6 +4,8 @@ import {
   attachGlobalSandboxFetch,
   createSandboxFetch,
   SandboxRouteHandler,
+  UnifiedSandboxEngine,
+  defaultSandboxStore,
 } from '@acc/sandbox';
 import { Post } from '../types';
 
@@ -54,7 +56,7 @@ let inMemoryPosts: Record<string, Post[]> = JSON.parse(JSON.stringify(SEED_POSTS
 export const mobilePostsSandboxHandler: SandboxRouteHandler = {
   id: 'mobile-posts-handler',
   name: 'Mobile Dynamic Entity Posts Handler',
-  priority: 50,
+  priority: 100,
   matcher: (ctx) => {
     return (
       (ctx.pathname === '/api/v1/metadata/records' || ctx.pathname === '/v1/metadata/records') &&
@@ -62,6 +64,7 @@ export const mobilePostsSandboxHandler: SandboxRouteHandler = {
     );
   },
   handler: (req, ctx) => {
+    console.log("handle mobile posts sandbox")
     const tenantId =
       (ctx.headers['x-tenant-id'] as string) ||
       defaultSandboxEngine.getStore().getState().activeTenantId ||
@@ -128,5 +131,5 @@ export function resetMobileSandboxPosts(tenantId?: string): void {
  */
 export function initMobileSandbox(): void {
   sandboxRegistry.register(mobilePostsSandboxHandler);
-  attachGlobalSandboxFetch(defaultSandboxEngine);
+  attachGlobalSandboxFetch(new UnifiedSandboxEngine({ registry: sandboxRegistry, store: defaultSandboxStore }));
 }

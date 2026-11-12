@@ -303,7 +303,7 @@ export const dlqSandboxRepo = dlqSandboxRepository;
 export const dlqSandboxHandler: SandboxRouteHandler = {
   id: 'dlq-handler',
   name: 'Dead-Letter Queue (DLQ) Mock Handler',
-  priority: 99,
+  priority: 0,
   matcher: (context) => {
     const cleanPath = context.pathname.replace(/^\/(api\/v1|api\/api|api|v1)/, '');
     return cleanPath.startsWith('/system/dlq') || cleanPath.startsWith('/workflow/dlq');

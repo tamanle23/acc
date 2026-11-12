@@ -51,10 +51,9 @@ export interface ServiceState {
 /**
  * SupervisorEngine:
  * Central process lifecycle orchestrator managing the consolidated 3-service fleet:
- * 1. python-backend (gRPC port 50051 - TTS & LLM)
+ * 1. ai-control-plane (FastAPI HTTP port 50051 - Multi-modal inference: TTS, LLM, FLUX)
  * 2. worker (CLI Video IR render workers)
  * 3. studio (Studio Vite UI port 3300)
- * Note: Ollama sidecar has been purged; LLM is unified into python-backend.
  */
 export class SupervisorEngine {
   private services: Map<string, ServiceState> = new Map();
@@ -79,7 +78,7 @@ export class SupervisorEngine {
     this.runtimeManager = customRuntimeManager || runtimeManager;
     this.isWorkerInProcess = isWorkerInProcess;
     // Consolidated 3-Service Fleet:
-    this.initService("python-backend", 50051);
+    this.initService("ai-control-plane", 50051);
     this.initService("worker", null);
     this.initService("studio", 3300);
     if (this.isWorkerInProcess) {
@@ -184,8 +183,8 @@ export class SupervisorEngine {
       cpuCount: this.hardwareProfile.cpu?.cores || 8,
     });
 
-    // 1. Python backend start (TTS + LLM)
-    await this.startPythonBackend(config);
+    // 1. AI Control Plane start (Multi-Modal Inference)
+    await this.startAIControlPlane(config);
 
     // 2. Worker start
     await this.startWorker(config);
@@ -199,30 +198,17 @@ export class SupervisorEngine {
     domainTelemetryPoller.start();
   }
 
-  public async startPythonBackend(config: ControlPlaneConfig): Promise<void> {
-    const state = this.services.get("python-backend")!;
-    state.port = config.pythonPort;
-    this.intentionalStops.delete("python-backend");
+  public async startAIControlPlane(config: ControlPlaneConfig): Promise<void> {
+    const state = this.services.get("ai-control-plane")!;
+    state.port = config.aiControlPlanePort;
+    this.intentionalStops.delete("ai-control-plane");
 
-    if (!this.runtimeManager.isReady()) {
-      state.status = "PROVISIONING";
-      this.emitChange();
-      logManager.log("python-backend", "Provisioning Python virtual environment via uv...");
-      const provSuccess = await this.runtimeManager.provision();
-      if (!provSuccess) {
-        state.status = "CRASH_LOOP";
-        logManager.log("python-backend", "Failed to provision Python environment.");
-        this.emitChange();
-        return;
-      }
-    }
-
-    const alive = await isPortListening(config.pythonPort);
+    const alive = await isPortListening(config.aiControlPlanePort);
     if (alive) {
       state.status = "ADOPTED";
       state.isExternal = true;
-      state.pid = await findPidByPort(config.pythonPort, this.runner);
-      logManager.log("python-backend", `Adopted running Python gRPC server on port ${config.pythonPort} (PID: ${state.pid ?? "unknown"})`);
+      state.pid = await findPidByPort(config.aiControlPlanePort, this.runner);
+      logManager.log("ai-control-plane", `Adopted running AI Control Plane on port ${config.aiControlPlanePort} (PID: ${state.pid ?? "unknown"})`);
       this.emitChange();
       return;
     }
@@ -231,36 +217,30 @@ export class SupervisorEngine {
     state.isExternal = false;
     this.emitChange();
 
-    const uvBin = this.runtimeManager.getUvPath();
-    const serverScript = path.join(this.repoRoot, "apps", "python-backend", "src", "server.py");
-    const device = this.hardwareProfile?.recommendedPythonDevice || "cpu";
-    const deviceArg = device === "cpu" ? ["--device=cpu"] : [];
-
-    logManager.log("python-backend", `Starting Python AI gRPC server on port ${config.pythonPort} (device: ${device})...`);
+    logManager.log("ai-control-plane", `Starting AI Control Plane on port ${config.aiControlPlanePort}...`);
 
     try {
       const proc = this.runner.spawnManaged(
-        [uvBin, "run", "python", serverScript, String(config.pythonPort), ...deviceArg],
+        ["node", "scripts/run-backend.mjs", "dev", "--port", String(config.aiControlPlanePort)],
         {
-          cwd: path.join(this.repoRoot, "apps", "python-backend"),
+          cwd: path.join(this.repoRoot, "apps", "ai-control-plane"),
           env: {
             ...process.env,
-            ACC_GRPC_PORT: String(config.pythonPort),
+            PORT: String(config.aiControlPlanePort),
             ACC_PARENT_PID: String(process.pid),
-            PYTHONUNBUFFERED: "1",
           },
           stdout: "pipe",
           stderr: "pipe",
-          onStdout: (text) => this.handleLogOutput("python-backend", text),
-          onStderr: (text) => this.handleLogOutput("python-backend", text),
-          onExit: (code) => this.handleProcessExit("python-backend", code),
+          onStdout: (text) => this.handleLogOutput("ai-control-plane", text),
+          onStderr: (text) => this.handleLogOutput("ai-control-plane", text),
+          onExit: (code) => this.handleProcessExit("ai-control-plane", code),
         }
       );
 
-      this.processes.set("python-backend", proc);
+      this.processes.set("ai-control-plane", proc);
       state.pid = proc.pid;
     } catch (err: any) {
-      logManager.log("python-backend", `Failed to spawn Python backend: ${err.message}`);
+      logManager.log("ai-control-plane", `Failed to spawn AI Control Plane: ${err.message}`);
       state.status = "CRASH_LOOP";
       this.emitChange();
     }
@@ -278,11 +258,11 @@ export class SupervisorEngine {
       return;
     }
 
-    // Check if python backend is running or adopted
-    const pythonState = this.services.get("python-backend");
-    const pythonReady = pythonState?.status === "RUNNING" || pythonState?.status === "ADOPTED";
+    // Check if AI Control Plane is running or adopted
+    const aiState = this.services.get("ai-control-plane");
+    const aiReady = aiState?.status === "RUNNING" || aiState?.status === "ADOPTED";
 
-    state.status = pythonReady ? "STARTING" : "PROVISIONING";
+    state.status = aiReady ? "STARTING" : "PROVISIONING";
     this.emitChange();
 
     try {
@@ -294,14 +274,14 @@ export class SupervisorEngine {
           path.join(this.repoRoot, "apps", "worker"),
           "src/index.ts",
           "--sandbox",
-          "--python-port",
-          String(config.pythonPort),
+          "--ai-port",
+          String(config.aiControlPlanePort),
         ],
         {
           cwd: path.join(this.repoRoot, "apps", "worker"),
           env: {
             ...process.env,
-            PYTHON_PORT: String(config.pythonPort),
+            AI_CONTROL_PLANE_PORT: String(config.aiControlPlanePort),
             NODE_ENV: "production",
           },
           stdout: "pipe",
@@ -378,8 +358,8 @@ export class SupervisorEngine {
 
     if (state.status === "STARTING") {
       if (
-        serviceName === "python-backend" &&
-        (text.includes("listening securely on") || text.includes("gRPC server listening"))
+        serviceName === "ai-control-plane" &&
+        (text.includes("Uvicorn running on") || text.includes("Application startup complete") || text.includes("FastAPI"))
       ) {
         state.status = "RUNNING";
         state.crashCount = 0;
@@ -429,7 +409,7 @@ export class SupervisorEngine {
 
       setTimeout(() => {
         const config = configStore.loadConfig();
-        if (serviceName === "python-backend") this.startPythonBackend(config);
+        if (serviceName === "ai-control-plane") this.startAIControlPlane(config);
         else if (serviceName === "worker") this.startWorker(config);
         else if (serviceName === "studio") this.startStudio(config);
       }, delay);
@@ -518,55 +498,47 @@ export class SupervisorEngine {
   public async purgeAllVram(): Promise<void> {
     logManager.log("supervisor", "Triggered Purge All VRAM...");
 
-    // Python backend garbage collection trigger via gRPC AdminService
     try {
-      const pythonBackend = this.services.get("python-backend");
-      const port = pythonBackend?.port || 50051;
-      const { getAdminServiceClient } = await import("@acc/proto");
-      const client = getAdminServiceClient(`127.0.0.1:${port}`);
-      await new Promise<void>((resolve) => {
-        const deadline = new Date(Date.now() + 5000);
-        client.PurgeVRAM({ force: true }, { deadline }, (err: any, resp: any) => {
-          if (err) {
-            logManager.log("supervisor", `Python backend PurgeVRAM notice: ${err.message}`);
-          } else {
-            logManager.log("supervisor", `Python backend PurgeVRAM: ${resp.message} (freed: ${resp.freed_bytes} bytes)`);
-          }
-          resolve();
-        });
+      const aiControlPlane = this.services.get("ai-control-plane");
+      const port = aiControlPlane?.port || 50051;
+      const { AIInferenceClient } = await import("@acc/ai-control-plane-sdk");
+      const client = new AIInferenceClient({
+        baseUrls: [`http://127.0.0.1:${port}`, `http://localhost:${port}`],
       });
+      await client.purgeModelWeightsCache();
+      logManager.log("supervisor", "AI Control Plane model weights cache purged successfully.");
     } catch (e: any) {
       logManager.log("supervisor", `PurgeVRAM dispatch note: ${e?.message}`);
     }
 
-    logManager.log("supervisor", "VRAM purge signal dispatched to Python backend.");
+    logManager.log("supervisor", "VRAM purge signal dispatched to AI Control Plane.");
   }
 
   private startHealthMonitoring(): void {
     if (this.healthInterval) return;
 
     this.healthInterval = setInterval(async () => {
-      // 1. Probe Python backend via TCP port
-      const pythonBackend = this.services.get("python-backend");
+      // 1. Probe AI Control Plane via TCP port
+      const aiControlPlane = this.services.get("ai-control-plane");
       if (
-        pythonBackend &&
-        !this.intentionalStops.has("python-backend") &&
-        pythonBackend.status !== "STOPPED" &&
-        pythonBackend.status !== "PROVISIONING" &&
-        pythonBackend.status !== "CRASH_LOOP"
+        aiControlPlane &&
+        !this.intentionalStops.has("ai-control-plane") &&
+        aiControlPlane.status !== "STOPPED" &&
+        aiControlPlane.status !== "PROVISIONING" &&
+        aiControlPlane.status !== "CRASH_LOOP"
       ) {
-        const port = pythonBackend.port || 50051;
+        const port = aiControlPlane.port || 50051;
         const alive = await isPortListening(port);
         if (alive) {
-          if (pythonBackend.status !== "BUSY") {
-            pythonBackend.status = pythonBackend.isExternal ? "ADOPTED" : "RUNNING";
+          if (aiControlPlane.status !== "BUSY") {
+            aiControlPlane.status = aiControlPlane.isExternal ? "ADOPTED" : "RUNNING";
           }
-          if (pythonBackend.isExternal && (!pythonBackend.pid || pythonBackend.pid <= 0)) {
-            pythonBackend.pid = await findPidByPort(port, this.runner);
+          if (aiControlPlane.isExternal && (!aiControlPlane.pid || aiControlPlane.pid <= 0)) {
+            aiControlPlane.pid = await findPidByPort(port, this.runner);
           }
-          pythonBackend.lastHealthCheck = Date.now();
-        } else if (pythonBackend.status === "RUNNING") {
-          pythonBackend.status = "STARTING";
+          aiControlPlane.lastHealthCheck = Date.now();
+        } else if (aiControlPlane.status === "RUNNING") {
+          aiControlPlane.status = "STARTING";
         }
       }
 

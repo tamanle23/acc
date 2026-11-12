@@ -37,14 +37,14 @@ export function FleetGrid(props: FleetGridProps) {
 
   return (
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 my-6">
-      {/* 1. Python Backend (Unified TTS & LLM) */}
+      {/* 1. AI Control Plane (Unified AI Inference) */}
       <ServiceCard
-        displayName="Python AI Backend"
-        description="Unified TTS (Kokoro & VieNeu v3 Turbo) & LLM generation"
-        service={getService("python-backend")}
-        telemetry={getServiceTelemetry("python-backend")}
+        displayName="AI Control Plane"
+        description="Unified Multi-Modal AI Inference Backend (VieNeu-TTS, Kokoro, Qwen, FLUX)"
+        service={getService("ai-control-plane")}
+        telemetry={getServiceTelemetry("ai-control-plane")}
         isActionPending={props.isActionPending}
-        onControl={(action) => props.onControlService("python-backend", action)}
+        onControl={(action) => props.onControlService("ai-control-plane", action)}
         customAction={{
           label: "Test Voice",
           onClick: props.onOpenTtsPlayground || props.onPurgeVram,

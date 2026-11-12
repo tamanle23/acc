@@ -6,8 +6,8 @@ describe("SupervisorEngine Multi-Daemon Orchestration", () => {
     const engine = new SupervisorEngine(undefined, undefined, undefined, false);
     const states = engine.getAllStates();
 
-    expect(Object.keys(states)).toEqual(["python-backend", "worker", "studio"]);
-    expect(states["python-backend"].status).toBe("STOPPED");
+    expect(Object.keys(states)).toEqual(["ai-control-plane", "worker", "studio"]);
+    expect(states["ai-control-plane"].status).toBe("STOPPED");
     expect(states["worker"].status).toBe("STOPPED");
     expect(states["studio"].status).toBe("STOPPED");
   });
@@ -25,7 +25,7 @@ describe("SupervisorEngine Multi-Daemon Orchestration", () => {
     expect(engine.getTrayColor()).toBe("yellow");
 
     // All running -> green
-    const s1 = engine.getServiceState("python-backend")!;
+    const s1 = engine.getServiceState("ai-control-plane")!;
     const s2 = engine.getServiceState("worker")!;
     const s3 = engine.getServiceState("studio")!;
 

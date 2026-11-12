@@ -89,7 +89,7 @@ export function TelemetryCompanionCard(props: TelemetryCompanionCardProps) {
     });
   });
 
-  const pythonService = () => liveTelemetry()?.services?.['python-backend'];
+  const pythonService = () => liveTelemetry()?.services?.['ai-control-plane'];
   const pythonVramMb = () => pythonService()?.domain?.vramUsedMb;
 
   return (

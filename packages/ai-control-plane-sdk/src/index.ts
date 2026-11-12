@@ -1354,7 +1354,16 @@ export class AIInferenceClient {
   private readonly defaultBaseBackoffMs: number;
 
   constructor(
-    baseUrl: string = "",
+    baseUrlOrOptions:
+      | string
+      | {
+          baseUrl?: string;
+          baseUrls?: string[];
+          timeoutMs?: number;
+          maxRetries?: number;
+          baseBackoffMs?: number;
+          fallbackBaseUrls?: string[];
+        } = "",
     options?: {
       timeoutMs?: number;
       maxRetries?: number;
@@ -1362,15 +1371,38 @@ export class AIInferenceClient {
       fallbackBaseUrls?: string[];
     }
   ) {
-    this.baseUrl = baseUrl.replace(/\/+$/, "");
-    this.fallbackBaseUrls = options?.fallbackBaseUrls ?? [
+    let resolvedBaseUrl = "";
+    let mergedOptions = options;
+
+    if (typeof baseUrlOrOptions === "string") {
+      resolvedBaseUrl = baseUrlOrOptions;
+    } else if (baseUrlOrOptions && typeof baseUrlOrOptions === "object") {
+      resolvedBaseUrl =
+        baseUrlOrOptions.baseUrl ??
+        baseUrlOrOptions.baseUrls?.[0] ??
+        "";
+      mergedOptions = {
+        ...baseUrlOrOptions,
+        ...options,
+        fallbackBaseUrls:
+          baseUrlOrOptions.fallbackBaseUrls ??
+          (baseUrlOrOptions.baseUrls && baseUrlOrOptions.baseUrls.length > 1
+            ? baseUrlOrOptions.baseUrls.slice(1)
+            : options?.fallbackBaseUrls),
+      };
+    }
+
+    this.baseUrl = (resolvedBaseUrl || "").replace(/\/+$/, "");
+    this.fallbackBaseUrls = mergedOptions?.fallbackBaseUrls ?? [
       "",
+      "http://127.0.0.1:50051",
+      "http://localhost:50051",
       "http://127.0.0.1:8000",
       "http://localhost:8000",
     ];
-    this.defaultTimeoutMs = options?.timeoutMs ?? 30_000;
-    this.defaultMaxRetries = options?.maxRetries ?? 2;
-    this.defaultBaseBackoffMs = options?.baseBackoffMs ?? 250;
+    this.defaultTimeoutMs = mergedOptions?.timeoutMs ?? 30_000;
+    this.defaultMaxRetries = mergedOptions?.maxRetries ?? 2;
+    this.defaultBaseBackoffMs = mergedOptions?.baseBackoffMs ?? 250;
   }
 
   private getCandidateUrls(path: string): string[] {

@@ -5,7 +5,7 @@ import type {
   ExecutionStatus,
   StreamTelemetry,
 } from "@/types/studio";
-import type { PipelineCategoryId } from "@ai-monorepo/ai-control-plane-sdk";
+import type { PipelineCategoryId } from "@acc/ai-control-plane-sdk";
 
 export const [studioState, setStudioState] = createStore({
   pipelineCategory: "all" as "all" | PipelineCategoryId,

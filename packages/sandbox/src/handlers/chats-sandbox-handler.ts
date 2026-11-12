@@ -57,7 +57,7 @@ export const chatsSandboxHandler: SandboxRouteHandler = {
   id: 'chats-sandbox-handler',
   name: 'Chats Sandbox Repository',
   description: 'In-memory stateful conversation repository for Chats feature',
-  priority: 80,
+  priority: 0,
   matcher: (ctx) => {
     const cleanPath = ctx.pathname.replace(/^\/(api\/v1|api\/api|api|v1)/, '');
     return cleanPath.startsWith('/chats');

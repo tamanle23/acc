@@ -8,7 +8,7 @@ export type { HardwareTierOption };
 export interface ControlPlaneConfig {
   studioPort: number;
   supervisorPort: number;
-  pythonPort: number;
+  aiControlPlanePort: number;
   autostart: boolean;
   hardwareTierOverride?: HardwareTierOption;
 }
@@ -16,7 +16,7 @@ export interface ControlPlaneConfig {
 const DEFAULT_CONFIG: ControlPlaneConfig = {
   studioPort: 3300,
   supervisorPort: 3333,
-  pythonPort: 50051,
+  aiControlPlanePort: 50051,
   autostart: false,
 };
 

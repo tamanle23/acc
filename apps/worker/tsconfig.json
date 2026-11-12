@@ -10,8 +10,6 @@
       "@acc/core/*": ["../../packages/core/src/*"],
       "@acc/ir": ["../../packages/ir/src/index.ts"],
       "@acc/ir/*": ["../../packages/ir/src/*"],
-      "@acc/proto": ["../../packages/proto/src/index.ts"],
-      "@acc/proto/*": ["../../packages/proto/src/*"],
       "@acc/effect-engines": ["../../packages/effect-engines/src/index.ts"],
       "@acc/effect-engines/*": ["../../packages/effect-engines/src/*"]
     }

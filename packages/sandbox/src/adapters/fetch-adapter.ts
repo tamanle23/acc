@@ -9,10 +9,6 @@ export function createSandboxFetch(
   engine: UnifiedSandboxEngine = defaultSandboxEngine
 ): typeof fetch {
   return async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-    if (!engine.isEnabled()) {
-      return fallbackFetch(input, init);
-    }
-
     let urlStr = '';
     let method = 'GET';
     const headers: Record<string, string> = {};
@@ -75,14 +71,14 @@ export function createSandboxFetch(
         }
       }
     }
-
+    console.log('handle sandbox request');
     const mockRes = await engine.handleRequest({
       url: urlStr,
       method,
       headers,
       data: bodyData,
     });
-
+    console.log('handle sandbox request result', mockRes);
     if (mockRes) {
       const responseHeaders = new Headers(mockRes.headers || {});
       if (!responseHeaders.has('content-type')) {
@@ -115,13 +111,12 @@ export function attachGlobalSandboxFetch(
   engine: UnifiedSandboxEngine = defaultSandboxEngine
 ): () => void {
   if (typeof globalThis.fetch === 'undefined') {
-    return () => {};
+    return () => { };
   }
   if (!originalGlobalFetch) {
     originalGlobalFetch = globalThis.fetch;
   }
   globalThis.fetch = createSandboxFetch(originalGlobalFetch, engine);
-
   return () => {
     if (originalGlobalFetch) {
       globalThis.fetch = originalGlobalFetch;

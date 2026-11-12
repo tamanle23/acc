@@ -7,7 +7,7 @@ import type {
   DagStageExecutionResult,
   ServerArenaComparisonResponse,
   ArenaComparisonResult,
-} from '@ai-monorepo/ai-control-plane-sdk';
+} from '@acc/ai-control-plane-sdk';
 import {
   Workflow,
   GitCompare,

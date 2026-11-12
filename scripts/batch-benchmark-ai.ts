@@ -1,7 +1,7 @@
 import path from 'path';
 import { RegistryManager } from '../packages/effect-engines/src/sound-effects/core/Registry';
 import { renderSoundEffect } from '../packages/effect-engines/src/sound-effects/engine';
-import { FFmpegManager, PythonBackend } from '@acc/core';
+import { FFmpegManager } from '@acc/core';
 
 const scenarios = [
   // FOLEY
@@ -135,8 +135,8 @@ async function main() {
     }
   }
 
-  console.log('\n🎉 Massive batch benchmark completed! Shutting down AI Engine...');
-  PythonBackend.getInstance().shutdown();
+  console.log('\n🎉 Massive batch benchmark completed!');
+  // AI Engine lifecycle is managed externally by apps/ai-control-plane
   process.exit(0);
 }
 

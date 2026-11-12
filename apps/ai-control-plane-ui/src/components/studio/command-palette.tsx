@@ -22,7 +22,7 @@ import {
 import { useThemeManager } from "@/components/studio/theme-manager";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import type { HardwareProfileId, ModelCatalogEntry } from "@ai-monorepo/ai-control-plane-sdk";
+import type { HardwareProfileId, ModelCatalogEntry } from "@acc/ai-control-plane-sdk";
 import type { StudioWorkspaceId } from "@/types/studio";
 
 interface CommandPaletteProps {

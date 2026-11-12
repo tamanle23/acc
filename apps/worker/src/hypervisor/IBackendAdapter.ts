@@ -8,7 +8,7 @@ export interface BackendTaskResult {
 }
 
 export interface IBackendAdapter {
-  readonly id: string; // 'python-backend' | 'ollama'
+  readonly id: string; // 'ai-control-plane' | 'ollama'
   readonly capabilities: string[]; // ['tts', 'vision', 'llm', 'image-gen']
 
   getEstimatedVRAMBytes(task: TaskPayload): number;

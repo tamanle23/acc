@@ -10,7 +10,7 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "@ai-monorepo/ai-control-plane-sdk": "workspace:*",
+    "@acc/ai-control-plane-sdk": "workspace:*",
     "@solidjs/router": "^1.0.1",
     "clsx": "catalog:",
     "lucide-solid": "^1.70.0",

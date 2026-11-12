@@ -1,5 +1,5 @@
 import { Show, For, createMemo } from 'solid-js';
-import type { SqliteTelemetryLedgerResponse } from '@ai-monorepo/ai-control-plane-sdk';
+import type { SqliteTelemetryLedgerResponse } from '@acc/ai-control-plane-sdk';
 import { Database, FileCode, Check, RefreshCw, Download } from 'lucide-solid';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';

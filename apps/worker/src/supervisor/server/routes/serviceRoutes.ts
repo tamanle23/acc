@@ -54,12 +54,12 @@ export function createServiceRoutes(options: ServiceRoutesOptions): RouteHandler
       if (action === "stop") {
         await supervisorEngine.stopService(serviceName);
       } else if (action === "start") {
-        if (serviceName === "python-backend") await supervisorEngine.startPythonBackend(cfg);
+        if (serviceName === "ai-control-plane") await supervisorEngine.startAIControlPlane(cfg);
         else if (serviceName === "worker") await supervisorEngine.startWorker(cfg);
         else if (serviceName === "studio") await supervisorEngine.startStudio(cfg);
       } else if (action === "restart") {
         await supervisorEngine.stopService(serviceName);
-        if (serviceName === "python-backend") await supervisorEngine.startPythonBackend(cfg);
+        if (serviceName === "ai-control-plane") await supervisorEngine.startAIControlPlane(cfg);
         else if (serviceName === "worker") await supervisorEngine.startWorker(cfg);
         else if (serviceName === "studio") await supervisorEngine.startStudio(cfg);
       }

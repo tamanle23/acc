@@ -256,7 +256,7 @@ To prevent fatal `CUDA Out of Memory` crashes during multi-model DAG pipeline ex
 
 ## 8. End-to-End Wire-Up: Frontend Playground to Backend API
 
-The web playground communicates with the backend via a type-safe contract exposed by `@ai-monorepo/ai-control-plane-sdk`:
+The web playground communicates with the backend via a type-safe contract exposed by `@acc/ai-control-plane-sdk`:
 
 ```mermaid
 sequenceDiagram

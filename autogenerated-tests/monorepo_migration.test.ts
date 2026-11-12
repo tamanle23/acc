@@ -1,7 +1,7 @@
 import { describe, test, expect, beforeAll } from "bun:test";
 import path from "path";
 import fs from "fs";
-import { FFmpegManager, PythonBackend, Utils } from "@acc/core";
+import { FFmpegManager, Utils } from "@acc/core";
 import { RainEffect, RegistryManager as SFXRegistryManager, PRESETS as CAPTION_PRESETS } from "@acc/effect-engines";
 import { resolveStorySettings, PLATFORM_PRESETS } from "../apps/cli/src/pipelines/04-generative-story/platforms";
 
@@ -13,7 +13,6 @@ describe("Monorepo Legacy /src Migration & Package Integrity Suite", () => {
   test("@acc/core exports essential utilities and FFmpegManager", () => {
     expect(FFmpegManager).toBeDefined();
     expect(FFmpegManager.getBinDir()).toBeDefined();
-    expect(PythonBackend).toBeDefined();
     expect(typeof Utils.getChecksum).toBe("function");
     expect(Utils.getChecksum("test-input")).toHaveLength(8);
   });

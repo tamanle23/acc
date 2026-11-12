@@ -38,24 +38,24 @@ describe('BackendHypervisor Unit Tests', () => {
   it('should register and retrieve adapters by capability', () => {
     const hypervisor = new BackendHypervisor();
     const ollama = new MockBackendAdapter('ollama', ['llm', 'json']);
-    const python = new MockBackendAdapter('python-backend', ['tts', 'vision']);
+    const aiControlPlane = new MockBackendAdapter('ai-control-plane', ['tts', 'vision']);
 
     hypervisor.registerAdapter(ollama);
-    hypervisor.registerAdapter(python);
+    hypervisor.registerAdapter(aiControlPlane);
 
     expect(hypervisor.getAdapter('ollama')).toBe(ollama);
     expect(hypervisor.getAdapterForCapability('llm')).toBe(ollama);
-    expect(hypervisor.getAdapterForCapability('tts')).toBe(python);
+    expect(hypervisor.getAdapterForCapability('tts')).toBe(aiControlPlane);
     expect(hypervisor.getAdapterForCapability('non-existent')).toBeUndefined();
   });
 
   it('should trigger preflight eviction on peer backends before executing tasks', async () => {
     const hypervisor = new BackendHypervisor();
     const ollama = new MockBackendAdapter('ollama', ['llm']);
-    const python = new MockBackendAdapter('python-backend', ['tts']);
+    const aiControlPlane = new MockBackendAdapter('ai-control-plane', ['tts']);
 
     hypervisor.registerAdapter(ollama);
-    hypervisor.registerAdapter(python);
+    hypervisor.registerAdapter(aiControlPlane);
 
     const task: TaskPayload = {
       taskId: 'task-dispatch-1',
@@ -66,11 +66,11 @@ describe('BackendHypervisor Unit Tests', () => {
     const result = await hypervisor.dispatch('tts', task);
 
     expect(result.success).toBe(true);
-    expect(result.data?.handledBy).toBe('python-backend');
-    expect(python.executedCount).toBe(1);
+    expect(result.data?.handledBy).toBe('ai-control-plane');
+    expect(aiControlPlane.executedCount).toBe(1);
     // Peer ollama should have received a VRAM purge request
     expect(ollama.purgedCount).toBe(1);
-    expect(python.purgedCount).toBe(0);
+    expect(aiControlPlane.purgedCount).toBe(0);
   });
 
   it('should throw an error when no adapter supports the requested capability', async () => {

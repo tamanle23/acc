@@ -1,68 +1,47 @@
-import path from "node:path";
 import { configStore } from "../../configStore.js";
-import { findRepoRoot } from "../../SupervisorEngine.js";
 import { CORS_HEADERS, type RouteHandler } from "./types.js";
+import { AIInferenceClient } from "@acc/ai-control-plane-sdk";
 
 export const handleTtsRoutes: RouteHandler = async (req: Request, url: URL): Promise<Response | null> => {
   if (url.pathname === "/api/tts/test" && req.method === "POST") {
     try {
       const body = await req.json();
       const config = configStore.loadConfig();
-      const repoRoot = findRepoRoot(import.meta.dir);
-      const protoPath = path.resolve(repoRoot, "packages/proto/proto/acc/v1/tts.proto");
-      const protoLoader = await import("@grpc/proto-loader");
-      const grpc = await import("@grpc/grpc-js");
+      const port = config.aiControlPlanePort || 50051;
 
-      const packageDefinition = protoLoader.loadSync(protoPath, {
-        keepCase: true,
-        longs: String,
-        enums: String,
-        defaults: true,
-        oneofs: true,
-        includeDirs: [path.resolve(repoRoot, "packages/proto/proto/acc/v1")],
+      const client = new AIInferenceClient({
+        baseUrls: [`http://127.0.0.1:${port}`, `http://localhost:${port}`],
       });
-      const proto = grpc.loadPackageDefinition(packageDefinition) as any;
-      const TTSService = proto.acc?.v1?.TTSService;
 
-      if (!TTSService) {
-        return Response.json(
-          { success: false, error: "TTSService proto not found" },
-          { status: 500, headers: CORS_HEADERS }
-        );
-      }
-
-      const client = new TTSService(`127.0.0.1:${config.pythonPort}`, grpc.credentials.createInsecure());
       const startTime = performance.now();
+      const text = body.text || "Hello from ACC AI-Supervisor Neural Speech Playground.";
+      const voice = body.voice_id || body.voice || "af_heart";
+      const model = body.model_strategy || body.model || "kokoro";
+      const speed = Number(body.speed || 1.0);
 
-      const result = await new Promise<any>((resolve, reject) => {
-        client.Synthesize(
-          {
-            text: body.text || "Hello from ACC AI-Supervisor Neural Speech Playground.",
-            voice_id: body.voice_id || "af_heart",
-            speed: Number(body.speed || 1.0),
-            model_strategy: body.model_strategy || "kokoro",
-          },
-          (err: any, response: any) => {
-            if (err) reject(err);
-            else resolve(response);
-          }
-        );
+      const audioBuffer = await client.openAiSpeech({
+        input: text,
+        voice,
+        model,
+        speed,
+        response_format: "wav",
       });
 
       const latencyMs = Math.round(performance.now() - startTime);
-      const audioBase64 = Buffer.from(result.audio_data).toString("base64");
-      const durationMs = Number(result.duration_ms) || 1000;
+      const audioBase64 = Buffer.from(audioBuffer).toString("base64");
+      // Standard estimation if not returned in wav header: 24kHz 16-bit mono = ~48000 bytes/sec
+      const durationMs = Math.max(100, Math.round((audioBuffer.byteLength / 48000) * 1000));
       const rtf = Number((latencyMs / durationMs).toFixed(3));
 
       return Response.json(
         {
           success: true,
           audioBase64,
-          sampleRate: result.sample_rate || 24000,
+          sampleRate: 24000,
           durationMs,
           latencyMs,
           rtf,
-          modelStrategy: body.model_strategy || "kokoro",
+          modelStrategy: model,
         },
         { headers: CORS_HEADERS }
       );
@@ -73,4 +52,3 @@ export const handleTtsRoutes: RouteHandler = async (req: Request, url: URL): Pro
 
   return null;
 };
-

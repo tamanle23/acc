@@ -1150,7 +1150,7 @@ export const metadataSandboxHandler: SandboxRouteHandler = {
   id: 'metadata-sandbox-handler',
   name: 'Metadata Platform Sandbox Handler',
   description: 'Enterprise multi-tenant mock engine for Dynamic Metadata, schema compilation, entity records, and facet indexing',
-  priority: 90,
+  priority: 0,
   matcher: (ctx) =>
     ctx.pathname.startsWith('/api/v1/metadata') ||
     ctx.pathname.startsWith('/v1/metadata') ||

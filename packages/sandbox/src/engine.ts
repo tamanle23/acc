@@ -16,12 +16,10 @@ export interface SandboxEngineOptions {
 export class UnifiedSandboxEngine {
   private registry: SandboxRegistry;
   private store: SandboxStoreManager;
-  private isDev: boolean;
 
   constructor(options: SandboxEngineOptions = {}) {
     this.registry = options.registry || sandboxRegistry;
     this.store = options.store || defaultSandboxStore;
-    this.isDev = options.isDev ?? true;
   }
 
   public getRegistry(): SandboxRegistry {
@@ -30,13 +28,6 @@ export class UnifiedSandboxEngine {
 
   public getStore(): SandboxStoreManager {
     return this.store;
-  }
-
-  public isEnabled(): boolean {
-    if (!this.isDev) {
-      return false;
-    }
-    return this.store.getState().enabled;
   }
 
   public getActivePersona(): SandboxPersona {
@@ -49,10 +40,7 @@ export class UnifiedSandboxEngine {
    * Returns SandboxResponse if handled, or null if unhandled / disabled.
    */
   public async handleRequest(req: SandboxRequest): Promise<SandboxResponse | null> {
-    if (!this.isEnabled()) {
-      return null;
-    }
-
+    console.log('handleRequest');
     const state = this.store.getState();
     const headers: Record<string, string> = {};
     if (req.headers) {

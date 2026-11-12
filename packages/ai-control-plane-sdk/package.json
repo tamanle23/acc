@@ -1,5 +1,5 @@
 {
-  "name": "@ai-monorepo/ai-control-plane-sdk",
+  "name": "@acc/ai-control-plane-sdk",
   "version": "2.1.0",
   "type": "module",
   "main": "./src/index.ts",

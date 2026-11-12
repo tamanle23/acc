@@ -2,7 +2,7 @@ import { createMemo, Show, Switch, Match } from 'solid-js';
 import type {
   ModelCatalogEntry,
   OutputModality,
-} from '@ai-monorepo/ai-control-plane-sdk';
+} from '@acc/ai-control-plane-sdk';
 import { Radio, Zap, Sparkles } from 'lucide-solid';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';

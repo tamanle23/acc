@@ -9,7 +9,6 @@ import {
   DeadLetterQueue,
   SagaOrchestrator,
   RenderCheckpointManager,
-  PythonBackend,
 } from '@acc/core';
 
 describe('Enterprise Chaos Resilience & SAGA Compensation Suite', () => {
@@ -188,11 +187,16 @@ describe('Enterprise Chaos Resilience & SAGA Compensation Suite', () => {
     await fs.promises.rm(testDir, { recursive: true, force: true });
   });
 
-  it('supervises Python backend worker lifecycle with health checks', async () => {
-    const backend = PythonBackend.getInstance();
-    // Test checkHealth handles missing/simulated worker gracefully without throwing
-    const healthy = await backend.checkHealth('non_existent_worker');
-    expect(typeof healthy).toBe('boolean');
-    expect(healthy).toBe(false);
+  it('supervises AI control plane health gracefully', async () => {
+    const { AIInferenceClient } = await import('@acc/ai-control-plane-sdk');
+    const client = new AIInferenceClient({ baseUrls: ['http://127.0.0.1:59999'] });
+    let isHealthy = false;
+    try {
+      const res = await client.fetchHealth();
+      isHealthy = res?.status === 'ok';
+    } catch {
+      isHealthy = false;
+    }
+    expect(isHealthy).toBe(false);
   });
 });

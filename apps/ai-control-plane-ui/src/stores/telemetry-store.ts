@@ -2,7 +2,7 @@ import { createStore } from "solid-js/store";
 import type {
   SystemHealthResponse,
   HostHardwareTelemetry,
-} from "@ai-monorepo/ai-control-plane-sdk";
+} from "@acc/ai-control-plane-sdk";
 
 export const [telemetryState, setTelemetryState] = createStore({
   health: null as SystemHealthResponse | null,

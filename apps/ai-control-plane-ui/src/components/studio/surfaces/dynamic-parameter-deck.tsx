@@ -6,7 +6,7 @@ import type {
   ModelCatalogEntry,
   ParameterSchemaField,
   VoicePreset,
-} from "@ai-monorepo/ai-control-plane-sdk";
+} from "@acc/ai-control-plane-sdk";
 import { VOICE_SPEAKER_CARDS } from "./pipeline-styles";
 import { Mic } from "lucide-solid";
 

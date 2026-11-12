@@ -9,7 +9,7 @@ import type {
   WeightPrecision,
   WeightTierId,
   OffloadStrategy,
-} from '@ai-monorepo/ai-control-plane-sdk';
+} from '@acc/ai-control-plane-sdk';
 import {
   Boxes,
   Cpu,

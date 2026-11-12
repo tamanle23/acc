@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "bun:test";
-import { TelemetryEventBroker } from "../apps/ai-supervisor/src/bun/telemetry/TelemetryEventBroker.js";
+import { TelemetryEventBroker } from "../apps/worker/src/supervisor/telemetry/TelemetryEventBroker.js";
 import { WorkerTelemetryServer } from "../apps/worker/src/telemetry/WorkerTelemetryServer.js";
 
 describe("Iteration 37 - Inverted Telemetry Ingestion & Forensics", () => {
@@ -10,8 +10,8 @@ describe("Iteration 37 - Inverted Telemetry Ingestion & Forensics", () => {
   });
 
   it("ingests sidecar domain telemetry directly into broker state", () => {
-    broker.recordDomainTelemetry("python-backend", {
-      type: "python-backend",
+    broker.recordDomainTelemetry("ai-control-plane", {
+      type: "ai-control-plane" as any,
       vramUsedMb: 512,
       freeVramBytes: 10 * 1024 * 1024 * 1024,
       totalVramBytes: 16 * 1024 * 1024 * 1024,
@@ -20,31 +20,31 @@ describe("Iteration 37 - Inverted Telemetry Ingestion & Forensics", () => {
         { name: "kokoro_tts", vramMb: 256, accessCount: 5 },
         { name: "vieneu_turbo", vramMb: 256, accessCount: 12 },
       ],
-    });
+    } as any);
 
-    broker.updateServiceMetrics("python-backend", {
+    broker.updateServiceMetrics("ai-control-plane", {
       status: "RUNNING",
       cpuPercent: 12,
       memoryRssMb: 850,
     });
 
     const snapshot = broker.getSnapshot();
-    const py = snapshot.services["python-backend"];
+    const py = snapshot.services["ai-control-plane"];
 
     expect(py).toBeDefined();
     expect(py.status).toBe("RUNNING");
     expect(py.domain).toBeDefined();
-    expect(py.domain?.type).toBe("python-backend");
-    if (py.domain?.type === "python-backend") {
-      expect(py.domain.vramUsedMb).toBe(512);
-      expect(py.domain.cachedModelCount).toBe(2);
+    expect(py.domain?.type).toBe("ai-control-plane");
+    if (py.domain?.type === "ai-control-plane") {
+      expect((py.domain as any).vramUsedMb).toBe(512);
+      expect((py.domain as any).cachedModelCount).toBe(2);
     }
   });
 
   it("records audit events to sliding ring-buffer and notifies subscribers", (done) => {
     broker.once("audit", (entry) => {
       expect(entry.eventType).toBe("OOM_INTERCEPTED");
-      expect(entry.service).toBe("python-backend");
+      expect(entry.service).toBe("ai-control-plane");
       expect(entry.message).toContain("OOM Circuit Breaker");
       expect(broker.getAuditEvents().length).toBeGreaterThan(0);
       done();
@@ -52,7 +52,7 @@ describe("Iteration 37 - Inverted Telemetry Ingestion & Forensics", () => {
 
     broker.recordAuditEvent({
       timestamp: Date.now(),
-      service: "python-backend",
+      service: "ai-control-plane",
       eventType: "OOM_INTERCEPTED",
       message: "OOM Circuit Breaker triggered for model 'kokoro_tts' on MPS",
       details: { vramAllocatedMb: 512 },

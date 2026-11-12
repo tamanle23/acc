@@ -12,6 +12,7 @@
   "type": "module",
   "private": true,
   "dependencies": {
+    "@acc/ai-control-plane-sdk": "workspace:*",
     "@acc/core": "workspace:*",
     "@acc/core-isomorphic": "workspace:*",
     "@acc/ir": "workspace:*",

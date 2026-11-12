@@ -1,4 +1,4 @@
-import type { ModelCatalogEntry, VoicePreset } from "@ai-monorepo/ai-control-plane-sdk";
+import type { ModelCatalogEntry, VoicePreset } from "@acc/ai-control-plane-sdk";
 import { DynamicInputDeck } from "./dynamic-input-deck";
 import { DynamicParameterDeck } from "./dynamic-parameter-deck";
 

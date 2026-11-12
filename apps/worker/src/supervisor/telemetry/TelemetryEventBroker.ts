@@ -13,8 +13,8 @@ export type ServiceStatus =
   | "ADOPTED"
   | "NOT_INSTALLED";
 
-export interface PythonBackendDomainTelemetry {
-  type: "python-backend";
+export interface AIControlPlaneDomainTelemetry {
+  type: "ai-control-plane";
   vramUsedMb: number;
   freeVramBytes: number;
   totalVramBytes: number;
@@ -36,7 +36,7 @@ export interface WorkerDomainTelemetry {
 }
 
 export type SidecarDomainTelemetry =
-  | PythonBackendDomainTelemetry
+  | AIControlPlaneDomainTelemetry
   | WorkerDomainTelemetry;
 
 export interface SidecarTelemetry {

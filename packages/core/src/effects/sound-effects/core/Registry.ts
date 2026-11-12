@@ -1,18 +1,9 @@
 import { Logger } from "@acc/core";
 import { ISoundGenerator, SoundCompositeConfig } from './interfaces';
-
-// --- AI Generators ---
-import { Cinematic as CinematicAI } from '../generators/ai/Cinematic';
-import { SciFi as SciFiAI } from '../generators/ai/SciFi';
-import { Fallback as FallbackAI } from '../generators/ai/Fallback';
-
-// --- Library Generators ---
 import { GenericLibrary } from '../generators/library/GenericLibrary';
 
 export class SoundRegistryManager {
   private genericLibraryInstance: GenericLibrary;
-  private aiGenerators: Map<string, ISoundGenerator> = new Map();
-  private aiFallback: FallbackAI;
 
   private composites: Record<string, SoundCompositeConfig> = {
     'kaiju_roar': {
@@ -50,54 +41,18 @@ export class SoundRegistryManager {
     }
   };
 
-  constructor(private aiModel: string = 'audioldm2-base') {
-    // 1. Initialize Library (For biological, physical, environmental sounds)
+  constructor() {
     this.genericLibraryInstance = new GenericLibrary();
-
-    // 3. Initialize AI (For synthetic, creative, sci-fi, cinematic sounds)
-    this.aiFallback = new FallbackAI(this.aiModel);
-
-    // Cinematic AI
-    this.aiGenerators.set('cinematic', new CinematicAI(this.aiModel));
-    this.aiGenerators.set('transition', new CinematicAI(this.aiModel));
-    this.aiGenerators.set('impact', new CinematicAI(this.aiModel));
-    this.aiGenerators.set('tension', new CinematicAI(this.aiModel));
-
-    // Sci-Fi AI
-    this.aiGenerators.set('scifi', new SciFiAI(this.aiModel));
-    this.aiGenerators.set('laser', new SciFiAI(this.aiModel));
-    this.aiGenerators.set('warp_drive', new SciFiAI(this.aiModel));
-    this.aiGenerators.set('glitch', new SciFiAI(this.aiModel));
-    this.aiGenerators.set('forcefield', new SciFiAI(this.aiModel));
-
-    // Custom Text-to-Audio defaults to AI
-    this.aiGenerators.set('custom', this.aiFallback);
   }
 
   /**
    * SMART ROUTING LOGIC
-   * Intelligently selects the optimal generation engine based on the acoustic nature of the effect.
+   * Directs acoustic generation to the media library engine.
    */
   getGenerator(effect: string): ISoundGenerator {
     const eff = effect.toLowerCase();
-
-
-    // Rule 2: Physical & Biological Sounds -> Freesound Library API
-    // AI is notoriously bad at creating realistic footsteps or animal sounds. Real recordings are superior.
-    if (['fauna', 'diegetic', 'weather', 'water', 'urban', 'foley', 'cloth', 'footsteps', 'handling'].includes(eff)) {
-      Logger.info('SmartRouter', `Route '${eff}' -> Library (Freesound)`);
-      return this.genericLibraryInstance;
-    }
-
-    // Rule 3: Creative, Synthesized, Cinematic -> AI Model
-    if (this.aiGenerators.has(eff)) {
-      Logger.info('SmartRouter', `Route '${eff}' -> AI Model (${this.aiModel})`);
-      return this.aiGenerators.get(eff)!;
-    }
-
-    // Fallback logic
-    Logger.info('SmartRouter', `Route '${eff}' (Unrecognized) -> AI Fallback`);
-    return this.aiFallback;
+    Logger.info('SmartRouter', `Route '${eff}' -> Library (Freesound/Generic)`);
+    return this.genericLibraryInstance;
   }
 
   getCompositeConfig(name: string): SoundCompositeConfig {

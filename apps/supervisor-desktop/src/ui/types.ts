@@ -59,15 +59,15 @@ export interface UpdateStatus {
 export interface SupervisorConfig {
   studioPort: number;
   supervisorPort: number;
-  pythonPort: number;
+  aiControlPlanePort: number;
   hardwareTierOverride?: string;
   autostart?: boolean;
 }
 
 export type TrayColor = "green" | "yellow" | "red";
 
-export interface PythonBackendDomainTelemetry {
-  readonly type: "python-backend";
+export interface AIControlPlaneDomainTelemetry {
+  readonly type: "ai-control-plane";
   readonly vramUsedMb: number;
   readonly freeVramBytes: number;
   readonly totalVramBytes: number;
@@ -89,7 +89,7 @@ export interface WorkerDomainTelemetry {
 }
 
 export type SidecarDomainTelemetry =
-  | PythonBackendDomainTelemetry
+  | AIControlPlaneDomainTelemetry
   | WorkerDomainTelemetry;
 
 export interface SidecarTelemetry {

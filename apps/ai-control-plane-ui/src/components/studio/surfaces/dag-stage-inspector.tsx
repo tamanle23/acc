@@ -1,5 +1,5 @@
 import { createSignal, Show, For, Switch, Match } from "solid-js";
-import type { DagStageExecutionResult } from "@ai-monorepo/ai-control-plane-sdk";
+import type { DagStageExecutionResult } from "@acc/ai-control-plane-sdk";
 import {
   Eye,
   Copy,

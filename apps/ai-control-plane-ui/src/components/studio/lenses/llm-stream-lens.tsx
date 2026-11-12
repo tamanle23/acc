@@ -15,7 +15,7 @@ import {
 } from "lucide-solid";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { safeRandomUUID } from "@ai-monorepo/ai-control-plane-sdk";
+import { safeRandomUUID } from "@acc/ai-control-plane-sdk";
 
 export interface ChatMessageItem {
   id: string;

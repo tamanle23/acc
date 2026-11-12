@@ -14,12 +14,10 @@
     "start": "bun run src/index.ts --sandbox"
   },
   "dependencies": {
+    "@acc/ai-control-plane-sdk": "workspace:*",
     "@acc/core": "workspace:*",
     "@acc/effect-engines": "workspace:*",
-    "@acc/ir": "workspace:*",
-    "@acc/proto": "workspace:*",
-    "@grpc/grpc-js": "^1.12.6",
-    "@grpc/proto-loader": "^0.7.13"
+    "@acc/ir": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest",
