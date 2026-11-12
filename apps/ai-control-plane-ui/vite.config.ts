@@ -1,9 +1,10 @@
 import { defineConfig } from 'vite';
 import solidPlugin from 'vite-plugin-solid';
 import path from 'path';
+import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
-  plugins: [solidPlugin()],
+  plugins: [solidPlugin(), tailwindcss()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

@@ -1,6 +1,58 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* Replaces darkMode: 'class' */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  /* Colors (using rgb() instead of hsl()) */
+  --color-background: rgb(var(--background));
+  --color-foreground: rgb(var(--foreground));
+
+  --color-card: rgb(var(--card));
+  --color-card-foreground: rgb(var(--card-foreground));
+
+  --color-popover: rgb(var(--popover));
+  --color-popover-foreground: rgb(var(--popover-foreground));
+
+  --color-primary: rgb(var(--primary));
+  --color-primary-foreground: rgb(var(--primary-foreground));
+
+  --color-secondary: rgb(var(--secondary));
+  --color-secondary-foreground: rgb(var(--secondary-foreground));
+
+  --color-muted: rgb(var(--muted));
+  --color-muted-foreground: rgb(var(--muted-foreground));
+
+  --color-accent: rgb(var(--accent));
+  --color-accent-foreground: rgb(var(--accent-foreground));
+
+  --color-destructive: rgb(var(--destructive));
+  --color-destructive-foreground: rgb(var(--destructive-foreground));
+
+  --color-border: rgb(var(--border));
+  --color-input: rgb(var(--input));
+  --color-ring: rgb(var(--ring));
+
+  /* Font Families */
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "Space Mono", ui-monospace, monospace;
+  --font-display: "Syne", sans-serif;
+
+  /* Border Radius */
+  --radius-lg: var(--radius, 0.5rem);
+  --radius-md: calc(var(--radius, 0.5rem) - 2px);
+  --radius-sm: calc(var(--radius, 0.5rem) - 4px);
+
+  /* Custom Spacing & Widths */
+  --spacing-76: 19rem;
+  /* 304px (Telemetry Sidebar) */
+  --spacing-84: 21.25rem;
+  /* 340px (Inspector Sidebar) */
+  --spacing-88: 22rem;
+  /* 352px */
+}
+
+/* Keep your existing :root and .dark RGB CSS variables right below this */
 
 @layer base {
   :root {
@@ -52,6 +104,7 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
+
   .studio-theme-transition,
   .studio-theme-transition aside,
   .studio-theme-transition header,
@@ -71,6 +124,7 @@
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
+
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;

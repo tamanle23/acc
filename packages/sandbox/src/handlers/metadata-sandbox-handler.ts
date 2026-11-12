@@ -1332,7 +1332,7 @@ export const metadataSandboxHandler: SandboxRouteHandler = {
         status: 200,
         data: {
           entityTypeId: typeId,
-          facets: {},
+          facets: [],
           totalRecords: 0,
         },
       };

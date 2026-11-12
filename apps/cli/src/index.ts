@@ -6,8 +6,7 @@ import {
   AmbientStreamPipeline,
   ScraperEngine,
 } from './pipelines';
-import { DefaultPipelineRegistry, fileExists } from '@acc/core';
-import { bootstrapServer } from './bootstrap';
+import { DefaultPipelineRegistry, bootstrapNode, fileExists } from '@acc/core';
 import {
   intro,
   outro,
@@ -432,20 +431,7 @@ export async function run(customArgs?: string[]): Promise<any> {
       });
       return { success: true, command: 'ir-render' };
     }
-    if (options.command === 'studio') {
-      const targetInput = options.configPath || rawArgs[1];
-      if (!targetInput) {
-        Logger.error('StudioCommand', 'Error: -c / --config <ir.json|project_dir> or positional path is required for studio.');
-        return { success: false, error: 'Missing studio input path' };
-      }
-      const { handleStudioCommand } = await import('./commands/studio');
-      const studio = await handleStudioCommand({
-        input: targetInput,
-        port: options.port || 3300,
-        keepAlive: true,
-      });
-      return { success: true, command: 'studio', serverUrl: studio.getUrl() };
-    }
+
     if (options.command === 'stream') {
       if (!options.rtmpUrl) {
         Logger.error('ACC-CLI', 'Error: --rtmp <url> is required for stream command.');
@@ -496,19 +482,6 @@ export async function run(customArgs?: string[]): Promise<any> {
   });
 
   switch (commandSelection) {
-    case 'studio': {
-      const configLocation = await promptPath({
-        message: 'Path to Video IR document or project folder:',
-        placeholder: './projects/my-video-project',
-      });
-      const { handleStudioCommand } = await import('./commands/studio');
-      const studio = await handleStudioCommand({
-        input: configLocation,
-        port: options.port || 3300,
-        keepAlive: true,
-      });
-      return { success: true, command: 'studio', serverUrl: studio.getUrl() };
-    }
     case 'ir-render': {
       const configLocation = await promptPath({
         message: 'Path to Video IR document or project folder:',
@@ -580,7 +553,7 @@ export async function run(customArgs?: string[]): Promise<any> {
 }
 
 if (import.meta.main) {
-  await bootstrapServer();
+  await bootstrapNode();
   run()
     .then(async (result) => {
       if (result?.success === false) {

@@ -17,6 +17,7 @@
     "@acc/core-isomorphic": "workspace:*",
     "@acc/ir": "workspace:*",
     "@acc/effect-engines": "workspace:*",
-    "@acc/legacy-story-renderer": "workspace:*"
+    "@acc/legacy-story-renderer": "workspace:*",
+    "@clack/prompts": "^1.8.1"
   }
 }

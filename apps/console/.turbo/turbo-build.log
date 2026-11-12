@@ -1,4 +1,0 @@
-
-> @acc/console@2.2.1 build C:\Users\Admin\workspace\git\acc\apps\console
-> tsc -b && vite build --config vite.config.ts && vite build --config vite.electron.config.ts --mode electron
-

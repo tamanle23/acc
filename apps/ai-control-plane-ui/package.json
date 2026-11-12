@@ -19,8 +19,8 @@
   },
   "devDependencies": {
     "autoprefixer": "^10.4.20",
-    "postcss": "^8.5.3",
     "tailwindcss": "catalog:",
+    "@tailwindcss/vite": "catalog:",
     "typescript": "catalog:",
     "vite": "^6.1.0",
     "vite-plugin-solid": "^2.11.6"

@@ -9,12 +9,18 @@
     "./utils": "./src/lib/utils.ts",
     "./icons": "./src/index.ts"
   },
+  "pnpm": {
+    "overrides": {
+      "react": "catalog:",
+      "react-dom": "catalog:"
+    }
+  },
   "dependencies": {
     "@acc/client": "workspace:*",
     "clsx": "^2.1.1",
     "tailwind-merge": "^3.5.0",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4"
+    "react": "catalog:",
+    "react-dom": "catalog:"
   },
   "devDependencies": {
     "@acc/typescript-config": "workspace:*",

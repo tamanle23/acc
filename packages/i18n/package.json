@@ -9,5 +9,11 @@
   },
   "devDependencies": {
     "@acc/typescript-config": "workspace:*"
+  },
+  "pnpm": {
+    "overrides": {
+      "react": "catalog:",
+      "react-dom": "catalog:"
+    }
   }
 }
