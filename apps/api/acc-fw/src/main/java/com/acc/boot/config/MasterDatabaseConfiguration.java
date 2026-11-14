@@ -55,6 +55,7 @@ public class MasterDatabaseConfiguration {
   @Bean(name = "masterDatabase")
   @ConditionalOnProperty(prefix = "application.sandbox", name = "enabled", havingValue = "false", matchIfMissing = true)
   @ConfigurationProperties(prefix = "spring.datasource")
+  @Primary
   public DataSource dataSource() {
     return DataSourceBuilder.create()
         .url(env.getProperty("spring.datasource.url"))

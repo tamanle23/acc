@@ -384,17 +384,16 @@ export function useGizmoTransform(options: UseGizmoTransformOptions) {
     let dx = 0;
     let dy = 0;
 
-    if (e.key === 'ArrowLeft') dx = -step;
-    else if (e.key === 'ArrowRight') dx = step;
+    // Require Alt+Arrow for horizontal spatial nudging so bare ArrowLeft/ArrowRight
+    // remain dedicated to frame-accurate playhead stepping in useShuttleEngine.
+    // Delete/Backspace are handled centrally by Timeline.tsx (respecting Ripple Delete mode).
+    if (e.altKey && e.key === 'ArrowLeft') dx = -step;
+    else if (e.altKey && e.key === 'ArrowRight') dx = step;
     else if (e.key === 'ArrowUp') dy = -step;
     else if (e.key === 'ArrowDown') dy = step;
     else if (e.key === 'Escape') {
       e.preventDefault();
       IRStateManager.getInstance().setSelectedSequenceId(null);
-      return;
-    } else if (e.key === 'Delete' || e.key === 'Backspace') {
-      e.preventDefault();
-      IRStateManager.getInstance().deleteSequence(seqId);
       return;
     } else {
       return;

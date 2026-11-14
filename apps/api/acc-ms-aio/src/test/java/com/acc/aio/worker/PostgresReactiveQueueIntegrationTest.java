@@ -1,7 +1,7 @@
 package com.acc.aio.worker;
 
 import com.acc.workflow.application.WorkflowDefinitionRegistry;
-import com.acc.aio.controller.workflow.ExecutionStreamBroadcaster;
+import com.acc.workflow.controller.ExecutionStreamBroadcaster;
 import com.acc.workflow.adapters.storage.PostgresJdbcPersistenceAdapter;
 import com.acc.workflow.application.WorkflowEngineService;
 import com.acc.workflow.core.decider.PureDecider;

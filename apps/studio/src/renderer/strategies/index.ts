@@ -28,6 +28,7 @@ export function createPreviewRenderStrategy(
     typeof HTMLCanvasElement.prototype.transferControlToOffscreen === 'function' &&
     typeof Worker !== 'undefined';
 
+  console.log('hasOffscreenSupport', hasOffscreenSupport);
   if (hasOffscreenSupport) {
     return new WorkerRenderStrategy();
   }

@@ -3,7 +3,6 @@ export * from './FilmstripThumbnail';
 export * from './TimecodeRuler';
 export * from './TransitionBlock';
 export * from './WaveSurferWaveform';
-export * from './TrackWaveformVirtualCanvas';
 export * from './TrimHandle';
 export * from './DroppableTrackLane';
 export * from './ClipItem';

@@ -1,5 +1,6 @@
 import { createEffect } from 'solid-js';
 import { WebAudioEngine } from '../../lib/audio/WebAudioEngine';
+import { AudioAssetCache } from '../../lib/audio/AudioAssetCache';
 import { WaveformLODPyramid } from '../../lib/timeline/WaveformLODPyramid';
 
 export interface WaveSurferWaveformProps {
@@ -14,30 +15,41 @@ export interface WaveSurferWaveformProps {
 
 // Global pyramid cache to provide multi-resolution LOD decimation with bounded LRU ceiling
 const MAX_PYRAMID_CACHE_ENTRIES = 32;
-const pyramidCache = new Map<string, WaveformLODPyramid>();
+const pyramidCache = new Map<string, { pyramid: WaveformLODPyramid; isDecodedPcm: boolean }>();
 
-export function getCachedPeaks(id: string, durationFrames: number, targetBars: number): number[] {
-  let pyramid = pyramidCache.get(id);
-  if (!pyramid) {
+// Automatically invalidate procedural fallback pyramids when real audio finishes decoding
+AudioAssetCache.getInstance().subscribe(() => {
+  for (const [key, entry] of pyramidCache.entries()) {
+    if (!entry.isDecodedPcm && AudioAssetCache.getInstance().getAudioChannels(key) !== null) {
+      pyramidCache.delete(key);
+    }
+  }
+});
+
+export function getCachedPeaks(id: string, durationFrames: number, targetBars: number): Float32Array {
+  const hasRealPcm = AudioAssetCache.getInstance().getAudioChannels(id) !== null;
+  let cachedEntry = pyramidCache.get(id);
+
+  if (!cachedEntry || (!cachedEntry.isDecodedPcm && hasRealPcm)) {
     const rawPeaks = WebAudioEngine.getInstance().getWaveformPeaks(id, durationFrames, Math.max(targetBars * 4, 320));
-    pyramid = new WaveformLODPyramid(rawPeaks);
+    const pyramid = new WaveformLODPyramid(rawPeaks);
+    cachedEntry = { pyramid, isDecodedPcm: hasRealPcm };
     if (pyramidCache.size >= MAX_PYRAMID_CACHE_ENTRIES && !pyramidCache.has(id)) {
       const oldestId = pyramidCache.keys().next().value;
       if (oldestId !== undefined) {
         pyramidCache.delete(oldestId);
       }
     }
-    pyramidCache.set(id, pyramid);
+    pyramidCache.set(id, cachedEntry);
   } else {
     // Refresh LRU order
     pyramidCache.delete(id);
-    pyramidCache.set(id, pyramid);
+    pyramidCache.set(id, cachedEntry);
   }
 
-  // Derive pixels per frame for LOD level selection
+  // Derive pixels per frame for LOD level selection and return zero-copy Float32Array view
   const pxPerFrame = targetBars > 0 && durationFrames > 0 ? (targetBars * 3) / durationFrames : 1.0;
-  const lod = pyramid.selectLOD(pxPerFrame);
-  return Array.from(lod.peaks);
+  return cachedEntry.pyramid.selectLOD(pxPerFrame).peaks;
 }
 
 export function clearWaveSurferPeakCache(): void {

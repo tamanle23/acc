@@ -12,10 +12,10 @@
     <module>./acc-core</module>
     <module>./acc-fw</module>
     <module>./acc-db</module>
+    <module>./acc-sandbox</module>
     <module>./acc-ms-fs</module>
     <module>./acc-ms-worker</module>
     <module>./workflow-engine</module>
-    <module>./acc-sandbox</module>
     <module>./acc-ms-aio</module>
   </modules>
   <properties>
@@ -72,7 +72,7 @@
       </dependency>
       <dependency>
         <groupId>${project.groupId}</groupId>
-        <artifactId>acc-resources</artifactId>
+        <artifactId>acc-db</artifactId>
         <version>1.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
@@ -82,7 +82,7 @@
       </dependency>
       <dependency>
         <groupId>${project.groupId}</groupId>
-        <artifactId>acc-db</artifactId>
+        <artifactId>acc-sandbox</artifactId>
         <version>1.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
@@ -90,31 +90,7 @@
         <artifactId>acc-ms-fs</artifactId>
         <version>1.0.0-SNAPSHOT</version>
       </dependency>
-      <dependency>
-        <groupId>${project.groupId}</groupId>
-        <artifactId>acc-ms-identity</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>${project.groupId}</groupId>
-        <artifactId>acc-ms-pos</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>${project.groupId}</groupId>
-        <artifactId>acc-ms-cms</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>${project.groupId}</groupId>
-        <artifactId>acc-report-engine</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>${project.groupId}</groupId>
-        <artifactId>acc-sandbox</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
-      </dependency>
+
       <dependency>
         <groupId>io.roastedroot</groupId>
         <artifactId>pglite4j-jdbc</artifactId>
